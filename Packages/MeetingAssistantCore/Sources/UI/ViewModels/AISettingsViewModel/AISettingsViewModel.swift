@@ -11,10 +11,25 @@ import SwiftUI
 
 public struct EnhancementsProviderModelOption: Identifiable, Hashable, Sendable {
     public let provider: AIProvider
+    public let registrationID: UUID?
+    public let registrationName: String?
     public let modelID: String
 
+    public init(
+        provider: AIProvider,
+        registrationID: UUID? = nil,
+        registrationName: String? = nil,
+        modelID: String
+    ) {
+        self.provider = provider
+        self.registrationID = registrationID
+        self.registrationName = registrationName
+        self.modelID = modelID
+    }
+
     public var id: String {
-        "\(provider.rawValue)::\(modelID)"
+        let registrationPart = registrationID?.uuidString ?? provider.rawValue
+        return "\(registrationPart)::\(modelID)"
     }
 }
 

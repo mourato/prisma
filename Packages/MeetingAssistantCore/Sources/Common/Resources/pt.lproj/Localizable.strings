@@ -275,6 +275,7 @@
 "settings.enhancements.provider.groq.desc" = "Modelos OpenAI-compatíveis hospedados pela Groq com baixa latência.";
 "settings.enhancements.provider.google.desc" = "Modelos Gemini do Google para pós-processamento e Q&A de reuniões.";
 "settings.enhancements.provider.custom.desc" = "Endpoint customizado compatível com OpenAI para provedores internos ou proxy.";
+"settings.enhancements.provider.custom.default_name" = "Custom %d";
 "settings.enhancements.badge.recommended" = "Recomendado";
 "settings.enhancements.badge.requires_api_key" = "Exige Chave de API";
 "settings.enhancements.badge.model_picker" = "Seletor de Modelo";

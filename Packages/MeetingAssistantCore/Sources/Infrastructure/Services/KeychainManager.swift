@@ -68,6 +68,7 @@ public enum KeychainManager {
 
     private static let serviceIdentifier = AppIdentity.keychainServiceIdentifier
     private static let legacyServiceIdentifiers = AppIdentity.legacyKeychainServiceIdentifiers
+    private static let providerRegistrationAccountPrefix = "ai_api_key_registration_"
 
     // MARK: - Keys
 
@@ -238,8 +239,98 @@ public enum KeychainManager {
         return exists(for: .aiAPIKey)
     }
 
+    public static func registrationAPIKeyAccount(for registrationID: UUID) -> String {
+        "\(providerRegistrationAccountPrefix)\(registrationID.uuidString.lowercased())"
+    }
+
+    public static func storeAPIKey(_ value: String, for registrationID: UUID) throws {
+        guard let data = value.data(using: .utf8) else {
+            throw KeychainError.unableToConvertToData
+        }
+
+        let account = registrationAPIKeyAccount(for: registrationID)
+        let query = baseQuery(account: account, serviceIdentifier: serviceIdentifier)
+
+        SecItemDelete(query as CFDictionary)
+        for legacyServiceIdentifier in legacyServiceIdentifiers {
+            let legacyQuery = baseQuery(account: account, serviceIdentifier: legacyServiceIdentifier)
+            SecItemDelete(legacyQuery as CFDictionary)
+        }
+
+        var addQuery = query
+        addQuery[kSecValueData as String] = data
+        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+
+        let status = SecItemAdd(addQuery as CFDictionary, nil)
+        guard status == errSecSuccess else {
+            throw KeychainError.unexpectedStatus(status)
+        }
+    }
+
+    public static func retrieveAPIKey(for registrationID: UUID) throws -> String? {
+        let account = registrationAPIKeyAccount(for: registrationID)
+
+        if let value = try retrieve(account: account, serviceIdentifier: serviceIdentifier), !value.isEmpty {
+            return value
+        }
+
+        for legacyServiceIdentifier in legacyServiceIdentifiers {
+            guard let legacyValue = try retrieve(account: account, serviceIdentifier: legacyServiceIdentifier),
+                  !legacyValue.isEmpty
+            else {
+                continue
+            }
+
+            try storeAPIKey(legacyValue, for: registrationID)
+            try delete(account: account, serviceIdentifier: legacyServiceIdentifier)
+            return legacyValue
+        }
+
+        return nil
+    }
+
+    public static func retrieveAPIKeys(for registrationIDs: [UUID]) throws -> [UUID: String] {
+        var valuesByRegistrationID: [UUID: String] = [:]
+
+        for registrationID in registrationIDs {
+            let normalizedAPIKey = try retrieveAPIKey(for: registrationID)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard
+                let apiKey = normalizedAPIKey,
+                !apiKey.isEmpty
+            else {
+                continue
+            }
+            valuesByRegistrationID[registrationID] = apiKey
+        }
+
+        return valuesByRegistrationID
+    }
+
+    public static func existsAPIKey(for registrationID: UUID) -> Bool {
+        let account = registrationAPIKeyAccount(for: registrationID)
+        if exists(account: account, serviceIdentifier: serviceIdentifier) {
+            return true
+        }
+        return legacyServiceIdentifiers.contains {
+            exists(account: account, serviceIdentifier: $0)
+        }
+    }
+
+    public static func deleteAPIKey(for registrationID: UUID) throws {
+        let account = registrationAPIKeyAccount(for: registrationID)
+        try delete(account: account, serviceIdentifier: serviceIdentifier)
+        for legacyServiceIdentifier in legacyServiceIdentifiers {
+            try delete(account: account, serviceIdentifier: legacyServiceIdentifier)
+        }
+    }
+
     private static func retrieve(for key: Key, serviceIdentifier: String) throws -> String? {
-        var query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
+        try retrieve(account: key.rawValue, serviceIdentifier: serviceIdentifier)
+    }
+
+    private static func retrieve(account: String, serviceIdentifier: String) throws -> String? {
+        var query = baseQuery(account: account, serviceIdentifier: serviceIdentifier)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
 
@@ -262,7 +353,11 @@ public enum KeychainManager {
     }
 
     private static func delete(for key: Key, serviceIdentifier: String) throws {
-        let query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
+        try delete(account: key.rawValue, serviceIdentifier: serviceIdentifier)
+    }
+
+    private static func delete(account: String, serviceIdentifier: String) throws {
+        let query = baseQuery(account: account, serviceIdentifier: serviceIdentifier)
         let status = SecItemDelete(query as CFDictionary)
 
         // Treat "not found" as success (nothing to delete)
@@ -272,17 +367,25 @@ public enum KeychainManager {
     }
 
     private static func exists(for key: Key, serviceIdentifier: String) -> Bool {
-        var query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
+        exists(account: key.rawValue, serviceIdentifier: serviceIdentifier)
+    }
+
+    private static func exists(account: String, serviceIdentifier: String) -> Bool {
+        var query = baseQuery(account: account, serviceIdentifier: serviceIdentifier)
         query[kSecReturnData as String] = false
         let status = SecItemCopyMatching(query as CFDictionary, nil)
         return status == errSecSuccess
     }
 
     private static func baseQuery(for key: Key, serviceIdentifier: String) -> [String: Any] {
+        baseQuery(account: key.rawValue, serviceIdentifier: serviceIdentifier)
+    }
+
+    private static func baseQuery(account: String, serviceIdentifier: String) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceIdentifier,
-            kSecAttrAccount as String: key.rawValue,
+            kSecAttrAccount as String: account,
         ]
     }
 

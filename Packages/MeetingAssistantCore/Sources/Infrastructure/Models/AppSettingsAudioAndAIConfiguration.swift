@@ -208,16 +208,83 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
 public struct EnhancementsAISelection: Codable, Equatable, Sendable {
     public var provider: AIProvider
     public var selectedModel: String
+    public var registrationID: UUID?
 
-    public init(provider: AIProvider, selectedModel: String) {
+    public init(provider: AIProvider, selectedModel: String, registrationID: UUID? = nil) {
         self.provider = provider
         self.selectedModel = selectedModel
+        self.registrationID = registrationID
     }
 
     public static let `default` = EnhancementsAISelection(
         provider: .openai,
-        selectedModel: ""
+        selectedModel: "",
+        registrationID: nil
     )
+
+    enum CodingKeys: String, CodingKey {
+        case provider
+        case selectedModel
+        case registrationID
+    }
+}
+
+public struct EnhancementsProviderRegistration: Codable, Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public var provider: AIProvider
+    public var displayName: String
+    public var baseURLOverride: String?
+    public var createdAt: Date
+    public var updatedAt: Date
+
+    public init(
+        id: UUID = UUID(),
+        provider: AIProvider,
+        displayName: String,
+        baseURLOverride: String? = nil,
+        createdAt: Date = Date(),
+        updatedAt: Date = Date()
+    ) {
+        self.id = id
+        self.provider = provider
+        self.displayName = displayName
+        self.baseURLOverride = baseURLOverride?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        normalizeInPlace()
+    }
+
+    public var resolvedBaseURL: String {
+        switch provider {
+        case .custom:
+            return baseURLOverride ?? ""
+        case .openai, .anthropic, .groq, .google:
+            return provider.defaultBaseURL
+        }
+    }
+
+    public var isBuiltInSingleton: Bool {
+        provider != .custom
+    }
+
+    public mutating func touchUpdatedAt(_ now: Date = Date()) {
+        updatedAt = now
+        normalizeInPlace()
+    }
+
+    public mutating func normalizeInPlace() {
+        displayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if displayName.isEmpty {
+            displayName = provider.displayName
+        }
+
+        if provider == .custom {
+            let trimmedBaseURL = baseURLOverride?.trimmingCharacters(in: .whitespacesAndNewlines)
+            baseURLOverride = trimmedBaseURL?.isEmpty == true ? nil : trimmedBaseURL
+        } else {
+            baseURLOverride = nil
+        }
+    }
 }
 
 public enum LocalTranscriptionModel: String, CaseIterable, Codable, Sendable {

@@ -236,15 +236,36 @@ public extension AISettingsViewModel {
         // Force one-time legacy migration (.aiAPIKey -> provider slot) when applicable.
         _ = try? keychain.retrieveAPIKey(for: settings.aiConfiguration.provider)
 
-        let apiKeysByProvider: [AIProvider: String]
+        let registrations = settings.enhancementsProviderRegistrations
+
         do {
-            apiKeysByProvider = try keychain.retrieveAPIKeys(for: AIProvider.allCases)
+            if registrations.isEmpty {
+                hadFailure = try await collectLegacyEnhancementsProviderModelOptions(into: &options)
+            } else {
+                hadFailure = try await collectRegistrationEnhancementsProviderModelOptions(
+                    registrations,
+                    into: &options
+                )
+            }
         } catch {
             enhancementsProviderModels = []
             enhancementsProviderModelsFetchError = "settings.ai.models.fetch_failed".localized
             logger.error("Failed to read API keys in batch: \(error.localizedDescription)")
             return
         }
+
+        enhancementsProviderModels = sortedEnhancementsProviderModelOptions(options)
+
+        if hadFailure {
+            enhancementsProviderModelsFetchError = "settings.ai.models.fetch_failed".localized
+        }
+    }
+
+    private func collectLegacyEnhancementsProviderModelOptions(
+        into options: inout Set<EnhancementsProviderModelOption>
+    ) async throws -> Bool {
+        let apiKeysByProvider = try keychain.retrieveAPIKeys(for: AIProvider.allCases)
+        var hadFailure = false
 
         for provider in AIProvider.allCases {
             guard let apiKey = apiKeysByProvider[provider] else { continue }
@@ -276,15 +297,76 @@ public extension AISettingsViewModel {
             }
         }
 
-        enhancementsProviderModels = options.sorted { lhs, rhs in
-            if lhs.provider == rhs.provider {
-                return lhs.modelID.localizedCaseInsensitiveCompare(rhs.modelID) == .orderedAscending
+        return hadFailure
+    }
+
+    private func collectRegistrationEnhancementsProviderModelOptions(
+        _ registrations: [EnhancementsProviderRegistration],
+        into options: inout Set<EnhancementsProviderModelOption>
+    ) async throws -> Bool {
+        let providerKeysByProvider = try keychain.retrieveAPIKeys(
+            for: Array(Set(registrations.map(\.provider)))
+        )
+        var hadFailure = false
+
+        for registration in registrations {
+            let provider = registration.provider
+
+            let registrationKey = (try? KeychainManager.retrieveAPIKey(for: registration.id))?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let apiKey = if let registrationKey,
+                            !registrationKey.isEmpty
+            {
+                registrationKey
+            } else {
+                providerKeysByProvider[provider]
             }
-            return lhs.provider.displayName.localizedCaseInsensitiveCompare(rhs.provider.displayName) == .orderedAscending
+
+            guard let apiKey, !apiKey.isEmpty else { continue }
+
+            let config = enhancementsConfiguration(for: registration)
+            guard let baseURL = llmService.validateURL(config.baseURL) else {
+                hadFailure = true
+                continue
+            }
+
+            do {
+                let models = try await llmService.fetchAvailableModels(
+                    baseURL: baseURL,
+                    apiKey: apiKey,
+                    provider: provider
+                )
+
+                for model in models {
+                    options.insert(
+                        EnhancementsProviderModelOption(
+                            provider: provider,
+                            registrationID: registration.id,
+                            registrationName: registration.displayName,
+                            modelID: model.id
+                        )
+                    )
+                }
+            } catch {
+                hadFailure = true
+                logger.error("Failed to fetch enhancements provider models for registration \(registration.displayName): \(error.localizedDescription)")
+            }
         }
 
-        if hadFailure {
-            enhancementsProviderModelsFetchError = "settings.ai.models.fetch_failed".localized
+        return hadFailure
+    }
+
+    private func sortedEnhancementsProviderModelOptions(
+        _ options: Set<EnhancementsProviderModelOption>
+    ) -> [EnhancementsProviderModelOption] {
+        options.sorted { lhs, rhs in
+            let lhsName = lhs.registrationName ?? lhs.provider.displayName
+            let rhsName = rhs.registrationName ?? rhs.provider.displayName
+
+            if lhsName.caseInsensitiveCompare(rhsName) == .orderedSame {
+                return lhs.modelID.localizedCaseInsensitiveCompare(rhs.modelID) == .orderedAscending
+            }
+            return lhsName.localizedCaseInsensitiveCompare(rhsName) == .orderedAscending
         }
     }
 
@@ -314,6 +396,16 @@ public extension AISettingsViewModel {
         return AIConfiguration(
             provider: provider,
             baseURL: baseURL,
+            selectedModel: selectedModel
+        )
+    }
+
+    private func enhancementsConfiguration(for registration: EnhancementsProviderRegistration) -> AIConfiguration {
+        let selectedModel = settings.enhancementsSelectedModel(for: registration.id)
+
+        return AIConfiguration(
+            provider: registration.provider,
+            baseURL: registration.resolvedBaseURL,
             selectedModel: selectedModel
         )
     }

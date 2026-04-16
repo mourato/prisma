@@ -302,6 +302,57 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertEqual(settings.enhancementsProviderSelectedModels[AIProvider.google.rawValue], "gemini-2.0-flash")
     }
 
+    func testCanAddEnhancementsProviderRegistration_EnforcesBuiltInUniqueness() {
+        XCTAssertTrue(settings.canAddEnhancementsProviderRegistration(.openai))
+
+        let registration = settings.addEnhancementsProviderRegistration(provider: .openai)
+
+        XCTAssertNotNil(registration)
+        XCTAssertFalse(settings.canAddEnhancementsProviderRegistration(.openai))
+    }
+
+    func testAddEnhancementsProviderRegistration_AllowsMultipleCustomEntries() {
+        let firstCustom = settings.addEnhancementsProviderRegistration(
+            provider: .custom,
+            displayName: "Gateway A",
+            baseURLOverride: "https://gateway-a.example/v1"
+        )
+        let secondCustom = settings.addEnhancementsProviderRegistration(
+            provider: .custom,
+            displayName: "Gateway B",
+            baseURLOverride: "https://gateway-b.example/v1"
+        )
+
+        XCTAssertNotNil(firstCustom)
+        XCTAssertNotNil(secondCustom)
+        XCTAssertEqual(settings.enhancementsRegistrations(for: .custom).count, 2)
+        XCTAssertNotEqual(firstCustom?.id, secondCustom?.id)
+    }
+
+    func testRemoveEnhancementsProviderRegistration_ClearsSelectedEntryModel() throws {
+        let custom = settings.addEnhancementsProviderRegistration(
+            provider: .custom,
+            displayName: "Custom Proxy",
+            baseURLOverride: "https://proxy.example/v1"
+        )
+        let customID = try XCTUnwrap(custom?.id)
+
+        settings.updateEnhancementsSelection(
+            registrationID: customID,
+            model: "custom-model",
+            for: .meeting
+        )
+
+        XCTAssertEqual(settings.enhancementsAISelection.registrationID, customID)
+        XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "custom-model")
+
+        settings.removeEnhancementsProviderRegistration(id: customID)
+
+        XCTAssertNil(settings.enhancementsAISelection.registrationID)
+        XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "")
+        XCTAssertTrue(settings.enhancementsRegistrations(for: .custom).isEmpty)
+    }
+
     func testResolvedTranscriptionSelection_MeetingAlwaysUsesLocalProvider() {
         settings.updateTranscriptionDictationSelection(
             provider: .groq,

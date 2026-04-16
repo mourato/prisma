@@ -50,6 +50,22 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(enhancementsProviderSelectedModels, forKey: Keys.enhancementsProviderSelectedModels) }
     }
 
+    /// Registered providers available for Enhancements post-processing setup.
+    @Published public var enhancementsProviderRegistrations: [EnhancementsProviderRegistration] {
+        didSet { save(enhancementsProviderRegistrations, forKey: Keys.enhancementsProviderRegistrations) }
+    }
+
+    /// Per-registration model selection used by Enhancements setup.
+    /// Keys are `EnhancementsProviderRegistration.id.uuidString`.
+    @Published public var enhancementsProviderSelectedModelsByRegistration: [String: String] {
+        didSet {
+            save(
+                enhancementsProviderSelectedModelsByRegistration,
+                forKey: Keys.enhancementsProviderSelectedModelsByRegistration
+            )
+        }
+    }
+
     /// Provider/model selection for dictation and assistant transcription flows.
     @Published public var transcriptionDictationSelection: TranscriptionProviderSelection {
         didSet { save(transcriptionDictationSelection, forKey: Keys.transcriptionDictationSelection) }
@@ -661,7 +677,11 @@ public class AppSettingsStore: ObservableObject {
         aiConfiguration = ai.aiConfiguration
         enhancementsAISelection = ai.enhancementsAISelection
         enhancementsDictationAISelection = ai.enhancementsDictationAISelection
-        (enhancementsProviderSelectedModels, transcriptionDictationSelection, transcriptionProviderSelectedModels) = (ai.enhancementsProviderSelectedModels, ai.transcriptionDictationSelection, ai.transcriptionProviderSelectedModels)
+        enhancementsProviderSelectedModels = ai.enhancementsProviderSelectedModels
+        enhancementsProviderRegistrations = ai.enhancementsProviderRegistrations
+        enhancementsProviderSelectedModelsByRegistration = ai.enhancementsProviderSelectedModelsByRegistration
+        transcriptionDictationSelection = ai.transcriptionDictationSelection
+        transcriptionProviderSelectedModels = ai.transcriptionProviderSelectedModels
 
         let postProcessing = Self.loadPostProcessingSettings()
         systemPrompt = postProcessing.systemPrompt

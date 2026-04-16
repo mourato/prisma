@@ -8,6 +8,8 @@ extension AppSettingsStore {
         static let enhancementsAISelection = "enhancementsAISelection"
         static let enhancementsDictationAISelection = "enhancementsDictationAISelection"
         static let enhancementsProviderSelectedModels = "enhancementsProviderSelectedModels"
+        static let enhancementsProviderRegistrations = "enhancementsProviderRegistrations"
+        static let enhancementsProviderSelectedModelsByRegistration = "enhancementsProviderSelectedModelsByRegistration"
         static let transcriptionDictationSelection = "transcriptionDictationSelection"
         static let transcriptionProviderSelectedModels = "transcriptionProviderSelectedModels"
         static let systemPrompt = "postProcessingSystemPrompt"

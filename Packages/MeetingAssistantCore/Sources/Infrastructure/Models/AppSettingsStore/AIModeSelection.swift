@@ -24,10 +24,187 @@ public extension AppSettingsStore {
         aiConfiguration = config
     }
 
+    func enhancementsRegistration(for id: UUID?) -> EnhancementsProviderRegistration? {
+        guard let id else { return nil }
+        return enhancementsProviderRegistrations.first(where: { $0.id == id })
+    }
+
+    func enhancementsRegistration(for provider: AIProvider) -> EnhancementsProviderRegistration? {
+        enhancementsProviderRegistrations.first(where: { $0.provider == provider })
+    }
+
+    func enhancementsRegistrations(for provider: AIProvider) -> [EnhancementsProviderRegistration] {
+        enhancementsProviderRegistrations.filter { $0.provider == provider }
+    }
+
+    func canAddEnhancementsProviderRegistration(_ provider: AIProvider) -> Bool {
+        provider == .custom || enhancementsRegistration(for: provider) == nil
+    }
+
+    func suggestedCustomEnhancementsProviderName() -> String {
+        let customCount = enhancementsProviderRegistrations.filter { $0.provider == .custom }.count
+        let nextIndex = customCount + 1
+        return "settings.enhancements.provider.custom.default_name".localized(with: nextIndex)
+    }
+
+    @discardableResult
+    func addEnhancementsProviderRegistration(
+        provider: AIProvider,
+        displayName: String? = nil,
+        baseURLOverride: String? = nil
+    ) -> EnhancementsProviderRegistration? {
+        guard canAddEnhancementsProviderRegistration(provider) else { return nil }
+
+        let registration = EnhancementsProviderRegistration(
+            provider: provider,
+            displayName: displayName ?? defaultRegistrationDisplayName(for: provider),
+            baseURLOverride: provider == .custom ? baseURLOverride : nil
+        )
+
+        var updated = enhancementsProviderRegistrations
+        updated.append(registration)
+        enhancementsProviderRegistrations = updated
+
+        if enhancementsAISelection.registrationID == nil,
+           enhancementsAISelection.provider == provider
+        {
+            enhancementsAISelection.registrationID = registration.id
+        }
+
+        if enhancementsDictationAISelection.registrationID == nil,
+           enhancementsDictationAISelection.provider == provider
+        {
+            enhancementsDictationAISelection.registrationID = registration.id
+        }
+
+        return registration
+    }
+
+    func updateEnhancementsProviderRegistration(_ registration: EnhancementsProviderRegistration) {
+        guard let index = enhancementsProviderRegistrations.firstIndex(where: { $0.id == registration.id }) else {
+            return
+        }
+
+        var normalized = registration
+        normalized.touchUpdatedAt()
+
+        var updated = enhancementsProviderRegistrations
+        updated[index] = normalized
+
+        if normalized.isBuiltInSingleton {
+            var seenBuiltInProviders = Set<AIProvider>()
+            updated = updated.filter { candidate in
+                if candidate.id == normalized.id {
+                    seenBuiltInProviders.insert(candidate.provider)
+                    return true
+                }
+
+                if candidate.provider == .custom {
+                    return true
+                }
+
+                guard !seenBuiltInProviders.contains(candidate.provider) else {
+                    return false
+                }
+
+                seenBuiltInProviders.insert(candidate.provider)
+                return true
+            }
+        }
+
+        enhancementsProviderRegistrations = updated
+    }
+
+    func removeEnhancementsProviderRegistration(id: UUID) {
+        guard let removed = enhancementsProviderRegistrations.first(where: { $0.id == id }) else {
+            return
+        }
+
+        enhancementsProviderRegistrations.removeAll { $0.id == id }
+        enhancementsProviderSelectedModelsByRegistration.removeValue(forKey: id.uuidString)
+        try? KeychainManager.deleteAPIKey(for: id)
+
+        if !enhancementsProviderRegistrations.contains(where: { $0.provider == removed.provider }) {
+            enhancementsProviderSelectedModels.removeValue(forKey: removed.provider.rawValue)
+        }
+
+        if enhancementsAISelection.registrationID == id {
+            enhancementsAISelection.registrationID = nil
+            enhancementsAISelection.selectedModel = ""
+        }
+
+        if enhancementsDictationAISelection.registrationID == id {
+            enhancementsDictationAISelection.registrationID = nil
+            enhancementsDictationAISelection.selectedModel = ""
+        }
+    }
+
+    func migrateEnhancementsProviderRegistrationAPIKeysIfNeeded() {
+        let firstCustomRegistrationID = enhancementsProviderRegistrations
+            .first(where: { $0.provider == .custom })?
+            .id
+
+        for registration in enhancementsProviderRegistrations {
+            if KeychainManager.existsAPIKey(for: registration.id) {
+                continue
+            }
+
+            if registration.provider == .custom,
+               registration.id != firstCustomRegistrationID
+            {
+                continue
+            }
+
+            guard let legacyProviderKey = try? KeychainManager.retrieveAPIKey(for: registration.provider) else {
+                continue
+            }
+
+            let apiKey = legacyProviderKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !apiKey.isEmpty else { continue }
+
+            try? KeychainManager.storeAPIKey(apiKey, for: registration.id)
+        }
+    }
+
+    func enhancementsAPIKey(for mode: IntelligenceKernelMode) -> String? {
+        let selection = enhancementsSelection(for: mode)
+
+        if let registrationID = selection.registrationID,
+           let registrationKey = try? KeychainManager.retrieveAPIKey(for: registrationID)
+        {
+            let trimmed = registrationKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return trimmed
+            }
+        }
+
+        if let providerKey = try? KeychainManager.retrieveAPIKey(for: selection.provider) {
+            let trimmed = providerKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return trimmed
+            }
+        }
+
+        return nil
+    }
+
+    func enhancementsProviderDisplayName(for selection: EnhancementsAISelection) -> String {
+        enhancementsRegistration(for: selection.registrationID)?.displayName ?? selection.provider.displayName
+    }
+
+    private func defaultRegistrationDisplayName(for provider: AIProvider) -> String {
+        if provider == .custom {
+            return suggestedCustomEnhancementsProviderName()
+        }
+        return provider.displayName
+    }
+
     func updateEnhancementsProvider(_ provider: AIProvider) {
         var selection = enhancementsAISelection
-        guard selection.provider != provider else { return }
+        let targetRegistrationID = enhancementsRegistration(for: provider)?.id
+        guard selection.provider != provider || selection.registrationID != targetRegistrationID else { return }
         selection.provider = provider
+        selection.registrationID = targetRegistrationID
         selection.selectedModel = enhancementsSelectedModel(for: provider)
         enhancementsAISelection = selection
     }
@@ -38,12 +215,17 @@ public extension AppSettingsStore {
         selection.selectedModel = normalizedModel
         enhancementsAISelection = selection
         setEnhancementsProviderSelectedModel(normalizedModel, for: selection.provider)
+        if let registrationID = selection.registrationID {
+            setEnhancementsProviderSelectedModel(normalizedModel, for: registrationID)
+        }
     }
 
     func updateEnhancementsDictationProvider(_ provider: AIProvider) {
         var selection = enhancementsDictationAISelection
-        guard selection.provider != provider else { return }
+        let targetRegistrationID = enhancementsRegistration(for: provider)?.id
+        guard selection.provider != provider || selection.registrationID != targetRegistrationID else { return }
         selection.provider = provider
+        selection.registrationID = targetRegistrationID
         selection.selectedModel = enhancementsSelectedModel(for: provider)
         enhancementsDictationAISelection = selection
     }
@@ -54,6 +236,9 @@ public extension AppSettingsStore {
         selection.selectedModel = normalizedModel
         enhancementsDictationAISelection = selection
         setEnhancementsProviderSelectedModel(normalizedModel, for: selection.provider)
+        if let registrationID = selection.registrationID {
+            setEnhancementsProviderSelectedModel(normalizedModel, for: registrationID)
+        }
     }
 
     func updateEnhancementsSelection(
@@ -61,23 +246,87 @@ public extension AppSettingsStore {
         model: String,
         for mode: IntelligenceKernelMode
     ) {
+        let registrationID = enhancementsRegistration(for: provider)?.id
+        updateEnhancementsSelection(
+            provider: provider,
+            registrationID: registrationID,
+            model: model,
+            for: mode
+        )
+    }
+
+    func updateEnhancementsSelection(
+        registrationID: UUID,
+        model: String,
+        for mode: IntelligenceKernelMode
+    ) {
+        guard let registration = enhancementsRegistration(for: registrationID) else { return }
+        updateEnhancementsSelection(
+            provider: registration.provider,
+            registrationID: registration.id,
+            model: model,
+            for: mode
+        )
+    }
+
+    private func updateEnhancementsSelection(
+        provider: AIProvider,
+        registrationID: UUID?,
+        model: String,
+        for mode: IntelligenceKernelMode
+    ) {
         let normalizedModel = normalizedEnhancementsModelID(model, for: provider)
         switch mode {
         case .meeting:
-            enhancementsAISelection = EnhancementsAISelection(provider: provider, selectedModel: normalizedModel)
+            enhancementsAISelection = EnhancementsAISelection(
+                provider: provider,
+                selectedModel: normalizedModel,
+                registrationID: registrationID
+            )
         case .dictation, .assistant:
-            enhancementsDictationAISelection = EnhancementsAISelection(provider: provider, selectedModel: normalizedModel)
+            enhancementsDictationAISelection = EnhancementsAISelection(
+                provider: provider,
+                selectedModel: normalizedModel,
+                registrationID: registrationID
+            )
         }
         setEnhancementsProviderSelectedModel(normalizedModel, for: provider)
+        if let registrationID {
+            setEnhancementsProviderSelectedModel(normalizedModel, for: registrationID)
+        }
     }
 
     func updateEnhancementsProviderSelectedModel(_ model: String, for provider: AIProvider) {
         setEnhancementsProviderSelectedModel(normalizedEnhancementsModelID(model, for: provider), for: provider)
     }
 
+    func updateEnhancementsProviderSelectedModel(_ model: String, for registrationID: UUID) {
+        guard let registration = enhancementsRegistration(for: registrationID) else { return }
+        let normalizedModel = normalizedEnhancementsModelID(model, for: registration.provider)
+        setEnhancementsProviderSelectedModel(normalizedModel, for: registration.provider)
+        setEnhancementsProviderSelectedModel(normalizedModel, for: registrationID)
+    }
+
     func enhancementsSelectedModel(for provider: AIProvider) -> String {
+        if let registrationID = enhancementsRegistration(for: provider)?.id {
+            let modelByRegistration = enhancementsProviderSelectedModelsByRegistration[registrationID.uuidString] ?? ""
+            if !modelByRegistration.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return normalizedEnhancementsModelID(modelByRegistration, for: provider)
+            }
+        }
+
         let model = enhancementsProviderSelectedModels[provider.rawValue] ?? ""
         return normalizedEnhancementsModelID(model, for: provider)
+    }
+
+    func enhancementsSelectedModel(for registrationID: UUID) -> String {
+        guard let registration = enhancementsRegistration(for: registrationID) else { return "" }
+        let model = enhancementsProviderSelectedModelsByRegistration[registrationID.uuidString] ?? ""
+        let normalizedModel = normalizedEnhancementsModelID(model, for: registration.provider)
+        if !normalizedModel.isEmpty {
+            return normalizedModel
+        }
+        return enhancementsSelectedModel(for: registration.provider)
     }
 
     /// Resolves the runtime configuration for Enhancements (post-processing + Q&A).
@@ -87,9 +336,25 @@ public extension AppSettingsStore {
 
     func resolvedEnhancementsAIConfiguration(for mode: IntelligenceKernelMode) -> AIConfiguration {
         let selection = enhancementsSelection(for: mode)
-        let provider = selection.provider
-        let baseURL = provider == .custom ? aiConfiguration.baseURL : provider.defaultBaseURL
-        let selectedModel = normalizedEnhancementsModelID(selection.selectedModel, for: provider)
+        let registration = enhancementsRegistration(for: selection.registrationID)
+        let provider = registration?.provider ?? selection.provider
+        let baseURL: String = if let registration {
+            registration.resolvedBaseURL
+        } else if provider == .custom {
+            aiConfiguration.baseURL
+        } else {
+            provider.defaultBaseURL
+        }
+
+        let selectionModel = selection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let selectedModel: String = if !selectionModel.isEmpty {
+            normalizedEnhancementsModelID(selectionModel, for: provider)
+        } else if let registrationID = selection.registrationID {
+            enhancementsSelectedModel(for: registrationID)
+        } else {
+            enhancementsSelectedModel(for: provider)
+        }
+
         return AIConfiguration(
             provider: provider,
             baseURL: baseURL,
@@ -120,7 +385,8 @@ public extension AppSettingsStore {
         apiKeyExists: ((AIProvider) -> Bool)?
     ) -> EnhancementsInferenceReadinessIssue? {
         let config = resolvedEnhancementsAIConfiguration(for: mode)
-        let provider = enhancementsSelection(for: mode).provider
+        let selection = enhancementsSelection(for: mode)
+        let provider = enhancementsRegistration(for: selection.registrationID)?.provider ?? selection.provider
         let hasKey = apiKeyExists?(provider) ?? KeychainManager.existsAPIKey(for: provider)
         let hasModel = !config.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
@@ -161,32 +427,47 @@ public extension AppSettingsStore {
     }
 
     func backfillEnhancementsSelectionModelsIfNeeded() {
+        let normalizedRegistrations = Self.normalizedEnhancementsProviderRegistrationsForBackfill(
+            enhancementsProviderRegistrations
+        )
         var updatedProviderSelectedModels = enhancementsProviderSelectedModels
+        var updatedProviderSelectedModelsByRegistration = enhancementsProviderSelectedModelsByRegistration
+
         let updatedMeetingSelection = Self.withBackfilledEnhancementsModel(
             for: enhancementsAISelection,
             providerSelectedModels: &updatedProviderSelectedModels,
+            providerSelectedModelsByRegistration: &updatedProviderSelectedModelsByRegistration,
+            registrations: normalizedRegistrations,
             legacyConfiguration: aiConfiguration
         )
         let updatedDictationSelection = Self.withBackfilledEnhancementsModel(
             for: enhancementsDictationAISelection,
             providerSelectedModels: &updatedProviderSelectedModels,
+            providerSelectedModelsByRegistration: &updatedProviderSelectedModelsByRegistration,
+            registrations: normalizedRegistrations,
             legacyConfiguration: aiConfiguration
         )
 
-        guard updatedMeetingSelection != enhancementsAISelection
+        guard normalizedRegistrations != enhancementsProviderRegistrations
+            || updatedMeetingSelection != enhancementsAISelection
             || updatedDictationSelection != enhancementsDictationAISelection
             || updatedProviderSelectedModels != enhancementsProviderSelectedModels
+            || updatedProviderSelectedModelsByRegistration != enhancementsProviderSelectedModelsByRegistration
         else {
             return
         }
 
+        enhancementsProviderRegistrations = normalizedRegistrations
         enhancementsAISelection = updatedMeetingSelection
         enhancementsDictationAISelection = updatedDictationSelection
         enhancementsProviderSelectedModels = updatedProviderSelectedModels
+        enhancementsProviderSelectedModelsByRegistration = updatedProviderSelectedModelsByRegistration
 
+        Self.persistBackfilledProviderRegistrations(enhancementsProviderRegistrations)
         Self.persistBackfilledEnhancementsSelection(enhancementsAISelection)
         Self.persistBackfilledDictationSelection(enhancementsDictationAISelection)
         Self.persistBackfilledProviderModels(enhancementsProviderSelectedModels)
+        Self.persistBackfilledProviderModelsByRegistration(enhancementsProviderSelectedModelsByRegistration)
     }
 
     func setEnhancementsProviderSelectedModel(_ model: String, for provider: AIProvider) {
@@ -198,6 +479,23 @@ public extension AppSettingsStore {
             updated[provider.rawValue] = normalizedModel
         }
         enhancementsProviderSelectedModels = updated
+
+        if let registrationID = enhancementsRegistration(for: provider)?.id {
+            setEnhancementsProviderSelectedModel(normalizedModel, for: registrationID)
+        }
+    }
+
+    func setEnhancementsProviderSelectedModel(_ model: String, for registrationID: UUID) {
+        guard let registration = enhancementsRegistration(for: registrationID) else { return }
+        let normalizedModel = normalizedEnhancementsModelID(model, for: registration.provider)
+
+        var updated = enhancementsProviderSelectedModelsByRegistration
+        if normalizedModel.isEmpty {
+            updated.removeValue(forKey: registrationID.uuidString)
+        } else {
+            updated[registrationID.uuidString] = normalizedModel
+        }
+        enhancementsProviderSelectedModelsByRegistration = updated
     }
 }
 
@@ -205,6 +503,8 @@ private extension AppSettingsStore {
     static let enhancementsSelectionStorageKey = "enhancementsAISelection"
     static let enhancementsDictationSelectionStorageKey = "enhancementsDictationAISelection"
     static let enhancementsProviderModelsStorageKey = "enhancementsProviderSelectedModels"
+    static let enhancementsProviderRegistrationsStorageKey = "enhancementsProviderRegistrations"
+    static let enhancementsProviderModelsByRegistrationStorageKey = "enhancementsProviderSelectedModelsByRegistration"
 
     static func persistBackfilledEnhancementsSelection(_ selection: EnhancementsAISelection) {
         guard let data = try? JSONEncoder().encode(selection) else { return }
@@ -219,6 +519,16 @@ private extension AppSettingsStore {
     static func persistBackfilledProviderModels(_ models: [String: String]) {
         guard let data = try? JSONEncoder().encode(models) else { return }
         UserDefaults.standard.set(data, forKey: enhancementsProviderModelsStorageKey)
+    }
+
+    static func persistBackfilledProviderRegistrations(_ registrations: [EnhancementsProviderRegistration]) {
+        guard let data = try? JSONEncoder().encode(registrations) else { return }
+        UserDefaults.standard.set(data, forKey: enhancementsProviderRegistrationsStorageKey)
+    }
+
+    static func persistBackfilledProviderModelsByRegistration(_ models: [String: String]) {
+        guard let data = try? JSONEncoder().encode(models) else { return }
+        UserDefaults.standard.set(data, forKey: enhancementsProviderModelsByRegistrationStorageKey)
     }
 
     static func normalizedGoogleEnhancementsModelID(_ model: String) -> String {
@@ -239,40 +549,115 @@ private extension AppSettingsStore {
     static func withBackfilledEnhancementsModel(
         for selection: EnhancementsAISelection,
         providerSelectedModels: inout [String: String],
+        providerSelectedModelsByRegistration: inout [String: String],
+        registrations: [EnhancementsProviderRegistration],
         legacyConfiguration: AIConfiguration
     ) -> EnhancementsAISelection {
-        let providerKey = selection.provider.rawValue
+        let registration = if let registrationID = selection.registrationID {
+            registrations.first(where: { $0.id == registrationID })
+        } else {
+            registrations.first(where: { $0.provider == selection.provider })
+        }
+
+        let provider = registration?.provider ?? selection.provider
+        let providerKey = provider.rawValue
         let normalizedSelectedModel = normalizedEnhancementsModelID(
             selection.selectedModel,
-            for: selection.provider
+            for: provider
         )
 
         if !normalizedSelectedModel.isEmpty {
             providerSelectedModels[providerKey] = normalizedSelectedModel
-            return EnhancementsAISelection(provider: selection.provider, selectedModel: normalizedSelectedModel)
+            if let registration {
+                providerSelectedModelsByRegistration[registration.id.uuidString] = normalizedSelectedModel
+            }
+            return EnhancementsAISelection(
+                provider: provider,
+                selectedModel: normalizedSelectedModel,
+                registrationID: registration?.id
+            )
+        }
+
+        if let registration,
+           let registrationModel = providerSelectedModelsByRegistration[registration.id.uuidString].map({
+               normalizedEnhancementsModelID($0, for: provider)
+           }),
+           !registrationModel.isEmpty
+        {
+            providerSelectedModels[providerKey] = registrationModel
+            return EnhancementsAISelection(
+                provider: provider,
+                selectedModel: registrationModel,
+                registrationID: registration.id
+            )
         }
 
         if let providerModel = providerSelectedModels[providerKey].map({
-            normalizedEnhancementsModelID($0, for: selection.provider)
+            normalizedEnhancementsModelID($0, for: provider)
         }),
             !providerModel.isEmpty
         {
             providerSelectedModels[providerKey] = providerModel
-            return EnhancementsAISelection(provider: selection.provider, selectedModel: providerModel)
+            if let registration {
+                providerSelectedModelsByRegistration[registration.id.uuidString] = providerModel
+            }
+            return EnhancementsAISelection(
+                provider: provider,
+                selectedModel: providerModel,
+                registrationID: registration?.id
+            )
         }
 
         let normalizedLegacyModel = normalizedEnhancementsModelID(
             legacyConfiguration.selectedModel,
-            for: selection.provider
+            for: provider
         )
-        if legacyConfiguration.provider == selection.provider,
+        if legacyConfiguration.provider == provider,
            !normalizedLegacyModel.isEmpty
         {
             providerSelectedModels[providerKey] = normalizedLegacyModel
-            return EnhancementsAISelection(provider: selection.provider, selectedModel: normalizedLegacyModel)
+            if let registration {
+                providerSelectedModelsByRegistration[registration.id.uuidString] = normalizedLegacyModel
+            }
+            return EnhancementsAISelection(
+                provider: provider,
+                selectedModel: normalizedLegacyModel,
+                registrationID: registration?.id
+            )
         }
 
         providerSelectedModels.removeValue(forKey: providerKey)
-        return EnhancementsAISelection(provider: selection.provider, selectedModel: "")
+        if let registration {
+            providerSelectedModelsByRegistration.removeValue(forKey: registration.id.uuidString)
+        }
+        return EnhancementsAISelection(
+            provider: provider,
+            selectedModel: "",
+            registrationID: registration?.id
+        )
+    }
+
+    static func normalizedEnhancementsProviderRegistrationsForBackfill(
+        _ registrations: [EnhancementsProviderRegistration]
+    ) -> [EnhancementsProviderRegistration] {
+        var seenIDs = Set<UUID>()
+        var seenBuiltInProviders = Set<AIProvider>()
+        var normalized: [EnhancementsProviderRegistration] = []
+        normalized.reserveCapacity(registrations.count)
+
+        for var registration in registrations {
+            guard seenIDs.insert(registration.id).inserted else { continue }
+            registration.normalizeInPlace()
+
+            if registration.isBuiltInSingleton,
+               !seenBuiltInProviders.insert(registration.provider).inserted
+            {
+                continue
+            }
+
+            normalized.append(registration)
+        }
+
+        return normalized
     }
 }

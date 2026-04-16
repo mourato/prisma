@@ -399,6 +399,14 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
     }
 
     private func getAPIKey(for provider: AIProvider) throws -> String {
+        let meetingSelectionProvider = settings.enhancementsSelection(for: .meeting).provider
+        if provider == meetingSelectionProvider,
+           let modeKey = settings.enhancementsAPIKey(for: .meeting),
+           !modeKey.isEmpty
+        {
+            return modeKey
+        }
+
         let key = try apiKeyProvider(provider)
         guard !key.isEmpty else {
             throw MeetingQAError.noAPIConfigured
@@ -407,6 +415,13 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
     }
 
     private func apiKeyExists(for provider: AIProvider) -> Bool {
+        let meetingSelectionProvider = settings.enhancementsSelection(for: .meeting).provider
+        if provider == meetingSelectionProvider,
+           let modeKey = settings.enhancementsAPIKey(for: .meeting)
+        {
+            return !modeKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+
         guard let key = try? apiKeyProvider(provider) else {
             return false
         }

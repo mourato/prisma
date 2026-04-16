@@ -28,7 +28,7 @@ extension PostProcessingService {
     func performAIRequest(context: ProviderRequestContext) async throws -> String {
         let requestStartedAt = Date()
         let config = settings.resolvedEnhancementsAIConfiguration(for: context.mode)
-        let apiKey = try getAPIKey(for: config.provider)
+        let apiKey = try getAPIKey(for: context.mode, provider: config.provider)
         let url = try buildURL(for: config, apiKey: apiKey)
 
         var request = URLRequest(url: url)
@@ -76,7 +76,7 @@ extension PostProcessingService {
     func performCustomAIRequest(context: CustomProviderRequestContext) async throws -> String {
         let requestStartedAt = Date()
         let config = settings.resolvedEnhancementsAIConfiguration(for: context.mode)
-        let apiKey = try getAPIKey(for: config.provider)
+        let apiKey = try getAPIKey(for: context.mode, provider: config.provider)
         let url = try buildURL(for: config, apiKey: apiKey)
 
         var request = URLRequest(url: url)
@@ -132,10 +132,12 @@ extension PostProcessingService {
         return false
     }
 
-    func getAPIKey(for provider: AIProvider) throws -> String {
-        guard let apiKey = try? KeychainManager.retrieveAPIKey(for: provider),
-              !apiKey.isEmpty
-        else {
+    func getAPIKey(for mode: IntelligenceKernelMode, provider: AIProvider) throws -> String {
+        if let modeKey = settings.enhancementsAPIKey(for: mode), !modeKey.isEmpty {
+            return modeKey
+        }
+
+        guard let apiKey = try? KeychainManager.retrieveAPIKey(for: provider), !apiKey.isEmpty else {
             throw PostProcessingError.noAPIConfigured
         }
         return apiKey

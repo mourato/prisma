@@ -79,6 +79,106 @@ extension AppSettingsStore {
         return normalized
     }
 
+    static func loadEnhancementsProviderRegistrations(
+        aiConfiguration: AIConfiguration,
+        meetingSelection: EnhancementsAISelection,
+        dictationSelection: EnhancementsAISelection,
+        legacyProviderSelectedModels: [String: String]
+    ) -> [EnhancementsProviderRegistration] {
+        if let loaded = loadDecoded(
+            [EnhancementsProviderRegistration].self,
+            forKey: Keys.enhancementsProviderRegistrations
+        ) {
+            let normalizedLoaded = normalizedEnhancementsProviderRegistrations(loaded)
+            if !normalizedLoaded.isEmpty {
+                return normalizedLoaded
+            }
+        }
+
+        return migratedEnhancementsProviderRegistrations(
+            aiConfiguration: aiConfiguration,
+            meetingSelection: meetingSelection,
+            dictationSelection: dictationSelection,
+            legacyProviderSelectedModels: legacyProviderSelectedModels
+        )
+    }
+
+    static func normalizedEnhancementsSelection(
+        _ selection: EnhancementsAISelection,
+        registrations: [EnhancementsProviderRegistration]
+    ) -> EnhancementsAISelection {
+        guard !registrations.isEmpty else {
+            var cleared = selection
+            cleared.registrationID = nil
+            return cleared
+        }
+
+        var normalized = selection
+
+        if let registrationID = selection.registrationID,
+           let registration = registrations.first(where: { $0.id == registrationID })
+        {
+            normalized.provider = registration.provider
+            normalized.registrationID = registration.id
+            return normalized
+        }
+
+        normalized.registrationID = registrations.first(where: { $0.provider == selection.provider })?.id
+        return normalized
+    }
+
+    static func loadEnhancementsProviderSelectedModelsByRegistration(
+        registrations: [EnhancementsProviderRegistration],
+        legacyProviderSelectedModels: [String: String],
+        meetingSelection: EnhancementsAISelection,
+        dictationSelection: EnhancementsAISelection
+    ) -> [String: String] {
+        let validRegistrationIDs = Set(registrations.map { $0.id.uuidString })
+        let loaded = loadDecoded(
+            [String: String].self,
+            forKey: Keys.enhancementsProviderSelectedModelsByRegistration
+        ) ?? [:]
+
+        var normalized: [String: String] = [:]
+        for (registrationID, model) in loaded {
+            guard validRegistrationIDs.contains(registrationID) else { continue }
+            let trimmedModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedModel.isEmpty else { continue }
+            normalized[registrationID] = trimmedModel
+        }
+
+        let firstRegistrationIDByProvider = Dictionary(
+            registrations.map { ($0.provider, $0.id.uuidString) },
+            uniquingKeysWith: { current, _ in current }
+        )
+
+        for (providerRawValue, model) in legacyProviderSelectedModels {
+            guard let provider = AIProvider(rawValue: providerRawValue),
+                  let registrationID = firstRegistrationIDByProvider[provider],
+                  normalized[registrationID] == nil
+            else {
+                continue
+            }
+            normalized[registrationID] = model
+        }
+
+        let meetingModel = meetingSelection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let registrationID = meetingSelection.registrationID?.uuidString,
+           !meetingModel.isEmpty
+        {
+            normalized[registrationID] = meetingModel
+        }
+
+        let dictationModel = dictationSelection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let registrationID = dictationSelection.registrationID?.uuidString,
+           !dictationModel.isEmpty
+        {
+            normalized[registrationID] = dictationModel
+        }
+
+        return normalized
+    }
+
     static func loadTranscriptionDictationSelection() -> TranscriptionProviderSelection {
         guard let selection = loadDecoded(
             TranscriptionProviderSelection.self,
@@ -154,5 +254,82 @@ extension AppSettingsStore {
     static func loadDictationPresetKey(fallback: PresetShortcutKey) -> PresetShortcutKey {
         let rawValue = UserDefaults.standard.string(forKey: Keys.dictationSelectedPresetKey)
         return rawValue.flatMap { PresetShortcutKey(rawValue: $0) } ?? fallback
+    }
+}
+
+private extension AppSettingsStore {
+    static func normalizedEnhancementsProviderRegistrations(
+        _ registrations: [EnhancementsProviderRegistration]
+    ) -> [EnhancementsProviderRegistration] {
+        var seenIDs = Set<UUID>()
+        var seenBuiltInProviders = Set<AIProvider>()
+        var normalized: [EnhancementsProviderRegistration] = []
+        normalized.reserveCapacity(registrations.count)
+
+        for var registration in registrations {
+            guard seenIDs.insert(registration.id).inserted else { continue }
+            registration.normalizeInPlace()
+
+            if registration.isBuiltInSingleton,
+               !seenBuiltInProviders.insert(registration.provider).inserted
+            {
+                continue
+            }
+
+            normalized.append(registration)
+        }
+
+        return normalized
+    }
+
+    static func migratedEnhancementsProviderRegistrations(
+        aiConfiguration: AIConfiguration,
+        meetingSelection: EnhancementsAISelection,
+        dictationSelection: EnhancementsAISelection,
+        legacyProviderSelectedModels: [String: String]
+    ) -> [EnhancementsProviderRegistration] {
+        var registrations: [EnhancementsProviderRegistration] = []
+
+        let selectedProviders = Set([
+            aiConfiguration.provider,
+            meetingSelection.provider,
+            dictationSelection.provider,
+        ])
+
+        for provider in AIProvider.allCases where provider != .custom {
+            let hasLegacyModel = legacyProviderSelectedModels[provider.rawValue] != nil
+            let shouldRegister = KeychainManager.existsAPIKey(for: provider)
+                || selectedProviders.contains(provider)
+                || hasLegacyModel
+
+            guard shouldRegister else { continue }
+
+            registrations.append(
+                EnhancementsProviderRegistration(
+                    provider: provider,
+                    displayName: provider.displayName
+                )
+            )
+        }
+
+        let normalizedCustomBaseURL = aiConfiguration.baseURL
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasLegacyCustomModel = legacyProviderSelectedModels[AIProvider.custom.rawValue] != nil
+        let shouldRegisterCustom = KeychainManager.existsAPIKey(for: .custom)
+            || selectedProviders.contains(.custom)
+            || hasLegacyCustomModel
+            || !normalizedCustomBaseURL.isEmpty
+
+        if shouldRegisterCustom {
+            registrations.append(
+                EnhancementsProviderRegistration(
+                    provider: .custom,
+                    displayName: AIProvider.custom.displayName,
+                    baseURLOverride: normalizedCustomBaseURL.isEmpty ? nil : normalizedCustomBaseURL
+                )
+            )
+        }
+
+        return normalizedEnhancementsProviderRegistrations(registrations)
     }
 }

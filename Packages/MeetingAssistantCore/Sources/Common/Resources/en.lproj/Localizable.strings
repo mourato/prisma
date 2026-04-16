@@ -275,6 +275,7 @@
 "settings.enhancements.provider.groq.desc" = "Groq-hosted OpenAI-compatible models with low-latency inference.";
 "settings.enhancements.provider.google.desc" = "Google Gemini models for post-processing and meeting Q&A.";
 "settings.enhancements.provider.custom.desc" = "OpenAI-compatible custom endpoint for internal or proxy providers.";
+"settings.enhancements.provider.custom.default_name" = "Custom %d";
 "settings.enhancements.badge.recommended" = "Recommended";
 "settings.enhancements.badge.requires_api_key" = "Requires API Key";
 "settings.enhancements.badge.model_picker" = "Model Picker";

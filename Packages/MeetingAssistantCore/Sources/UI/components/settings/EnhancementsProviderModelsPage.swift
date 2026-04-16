@@ -69,11 +69,19 @@ public struct EnhancementsProviderModelsPage: View {
                     isSelectedOption(option, for: target)
                 },
                 onSelect: { option in
-                    postProcessingViewModel.settings.updateEnhancementsSelection(
-                        provider: option.provider,
-                        model: option.modelID,
-                        for: target.mode
-                    )
+                    if let registrationID = option.registrationID {
+                        postProcessingViewModel.settings.updateEnhancementsSelection(
+                            registrationID: registrationID,
+                            model: option.modelID,
+                            for: target.mode
+                        )
+                    } else {
+                        postProcessingViewModel.settings.updateEnhancementsSelection(
+                            provider: option.provider,
+                            model: option.modelID,
+                            for: target.mode
+                        )
+                    }
                     modelSelectionTarget = nil
                 },
                 onCancel: {
@@ -368,11 +376,12 @@ public struct EnhancementsProviderModelsPage: View {
     }
 
     private func selectionSummary(for selection: EnhancementsAISelection) -> String {
+        let providerName = postProcessingViewModel.settings.enhancementsProviderDisplayName(for: selection)
         let model = selection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !model.isEmpty else {
-            return "settings.enhancements.provider_models.summary.no_model".localized(with: selection.provider.displayName)
+            return "settings.enhancements.provider_models.summary.no_model".localized(with: providerName)
         }
-        return "settings.enhancements.provider_models.summary".localized(with: selection.provider.displayName, model)
+        return "settings.enhancements.provider_models.summary".localized(with: providerName, model)
     }
 
     private func isSelectedOption(_ option: EnhancementsProviderModelOption, for target: ModelSelectionTarget) -> Bool {
@@ -381,6 +390,13 @@ public struct EnhancementsProviderModelsPage: View {
             postProcessingViewModel.settings.enhancementsAISelection
         case .dictation:
             postProcessingViewModel.settings.enhancementsDictationAISelection
+        }
+
+        if let selectedRegistrationID = selection.registrationID,
+           let optionRegistrationID = option.registrationID
+        {
+            return selectedRegistrationID == optionRegistrationID
+                && selection.selectedModel == option.modelID
         }
 
         return selection.provider == option.provider && selection.selectedModel == option.modelID

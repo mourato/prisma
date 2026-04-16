@@ -9,6 +9,8 @@ public extension AppSettingsStore {
         enhancementsAISelection = .default
         enhancementsDictationAISelection = .default
         enhancementsProviderSelectedModels = [:]
+        enhancementsProviderRegistrations = []
+        enhancementsProviderSelectedModelsByRegistration = [:]
         transcriptionDictationSelection = .default
         transcriptionProviderSelectedModels = [:]
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
