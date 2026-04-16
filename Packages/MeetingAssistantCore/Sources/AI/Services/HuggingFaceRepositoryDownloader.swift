@@ -9,15 +9,18 @@ enum HuggingFaceRepositoryDownloader {
     }
 
     enum DownloadError: LocalizedError {
-        case accessDenied(repoPath: String)
+        case accessDenied(repoPath: String, hasToken: Bool)
         case invalidResponse(statusCode: Int, path: String)
 
         var errorDescription: String? {
             switch self {
-            case let .accessDenied(repoPath):
-                "Access denied when reading Hugging Face repository: \(repoPath)."
+            case let .accessDenied(repoPath, hasToken):
+                if hasToken {
+                    return "Access denied when reading Hugging Face repository: \(repoPath). The token is present but does not have permission for this repository."
+                }
+                return "Access denied when reading Hugging Face repository: \(repoPath). No Hugging Face token was detected in the app process (HF_TOKEN/HUGGING_FACE_HUB_TOKEN/HUGGINGFACEHUB_API_TOKEN). Apps launched from Finder/DMG do not inherit shell environment variables."
             case let .invalidResponse(statusCode, path):
-                "Hugging Face request failed with HTTP \(statusCode) for path: \(path)."
+                return "Hugging Face request failed with HTTP \(statusCode) for path: \(path)."
             }
         }
     }
@@ -36,7 +39,7 @@ enum HuggingFaceRepositoryDownloader {
         }
 
         if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-            throw DownloadError.accessDenied(repoPath: repoPath)
+            throw DownloadError.accessDenied(repoPath: repoPath, hasToken: huggingFaceToken() != nil)
         }
 
         guard (200..<300).contains(httpResponse.statusCode) else {
@@ -98,7 +101,7 @@ enum HuggingFaceRepositoryDownloader {
         }
 
         if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-            throw DownloadError.accessDenied(repoPath: repoPath)
+            throw DownloadError.accessDenied(repoPath: repoPath, hasToken: huggingFaceToken() != nil)
         }
 
         guard (200..<300).contains(httpResponse.statusCode) else {

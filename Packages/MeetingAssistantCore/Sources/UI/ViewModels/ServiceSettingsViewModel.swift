@@ -14,6 +14,7 @@ public class ServiceSettingsViewModel: ObservableObject {
     @Published public var modelState: FluidAIModelManager.ModelState = .unloaded
     @Published public var isASRInstalled: Bool = false
     @Published public var isDiarizationLoaded: Bool = false
+    @Published public var asrLastErrorMessage: String?
 
     private let transcriptionClient: TranscriptionClient
     private let settings: AppSettingsStore
@@ -32,6 +33,7 @@ public class ServiceSettingsViewModel: ObservableObject {
         modelState = FluidAIModelManager.shared.modelState
         isASRInstalled = FluidAIModelManager.shared.isASRInstalled
         isDiarizationLoaded = FluidAIModelManager.shared.isDiarizationLoaded
+        asrLastErrorMessage = FluidAIModelManager.shared.lastError
 
         FluidAIModelManager.shared.$modelState
             .receive(on: DispatchQueue.main)
@@ -46,6 +48,11 @@ public class ServiceSettingsViewModel: ObservableObject {
         FluidAIModelManager.shared.$isDiarizationLoaded
             .receive(on: DispatchQueue.main)
             .assign(to: \.isDiarizationLoaded, on: self)
+            .store(in: &cancellables)
+
+        FluidAIModelManager.shared.$lastError
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.asrLastErrorMessage, on: self)
             .store(in: &cancellables)
 
         settings.$modelResidencyTimeout
@@ -173,6 +180,14 @@ public class ServiceSettingsViewModel: ObservableObject {
 
     public var isASRDownloadInProgress: Bool {
         modelState == .downloading || modelState == .loading
+    }
+
+    public var cohereDownloadErrorMessage: String? {
+        guard isMeetingLocalCohereSelected else { return nil }
+        guard !isMeetingLocalCohereInstalled else { return nil }
+        guard modelState == .error else { return nil }
+        let message = asrLastErrorMessage?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (message?.isEmpty == false) ? message : nil
     }
 
     public var modelResidencyTimeoutOptions: [AppSettingsStore.ModelResidencyTimeoutOption] {

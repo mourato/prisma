@@ -461,6 +461,7 @@
 "settings.service.transcription_provider.local_cohere_unavailable.message" = "Instale a runtime local Cohere antes de usar esse modelo no modo Reunião.";
 "settings.service.transcription_provider.download_cohere_coming_soon" = "Baixar Modelo Cohere";
 "settings.service.transcription_provider.download_cohere_coming_soon.help" = "Exige acesso ao repositório do modelo CoreML da Cohere no Hugging Face.";
+"settings.service.transcription_provider.cohere_download_failed.title" = "Falha ao baixar o modelo Cohere";
 "settings.service.model_residency_timeout" = "Descarregar modelo da RAM:";
 "settings.service.model_residency_timeout.help" = "Aplica-se aos modelos locais de transcrição e diarização. Apenas RAM; os arquivos baixados permanecem no disco.";
 "settings.service.model_residency_timeout.option.5m" = "5 minutos";

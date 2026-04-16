@@ -137,6 +137,14 @@ public struct ServiceTranscriptionProviderSection: View {
                     .controlSize(.regular)
                     .disabled(viewModel.isASRDownloadInProgress)
                     .help("settings.service.transcription_provider.download_cohere_coming_soon.help".localized)
+
+                    if let errorMessage = viewModel.cohereDownloadErrorMessage {
+                        DSCallout(
+                            kind: .error,
+                            title: "settings.service.transcription_provider.cohere_download_failed.title".localized,
+                            message: errorMessage
+                        )
+                    }
                 }
             }
         }

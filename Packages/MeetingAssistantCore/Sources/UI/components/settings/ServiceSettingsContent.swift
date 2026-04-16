@@ -67,7 +67,7 @@ public struct ServiceSettingsContent: View {
 
                         HStack {
                             VStack(alignment: .leading) {
-                                Text("settings.service.asr_model_name".localized)
+                                Text(viewModel.meetingLocalModelDisplayName)
                                     .fontWeight(.medium)
                                 Text(asrStatusText)
                                     .font(.caption2)
