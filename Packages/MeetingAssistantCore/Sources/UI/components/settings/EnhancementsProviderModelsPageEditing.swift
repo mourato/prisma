@@ -16,7 +16,7 @@ extension EnhancementsProviderModelsPage {
         draftBaseURL = provider == .custom
             ? postProcessingViewModel.settings.aiConfiguration.baseURL
             : provider.defaultBaseURL
-        draftIconSystemName = provider == .custom ? provider.icon : nil
+        draftIconSystemName = nil
         draftAPIKey = ""
         draftHasSavedAPIKey = viewModel.hasSavedEnhancementsAPIKey(for: nil, provider: provider)
         draftConnectionStatus = draftHasSavedAPIKey ? .success : .unknown
@@ -258,11 +258,12 @@ extension EnhancementsProviderModelsPage {
 
         let resolvedIconSystemName: String? = if provider == .custom {
             if let normalizedIconSystemName,
-               EnhancementsProviderEditorSheet.curatedCustomProviderIcons.contains(normalizedIconSystemName)
+               EnhancementsProviderEditorSheet.curatedCustomProviderIcons.contains(normalizedIconSystemName),
+               normalizedIconSystemName != provider.icon
             {
                 normalizedIconSystemName
             } else {
-                provider.icon
+                nil
             }
         } else {
             nil

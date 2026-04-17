@@ -287,7 +287,7 @@
 "settings.enhancements.providers.editor.title_edit" = "Editar provedor";
 "settings.enhancements.providers.editor.provider_label" = "Provedor";
 "settings.enhancements.providers.editor.name" = "Nome";
-"settings.enhancements.providers.editor.icon" = "Icone";
+"settings.enhancements.providers.editor.icon" = "Ícone";
 "settings.enhancements.providers.editor.icon_help" = "Escolha como este provedor customizado aparece na lista.";
 "settings.enhancements.providers.editor.remove_api_and_edit" = "Remover API e editar";
 "settings.enhancements.providers.editor.create_failed" = "Não foi possível criar o registro do provedor.";

@@ -56,13 +56,17 @@ public struct EnhancementsProviderAvatar: View {
 
     private var resolvedSymbolName: String {
         guard provider == .custom,
-              let customIconName,
-              !customIconName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+              let customIconName
         else {
             return provider.icon
         }
 
-        return customIconName
+        let trimmedCustomIconName = customIconName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedCustomIconName.isEmpty else {
+            return provider.icon
+        }
+
+        return trimmedCustomIconName
     }
 
     private var logoImage: Image? {
