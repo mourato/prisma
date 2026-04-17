@@ -51,14 +51,16 @@ public extension AppSettingsStore {
     func addEnhancementsProviderRegistration(
         provider: AIProvider,
         displayName: String? = nil,
-        baseURLOverride: String? = nil
+        baseURLOverride: String? = nil,
+        iconSystemName: String? = nil
     ) -> EnhancementsProviderRegistration? {
         guard canAddEnhancementsProviderRegistration(provider) else { return nil }
 
         let registration = EnhancementsProviderRegistration(
             provider: provider,
             displayName: displayName ?? defaultRegistrationDisplayName(for: provider),
-            baseURLOverride: provider == .custom ? baseURLOverride : nil
+            baseURLOverride: provider == .custom ? baseURLOverride : nil,
+            iconSystemName: provider == .custom ? iconSystemName : nil
         )
 
         var updated = enhancementsProviderRegistrations

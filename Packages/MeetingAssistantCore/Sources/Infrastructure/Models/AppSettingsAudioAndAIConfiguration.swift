@@ -234,6 +234,7 @@ public struct EnhancementsProviderRegistration: Codable, Identifiable, Equatable
     public var provider: AIProvider
     public var displayName: String
     public var baseURLOverride: String?
+    public var iconSystemName: String?
     public var createdAt: Date
     public var updatedAt: Date
 
@@ -242,6 +243,7 @@ public struct EnhancementsProviderRegistration: Codable, Identifiable, Equatable
         provider: AIProvider,
         displayName: String,
         baseURLOverride: String? = nil,
+        iconSystemName: String? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -249,6 +251,7 @@ public struct EnhancementsProviderRegistration: Codable, Identifiable, Equatable
         self.provider = provider
         self.displayName = displayName
         self.baseURLOverride = baseURLOverride?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.iconSystemName = iconSystemName?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         normalizeInPlace()
@@ -281,8 +284,12 @@ public struct EnhancementsProviderRegistration: Codable, Identifiable, Equatable
         if provider == .custom {
             let trimmedBaseURL = baseURLOverride?.trimmingCharacters(in: .whitespacesAndNewlines)
             baseURLOverride = trimmedBaseURL?.isEmpty == true ? nil : trimmedBaseURL
+
+            let trimmedIconSystemName = iconSystemName?.trimmingCharacters(in: .whitespacesAndNewlines)
+            iconSystemName = trimmedIconSystemName?.isEmpty == true ? nil : trimmedIconSystemName
         } else {
             baseURLOverride = nil
+            iconSystemName = nil
         }
     }
 }

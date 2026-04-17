@@ -3,6 +3,22 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct EnhancementsModelSelectionSheet: View {
+    private struct ProviderGroup: Identifiable {
+        struct Key: Hashable {
+            let provider: AIProvider
+            let registrationID: UUID?
+            let title: String
+        }
+
+        let key: Key
+        var options: [EnhancementsProviderModelOption]
+
+        var id: String {
+            let registrationPart = key.registrationID?.uuidString ?? key.provider.rawValue
+            return "\(registrationPart)::\(key.title)"
+        }
+    }
+
     let options: [EnhancementsProviderModelOption]
     let isSelected: (EnhancementsProviderModelOption) -> Bool
     let onSelect: (EnhancementsProviderModelOption) -> Void
@@ -38,27 +54,17 @@ public struct EnhancementsModelSelectionSheet: View {
                 .padding(.top, 12)
                 .padding(.bottom, 8)
 
-                List(filteredOptions, id: \.id) { option in
-                    Button {
-                        onSelect(option)
-                    } label: {
-                        HStack(spacing: 8) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(option.modelID)
-                                    .font(.body)
-                                    .foregroundStyle(.primary)
-                                Text(option.registrationName ?? option.provider.displayName)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                List {
+                    ForEach(groupedFilteredOptions) { group in
+                        Section {
+                            ForEach(group.options, id: \.id) { option in
+                                optionRow(option)
                             }
-                            Spacer()
-                            if isSelected(option) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(AppDesignSystem.Colors.success)
-                            }
+                        } header: {
+                            Text(group.key.title)
+                                .font(.caption)
                         }
                     }
-                    .buttonStyle(.plain)
                 }
             }
             .toolbar {
@@ -80,6 +86,68 @@ public struct EnhancementsModelSelectionSheet: View {
                 || option.provider.displayName.localizedCaseInsensitiveContains(query)
                 || option.registrationName?.localizedCaseInsensitiveContains(query) == true
         }
+    }
+
+    private var groupedFilteredOptions: [ProviderGroup] {
+        let sortedOptions = filteredOptions.sorted { lhs, rhs in
+            let lhsName = lhs.registrationName ?? lhs.provider.displayName
+            let rhsName = rhs.registrationName ?? rhs.provider.displayName
+
+            if lhsName.caseInsensitiveCompare(rhsName) == .orderedSame {
+                return lhs.modelID.localizedCaseInsensitiveCompare(rhs.modelID) == .orderedAscending
+            }
+
+            return lhsName.localizedCaseInsensitiveCompare(rhsName) == .orderedAscending
+        }
+
+        var groupsByKey: [ProviderGroup.Key: [EnhancementsProviderModelOption]] = [:]
+        var orderedKeys: [ProviderGroup.Key] = []
+
+        for option in sortedOptions {
+            let key = ProviderGroup.Key(
+                provider: option.provider,
+                registrationID: option.registrationID,
+                title: option.registrationName ?? option.provider.displayName
+            )
+
+            if groupsByKey[key] == nil {
+                orderedKeys.append(key)
+                groupsByKey[key] = []
+            }
+
+            groupsByKey[key, default: []].append(option)
+        }
+
+        return orderedKeys.compactMap { key in
+            guard let groupedOptions = groupsByKey[key], !groupedOptions.isEmpty else {
+                return nil
+            }
+
+            return ProviderGroup(
+                key: key,
+                options: groupedOptions
+            )
+        }
+    }
+
+    private func optionRow(_ option: EnhancementsProviderModelOption) -> some View {
+        Button {
+            onSelect(option)
+        } label: {
+            HStack(spacing: 8) {
+                Text(option.modelID)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                if isSelected(option) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(AppDesignSystem.Colors.success)
+                }
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private var searchField: some View {

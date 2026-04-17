@@ -1,4 +1,3 @@
-import AppKit
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -40,6 +39,7 @@ public struct EnhancementsProviderModelsPage: View {
 
     @State var draftDisplayName = ""
     @State var draftBaseURL = ""
+    @State var draftIconSystemName: String?
     @State var draftAPIKey = ""
     @State var draftHasSavedAPIKey = false
     @State var draftConnectionStatus: ConnectionStatus = .unknown
@@ -116,6 +116,7 @@ public struct EnhancementsProviderModelsPage: View {
                 provider: context.provider,
                 displayName: $draftDisplayName,
                 baseURL: $draftBaseURL,
+                iconSystemName: $draftIconSystemName,
                 apiKey: $draftAPIKey,
                 hasSavedAPIKey: draftHasSavedAPIKey,
                 connectionStatus: draftConnectionStatus,
@@ -200,7 +201,10 @@ extension EnhancementsProviderModelsPage {
             beginEditRegistration(registration)
         } label: {
             HStack(alignment: .top, spacing: 12) {
-                providerAvatar(for: registration.provider)
+                EnhancementsProviderAvatar(
+                    provider: registration.provider,
+                    customIconName: registration.iconSystemName
+                )
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
@@ -371,59 +375,6 @@ extension EnhancementsProviderModelsPage {
         }
     }
 
-    func providerAvatar(for provider: AIProvider) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                .fill(provider.logoBackgroundColor)
-                .frame(width: 40, height: 40)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                        .strokeBorder(AppDesignSystem.Colors.separator.opacity(0.18), lineWidth: 1)
-                )
-
-            if let logoImage = providerLogoImage(for: provider) {
-                if let tint = provider.logoTintColor {
-                    logoImage
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundStyle(tint)
-                        .frame(width: 22, height: 22)
-                } else {
-                    logoImage
-                        .renderingMode(.original)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 22, height: 22)
-                }
-            } else {
-                Image(systemName: provider.icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(AppDesignSystem.Colors.accent)
-            }
-        }
-    }
-
-    func providerLogoImage(for provider: AIProvider) -> Image? {
-        guard let logoAssetName = provider.logoAssetName else {
-            return nil
-        }
-
-        let logoURL = Bundle.module.url(forResource: logoAssetName, withExtension: "png")
-            ?? Bundle.module.url(
-                forResource: logoAssetName,
-                withExtension: "png",
-                subdirectory: "ProviderLogos"
-            )
-
-        guard let logoURL,
-              let nsImage = NSImage(contentsOf: logoURL)
-        else {
-            return nil
-        }
-
-        return Image(nsImage: nsImage)
-    }
 }
 
 extension EnhancementsProviderModelsPage {
