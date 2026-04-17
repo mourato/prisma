@@ -27,7 +27,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let validationInterval: TimeInterval = 1.5
         static let retryDelay: UInt64 = 500_000_000 // 500ms
         static let maxRetries = 2
+        #if DEBUG
         static let micDiagnosticsEnabled = true
+        #else
+        static let micDiagnosticsEnabled = false
+        #endif
         static let fallbackSampleRate: Double = 48_000.0
         static let fallbackChannels: Int = 1
         static let fallbackBitRate: Int = 128_000

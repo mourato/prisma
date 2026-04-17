@@ -5,6 +5,7 @@ import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import os.lock
 
 extension RecordingManager {
     struct IncrementalCaptureSupportConfig {
@@ -15,11 +16,96 @@ extension RecordingManager {
         let executionMode: TranscriptionExecutionMode
     }
 
-    private final class SendableIncrementalAudioBufferBox: @unchecked Sendable {
+    final class SendableIncrementalAudioBufferBox: @unchecked Sendable {
         let buffer: AVAudioPCMBuffer
 
         init(buffer: AVAudioPCMBuffer) {
             self.buffer = buffer
+        }
+    }
+
+    final class UncheckedTranscriptionServiceBox: @unchecked Sendable {
+        @MainActor private let value: any TranscriptionService
+
+        @MainActor init(_ value: any TranscriptionService) {
+            self.value = value
+        }
+
+        @MainActor
+        func transcribe(samples: [Float]) async throws -> TranscriptionResponse {
+            try await value.transcribe(samples: samples)
+        }
+    }
+
+    final class UncheckedFinalDiarizationServiceBox: @unchecked Sendable {
+        @MainActor private let value: any TranscriptionServiceFinalDiarization
+
+        @MainActor init(_ value: any TranscriptionServiceFinalDiarization) {
+            self.value = value
+        }
+
+        @MainActor
+        func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment] {
+            try await value.diarize(audioURL: audioURL)
+        }
+
+        @MainActor
+        func assignSpeakers(
+            to segments: [Transcription.Segment],
+            using speakerTimeline: [SpeakerTimelineSegment]
+        ) -> [Transcription.Segment] {
+            value.assignSpeakers(to: segments, using: speakerTimeline)
+        }
+    }
+
+    final class IncrementalBufferForwarder: @unchecked Sendable {
+        private final class ContinuationStorage: @unchecked Sendable {
+            private let lock = OSAllocatedUnfairLock<AsyncStream<SendableIncrementalAudioBufferBox>.Continuation?>(initialState: nil)
+
+            func set(_ continuation: AsyncStream<SendableIncrementalAudioBufferBox>.Continuation?) {
+                lock.withLock { $0 = continuation }
+            }
+
+            func yield(_ buffer: AVAudioPCMBuffer) {
+                let bufferBox = SendableIncrementalAudioBufferBox(buffer: buffer)
+                lock.withLock { $0?.yield(bufferBox) }
+            }
+
+            func finishAndClear() {
+                lock.withLock { continuation in
+                    continuation?.finish()
+                    continuation = nil
+                }
+            }
+        }
+
+        private let continuationStorage = ContinuationStorage()
+        private var processingTask: Task<Void, Never>?
+
+        init(handler: @escaping @Sendable (SendableIncrementalAudioBufferBox) async -> Void) {
+            let stream = AsyncStream<SendableIncrementalAudioBufferBox> { continuation in
+                continuationStorage.set(continuation)
+            }
+
+            processingTask = Task(priority: .userInitiated) {
+                for await bufferBox in stream {
+                    await handler(bufferBox)
+                }
+            }
+        }
+
+        deinit {
+            stop()
+        }
+
+        func enqueue(_ buffer: AVAudioPCMBuffer) {
+            continuationStorage.yield(buffer)
+        }
+
+        func stop() {
+            continuationStorage.finishAndClear()
+            processingTask?.cancel()
+            processingTask = nil
         }
     }
 
@@ -42,15 +128,44 @@ extension RecordingManager {
         transcriptionClient.warmupModelIfNeededInBackground()
     }
 
+    func scheduleDeferredIncrementalWarmupIfNeeded(meetingID: UUID) {
+        deferredIncrementalWarmupTask?.cancel()
+
+        guard incrementalDictationCoordinator != nil || incrementalMeetingCoordinator != nil else {
+            deferredIncrementalWarmupTask = nil
+            return
+        }
+
+        deferredIncrementalWarmupTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: Constants.deferredIncrementalWarmupDelay)
+            guard let self else { return }
+            guard !Task.isCancelled else { return }
+            guard isRecording, currentMeeting?.id == meetingID else { return }
+            warmupIncrementalTranscriptionIfNeeded()
+        }
+    }
+
+    func cancelDeferredIncrementalWarmup() {
+        deferredIncrementalWarmupTask?.cancel()
+        deferredIncrementalWarmupTask = nil
+    }
+
+    func clearIncrementalBufferForwarder(on recorder: AudioRecorder?) {
+        recorder?.onMixedAudioBuffer = nil
+        incrementalBufferForwarder?.stop()
+        incrementalBufferForwarder = nil
+    }
+
     func installIncrementalBufferForwarder(
         on recorder: AudioRecorder,
-        handler: @escaping @MainActor (AVAudioPCMBuffer) async -> Void
+        handler: @escaping @Sendable (SendableIncrementalAudioBufferBox) async -> Void
     ) {
-        recorder.onMixedAudioBuffer = { buffer in
-            let bufferBox = SendableIncrementalAudioBufferBox(buffer: buffer)
-            Task { @MainActor in
-                await handler(bufferBox.buffer)
-            }
+        clearIncrementalBufferForwarder(on: recorder)
+
+        let forwarder = IncrementalBufferForwarder(handler: handler)
+        incrementalBufferForwarder = forwarder
+        recorder.onMixedAudioBuffer = { [weak forwarder] buffer in
+            forwarder?.enqueue(buffer)
         }
     }
 

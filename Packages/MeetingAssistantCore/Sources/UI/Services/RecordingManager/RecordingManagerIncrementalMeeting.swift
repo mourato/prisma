@@ -33,13 +33,14 @@ extension RecordingManager {
         }
 
         guard let recorder = micRecorder as? AudioRecorder else { return }
+        let transcriptionClientBox = UncheckedTranscriptionServiceBox(transcriptionClient)
 
         let coordinator = IncrementalMeetingTranscriptionCoordinator(
             transcriptionID: meeting.id,
             meeting: meeting,
             inputSource: resolveInputSourceLabel(for: meeting, recordingSource: source),
             storage: storage,
-            transcriptionClient: transcriptionClient,
+            transcriptionClientBox: transcriptionClientBox,
             callbacks: .init(
                 onProcessedDurationChanged: { [weak self] processedDuration in
                     Task { @MainActor [weak self] in
@@ -52,17 +53,15 @@ extension RecordingManager {
             )
         )
 
-        warmupIncrementalTranscriptionIfNeeded()
-
-        installIncrementalBufferForwarder(on: recorder) { buffer in
-            await coordinator.append(buffer: buffer)
+        installIncrementalBufferForwarder(on: recorder) { bufferBox in
+            await coordinator.append(bufferBox: bufferBox)
         }
 
         do {
             try await coordinator.start()
             incrementalMeetingCoordinator = coordinator
         } catch {
-            recorder.onMixedAudioBuffer = nil
+            clearIncrementalBufferForwarder(on: recorder)
             incrementalMeetingCoordinator = nil
             throw error
         }
@@ -80,7 +79,8 @@ extension RecordingManager {
             for: session.meeting,
             capturePurposeOverride: session.meeting.capturePurpose
         )
-        let finalDiarizationService = transcriptionClient as? any TranscriptionServiceFinalDiarization
+        let finalDiarizationServiceBox = (transcriptionClient as? any TranscriptionServiceFinalDiarization)
+            .map(UncheckedFinalDiarizationServiceBox.init)
 
         let audioDuration = await beginIncrementalFinalizationUI(
             audioURL: audioURL,
@@ -90,7 +90,7 @@ extension RecordingManager {
         let result = try await incrementalMeetingCoordinator.finish(
             audioURL: audioURL,
             diarizationEnabled: diarizationEnabled,
-            finalDiarizationService: finalDiarizationService
+            finalDiarizationServiceBox: finalDiarizationServiceBox
         )
         AppLogger.info(
             "Selected transcription pipeline",
@@ -113,7 +113,7 @@ extension RecordingManager {
 
     func teardownIncrementalMeetingSession() {
         if let recorder = micRecorder as? AudioRecorder {
-            recorder.onMixedAudioBuffer = nil
+            clearIncrementalBufferForwarder(on: recorder)
         }
         incrementalMeetingCoordinator = nil
     }
@@ -128,5 +128,6 @@ extension RecordingManager {
     func cancelIncrementalTranscriptionSessionsIfNeeded() async {
         await cancelIncrementalDictationSessionIfNeeded()
         await cancelIncrementalMeetingSessionIfNeeded()
+        cancelDeferredIncrementalWarmup()
     }
 }

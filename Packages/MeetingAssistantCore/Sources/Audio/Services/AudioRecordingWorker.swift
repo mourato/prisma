@@ -2,6 +2,7 @@ import Atomics
 @preconcurrency import AVFoundation
 import Foundation
 import MeetingAssistantCoreInfrastructure
+import os.lock
 
 // MARK: - Audio Recording Worker
 
@@ -9,6 +10,25 @@ import MeetingAssistantCoreInfrastructure
 /// Extracted from AudioRecorder.swift to adhere to Single Responsibility Principle.
 /// Uses Actor pattern for automatic thread safety isolation.
 actor AudioRecordingWorker {
+        private final class BufferSignalStorage: @unchecked Sendable {
+            private let continuationLock = OSAllocatedUnfairLock<AsyncStream<Void>.Continuation?>(initialState: nil)
+
+            func set(_ continuation: AsyncStream<Void>.Continuation?) {
+                continuationLock.withLock { $0 = continuation }
+            }
+
+            func yield() {
+                continuationLock.withLock { $0?.yield(()) }
+            }
+
+            func finishAndClear() {
+                continuationLock.withLock { continuation in
+                    continuation?.finish()
+                    continuation = nil
+                }
+            }
+        }
+
     struct MeterSnapshot {
         let averagePowerDB: Float
         let peakPowerDB: Float
@@ -39,7 +59,7 @@ actor AudioRecordingWorker {
 
     /// Processing task
     private var processingTask: Task<Void, Never>?
-    private var bufferSignalContinuation: AsyncStream<Void>.Continuation?
+    private let bufferSignalStorage = BufferSignalStorage()
 
     init() {}
 
@@ -98,8 +118,7 @@ actor AudioRecordingWorker {
         // Cancel any existing processing task
         processingTask?.cancel()
         processingTask = nil
-        bufferSignalContinuation?.finish()
-        bufferSignalContinuation = nil
+        bufferSignalStorage.finishAndClear()
 
         // Clear buffer queue
         bufferQueue.clear()
@@ -170,7 +189,7 @@ actor AudioRecordingWorker {
 
         // Start processing task
         let bufferSignalStream = AsyncStream<Void> { continuation in
-            self.bufferSignalContinuation = continuation
+            self.bufferSignalStorage.set(continuation)
         }
 
         processingTask = Task {
@@ -181,13 +200,12 @@ actor AudioRecordingWorker {
     func stop() async -> URL? {
         // Mark as stopping but don't cancel yet - allow loop to drain queue
         _isStopping.store(true, ordering: .relaxed)
-        bufferSignalContinuation?.yield(())
+        bufferSignalStorage.yield()
 
         // Wait for task to finish processing remaining buffers
         await processingTask?.value
         processingTask = nil
-        bufferSignalContinuation?.finish()
-        bufferSignalContinuation = nil
+        bufferSignalStorage.finishAndClear()
 
         // Clear queue after task completes
         bufferQueue.clear()
@@ -204,13 +222,7 @@ actor AudioRecordingWorker {
 
     nonisolated func process(_ buffer: AVAudioPCMBuffer) {
         bufferQueue.enqueue(buffer)
-        Task {
-            await self.notifyBufferAvailable()
-        }
-    }
-
-    private func notifyBufferAvailable() {
-        bufferSignalContinuation?.yield(())
+        bufferSignalStorage.yield()
     }
 
     private func processBuffers(_ bufferSignalStream: AsyncStream<Void>) async {
