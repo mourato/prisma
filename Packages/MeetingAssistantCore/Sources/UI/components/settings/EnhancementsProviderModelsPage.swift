@@ -39,6 +39,7 @@ public struct EnhancementsProviderModelsPage: View {
 
     @State var draftDisplayName = ""
     @State var draftBaseURL = ""
+    @State var draftIconSystemName: String?
     @State var draftAPIKey = ""
     @State var draftHasSavedAPIKey = false
     @State var draftConnectionStatus: ConnectionStatus = .unknown
@@ -115,6 +116,7 @@ public struct EnhancementsProviderModelsPage: View {
                 provider: context.provider,
                 displayName: $draftDisplayName,
                 baseURL: $draftBaseURL,
+                iconSystemName: $draftIconSystemName,
                 apiKey: $draftAPIKey,
                 hasSavedAPIKey: draftHasSavedAPIKey,
                 connectionStatus: draftConnectionStatus,
@@ -199,7 +201,10 @@ extension EnhancementsProviderModelsPage {
             beginEditRegistration(registration)
         } label: {
             HStack(alignment: .top, spacing: 12) {
-                EnhancementsProviderAvatar(provider: registration.provider)
+                EnhancementsProviderAvatar(
+                    provider: registration.provider,
+                    customIconName: registration.iconSystemName
+                )
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {

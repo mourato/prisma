@@ -287,6 +287,8 @@
 "settings.enhancements.providers.editor.title_edit" = "Edit provider";
 "settings.enhancements.providers.editor.provider_label" = "Provider";
 "settings.enhancements.providers.editor.name" = "Name";
+"settings.enhancements.providers.editor.icon" = "Icon";
+"settings.enhancements.providers.editor.icon_help" = "Choose how this custom provider appears in the list.";
 "settings.enhancements.providers.editor.remove_api_and_edit" = "Remove API key and edit";
 "settings.enhancements.providers.editor.create_failed" = "Could not create provider registration.";
 "settings.enhancements.providers.editor.missing_registration" = "Provider registration no longer exists.";

@@ -5,6 +5,7 @@ import SwiftUI
 private struct ValidatedEditorDraft {
     let displayName: String
     let baseURL: String?
+    let iconSystemName: String?
 }
 
 extension EnhancementsProviderModelsPage {
@@ -15,6 +16,7 @@ extension EnhancementsProviderModelsPage {
         draftBaseURL = provider == .custom
             ? postProcessingViewModel.settings.aiConfiguration.baseURL
             : provider.defaultBaseURL
+        draftIconSystemName = provider == .custom ? provider.icon : nil
         draftAPIKey = ""
         draftHasSavedAPIKey = viewModel.hasSavedEnhancementsAPIKey(for: nil, provider: provider)
         draftConnectionStatus = draftHasSavedAPIKey ? .success : .unknown
@@ -30,6 +32,7 @@ extension EnhancementsProviderModelsPage {
     func beginEditRegistration(_ registration: EnhancementsProviderRegistration) {
         draftDisplayName = registration.displayName
         draftBaseURL = registration.provider == .custom ? registration.resolvedBaseURL : registration.provider.defaultBaseURL
+        draftIconSystemName = registration.iconSystemName ?? registration.provider.icon
         draftAPIKey = ""
         draftHasSavedAPIKey = viewModel.hasSavedEnhancementsAPIKey(
             for: registration.id,
@@ -133,7 +136,8 @@ extension EnhancementsProviderModelsPage {
             guard let created = settings.addEnhancementsProviderRegistration(
                 provider: context.provider,
                 displayName: draft.displayName,
-                baseURLOverride: draft.baseURL
+                baseURLOverride: draft.baseURL,
+                iconSystemName: draft.iconSystemName
             ) else {
                 draftErrorMessage = "settings.enhancements.providers.editor.create_failed".localized
                 return nil
@@ -151,6 +155,7 @@ extension EnhancementsProviderModelsPage {
             existing.displayName = draft.displayName
             if existing.provider == .custom {
                 existing.baseURLOverride = draft.baseURL
+                existing.iconSystemName = draft.iconSystemName
             }
             settings.updateEnhancementsProviderRegistration(existing)
             return existing
@@ -212,6 +217,7 @@ extension EnhancementsProviderModelsPage {
         let normalizedDisplayName = draftDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedBaseURL = draftBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedAPIKey = draftAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedIconSystemName = draftIconSystemName?.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if provider == .custom {
             guard !normalizedDisplayName.isEmpty else {
@@ -250,9 +256,22 @@ extension EnhancementsProviderModelsPage {
             nil
         }
 
+        let resolvedIconSystemName: String? = if provider == .custom {
+            if let normalizedIconSystemName,
+               EnhancementsProviderEditorSheet.curatedCustomProviderIcons.contains(normalizedIconSystemName)
+            {
+                normalizedIconSystemName
+            } else {
+                provider.icon
+            }
+        } else {
+            nil
+        }
+
         return ValidatedEditorDraft(
             displayName: resolvedDisplayName,
-            baseURL: resolvedBaseURL
+            baseURL: resolvedBaseURL,
+            iconSystemName: resolvedIconSystemName
         )
     }
 }

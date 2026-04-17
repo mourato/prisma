@@ -9,10 +9,34 @@ public enum EnhancementsProviderEditorMode {
 }
 
 public struct EnhancementsProviderEditorSheet: View {
+    static let curatedCustomProviderIcons: [String] = [
+        "server.rack",
+        "network",
+        "cloud",
+        "terminal",
+        "cpu",
+        "bolt.horizontal",
+        "link",
+        "shield",
+        "lock",
+        "key",
+        "antenna.radiowaves.left.and.right",
+        "globe",
+        "gearshape",
+        "shippingbox",
+        "puzzlepiece",
+        "wrench.and.screwdriver",
+        "sparkles",
+        "brain",
+        "text.bubble",
+        "wave.3.right",
+    ]
+
     let mode: EnhancementsProviderEditorMode
     let provider: AIProvider
     @Binding var displayName: String
     @Binding var baseURL: String
+    @Binding var iconSystemName: String?
     @Binding var apiKey: String
     let hasSavedAPIKey: Bool
     let connectionStatus: ConnectionStatus
@@ -28,6 +52,7 @@ public struct EnhancementsProviderEditorSheet: View {
         provider: AIProvider,
         displayName: Binding<String>,
         baseURL: Binding<String>,
+        iconSystemName: Binding<String?>,
         apiKey: Binding<String>,
         hasSavedAPIKey: Bool,
         connectionStatus: ConnectionStatus,
@@ -42,6 +67,7 @@ public struct EnhancementsProviderEditorSheet: View {
         self.provider = provider
         _displayName = displayName
         _baseURL = baseURL
+        _iconSystemName = iconSystemName
         _apiKey = apiKey
         self.hasSavedAPIKey = hasSavedAPIKey
         self.connectionStatus = connectionStatus
@@ -77,6 +103,8 @@ public struct EnhancementsProviderEditorSheet: View {
                     TextField("https://api.example.com/v1", text: $baseURL)
                         .textFieldStyle(.roundedBorder)
                 }
+
+                customIconSelector
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -175,9 +203,12 @@ public struct EnhancementsProviderEditorSheet: View {
 
     private var providerHeader: some View {
         HStack(spacing: 10) {
-            Image(systemName: provider.icon)
-                .font(.headline)
-                .foregroundStyle(.secondary)
+            EnhancementsProviderAvatar(
+                provider: provider,
+                customIconName: provider == .custom ? resolvedCustomIconSystemName : nil,
+                size: 30,
+                glyphSize: 16
+            )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(provider.displayName)
@@ -189,5 +220,65 @@ public struct EnhancementsProviderEditorSheet: View {
 
             Spacer()
         }
+    }
+
+    private var customIconSelector: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("settings.enhancements.providers.editor.icon".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text("settings.enhancements.providers.editor.icon_help".localized)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(minimum: 24), spacing: 8), count: 5),
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(Self.curatedCustomProviderIcons, id: \.self) { symbolName in
+                    iconOptionButton(symbolName)
+                }
+            }
+        }
+    }
+
+    private func iconOptionButton(_ symbolName: String) -> some View {
+        let isSelected = resolvedCustomIconSystemName == symbolName
+
+        return Button {
+            iconSystemName = symbolName
+        } label: {
+            Image(systemName: symbolName)
+                .font(.system(size: 14, weight: .semibold))
+                .frame(width: 32, height: 32)
+                .foregroundStyle(isSelected ? AppDesignSystem.Colors.accent : .secondary)
+                .background(
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                        .fill(isSelected ? AppDesignSystem.Colors.accent.opacity(0.14) : AppDesignSystem.Colors.subtleFill)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                        .strokeBorder(
+                            isSelected ? AppDesignSystem.Colors.accent : AppDesignSystem.Colors.separator.opacity(0.5),
+                            lineWidth: 1
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+        .help(symbolName)
+        .accessibilityLabel(symbolName)
+    }
+
+    private var resolvedCustomIconSystemName: String {
+        let normalizedIconSystemName = iconSystemName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let normalizedIconSystemName,
+              Self.curatedCustomProviderIcons.contains(normalizedIconSystemName)
+        else {
+            return provider.icon
+        }
+
+        return normalizedIconSystemName
     }
 }

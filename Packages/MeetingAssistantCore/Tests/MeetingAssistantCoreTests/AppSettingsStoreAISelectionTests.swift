@@ -353,6 +353,30 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertNotEqual(firstCustom?.id, secondCustom?.id)
     }
 
+    func testAddEnhancementsProviderRegistration_PersistsCustomIconForCustomProvider() {
+        let registration = settings.addEnhancementsProviderRegistration(
+            provider: .custom,
+            displayName: "Gateway A",
+            baseURLOverride: "https://gateway-a.example/v1",
+            iconSystemName: "terminal"
+        )
+
+        XCTAssertEqual(registration?.iconSystemName, "terminal")
+        XCTAssertEqual(settings.enhancementsRegistrations(for: .custom).first?.iconSystemName, "terminal")
+    }
+
+    func testUpdateEnhancementsProviderRegistration_ClearsCustomIconForBuiltInProvider() {
+        let registration = settings.addEnhancementsProviderRegistration(provider: .openai)
+        var updated = registration
+        updated?.iconSystemName = "terminal"
+
+        if let updated {
+            settings.updateEnhancementsProviderRegistration(updated)
+        }
+
+        XCTAssertNil(settings.enhancementsRegistrations(for: .openai).first?.iconSystemName)
+    }
+
     func testRemoveEnhancementsProviderRegistration_ClearsSelectedEntryModel() throws {
         let custom = settings.addEnhancementsProviderRegistration(
             provider: .custom,
