@@ -24,10 +24,11 @@ public struct EnhancementsProviderPickerSheet: View {
                     onSelect(provider)
                 } label: {
                     HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: provider.icon)
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 24)
+                        EnhancementsProviderAvatar(
+                            provider: provider,
+                            size: 24,
+                            glyphSize: 14
+                        )
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(provider.displayName)
