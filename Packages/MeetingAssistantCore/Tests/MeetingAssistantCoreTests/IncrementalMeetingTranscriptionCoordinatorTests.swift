@@ -8,6 +8,8 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
     func testFinish_WithFinalDiarizationAssignsSpeakersAndPersistsFinalizingCheckpoint() async throws {
         let storage = MockStorageService()
         let transcriptionClient = MockTranscriptionClient()
+        let transcriptionClientBox = RecordingManager.UncheckedTranscriptionServiceBox(transcriptionClient)
+        let finalDiarizationServiceBox = RecordingManager.UncheckedFinalDiarizationServiceBox(transcriptionClient)
         transcriptionClient.mockText = "meeting partial"
         transcriptionClient.mockSegments = [
             Transcription.Segment(
@@ -31,28 +33,34 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
             meeting: makeMeeting(),
             inputSource: "system+microphone",
             storage: storage,
-            transcriptionClient: transcriptionClient,
+            transcriptionClientBox: transcriptionClientBox,
             callbacks: .init(
                 onProcessedDurationChanged: { processedDurationRecorder.values.append($0) }
             )
         )
 
         try await coordinator.start()
-        await coordinator.append(buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)]))
+        await coordinator.append(
+            bufferBox: RecordingManager.SendableIncrementalAudioBufferBox(
+                buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
+            )
+        )
 
         let result = try await coordinator.finish(
             audioURL: URL(fileURLWithPath: "/tmp/meeting-test.wav"),
             diarizationEnabled: true,
-            finalDiarizationService: transcriptionClient
+            finalDiarizationServiceBox: finalDiarizationServiceBox
         )
 
         XCTAssertEqual(transcriptionClient.fileTranscribeCallCount, 0)
         XCTAssertEqual(transcriptionClient.sampleTranscribeCallCount, 1)
         XCTAssertEqual(transcriptionClient.diarizeCallCount, 1)
         XCTAssertEqual(transcriptionClient.assignSpeakersCallCount, 1)
+        let checkpointID = await coordinator.checkpointID
+
         XCTAssertEqual(storage.savedTranscriptions.first?.lifecycleState, .partial)
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .finalizing)
-        XCTAssertEqual(result.checkpointID, coordinator.checkpointID)
+        XCTAssertEqual(result.checkpointID, checkpointID)
         XCTAssertEqual(result.response.segments.map(\.speaker), ["Speaker 1"])
         XCTAssertEqual(result.response.text, "meeting partial")
         XCTAssertFalse(processedDurationRecorder.values.isEmpty)
@@ -61,45 +69,57 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
     func testFinish_WhenWindowTranscriptionFailsMarksFallbackAndPersistsFailedCheckpoint() async throws {
         let storage = MockStorageService()
         let transcriptionClient = MockTranscriptionClient()
+        let transcriptionClientBox = RecordingManager.UncheckedTranscriptionServiceBox(transcriptionClient)
+        let finalDiarizationServiceBox = RecordingManager.UncheckedFinalDiarizationServiceBox(transcriptionClient)
         transcriptionClient.shouldFailTranscription = true
         let coordinator = IncrementalMeetingTranscriptionCoordinator(
             transcriptionID: UUID(),
             meeting: makeMeeting(),
             inputSource: "system+microphone",
             storage: storage,
-            transcriptionClient: transcriptionClient,
+            transcriptionClientBox: transcriptionClientBox,
             callbacks: .init(
                 onProcessedDurationChanged: { _ in }
             )
         )
 
         try await coordinator.start()
-        await coordinator.append(buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)]))
+        await coordinator.append(
+            bufferBox: RecordingManager.SendableIncrementalAudioBufferBox(
+                buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
+            )
+        )
 
         do {
             _ = try await coordinator.finish(
                 audioURL: URL(fileURLWithPath: "/tmp/meeting-test.wav"),
                 diarizationEnabled: true,
-                finalDiarizationService: transcriptionClient
+                finalDiarizationServiceBox: finalDiarizationServiceBox
             )
             XCTFail("Expected finish to throw")
         } catch {}
 
-        XCTAssertTrue(coordinator.requiresLegacyFallback)
-        XCTAssertEqual(coordinator.fallbackReason, .windowTranscriptionFailed)
-        XCTAssertNotNil(coordinator.fallbackError)
+        let requiresLegacyFallback = await coordinator.requiresLegacyFallback
+        let fallbackReason = await coordinator.fallbackReason
+        let fallbackError = await coordinator.fallbackError
+
+        XCTAssertTrue(requiresLegacyFallback)
+        XCTAssertEqual(fallbackReason, .windowTranscriptionFailed)
+        XCTAssertNotNil(fallbackError)
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
     }
 
     func testFinish_WhenNoIncrementalTranscriptIsProduced_MarksFallbackAndThrows() async throws {
         let storage = MockStorageService()
         let transcriptionClient = MockTranscriptionClient()
+        let transcriptionClientBox = RecordingManager.UncheckedTranscriptionServiceBox(transcriptionClient)
+        let finalDiarizationServiceBox = RecordingManager.UncheckedFinalDiarizationServiceBox(transcriptionClient)
         let coordinator = IncrementalMeetingTranscriptionCoordinator(
             transcriptionID: UUID(),
             meeting: makeMeeting(),
             inputSource: "system+microphone",
             storage: storage,
-            transcriptionClient: transcriptionClient,
+            transcriptionClientBox: transcriptionClientBox,
             callbacks: .init(
                 onProcessedDurationChanged: { _ in }
             )
@@ -111,7 +131,7 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
             _ = try await coordinator.finish(
                 audioURL: URL(fileURLWithPath: "/tmp/meeting-test.wav"),
                 diarizationEnabled: true,
-                finalDiarizationService: transcriptionClient
+                finalDiarizationServiceBox: finalDiarizationServiceBox
             )
             XCTFail("Expected finish to throw")
         } catch let error as TranscriptionError {
@@ -121,9 +141,13 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
             XCTAssertEqual(message, PostProcessingError.emptyTranscription.localizedDescription)
         }
 
-        XCTAssertTrue(coordinator.requiresLegacyFallback)
-        XCTAssertEqual(coordinator.fallbackReason, .emptyTranscript)
-        XCTAssertNotNil(coordinator.fallbackError)
+        let requiresLegacyFallback = await coordinator.requiresLegacyFallback
+        let fallbackReason = await coordinator.fallbackReason
+        let fallbackError = await coordinator.fallbackError
+
+        XCTAssertTrue(requiresLegacyFallback)
+        XCTAssertEqual(fallbackReason, .emptyTranscript)
+        XCTAssertNotNil(fallbackError)
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
         XCTAssertEqual(transcriptionClient.fileTranscribeCallCount, 0)
         XCTAssertEqual(transcriptionClient.sampleTranscribeCallCount, 0)
@@ -132,6 +156,8 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
     func testFinish_WhenFinalDiarizationFails_MarksFallbackAndThrows() async throws {
         let storage = MockStorageService()
         let transcriptionClient = MockTranscriptionClient()
+        let transcriptionClientBox = RecordingManager.UncheckedTranscriptionServiceBox(transcriptionClient)
+        let finalDiarizationServiceBox = RecordingManager.UncheckedFinalDiarizationServiceBox(transcriptionClient)
         transcriptionClient.mockText = "meeting partial"
         transcriptionClient.mockSegments = [
             Transcription.Segment(
@@ -148,27 +174,35 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
             meeting: makeMeeting(),
             inputSource: "system+microphone",
             storage: storage,
-            transcriptionClient: transcriptionClient,
+            transcriptionClientBox: transcriptionClientBox,
             callbacks: .init(
                 onProcessedDurationChanged: { _ in }
             )
         )
 
         try await coordinator.start()
-        await coordinator.append(buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)]))
+        await coordinator.append(
+            bufferBox: RecordingManager.SendableIncrementalAudioBufferBox(
+                buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
+            )
+        )
 
         do {
             _ = try await coordinator.finish(
                 audioURL: URL(fileURLWithPath: "/tmp/meeting-test.wav"),
                 diarizationEnabled: true,
-                finalDiarizationService: transcriptionClient
+                finalDiarizationServiceBox: finalDiarizationServiceBox
             )
             XCTFail("Expected finish to throw")
         } catch {}
 
-        XCTAssertTrue(coordinator.requiresLegacyFallback)
-        XCTAssertEqual(coordinator.fallbackReason, .finalDiarizationFailed)
-        XCTAssertNotNil(coordinator.fallbackError)
+        let requiresLegacyFallback = await coordinator.requiresLegacyFallback
+        let fallbackReason = await coordinator.fallbackReason
+        let fallbackError = await coordinator.fallbackError
+
+        XCTAssertTrue(requiresLegacyFallback)
+        XCTAssertEqual(fallbackReason, .finalDiarizationFailed)
+        XCTAssertNotNil(fallbackError)
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
         XCTAssertEqual(transcriptionClient.sampleTranscribeCallCount, 1)
         XCTAssertEqual(transcriptionClient.diarizeCallCount, 1)
