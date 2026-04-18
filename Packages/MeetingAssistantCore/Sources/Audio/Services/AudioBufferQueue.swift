@@ -39,6 +39,9 @@ public final class AudioBufferQueue: @unchecked Sendable {
             if state.count >= capacity {
                 // Buffer full: Drop oldest (tail) to make space
                 // This ensures we always have fresh data and don't lag behind
+                if let droppedBuffer = state.bufferStorage[state.tail] {
+                    AudioPCMBufferLeaseRegistry.shared.releaseIfNeeded(for: droppedBuffer)
+                }
                 state.bufferStorage[state.tail] = nil // Release ref
                 state.tail = (state.tail + 1) % capacity
                 state.count -= 1
@@ -76,6 +79,9 @@ public final class AudioBufferQueue: @unchecked Sendable {
     public func clear() {
         state.withLock { state in
             for i in 0..<capacity {
+                if let queuedBuffer = state.bufferStorage[i] {
+                    AudioPCMBufferLeaseRegistry.shared.releaseIfNeeded(for: queuedBuffer)
+                }
                 state.bufferStorage[i] = nil
             }
             state.head = 0

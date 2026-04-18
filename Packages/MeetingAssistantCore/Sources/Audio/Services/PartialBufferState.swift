@@ -45,6 +45,9 @@ public final class PartialBufferState: @unchecked Sendable {
     ///   - offset: Starting offset (default 0).
     public func setBuffer(_ buffer: AVAudioPCMBuffer, offset: Int = 0) {
         lock.withLock {
+            if let existingBuffer = self.buffer, existingBuffer !== buffer {
+                AudioPCMBufferLeaseRegistry.shared.releaseIfNeeded(for: existingBuffer)
+            }
             self.buffer = buffer
             self.readOffset = offset
         }
@@ -106,6 +109,7 @@ public final class PartialBufferState: @unchecked Sendable {
             if self.readOffset >= Int(buffer.frameLength) {
                 self.buffer = nil
                 self.readOffset = 0
+                AudioPCMBufferLeaseRegistry.shared.releaseIfNeeded(for: buffer)
             }
 
             return framesToCopy
@@ -115,6 +119,9 @@ public final class PartialBufferState: @unchecked Sendable {
     /// Clears the partial buffer state.
     public func clear() {
         lock.withLock {
+            if let currentBuffer = self.buffer {
+                AudioPCMBufferLeaseRegistry.shared.releaseIfNeeded(for: currentBuffer)
+            }
             self.buffer = nil
             self.readOffset = 0
         }

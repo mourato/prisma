@@ -73,6 +73,10 @@ actor IncrementalMeetingTranscriptionCoordinator {
         await core.append(bufferBox: bufferBox)
     }
 
+    func setHighLoadMode(_ isHighLoad: Bool) async {
+        await core.setHighLoadMode(isHighLoad)
+    }
+
     func finish(
         audioURL: URL,
         diarizationEnabled: Bool,

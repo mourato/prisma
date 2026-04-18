@@ -1,6 +1,7 @@
 import Atomics
 @preconcurrency import AVFoundation
 import Foundation
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreInfrastructure
 import os.lock
 
@@ -10,6 +11,18 @@ import os.lock
 /// Extracted from AudioRecorder.swift to adhere to Single Responsibility Principle.
 /// Uses Actor pattern for automatic thread safety isolation.
 actor AudioRecordingWorker {
+        private enum AdaptiveMeteringMode {
+            case normal
+            case reduced
+        }
+
+        private enum AdaptiveMeteringConstants {
+            static let highWatermarkBufferCount = 70
+            static let lowWatermarkBufferCount = 24
+            static let reducedSnapshotStride = 3
+            static let reducedBarCountCap = 12
+        }
+
         private final class BufferSignalStorage: @unchecked Sendable {
             private let continuationLock = OSAllocatedUnfairLock<AsyncStream<Void>.Continuation?>(initialState: nil)
 
@@ -18,7 +31,7 @@ actor AudioRecordingWorker {
             }
 
             func yield() {
-                continuationLock.withLock { $0?.yield(()) }
+                _ = continuationLock.withLock { $0?.yield(()) }
             }
 
             func finishAndClear() {
@@ -34,6 +47,12 @@ actor AudioRecordingWorker {
         let peakPowerDB: Float
         let barPowerDBLevels: [Float]
         let deltaTime: TimeInterval
+    }
+
+    private struct FileWriteConfiguration {
+        let settings: [String: Any]
+        let commonFormat: AVAudioCommonFormat
+        let interleaved: Bool
     }
 
     // MARK: - State
@@ -53,6 +72,8 @@ actor AudioRecordingWorker {
     private var onError: (@Sendable (AudioRecorderError) -> Void)?
     private var onProcessedBuffer: (@Sendable (AVAudioPCMBuffer) -> Void)?
     private var meteringBarCount = 0
+    private var adaptiveMeteringMode: AdaptiveMeteringMode = .normal
+    private var pendingMeterSnapshotSkips = 0
 
     /// Non-isolated buffer queue for synchronous enqueue from tap
     private nonisolated let bufferQueue = AudioBufferQueue(capacity: 100)
@@ -110,90 +131,87 @@ actor AudioRecordingWorker {
     // MARK: - Lifecycle
 
     func start(writingTo url: URL, format: AVAudioFormat, fileFormat: AppSettingsStore.AudioFormat) async throws {
-        // Reset state
-        audioFile = nil
-        _hasReceivedValidBuffer.store(false, ordering: .relaxed)
-        _isStopping.store(false, ordering: .relaxed)
+        resetStateForNewSession()
+        try prepareOutputFileIfNeeded(at: url)
+        audioFile = try createOutputAudioFile(url: url, format: format, fileFormat: fileFormat)
+        currentURL = url
 
-        // Cancel any existing processing task
-        processingTask?.cancel()
-        processingTask = nil
-        bufferSignalStorage.finishAndClear()
-
-        // Clear buffer queue
-        bufferQueue.clear()
-
-        // Prepare file
-        if FileManager.default.fileExists(atPath: url.path) {
-            try FileManager.default.removeItem(at: url)
-        }
-
-        /// Create Audio Settings based on format
-        /// Helper to generate settings
-        func createSettings(for targetFormat: AppSettingsStore.AudioFormat) -> ([String: Any], AVAudioCommonFormat, Bool) {
-            switch targetFormat {
-            case .m4a:
-                // Minimal AAC Settings
-                (
-                    [
-                        AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                        AVSampleRateKey: format.sampleRate,
-                        AVNumberOfChannelsKey: 2,
-                        AVEncoderBitRateKey: 128_000,
-                    ],
-                    .pcmFormatFloat32,
-                    false
-                )
-            case .wav:
-                (
-                    [
-                        AVFormatIDKey: kAudioFormatLinearPCM,
-                        AVSampleRateKey: format.sampleRate,
-                        AVNumberOfChannelsKey: 2,
-                        AVLinearPCMBitDepthKey: 32,
-                        AVLinearPCMIsFloatKey: true,
-                        AVLinearPCMIsBigEndianKey: false,
-                        AVLinearPCMIsNonInterleaved: false,
-                    ],
-                    .pcmFormatFloat32,
-                    false
-                )
-            }
-        }
-
-        // Try to create file with requested format, fallback to WAV on failure
-        do {
-            let (settings, commonFormat, interleaved) = createSettings(for: fileFormat)
-            audioFile = try AVAudioFile(
-                forWriting: url,
-                settings: settings,
-                commonFormat: commonFormat,
-                interleaved: interleaved
-            )
-            currentURL = url
-        } catch {
-            print("Failed to initialize audio file with format \(fileFormat): \(error). Falling back to WAV.")
-            // Fallback to WAV
-            // Note: If original URL ended in .m4a, this might create a confusing file, but it will work.
-            // Ideally we should change the extension, but we can't easily change the URL here as it's passed in.
-            // coreaudiod will handle valid WAV headers in .m4a files usually, or we just accept it for now.
-            let (wavSettings, wavCommon, wavInterleaved) = createSettings(for: .wav)
-            audioFile = try AVAudioFile(
-                forWriting: url,
-                settings: wavSettings,
-                commonFormat: wavCommon,
-                interleaved: wavInterleaved
-            )
-            currentURL = url
-        }
-
-        // Start processing task
         let bufferSignalStream = AsyncStream<Void> { continuation in
             self.bufferSignalStorage.set(continuation)
         }
 
         processingTask = Task {
             await self.processBuffers(bufferSignalStream)
+        }
+    }
+
+    private func resetStateForNewSession() {
+        audioFile = nil
+        _hasReceivedValidBuffer.store(false, ordering: .relaxed)
+        _isStopping.store(false, ordering: .relaxed)
+        processingTask?.cancel()
+        processingTask = nil
+        bufferSignalStorage.finishAndClear()
+        bufferQueue.clear()
+    }
+
+    private func prepareOutputFileIfNeeded(at url: URL) throws {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        try FileManager.default.removeItem(at: url)
+    }
+
+    private func createOutputAudioFile(
+        url: URL,
+        format: AVAudioFormat,
+        fileFormat: AppSettingsStore.AudioFormat
+    ) throws -> AVAudioFile {
+        do {
+            return try makeAudioFile(url: url, configuration: makeFileWriteConfiguration(for: fileFormat, format: format))
+        } catch {
+            print("Failed to initialize audio file with format \(fileFormat): \(error). Falling back to WAV.")
+            return try makeAudioFile(url: url, configuration: makeFileWriteConfiguration(for: .wav, format: format))
+        }
+    }
+
+    private func makeAudioFile(url: URL, configuration: FileWriteConfiguration) throws -> AVAudioFile {
+        try AVAudioFile(
+            forWriting: url,
+            settings: configuration.settings,
+            commonFormat: configuration.commonFormat,
+            interleaved: configuration.interleaved
+        )
+    }
+
+    private func makeFileWriteConfiguration(
+        for targetFormat: AppSettingsStore.AudioFormat,
+        format: AVAudioFormat
+    ) -> FileWriteConfiguration {
+        switch targetFormat {
+        case .m4a:
+            return FileWriteConfiguration(
+                settings: [
+                    AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                    AVSampleRateKey: format.sampleRate,
+                    AVNumberOfChannelsKey: 2,
+                    AVEncoderBitRateKey: 128_000,
+                ],
+                commonFormat: .pcmFormatFloat32,
+                interleaved: false
+            )
+        case .wav:
+            return FileWriteConfiguration(
+                settings: [
+                    AVFormatIDKey: kAudioFormatLinearPCM,
+                    AVSampleRateKey: format.sampleRate,
+                    AVNumberOfChannelsKey: 2,
+                    AVLinearPCMBitDepthKey: 32,
+                    AVLinearPCMIsFloatKey: true,
+                    AVLinearPCMIsBigEndianKey: false,
+                    AVLinearPCMIsNonInterleaved: false,
+                ],
+                commonFormat: .pcmFormatFloat32,
+                interleaved: false
+            )
         }
     }
 
@@ -242,7 +260,11 @@ actor AudioRecordingWorker {
     }
 
     private func processBufferInternal(_ buffer: AVAudioPCMBuffer) {
-        if let snapshot = Self.makeMeterSnapshot(from: buffer, barCount: meteringBarCount) {
+        updateAdaptiveMeteringMode()
+
+        if shouldEmitMeterSnapshot(),
+           let snapshot = Self.makeMeterSnapshot(from: buffer, barCount: effectiveMeteringBarCount)
+        {
             onPowerUpdate?(
                 snapshot.averagePowerDB,
                 snapshot.peakPowerDB,
@@ -262,6 +284,63 @@ actor AudioRecordingWorker {
             _hasReceivedValidBuffer.store(true, ordering: .relaxed)
         } catch {
             onError?(AudioRecorderError.fileWriteFailed(error))
+        }
+    }
+
+    private var effectiveMeteringBarCount: Int {
+        switch adaptiveMeteringMode {
+        case .normal:
+            meteringBarCount
+        case .reduced:
+            min(meteringBarCount, AdaptiveMeteringConstants.reducedBarCountCap)
+        }
+    }
+
+    private func shouldEmitMeterSnapshot() -> Bool {
+        let stride: Int
+        switch adaptiveMeteringMode {
+        case .normal:
+            stride = 1
+        case .reduced:
+            stride = AdaptiveMeteringConstants.reducedSnapshotStride
+        }
+
+        guard stride > 1 else {
+            pendingMeterSnapshotSkips = 0
+            return true
+        }
+
+        if pendingMeterSnapshotSkips > 0 {
+            pendingMeterSnapshotSkips -= 1
+            return false
+        }
+
+        pendingMeterSnapshotSkips = stride - 1
+        return true
+    }
+
+    private func updateAdaptiveMeteringMode() {
+        let pendingBuffers = bufferQueue.stats.count
+
+        switch adaptiveMeteringMode {
+        case .normal:
+            guard pendingBuffers >= AdaptiveMeteringConstants.highWatermarkBufferCount else { return }
+            adaptiveMeteringMode = .reduced
+            pendingMeterSnapshotSkips = 0
+            AppLogger.warning(
+                "Audio metering switched to reduced mode due to queue pressure",
+                category: .performance,
+                extra: ["pendingBuffers": pendingBuffers]
+            )
+        case .reduced:
+            guard pendingBuffers <= AdaptiveMeteringConstants.lowWatermarkBufferCount else { return }
+            adaptiveMeteringMode = .normal
+            pendingMeterSnapshotSkips = 0
+            AppLogger.info(
+                "Audio metering restored to normal mode",
+                category: .performance,
+                extra: ["pendingBuffers": pendingBuffers]
+            )
         }
     }
 

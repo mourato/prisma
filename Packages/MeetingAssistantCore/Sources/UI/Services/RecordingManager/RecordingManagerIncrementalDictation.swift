@@ -58,9 +58,17 @@ extension RecordingManager {
             )
         )
 
-        installIncrementalBufferForwarder(on: recorder) { bufferBox in
-            await coordinator.append(bufferBox: bufferBox)
-        }
+        installIncrementalBufferForwarder(
+            on: recorder,
+            handler: { bufferBox in
+                await coordinator.append(bufferBox: bufferBox)
+            },
+            onLoadStateChanged: { isHighLoad in
+                Task {
+                    await coordinator.setHighLoadMode(isHighLoad)
+                }
+            }
+        )
 
         do {
             try await coordinator.start()

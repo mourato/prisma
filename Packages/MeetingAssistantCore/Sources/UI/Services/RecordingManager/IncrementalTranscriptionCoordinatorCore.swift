@@ -36,6 +36,7 @@ actor IncrementalTranscriptionCoordinatorCore {
     private var processedDurationSeconds: Double = 0
     private var confidenceScores: [Double] = []
     private var hasPersistedCheckpoint = false
+    private var isHighLoadModeEnabled = false
     private(set) var requiresLegacyFallback = false
     private(set) var fallbackError: Error?
     private(set) var fallbackReason: IncrementalTranscriptionFallbackReason?
@@ -77,6 +78,18 @@ actor IncrementalTranscriptionCoordinatorCore {
                 await markForLegacyFallback(error, reason: .assemblerFailed)
             }
         }
+    }
+
+    func setHighLoadMode(_ isHighLoad: Bool) async {
+        guard isHighLoadModeEnabled != isHighLoad else { return }
+        isHighLoadModeEnabled = isHighLoad
+
+        let mode: RealtimeVoiceActivityWindowAssembler.AdaptiveQualityMode = if isHighLoad {
+            .reduced
+        } else {
+            .normal
+        }
+        await assembler.setAdaptiveQualityMode(mode)
     }
 
     func finishAccumulation() async throws {

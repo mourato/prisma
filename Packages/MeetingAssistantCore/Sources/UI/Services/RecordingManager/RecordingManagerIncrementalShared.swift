@@ -59,6 +59,16 @@ extension RecordingManager {
     }
 
     final class IncrementalBufferForwarder: @unchecked Sendable {
+        private enum PressureConstants {
+            static let highPendingBufferThreshold = 7
+            static let lowPendingBufferThreshold = 2
+        }
+
+        private struct PressureState {
+            var pendingBufferCount = 0
+            var isHighLoad = false
+        }
+
         private final class ContinuationStorage: @unchecked Sendable {
             private let lock = OSAllocatedUnfairLock<AsyncStream<SendableIncrementalAudioBufferBox>.Continuation?>(initialState: nil)
 
@@ -80,9 +90,16 @@ extension RecordingManager {
         }
 
         private let continuationStorage = ContinuationStorage()
+        private let pressureLock = OSAllocatedUnfairLock(initialState: PressureState())
+        private let onLoadStateChanged: (@Sendable (Bool) -> Void)?
         private var processingTask: Task<Void, Never>?
 
-        init(handler: @escaping @Sendable (SendableIncrementalAudioBufferBox) async -> Void) {
+        init(
+            handler: @escaping @Sendable (SendableIncrementalAudioBufferBox) async -> Void,
+            onLoadStateChanged: (@Sendable (Bool) -> Void)? = nil
+        ) {
+            self.onLoadStateChanged = onLoadStateChanged
+
             let stream = AsyncStream<SendableIncrementalAudioBufferBox> { continuation in
                 continuationStorage.set(continuation)
             }
@@ -90,6 +107,9 @@ extension RecordingManager {
             processingTask = Task(priority: .userInitiated) {
                 for await bufferBox in stream {
                     await handler(bufferBox)
+                    emitLoadTransitionIfNeeded {
+                        $0.pendingBufferCount = max(0, $0.pendingBufferCount - 1)
+                    }
                 }
             }
         }
@@ -99,6 +119,9 @@ extension RecordingManager {
         }
 
         func enqueue(_ buffer: AVAudioPCMBuffer) {
+            emitLoadTransitionIfNeeded {
+                $0.pendingBufferCount += 1
+            }
             continuationStorage.yield(buffer)
         }
 
@@ -106,6 +129,34 @@ extension RecordingManager {
             continuationStorage.finishAndClear()
             processingTask?.cancel()
             processingTask = nil
+
+            emitLoadTransitionIfNeeded {
+                $0.pendingBufferCount = 0
+            }
+        }
+
+        private func emitLoadTransitionIfNeeded(_ mutate: @Sendable (inout PressureState) -> Void) {
+            let transition = pressureLock.withLock { state -> Bool? in
+                mutate(&state)
+
+                let nextIsHighLoad: Bool
+                if state.isHighLoad {
+                    nextIsHighLoad = state.pendingBufferCount > PressureConstants.lowPendingBufferThreshold
+                } else {
+                    nextIsHighLoad = state.pendingBufferCount >= PressureConstants.highPendingBufferThreshold
+                }
+
+                guard nextIsHighLoad != state.isHighLoad else {
+                    return nil
+                }
+
+                state.isHighLoad = nextIsHighLoad
+                return nextIsHighLoad
+            }
+
+            if let transition {
+                onLoadStateChanged?(transition)
+            }
         }
     }
 
@@ -158,11 +209,15 @@ extension RecordingManager {
 
     func installIncrementalBufferForwarder(
         on recorder: AudioRecorder,
-        handler: @escaping @Sendable (SendableIncrementalAudioBufferBox) async -> Void
+        handler: @escaping @Sendable (SendableIncrementalAudioBufferBox) async -> Void,
+        onLoadStateChanged: (@Sendable (Bool) -> Void)? = nil
     ) {
         clearIncrementalBufferForwarder(on: recorder)
 
-        let forwarder = IncrementalBufferForwarder(handler: handler)
+        let forwarder = IncrementalBufferForwarder(
+            handler: handler,
+            onLoadStateChanged: onLoadStateChanged
+        )
         incrementalBufferForwarder = forwarder
         recorder.onMixedAudioBuffer = { [weak forwarder] buffer in
             forwarder?.enqueue(buffer)

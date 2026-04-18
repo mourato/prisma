@@ -74,6 +74,10 @@ actor IncrementalDictationTranscriptionCoordinator {
         await core.append(bufferBox: bufferBox)
     }
 
+    func setHighLoadMode(_ isHighLoad: Bool) async {
+        await core.setHighLoadMode(isHighLoad)
+    }
+
     func finish() async throws -> FinalizedResult {
         try await core.finishAccumulation()
         let response = try await core.buildFinalizedResponse()

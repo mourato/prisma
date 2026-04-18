@@ -89,6 +89,8 @@ extension AudioRecorder {
             // If the buffer was only partially used, store it for next render cycle
             if copied < Int(nextBuffer.frameLength) {
                 partialState.setBuffer(nextBuffer, offset: copied)
+            } else {
+                AudioPCMBufferLeaseRegistry.shared.releaseIfNeeded(for: nextBuffer)
             }
         }
 
