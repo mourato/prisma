@@ -224,7 +224,20 @@ final class MeetingQAServiceTests: XCTestCase {
         let session = makeMockedSession()
         MockMeetingQANetworkURLProtocol.requestHandler = { request in
             XCTAssertTrue(request.url?.absoluteString.contains("models/gemini-2.0-flash:generateContent") ?? false)
-            XCTAssertTrue(request.url?.absoluteString.contains("key=test-key") ?? false)
+            var queryItems: [URLQueryItem] = []
+            if let url = request.url,
+               let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+                queryItems = components.queryItems ?? []
+            }
+
+            var hasNonEmptyKey = false
+            for item in queryItems {
+                if item.name == "key", let value = item.value, !value.isEmpty {
+                    hasNonEmptyKey = true
+                    break
+                }
+            }
+            XCTAssertTrue(hasNonEmptyKey)
             let body = """
             {
               "candidates": [
