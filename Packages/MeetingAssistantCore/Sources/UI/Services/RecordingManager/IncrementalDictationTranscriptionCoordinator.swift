@@ -4,10 +4,10 @@ import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
-import MeetingAssistantCoreInfrastructure
+@preconcurrency import MeetingAssistantCoreInfrastructure
 
-@MainActor
-final class IncrementalDictationTranscriptionCoordinator {
+// swiftlint:disable type_name
+actor IncrementalDictationTranscriptionCoordinator {
     struct FinalizedResult: Sendable {
         let response: DomainTranscriptionResponse
         let checkpointID: UUID
@@ -25,7 +25,7 @@ final class IncrementalDictationTranscriptionCoordinator {
         meeting: Meeting,
         inputSource: String?,
         storage: any StorageService,
-        transcriptionClient: any TranscriptionService,
+        transcriptionClientBox: RecordingManager.UncheckedTranscriptionServiceBox,
         callbacks: Callbacks
     ) {
         core = IncrementalTranscriptionCoordinatorCore(
@@ -34,7 +34,7 @@ final class IncrementalDictationTranscriptionCoordinator {
                 meeting: meeting,
                 inputSource: inputSource,
                 storage: storage,
-                transcriptionClient: transcriptionClient,
+                transcriptionClientBox: transcriptionClientBox,
                 onPreviewTextChanged: callbacks.onPreviewTextChanged,
                 onProcessedDurationChanged: callbacks.onProcessedDurationChanged,
                 fallbackLogMessage: "Dictation incremental transcription degraded; full-file fallback required"
@@ -43,37 +43,50 @@ final class IncrementalDictationTranscriptionCoordinator {
     }
 
     var checkpointID: UUID {
-        core.checkpointID
+        get async {
+            await core.checkpointID
+        }
     }
 
     var requiresLegacyFallback: Bool {
-        core.requiresLegacyFallback
+        get async {
+            await core.requiresLegacyFallback
+        }
     }
 
     var fallbackError: Error? {
-        core.fallbackError
+        get async {
+            await core.fallbackError
+        }
     }
 
     var fallbackReason: IncrementalTranscriptionFallbackReason? {
-        core.fallbackReason
+        get async {
+            await core.fallbackReason
+        }
     }
 
     func start() async throws {
         try await core.start()
     }
 
-    func append(buffer: AVAudioPCMBuffer) async {
-        await core.append(buffer: buffer)
+    func append(bufferBox: RecordingManager.SendableIncrementalAudioBufferBox) async {
+        await core.append(bufferBox: bufferBox)
+    }
+
+    func setHighLoadMode(_ isHighLoad: Bool) async {
+        await core.setHighLoadMode(isHighLoad)
     }
 
     func finish() async throws -> FinalizedResult {
         try await core.finishAccumulation()
         let response = try await core.buildFinalizedResponse()
 
-        return FinalizedResult(response: response, checkpointID: core.checkpointID)
+        return FinalizedResult(response: response, checkpointID: await core.checkpointID)
     }
 
     func cancelAndDiscard() async {
         await core.cancelAndDiscard()
     }
 }
+// swiftlint:enable type_name

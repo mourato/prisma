@@ -32,13 +32,14 @@ extension RecordingManager {
         }
 
         guard let recorder = micRecorder as? AudioRecorder else { return }
+        let transcriptionClientBox = UncheckedTranscriptionServiceBox(transcriptionClient)
 
         let coordinator = IncrementalDictationTranscriptionCoordinator(
             transcriptionID: meeting.id,
             meeting: meeting,
             inputSource: resolveInputSourceLabel(for: meeting, recordingSource: source),
             storage: storage,
-            transcriptionClient: transcriptionClient,
+            transcriptionClientBox: transcriptionClientBox,
             callbacks: IncrementalDictationTranscriptionCoordinator.Callbacks(
                 onPreviewTextChanged: { [weak self] previewText in
                     Task { @MainActor [weak self] in
@@ -57,17 +58,23 @@ extension RecordingManager {
             )
         )
 
-        warmupIncrementalTranscriptionIfNeeded()
-
-        installIncrementalBufferForwarder(on: recorder) { buffer in
-            await coordinator.append(buffer: buffer)
-        }
+        installIncrementalBufferForwarder(
+            on: recorder,
+            handler: { bufferBox in
+                await coordinator.append(bufferBox: bufferBox)
+            },
+            onLoadStateChanged: { isHighLoad in
+                Task {
+                    await coordinator.setHighLoadMode(isHighLoad)
+                }
+            }
+        )
 
         do {
             try await coordinator.start()
             incrementalDictationCoordinator = coordinator
         } catch {
-            recorder.onMixedAudioBuffer = nil
+            clearIncrementalBufferForwarder(on: recorder)
             incrementalDictationCoordinator = nil
             throw error
         }
@@ -108,7 +115,7 @@ extension RecordingManager {
 
     func teardownIncrementalDictationSession() {
         if let recorder = micRecorder as? AudioRecorder {
-            recorder.onMixedAudioBuffer = nil
+            clearIncrementalBufferForwarder(on: recorder)
         }
         incrementalDictationCoordinator = nil
         transcriptionStatus.updateLivePreviewText("")

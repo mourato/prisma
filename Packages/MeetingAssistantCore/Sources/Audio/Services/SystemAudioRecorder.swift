@@ -215,7 +215,11 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
         // Forward buffer to listener directly on capture queue
         // This avoids Main Thread overhead for high-frequency audio buffers
-        onAudioBuffer?(buffer)
+        if let onAudioBuffer {
+            onAudioBuffer(buffer)
+        } else {
+            AudioPCMBufferLeaseRegistry.shared.releaseIfNeeded(for: buffer)
+        }
     }
 
     private func cleanup() async {
@@ -295,7 +299,13 @@ private class SystemAudioStreamOutput: NSObject, SCStreamOutput {
         }
         let frames = AVAudioFrameCount(sampleBuffer.numSamples)
 
-        guard frames > 0, let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else {
+        guard frames > 0 else {
+            return nil
+        }
+
+        let buffer = AudioPCMBufferPool.shared.checkout(format: format, frameCapacity: frames)
+            ?? AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames)
+        guard let buffer else {
             return nil
         }
         buffer.frameLength = frames
@@ -308,9 +318,12 @@ private class SystemAudioStreamOutput: NSObject, SCStreamOutput {
         )
 
         guard status == noErr else {
+            AudioPCMBufferPool.shared.release(buffer)
             AppLogger.error("CMSampleBufferCopyPCMDataIntoAudioBufferList failed with status: \(status)", category: .recordingManager)
             return nil
         }
+
+        AudioPCMBufferLeaseRegistry.shared.register(buffer: buffer)
 
         return buffer
     }

@@ -50,8 +50,7 @@ extension RecordingManager {
 
     /// Resets the manager and actor state to idle.
     public func reset() async {
-        postStartContextCaptureTask?.cancel()
-        postStartContextCaptureTask = nil
+        cancelPostStartCaptureTasks()
         await recordingActor.reset()
         isRecording = false
         isStartingRecording = false

@@ -145,7 +145,7 @@ extension RecordingManager {
             dictationStartBundleIdentifier = nil
             dictationStartURL = nil
             activeStartTelemetry = nil
-            postStartContextCaptureTask = nil
+            cancelPostStartCaptureTasks()
             clearPostProcessingReadinessWarning()
         }
     }

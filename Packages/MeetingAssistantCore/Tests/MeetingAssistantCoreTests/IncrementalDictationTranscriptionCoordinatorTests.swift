@@ -8,6 +8,7 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
     func testAppend_LongSpeechPersistsPartialCheckpointBeforeFinish() async throws {
         let storage = MockStorageService()
         let transcriptionClient = MockTranscriptionClient()
+        let transcriptionClientBox = RecordingManager.UncheckedTranscriptionServiceBox(transcriptionClient)
         transcriptionClient.mockText = "partial"
         let previewRecorder = PreviewRecorder()
         let coordinator = IncrementalDictationTranscriptionCoordinator(
@@ -15,7 +16,7 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
             meeting: makeMeeting(),
             inputSource: "microphone",
             storage: storage,
-            transcriptionClient: transcriptionClient,
+            transcriptionClientBox: transcriptionClientBox,
             callbacks: .init(
                 onPreviewTextChanged: { text in previewRecorder.values.append(text) },
                 onProcessedDurationChanged: { _ in }
@@ -23,7 +24,11 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
         )
 
         try await coordinator.start()
-        await coordinator.append(buffer: try makeBuffer(segments: [.tone(13.0, amplitude: 0.25)]))
+        await coordinator.append(
+            bufferBox: RecordingManager.SendableIncrementalAudioBufferBox(
+                buffer: try makeBuffer(segments: [.tone(13.0, amplitude: 0.25)])
+            )
+        )
 
         XCTAssertGreaterThanOrEqual(storage.savedTranscriptions.count, 2)
         XCTAssertEqual(storage.savedTranscriptions[0].lifecycleState, .partial)
@@ -40,13 +45,14 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
     func testFinish_WhenTranscriptionFails_PersistsFailedCheckpoint() async throws {
         let storage = MockStorageService()
         let transcriptionClient = MockTranscriptionClient()
+        let transcriptionClientBox = RecordingManager.UncheckedTranscriptionServiceBox(transcriptionClient)
         transcriptionClient.shouldFailTranscription = true
         let coordinator = IncrementalDictationTranscriptionCoordinator(
             transcriptionID: UUID(),
             meeting: makeMeeting(),
             inputSource: "microphone",
             storage: storage,
-            transcriptionClient: transcriptionClient,
+            transcriptionClientBox: transcriptionClientBox,
             callbacks: .init(
                 onPreviewTextChanged: { _ in },
                 onProcessedDurationChanged: { _ in }
@@ -54,28 +60,37 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
         )
 
         try await coordinator.start()
-        await coordinator.append(buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)]))
+        await coordinator.append(
+            bufferBox: RecordingManager.SendableIncrementalAudioBufferBox(
+                buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
+            )
+        )
 
         do {
             _ = try await coordinator.finish()
             XCTFail("Expected finish to throw")
         } catch {}
 
-        XCTAssertTrue(coordinator.requiresLegacyFallback)
-        XCTAssertEqual(coordinator.fallbackReason, .windowTranscriptionFailed)
-        XCTAssertNotNil(coordinator.fallbackError)
+        let requiresLegacyFallback = await coordinator.requiresLegacyFallback
+        let fallbackReason = await coordinator.fallbackReason
+        let fallbackError = await coordinator.fallbackError
+
+        XCTAssertTrue(requiresLegacyFallback)
+        XCTAssertEqual(fallbackReason, .windowTranscriptionFailed)
+        XCTAssertNotNil(fallbackError)
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
     }
 
     func testFinish_WhenNoIncrementalTranscriptIsProduced_ThrowsAndPersistsFailedCheckpoint() async throws {
         let storage = MockStorageService()
         let transcriptionClient = MockTranscriptionClient()
+        let transcriptionClientBox = RecordingManager.UncheckedTranscriptionServiceBox(transcriptionClient)
         let coordinator = IncrementalDictationTranscriptionCoordinator(
             transcriptionID: UUID(),
             meeting: makeMeeting(),
             inputSource: "microphone",
             storage: storage,
-            transcriptionClient: transcriptionClient,
+            transcriptionClientBox: transcriptionClientBox,
             callbacks: .init(
                 onPreviewTextChanged: { _ in },
                 onProcessedDurationChanged: { _ in }
@@ -94,9 +109,12 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
             XCTAssertEqual(message, PostProcessingError.emptyTranscription.localizedDescription)
         }
 
+        let requiresLegacyFallback = await coordinator.requiresLegacyFallback
+        let fallbackReason = await coordinator.fallbackReason
+
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
-        XCTAssertTrue(coordinator.requiresLegacyFallback)
-        XCTAssertEqual(coordinator.fallbackReason, .emptyTranscript)
+        XCTAssertTrue(requiresLegacyFallback)
+        XCTAssertEqual(fallbackReason, .emptyTranscript)
         XCTAssertEqual(transcriptionClient.transcribeCallCount, 0)
     }
 

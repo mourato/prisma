@@ -4,16 +4,15 @@ import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
-import MeetingAssistantCoreInfrastructure
+@preconcurrency import MeetingAssistantCoreInfrastructure
 
-@MainActor
-final class IncrementalTranscriptionCoordinatorCore {
-    struct Configuration {
+actor IncrementalTranscriptionCoordinatorCore {
+    struct Configuration: @unchecked Sendable {
         let transcriptionID: UUID
         let meeting: Meeting
         let inputSource: String?
         let storage: any StorageService
-        let transcriptionClient: any TranscriptionService
+        let transcriptionClientBox: RecordingManager.UncheckedTranscriptionServiceBox
         let onPreviewTextChanged: (@Sendable (String) -> Void)?
         let onProcessedDurationChanged: @Sendable (Double) -> Void
         let fallbackLogMessage: String
@@ -23,7 +22,7 @@ final class IncrementalTranscriptionCoordinatorCore {
     private let meeting: Meeting
     private let inputSource: String?
     private let storage: any StorageService
-    private let transcriptionClient: any TranscriptionService
+    private let transcriptionClientBox: RecordingManager.UncheckedTranscriptionServiceBox
     private let assembler = RealtimeVoiceActivityWindowAssembler()
     private let onPreviewTextChanged: (@Sendable (String) -> Void)?
     private let onProcessedDurationChanged: @Sendable (Double) -> Void
@@ -37,6 +36,7 @@ final class IncrementalTranscriptionCoordinatorCore {
     private var processedDurationSeconds: Double = 0
     private var confidenceScores: [Double] = []
     private var hasPersistedCheckpoint = false
+    private var isHighLoadModeEnabled = false
     private(set) var requiresLegacyFallback = false
     private(set) var fallbackError: Error?
     private(set) var fallbackReason: IncrementalTranscriptionFallbackReason?
@@ -46,7 +46,7 @@ final class IncrementalTranscriptionCoordinatorCore {
         meeting = configuration.meeting
         inputSource = configuration.inputSource
         storage = configuration.storage
-        transcriptionClient = configuration.transcriptionClient
+        transcriptionClientBox = configuration.transcriptionClientBox
         onPreviewTextChanged = configuration.onPreviewTextChanged
         onProcessedDurationChanged = configuration.onProcessedDurationChanged
         fallbackLogMessage = configuration.fallbackLogMessage
@@ -65,11 +65,11 @@ final class IncrementalTranscriptionCoordinatorCore {
         try await persistCheckpoint(lifecycleState: .partial)
     }
 
-    func append(buffer: AVAudioPCMBuffer) async {
+    func append(bufferBox: RecordingManager.SendableIncrementalAudioBufferBox) async {
         guard !requiresLegacyFallback else { return }
 
         do {
-            let windows = try await assembler.append(buffer: buffer)
+            let windows = try await assembler.append(buffer: bufferBox.buffer)
             for window in windows {
                 try await transcribe(window: window)
             }
@@ -78,6 +78,18 @@ final class IncrementalTranscriptionCoordinatorCore {
                 await markForLegacyFallback(error, reason: .assemblerFailed)
             }
         }
+    }
+
+    func setHighLoadMode(_ isHighLoad: Bool) async {
+        guard isHighLoadModeEnabled != isHighLoad else { return }
+        isHighLoadModeEnabled = isHighLoad
+
+        let mode: RealtimeVoiceActivityWindowAssembler.AdaptiveQualityMode = if isHighLoad {
+            .reduced
+        } else {
+            .normal
+        }
+        await assembler.setAdaptiveQualityMode(mode)
     }
 
     func finishAccumulation() async throws {
@@ -163,7 +175,7 @@ final class IncrementalTranscriptionCoordinatorCore {
         guard !window.samples.isEmpty else { return }
 
         do {
-            let response = try await transcriptionClient.transcribe(samples: window.samples)
+            let response = try await transcriptionClientBox.transcribe(samples: window.samples)
             append(
                 response: response,
                 absoluteWindowStartTime: window.startTime,

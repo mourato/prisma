@@ -4,10 +4,10 @@ import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
-import MeetingAssistantCoreInfrastructure
+@preconcurrency import MeetingAssistantCoreInfrastructure
 
-@MainActor
-final class IncrementalMeetingTranscriptionCoordinator {
+// swiftlint:disable type_name
+actor IncrementalMeetingTranscriptionCoordinator {
     struct FinalizedResult: Sendable {
         let response: DomainTranscriptionResponse
         let checkpointID: UUID
@@ -24,7 +24,7 @@ final class IncrementalMeetingTranscriptionCoordinator {
         meeting: Meeting,
         inputSource: String?,
         storage: any StorageService,
-        transcriptionClient: any TranscriptionService,
+        transcriptionClientBox: RecordingManager.UncheckedTranscriptionServiceBox,
         callbacks: Callbacks
     ) {
         core = IncrementalTranscriptionCoordinatorCore(
@@ -33,7 +33,7 @@ final class IncrementalMeetingTranscriptionCoordinator {
                 meeting: meeting,
                 inputSource: inputSource,
                 storage: storage,
-                transcriptionClient: transcriptionClient,
+                transcriptionClientBox: transcriptionClientBox,
                 onPreviewTextChanged: nil,
                 onProcessedDurationChanged: callbacks.onProcessedDurationChanged,
                 fallbackLogMessage: "Meeting incremental transcription degraded; full-file fallback required"
@@ -42,48 +42,61 @@ final class IncrementalMeetingTranscriptionCoordinator {
     }
 
     var checkpointID: UUID {
-        core.checkpointID
+        get async {
+            await core.checkpointID
+        }
     }
 
     var requiresLegacyFallback: Bool {
-        core.requiresLegacyFallback
+        get async {
+            await core.requiresLegacyFallback
+        }
     }
 
     var fallbackError: Error? {
-        core.fallbackError
+        get async {
+            await core.fallbackError
+        }
     }
 
     var fallbackReason: IncrementalTranscriptionFallbackReason? {
-        core.fallbackReason
+        get async {
+            await core.fallbackReason
+        }
     }
 
     func start() async throws {
         try await core.start()
     }
 
-    func append(buffer: AVAudioPCMBuffer) async {
-        await core.append(buffer: buffer)
+    func append(bufferBox: RecordingManager.SendableIncrementalAudioBufferBox) async {
+        await core.append(bufferBox: bufferBox)
+    }
+
+    func setHighLoadMode(_ isHighLoad: Bool) async {
+        await core.setHighLoadMode(isHighLoad)
     }
 
     func finish(
         audioURL: URL,
         diarizationEnabled: Bool,
-        finalDiarizationService: (any TranscriptionServiceFinalDiarization)?
+        finalDiarizationServiceBox: RecordingManager.UncheckedFinalDiarizationServiceBox?
     ) async throws -> FinalizedResult {
         try await core.finishAccumulation()
 
-        var finalizedSegments = core.currentSegments
+        var finalizedSegments = await core.currentSegments
         if diarizationEnabled {
-            guard let finalDiarizationService else {
+            guard let finalDiarizationServiceBox else {
                 let error = TranscriptionError.transcriptionFailed("Final diarization unsupported in current backend")
                 await core.markForLegacyFallback(error, reason: .finalDiarizationFailed)
                 throw error
             }
 
             do {
-                let speakerTimeline = try await finalDiarizationService.diarize(audioURL: audioURL)
-                finalizedSegments = finalDiarizationService.assignSpeakers(
-                    to: core.currentSegments,
+                let speakerTimeline = try await finalDiarizationServiceBox.diarize(audioURL: audioURL)
+                let currentSegments = await core.currentSegments
+                finalizedSegments = await finalDiarizationServiceBox.assignSpeakers(
+                    to: currentSegments,
                     using: speakerTimeline
                 )
             } catch {
@@ -94,10 +107,11 @@ final class IncrementalMeetingTranscriptionCoordinator {
 
         let response = try await core.buildFinalizedResponse(segmentsOverride: finalizedSegments)
 
-        return FinalizedResult(response: response, checkpointID: core.checkpointID)
+        return FinalizedResult(response: response, checkpointID: await core.checkpointID)
     }
 
     func cancelAndDiscard() async {
         await core.cancelAndDiscard()
     }
 }
+// swiftlint:enable type_name
