@@ -26,6 +26,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let outputChannels: AVAudioChannelCount = 2
         static let validationInterval: TimeInterval = 1.5
         static let retryDelay: UInt64 = 500_000_000 // 500ms
+        static let inputDeviceRecoveryDebounce: UInt64 = 250_000_000
         static let maxRetries = 2
         #if DEBUG
         static let micDiagnosticsEnabled = true
@@ -63,12 +64,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     /// Simple recorder for mic-only recordings. Bypasses AVAudioEngine and its
     /// aggregate device, which can malfunction on macOS with USB microphones.
-    private var simpleRecorder: AVAudioRecorder?
+    var simpleRecorder: AVAudioRecorder?
     private var simpleMeterTimer: Timer?
 
     // MARK: - Dependency Injection for Testing
 
-    private var injectedEngine: AVAudioEngine?
+    var injectedEngine: AVAudioEngine?
 
     private final class MixedBufferCallbackStorage: @unchecked Sendable {
         private let lock = NSLock()
@@ -115,11 +116,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     var micProbeStopTask: Task<Void, Never>?
     var micRecorderProbe: AVAudioRecorder?
     var micRecorderProbeStopTask: Task<Void, Never>?
-    private var fallbackRecorder: AVAudioRecorder?
+    var fallbackRecorder: AVAudioRecorder?
     private var fallbackMeterTimer: Timer?
     private var settingsSubscriptions = Set<AnyCancellable>()
     private var lastMeterSnapshotDate: Date?
     private let mixedBufferCallbackStorage = MixedBufferCallbackStorage()
+    var activeRecordingSource: RecordingSource?
+    var inputDeviceRecoveryTask: Task<Void, Never>?
+    var isRecoveringInputDevice = false
 
     public nonisolated var onMixedAudioBuffer: (@Sendable (AVAudioPCMBuffer) -> Void)? {
         get { mixedBufferCallbackStorage.get() }
@@ -155,6 +159,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             .removeDuplicates()
             .sink { [weak self] style in
                 self?.worker.setMeteringBarCount(Self.waveformBarCount(for: style))
+            }
+            .store(in: &settingsSubscriptions)
+
+        deviceManager.$availableInputDevices
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] devices in
+                self?.scheduleInputDeviceRecoveryIfNeeded(for: devices)
             }
             .store(in: &settingsSubscriptions)
 
@@ -200,6 +212,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     public func startRecording(to outputURL: URL, source: RecordingSource, retryCount: Int = 0) async throws {
         // Stop any existing recording first
         await stopRecording()
+        inputDeviceRecoveryTask?.cancel()
+        isRecoveringInputDevice = false
+        activeRecordingSource = nil
 
         // Reset per-session mute state
         resetOutputMuteState()
@@ -209,6 +224,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             category: .recordingManager,
             extra: ["path": outputURL.path, "source": source.rawValue]
         )
+        activeRecordingSource = source
         lastMeterSnapshotDate = nil
         latestMeterSnapshot = nil
         currentBarPowerLevels = []
@@ -396,6 +412,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     /// Stop recording and finalize the audio file.
     @discardableResult
     public func stopRecording() async -> URL? {
+        inputDeviceRecoveryTask?.cancel()
+        inputDeviceRecoveryTask = nil
+        activeRecordingSource = nil
+        isRecoveringInputDevice = false
+
         guard isRecording else {
             if hasPendingStartupResources {
                 await cleanupAfterFailedStart()
@@ -542,7 +563,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         outputDuckingLevelPercent = configuredDuckingLevelPercent
     }
 
-    private func cleanupEngine() {
+    func cleanupEngine() {
         if let mixer = mixerNode {
             mixer.removeTap(onBus: 0)
         }
@@ -592,6 +613,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         restoreOutputMuteIfNeeded()
         isRecording = false
+        activeRecordingSource = nil
+        inputDeviceRecoveryTask?.cancel()
+        inputDeviceRecoveryTask = nil
+        isRecoveringInputDevice = false
         currentRecordingURL = nil
         currentAveragePower = -160.0
         currentPeakPower = -160.0
@@ -663,7 +688,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     @MainActor
-    private func publishMeterSnapshot(
+    func publishMeterSnapshot(
         averagePower: Float,
         peakPower: Float,
         barPowerLevels: [Float]

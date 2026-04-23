@@ -380,6 +380,10 @@ public struct FloatingRecordingIndicatorView: View {
                         .font(.system(size: 13, weight: .medium))
                         .monospacedDigit()
                         .contentTransition(.numericText())
+                        .frame(
+                            width: FloatingRecordingIndicatorViewUtilities.timerReservedWidth(for: currentIndicatorSize),
+                            alignment: .center
+                        )
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                         .layoutPriority(1)
@@ -394,12 +398,17 @@ public struct FloatingRecordingIndicatorView: View {
                     .font(.system(size: 13, weight: .medium))
                     .monospacedDigit()
                     .contentTransition(.numericText())
+                    .frame(
+                        width: FloatingRecordingIndicatorViewUtilities.timerReservedWidth(for: currentIndicatorSize),
+                        alignment: .center
+                    )
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
                     .layoutPriority(1)
                     .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
             }
         }
+        .animation(nil, value: isHovering)
         .accessibilityLabel("recording_indicator.duration".localized)
     }
 

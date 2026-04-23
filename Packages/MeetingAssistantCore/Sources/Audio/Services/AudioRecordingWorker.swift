@@ -118,6 +118,12 @@ actor AudioRecordingWorker {
         meteringBarCount = max(0, barCount)
     }
 
+    func prepareForGraphRecovery() {
+        _hasReceivedValidBuffer.store(false, ordering: .relaxed)
+        adaptiveMeteringMode = .normal
+        pendingMeterSnapshotSkips = 0
+    }
+
     // MARK: - Property Accessors
 
     nonisolated func getHasReceivedValidBuffer() async -> Bool {
@@ -351,7 +357,8 @@ actor AudioRecordingWorker {
         guard let channelData = buffer.floatChannelData else { return nil }
         let channelCount = Int(buffer.format.channelCount)
         let frameLength = Int(buffer.frameLength)
-        guard channelCount > 0, frameLength > 0 else { return nil }
+        let sampleRate = buffer.format.sampleRate
+        guard channelCount > 0, frameLength > 0, sampleRate > 0 else { return nil }
 
         var maxRMS: Float = 0.0
         var maxPeak: Float = 0.0
@@ -407,7 +414,7 @@ actor AudioRecordingWorker {
             averagePowerDB: averagePowerDb,
             peakPowerDB: peakPowerDb,
             barPowerDBLevels: barPowerDBLevels,
-            deltaTime: Double(frameLength) / buffer.format.sampleRate
+            deltaTime: Double(frameLength) / sampleRate
         )
     }
 }

@@ -91,7 +91,8 @@ extension AudioRecorder {
         writingTo outputURL: URL,
         source: RecordingSource,
         retryCount: Int,
-        sampleRate: Double
+        sampleRate: Double,
+        reuseExistingWorker: Bool = false
     ) async throws {
         AppLogger.debug("Setting up Audio Engine...", category: .recordingManager)
 
@@ -148,7 +149,11 @@ extension AudioRecorder {
         }
 
         AppLogger.debug("Configuring worker...", category: .recordingManager)
-        try await configureWorker(writingTo: outputURL, mixer: mixer)
+        if reuseExistingWorker {
+            installWorkerTap(on: mixer)
+        } else {
+            try await configureWorker(writingTo: outputURL, mixer: mixer)
+        }
 
         // Increase maximum frames per slice to avoid kAudioUnitErr_TooManyFramesToProcess (-10874)
         // when hardware or drivers send buffers larger than the default 512 frames.
@@ -280,7 +285,12 @@ extension AudioRecorder {
 
         try await self.worker.start(writingTo: url, format: tapFormat, fileFormat: AppSettingsStore.shared.audioFormat)
 
+        installWorkerTap(on: mixer, format: tapFormat)
+    }
+
+    private func installWorkerTap(on mixer: AVAudioMixerNode, format: AVAudioFormat? = nil) {
         let worker = worker
+        let tapFormat = format ?? mixer.outputFormat(forBus: 0)
         mixer.installTap(
             onBus: 0,
             bufferSize: Constants.tapBufferSize,
