@@ -42,7 +42,7 @@ public extension AppSettingsStore {
     }
 
     func suggestedCustomEnhancementsProviderName() -> String {
-        let customCount = enhancementsProviderRegistrations.filter { $0.provider == .custom }.count
+        let customCount = enhancementsProviderRegistrations.count(where: { $0.provider == .custom })
         let nextIndex = customCount + 1
         return "settings.enhancements.provider.custom.default_name".localized(with: nextIndex)
     }

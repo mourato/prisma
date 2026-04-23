@@ -141,7 +141,8 @@ public enum TranscriptionOutputSanitizer {
 
         var matchedLines = 0
         for line in significantLines.prefix(8)
-        where text.range(of: line, options: [.caseInsensitive]) != nil {
+            where text.range(of: line, options: [.caseInsensitive]) != nil
+        {
             matchedLines += 1
             if line.count >= 80 || matchedLines >= 2 {
                 return true

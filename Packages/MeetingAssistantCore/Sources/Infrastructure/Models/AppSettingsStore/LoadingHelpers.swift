@@ -133,7 +133,7 @@ extension AppSettingsStore {
         meetingSelection: EnhancementsAISelection,
         dictationSelection: EnhancementsAISelection
     ) -> [String: String] {
-        let validRegistrationIDs = Set(registrations.map { $0.id.uuidString })
+        let validRegistrationIDs = Set(registrations.map(\.id.uuidString))
         let loaded = loadDecoded(
             [String: String].self,
             forKey: Keys.enhancementsProviderSelectedModelsByRegistration

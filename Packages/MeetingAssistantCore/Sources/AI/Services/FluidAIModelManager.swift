@@ -130,7 +130,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
         guard modelState != .downloading, modelState != .loading else { return }
         if modelState == .loaded,
-              hasLoadedASRRuntime,
+           hasLoadedASRRuntime,
            loadedASRLocalModelID == requestedModel.rawValue
         {
             return

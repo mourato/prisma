@@ -8,7 +8,7 @@ import MeetingAssistantCoreDomain
 
 // swiftlint:disable type_name
 actor IncrementalMeetingTranscriptionCoordinator {
-    struct FinalizedResult: Sendable {
+    struct FinalizedResult {
         let response: DomainTranscriptionResponse
         let checkpointID: UUID
     }
@@ -107,11 +107,12 @@ actor IncrementalMeetingTranscriptionCoordinator {
 
         let response = try await core.buildFinalizedResponse(segmentsOverride: finalizedSegments)
 
-        return FinalizedResult(response: response, checkpointID: await core.checkpointID)
+        return await FinalizedResult(response: response, checkpointID: core.checkpointID)
     }
 
     func cancelAndDiscard() async {
         await core.cancelAndDiscard()
     }
 }
+
 // swiftlint:enable type_name

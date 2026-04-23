@@ -283,7 +283,7 @@ extension AudioRecorder {
         let tapFormat = mixer.outputFormat(forBus: 0)
         AppLogger.debug("Configuring Worker with format: \(tapFormat)", category: .recordingManager)
 
-        try await self.worker.start(writingTo: url, format: tapFormat, fileFormat: AppSettingsStore.shared.audioFormat)
+        try await worker.start(writingTo: url, format: tapFormat, fileFormat: AppSettingsStore.shared.audioFormat)
 
         installWorkerTap(on: mixer, format: tapFormat)
     }

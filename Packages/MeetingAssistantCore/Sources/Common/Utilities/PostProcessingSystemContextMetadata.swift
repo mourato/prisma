@@ -22,7 +22,7 @@ public enum PostProcessingSystemContextMetadata {
             fullUserName: fullUserName
         )
 
-        var outputLines: [String] = ["CONTEXT_METADATA"]
+        var outputLines = ["CONTEXT_METADATA"]
         outputLines.append(contentsOf: systemLines)
         if !normalizedBody.isEmpty {
             outputLines.append(normalizedBody)
@@ -40,7 +40,7 @@ public enum PostProcessingSystemContextMetadata {
 
         if let first = lines.first,
            first.trimmingCharacters(in: .whitespacesAndNewlines)
-               .compare("CONTEXT_METADATA", options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+           .compare("CONTEXT_METADATA", options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
         {
             lines.removeFirst()
         }

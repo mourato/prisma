@@ -153,7 +153,7 @@ public final class GroqTranscriptionClient {
             throw TranscriptionError.transcriptionFailed("Invalid Groq transcription response")
         }
 
-        guard (200 ... 299).contains(httpResponse.statusCode) else {
+        guard (200...299).contains(httpResponse.statusCode) else {
             if let providerError = try? JSONDecoder().decode(GroqErrorEnvelope.self, from: data) {
                 throw TranscriptionError.transcriptionFailed(providerError.error.message)
             }

@@ -171,8 +171,8 @@ extension TranscribeAudioUseCase {
         dictationStructuredPostProcessingEnabled: Bool
     ) -> Bool {
         switch mode {
-        case .meeting: return true
-        case .dictation, .assistant: return dictationStructuredPostProcessingEnabled
+        case .meeting: true
+        case .dictation, .assistant: dictationStructuredPostProcessingEnabled
         }
     }
 

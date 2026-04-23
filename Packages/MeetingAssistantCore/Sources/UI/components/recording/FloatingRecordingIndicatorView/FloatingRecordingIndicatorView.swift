@@ -304,7 +304,7 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private func processingStatusView(size: IndicatorSize) -> some View {
-        return HStack(spacing: 6) {
+        HStack(spacing: 6) {
             Text(processingStageTitle)
                 .font(Font(FloatingRecordingIndicatorViewUtilities.processingStatusFont(for: size)))
                 .lineLimit(1)

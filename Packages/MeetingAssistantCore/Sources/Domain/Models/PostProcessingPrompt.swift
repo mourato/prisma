@@ -70,7 +70,7 @@ public extension PostProcessingPrompt {
             return uuid
         }()
 
-        static let `defaultPrompt`: UUID = {
+        static let defaultPrompt: UUID = {
             guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-00000000000b") else {
                 assertionFailure("Invalid UUID string for defaultPrompt")
                 return fallbackDefaultPrompt
@@ -120,7 +120,7 @@ public extension PostProcessingPrompt {
     }
 
     /// Predefined prompt for clean transcription.
-    static let `defaultPrompt` = PostProcessingPrompt(
+    static let defaultPrompt = PostProcessingPrompt(
         id: PredefinedIDs.defaultPrompt,
         title: "prompt.default.title".localized,
         promptText: """

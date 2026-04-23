@@ -8,7 +8,7 @@ import MeetingAssistantCoreDomain
 
 // swiftlint:disable type_name
 actor IncrementalDictationTranscriptionCoordinator {
-    struct FinalizedResult: Sendable {
+    struct FinalizedResult {
         let response: DomainTranscriptionResponse
         let checkpointID: UUID
     }
@@ -82,11 +82,12 @@ actor IncrementalDictationTranscriptionCoordinator {
         try await core.finishAccumulation()
         let response = try await core.buildFinalizedResponse()
 
-        return FinalizedResult(response: response, checkpointID: await core.checkpointID)
+        return await FinalizedResult(response: response, checkpointID: core.checkpointID)
     }
 
     func cancelAndDiscard() async {
         await core.cancelAndDiscard()
     }
 }
+
 // swiftlint:enable type_name

@@ -11,8 +11,8 @@ enum CohereTranscribeModelRuntime {
         category: "CohereTranscribeModelRuntime"
     )
 
-    // Try the public FluidVoice-compatible source first, then fallback to the
-    // private FluidInference mirror for environments that have credentials.
+    /// Try the public FluidVoice-compatible source first, then fallback to the
+    /// private FluidInference mirror for environments that have credentials.
     private static let remoteRepoCandidates = [
         "BarathwajAnandan/cohere-transcribe-03-2026-CoreML-6bit",
         "FluidInference/cohere-transcribe-03-2026-coreml-6bit",

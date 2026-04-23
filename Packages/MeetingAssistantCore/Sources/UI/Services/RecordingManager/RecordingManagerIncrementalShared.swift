@@ -139,11 +139,10 @@ extension RecordingManager {
             let transition = pressureLock.withLock { state -> Bool? in
                 mutate(&state)
 
-                let nextIsHighLoad: Bool
-                if state.isHighLoad {
-                    nextIsHighLoad = state.pendingBufferCount > PressureConstants.lowPendingBufferThreshold
+                let nextIsHighLoad: Bool = if state.isHighLoad {
+                    state.pendingBufferCount > PressureConstants.lowPendingBufferThreshold
                 } else {
-                    nextIsHighLoad = state.pendingBufferCount >= PressureConstants.highPendingBufferThreshold
+                    state.pendingBufferCount >= PressureConstants.highPendingBufferThreshold
                 }
 
                 guard nextIsHighLoad != state.isHighLoad else {

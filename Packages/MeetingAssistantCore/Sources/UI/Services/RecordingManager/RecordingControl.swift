@@ -96,11 +96,10 @@ public extension RecordingManager {
         let initialActiveContext = try? await activeAppContextProvider.fetchActiveAppContext()
 
         do {
-            let refreshedActiveContext: ActiveAppContext?
-            if purpose == .dictation, shouldRefreshContextCapture(initialActiveContext) {
-                refreshedActiveContext = try? await activeAppContextProvider.fetchActiveAppContext()
+            let refreshedActiveContext: ActiveAppContext? = if purpose == .dictation, shouldRefreshContextCapture(initialActiveContext) {
+                try? await activeAppContextProvider.fetchActiveAppContext()
             } else {
-                refreshedActiveContext = nil
+                nil
             }
             let activeContext = preferredContextForCapture(
                 primary: initialActiveContext,

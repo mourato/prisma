@@ -3,8 +3,8 @@ import Foundation
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
-import MeetingAssistantCoreInfrastructure
 import MeetingAssistantCoreDomain
+import MeetingAssistantCoreInfrastructure
 
 extension RecordingManager {
     func shouldUseIncrementalDictationCapture(
@@ -49,7 +49,7 @@ extension RecordingManager {
                 onProcessedDurationChanged: { [weak self] (processedDuration: Double) in
                     Task { @MainActor [weak self] in
                         guard let self else { return }
-                        self.transcriptionStatus.updateProgress(
+                        transcriptionStatus.updateProgress(
                             phase: .processing,
                             processedSeconds: processedDuration
                         )

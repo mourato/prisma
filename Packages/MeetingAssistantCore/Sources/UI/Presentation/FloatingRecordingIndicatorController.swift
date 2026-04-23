@@ -50,6 +50,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     public var renderState: RecordingIndicatorRenderState {
         currentRenderState
     }
+
     public var processingSnapshot: RecordingIndicatorProcessingSnapshot? {
         currentProcessingSnapshot
     }

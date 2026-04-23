@@ -11,36 +11,36 @@ import os.lock
 /// Extracted from AudioRecorder.swift to adhere to Single Responsibility Principle.
 /// Uses Actor pattern for automatic thread safety isolation.
 actor AudioRecordingWorker {
-        private enum AdaptiveMeteringMode {
-            case normal
-            case reduced
+    private enum AdaptiveMeteringMode {
+        case normal
+        case reduced
+    }
+
+    private enum AdaptiveMeteringConstants {
+        static let highWatermarkBufferCount = 70
+        static let lowWatermarkBufferCount = 24
+        static let reducedSnapshotStride = 3
+        static let reducedBarCountCap = 12
+    }
+
+    private final class BufferSignalStorage: @unchecked Sendable {
+        private let continuationLock = OSAllocatedUnfairLock<AsyncStream<Void>.Continuation?>(initialState: nil)
+
+        func set(_ continuation: AsyncStream<Void>.Continuation?) {
+            continuationLock.withLock { $0 = continuation }
         }
 
-        private enum AdaptiveMeteringConstants {
-            static let highWatermarkBufferCount = 70
-            static let lowWatermarkBufferCount = 24
-            static let reducedSnapshotStride = 3
-            static let reducedBarCountCap = 12
+        func yield() {
+            _ = continuationLock.withLock { $0?.yield(()) }
         }
 
-        private final class BufferSignalStorage: @unchecked Sendable {
-            private let continuationLock = OSAllocatedUnfairLock<AsyncStream<Void>.Continuation?>(initialState: nil)
-
-            func set(_ continuation: AsyncStream<Void>.Continuation?) {
-                continuationLock.withLock { $0 = continuation }
-            }
-
-            func yield() {
-                _ = continuationLock.withLock { $0?.yield(()) }
-            }
-
-            func finishAndClear() {
-                continuationLock.withLock { continuation in
-                    continuation?.finish()
-                    continuation = nil
-                }
+        func finishAndClear() {
+            continuationLock.withLock { continuation in
+                continuation?.finish()
+                continuation = nil
             }
         }
+    }
 
     struct MeterSnapshot {
         let averagePowerDB: Float
@@ -194,7 +194,7 @@ actor AudioRecordingWorker {
     ) -> FileWriteConfiguration {
         switch targetFormat {
         case .m4a:
-            return FileWriteConfiguration(
+            FileWriteConfiguration(
                 settings: [
                     AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
                     AVSampleRateKey: format.sampleRate,
@@ -205,7 +205,7 @@ actor AudioRecordingWorker {
                 interleaved: false
             )
         case .wav:
-            return FileWriteConfiguration(
+            FileWriteConfiguration(
                 settings: [
                     AVFormatIDKey: kAudioFormatLinearPCM,
                     AVSampleRateKey: format.sampleRate,
@@ -303,12 +303,11 @@ actor AudioRecordingWorker {
     }
 
     private func shouldEmitMeterSnapshot() -> Bool {
-        let stride: Int
-        switch adaptiveMeteringMode {
+        let stride: Int = switch adaptiveMeteringMode {
         case .normal:
-            stride = 1
+            1
         case .reduced:
-            stride = AdaptiveMeteringConstants.reducedSnapshotStride
+            AdaptiveMeteringConstants.reducedSnapshotStride
         }
 
         guard stride > 1 else {

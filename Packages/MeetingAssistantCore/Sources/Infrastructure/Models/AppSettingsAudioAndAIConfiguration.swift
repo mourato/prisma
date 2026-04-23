@@ -260,9 +260,9 @@ public struct EnhancementsProviderRegistration: Codable, Identifiable, Equatable
     public var resolvedBaseURL: String {
         switch provider {
         case .custom:
-            return baseURLOverride ?? ""
+            baseURLOverride ?? ""
         case .openai, .anthropic, .groq, .google:
-            return provider.defaultBaseURL
+            provider.defaultBaseURL
         }
     }
 

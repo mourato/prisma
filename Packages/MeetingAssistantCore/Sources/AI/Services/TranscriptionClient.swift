@@ -211,7 +211,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         let selection = settingsStore.resolvedTranscriptionSelection(for: executionMode)
         let inputLanguageCode = settingsStore.resolvedTranscriptionInputLanguageCode(for: executionMode)
         let backend = resolvedBackend(for: selection)
-        let implementationLabel: String = switch backend {
+        let implementationLabel = switch backend {
         case .xpc:
             "XPC"
         case .local:
@@ -431,9 +431,9 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
     private func resolvedBackend(for selection: TranscriptionProviderSelection) -> TranscriptionBackend {
         switch selection.provider {
         case .local:
-            return transcriptionImplementation == .xpc ? .xpc : .local
+            transcriptionImplementation == .xpc ? .xpc : .local
         case .groq:
-            return .groq(modelID: selection.selectedModel)
+            .groq(modelID: selection.selectedModel)
         }
     }
 

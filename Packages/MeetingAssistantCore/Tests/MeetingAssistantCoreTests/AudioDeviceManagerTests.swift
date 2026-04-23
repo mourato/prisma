@@ -1,5 +1,6 @@
 import AVFoundation
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreAudio
 import XCTest
 
 @MainActor
@@ -26,5 +27,12 @@ final class AudioDeviceManagerTests: XCTestCase {
         // but we can at least check if it returns a boolean.
         let isAvailable = sut.isDeviceAvailable("some-random-id")
         XCTAssertFalse(isAvailable)
+    }
+
+    func testMonitoredPropertySelectors_IncludeDefaultInputAndHardwareDevices() {
+        let selectors = AudioDeviceManager.monitoredPropertySelectorsForTesting()
+
+        XCTAssertTrue(selectors.contains(kAudioHardwarePropertyDefaultInputDevice))
+        XCTAssertTrue(selectors.contains(kAudioHardwarePropertyDevices))
     }
 }

@@ -4,6 +4,11 @@ import CoreAudio
 import Foundation
 import MeetingAssistantCoreCommon
 
+private let audioDeviceManagerMonitoredPropertySelectors: [AudioObjectPropertySelector] = [
+    kAudioHardwarePropertyDefaultInputDevice,
+    kAudioHardwarePropertyDevices,
+]
+
 /// Model representing an audio input device.
 public struct AudioInputDevice: Identifiable, Codable, Equatable, Sendable {
     public let id: String // Unique device UID
@@ -23,30 +28,106 @@ public struct AudioInputDevice: Identifiable, Codable, Equatable, Sendable {
 @MainActor
 public final class AudioDeviceManager: ObservableObject {
     @Published public private(set) var availableInputDevices: [AudioInputDevice] = []
+    private let notificationCenter: NotificationCenter
+    private nonisolated(unsafe) var notificationObservers: [NSObjectProtocol] = []
+    private nonisolated(unsafe) var audioPropertyListener: AudioObjectPropertyListenerBlock?
 
-    public init() {
+    public init(notificationCenter: NotificationCenter = .default) {
+        self.notificationCenter = notificationCenter
         refreshDevices()
+        installNotificationObservers()
+        installCoreAudioPropertyListener()
+    }
 
-        // Setup observers for device changes
-        NotificationCenter.default.addObserver(
-            forName: .AVCaptureDeviceWasConnected,
+    deinit {
+        notificationObservers.forEach(notificationCenter.removeObserver)
+        Self.removeCoreAudioPropertyListener(audioPropertyListener)
+    }
+
+    private func installNotificationObservers() {
+        notificationObservers.append(notificationCenter.addObserver(
+            forName: AVCaptureDevice.wasConnectedNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
+                self?.refreshDevices()
+            }
+        })
+
+        notificationObservers.append(notificationCenter.addObserver(
+            forName: AVCaptureDevice.wasDisconnectedNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.refreshDevices()
+            }
+        })
+    }
+
+    private func installCoreAudioPropertyListener() {
+        let listener: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+            Task { @MainActor [weak self] in
                 self?.refreshDevices()
             }
         }
 
-        NotificationCenter.default.addObserver(
-            forName: .AVCaptureDeviceWasDisconnected,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.refreshDevices()
-            }
+        audioPropertyListener = listener
+
+        for selector in audioDeviceManagerMonitoredPropertySelectors {
+            var address = Self.propertyAddress(for: selector)
+            let status = AudioObjectAddPropertyListenerBlock(
+                AudioObjectID(kAudioObjectSystemObject),
+                &address,
+                .main,
+                listener
+            )
+
+            guard status != noErr else { continue }
+
+            AppLogger.warning(
+                "Failed to install CoreAudio property listener",
+                category: .health,
+                extra: ["selector": selector, "status": status]
+            )
         }
+    }
+
+    private nonisolated static func removeCoreAudioPropertyListener(
+        _ audioPropertyListener: AudioObjectPropertyListenerBlock?
+    ) {
+        guard let audioPropertyListener else { return }
+
+        for selector in audioDeviceManagerMonitoredPropertySelectors {
+            var address = Self.propertyAddress(for: selector)
+            let status = AudioObjectRemovePropertyListenerBlock(
+                AudioObjectID(kAudioObjectSystemObject),
+                &address,
+                .main,
+                audioPropertyListener
+            )
+
+            guard status != noErr else { continue }
+
+            AppLogger.warning(
+                "Failed to remove CoreAudio property listener",
+                category: .health,
+                extra: ["selector": selector, "status": status]
+            )
+        }
+    }
+
+    nonisolated static func propertyAddress(for selector: AudioObjectPropertySelector) -> AudioObjectPropertyAddress {
+        AudioObjectPropertyAddress(
+            mSelector: selector,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+    }
+
+    nonisolated static func monitoredPropertySelectorsForTesting() -> [AudioObjectPropertySelector] {
+        audioDeviceManagerMonitoredPropertySelectors
     }
 
     /// Explicitly refresh the list of available devices.
@@ -317,10 +398,10 @@ public final class AudioDeviceManager: ObservableObject {
 
         // If the device exposes per-channel controls, set each channel too.
         if let channelCount = getInputChannelCount(for: id), channelCount > 0 {
-            for channel in 1...channelCount {
-                if setInputVolumeScalar(for: id, element: UInt32(channel), volume: volume) {
-                    didSetAny = true
-                }
+            for channel in 1...channelCount
+                where setInputVolumeScalar(for: id, element: UInt32(channel), volume: volume)
+            {
+                didSetAny = true
             }
         }
 
