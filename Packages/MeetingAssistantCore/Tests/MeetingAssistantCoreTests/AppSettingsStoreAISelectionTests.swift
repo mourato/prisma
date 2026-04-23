@@ -224,18 +224,17 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
             baseURLOverride: "https://proxy.example/v1"
         )
         let registrationID = try XCTUnwrap(registration?.id)
-        defer { try? KeychainManager.deleteAPIKey(for: registrationID) }
 
         settings.updateEnhancementsSelection(
             registrationID: registrationID,
             model: "custom-model",
             for: .dictation
         )
-        try KeychainManager.storeAPIKey("sk-registration", for: registrationID)
 
         let issue = settings.enhancementsInferenceReadinessIssue(
             for: .dictation,
-            apiKeyExists: { _ in false }
+            apiKeyExists: { _ in false },
+            registrationAPIKeyExists: { $0 == registrationID }
         )
 
         XCTAssertNil(issue)

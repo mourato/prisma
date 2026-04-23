@@ -386,14 +386,15 @@ public extension AppSettingsStore {
 
     func enhancementsInferenceReadinessIssue(
         for mode: IntelligenceKernelMode,
-        apiKeyExists: ((AIProvider) -> Bool)?
+        apiKeyExists: ((AIProvider) -> Bool)?,
+        registrationAPIKeyExists: ((UUID) -> Bool)? = nil
     ) -> EnhancementsInferenceReadinessIssue? {
         let config = resolvedEnhancementsAIConfiguration(for: mode)
         let selection = enhancementsSelection(for: mode)
         let selectedRegistration = enhancementsRegistration(for: selection.registrationID)
         let provider = selectedRegistration?.provider ?? selection.provider
         let hasKey: Bool = if let registrationID = selectedRegistration?.id {
-            if KeychainManager.existsAPIKey(for: registrationID) {
+            if registrationAPIKeyExists?(registrationID) ?? KeychainManager.existsAPIKey(for: registrationID) {
                 true
             } else {
                 apiKeyExists?(provider) ?? KeychainManager.existsAPIKey(for: provider)
