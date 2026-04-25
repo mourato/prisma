@@ -5,6 +5,24 @@ description: This skill should be used when the user asks to "fix audio glitches
 
 # Real-Time Audio Processing
 
+## Role
+
+Use this skill as the canonical owner for low-latency audio and render-callback constraints in Prisma.
+
+- Own hot-path safety rules, buffer/callback constraints, and audio-specific concurrency expectations.
+- Keep real-time guidance separate from general performance tuning and UI lifecycle concerns.
+- Delegate app-wide performance or non-audio concurrency issues to their specialist owners.
+
+## Scope Boundary
+
+- Use this skill for audio glitches, underruns, render callbacks, and low-latency capture/processing paths.
+- Use `../performance/SKILL.md` for app-wide optimization outside audio hot paths.
+- Use `../swift-concurrency-expert/SKILL.md` for compiler-driven concurrency remediation when the issue is not audio-specific.
+
+## When to Use
+
+Use this skill when the user asks to fix audio glitches, optimize low-latency audio, debug underruns, or update real-time audio callbacks.
+
 ## Overview
 
 Rules and best practices for managing audio engines and buffers in a real-time, multi-threaded context.

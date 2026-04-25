@@ -5,6 +5,21 @@ description: This skill should be used when the user asks to "build menu bar beh
 
 # Menu Bar Applications
 
+## Role
+
+Use this skill as the canonical owner for menu-bar-specific UI patterns in Prisma.
+
+- Own `NSStatusItem`, popover, status-menu, and non-activating menu-bar interaction guidance.
+- Keep menu-bar behavior aligned with macOS-native patterns and app lifecycle expectations.
+- Delegate general macOS implementation and broader UI/UX direction to their specialist owners.
+
+## Scope Boundary
+
+- Use this skill for status-item behavior, menu-bar menus, popovers, and floating-panel interaction patterns.
+- Use `../macos-development/SKILL.md` for general platform lifecycle and integration concerns.
+- Use `../macos-design-guidelines/SKILL.md` for HIG alignment and native interaction quality.
+- Use `../native-app-designer/SKILL.md` for broader experience design decisions.
+
 ## Overview
 
 Specific patterns for macOS menu bar applications using NSStatusItem.
@@ -254,6 +269,12 @@ init() {
 4. **Memory leaks** - Use `[weak self]` in closures
 5. **Indicator not visible** - Use `.screenSaver` window level, not `.floating`
 6. **Indicator tied to trigger** - Observe state reactively via Combine
+
+## Related Skills
+
+- `../macos-development/SKILL.md`
+- `../macos-design-guidelines/SKILL.md`
+- `../native-app-designer/SKILL.md`
 
 ## References
 

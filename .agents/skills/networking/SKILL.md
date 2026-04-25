@@ -5,6 +5,18 @@ description: This skill should be used when the user asks to "build API client",
 
 # Networking Standards
 
+## Role
+
+Use this skill as the canonical owner for transport, request modeling, and network resiliency guidance in Prisma.
+
+- Own URLSession usage patterns, request/response contracts, retries, and offline/error handling expectations.
+- Keep networking guidance separate from credential persistence and broad security policy.
+- Delegate secrets and security-baseline decisions to the relevant specialist owners.
+
+## When to Use
+
+Use this skill when the user asks to build an API client, model request/response data, configure URLSession, or improve network resiliency/security.
+
 ## Overview
 
 Best practices for reliable, secure network communication in this project.
@@ -32,3 +44,13 @@ Best practices for reliable, secure network communication in this project.
 - **HTTPS**: Require HTTPS and keep ATS constraints active.
 - **Pinning**: Use certificate pinning only when policy requires it.
 - **Secrets**: Never hardcode credentials.
+
+## Related Skills
+
+- `../security/SKILL.md`
+- `../keychain-security/SKILL.md`
+
+## References
+
+- `../security/SKILL.md`
+- `../keychain-security/SKILL.md`

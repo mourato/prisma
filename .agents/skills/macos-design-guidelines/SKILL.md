@@ -9,6 +9,24 @@ metadata:
 
 # macOS Human Interface Guidelines
 
+## Role
+
+Use this skill as the canonical owner for macOS Human Interface Guidelines interpretation in Prisma.
+
+- Own native interaction quality guidance for menus, windows, shortcuts, toolbars, and desktop conventions.
+- Translate Apple HIG expectations into actionable rules for this repository.
+- Delegate implementation mechanics and broader UX direction to their specialist owners.
+
+## Scope Boundary
+
+- Use this skill for HIG alignment and macOS-native interaction guidance.
+- Use `../macos-development/SKILL.md` for concrete implementation details.
+- Use `../native-app-designer/SKILL.md` for broader experience direction beyond HIG compliance.
+
+## When to Use
+
+Use this skill when building macOS apps with SwiftUI or AppKit, implementing menu bars, toolbars, window management, or keyboard shortcuts.
+
 Mac apps serve power users who expect deep keyboard control, persistent menu bars, resizable multi-window layouts, and tight system integration. These guidelines codify Apple's HIG into actionable rules with SwiftUI and AppKit examples.
 
 ---

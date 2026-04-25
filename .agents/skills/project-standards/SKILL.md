@@ -5,6 +5,23 @@ description: This skill should be used when the user asks to "update AGENTS.md",
 
 # Project Operational Standards
 
+## Role
+
+Use this skill as the canonical owner for project-level guidance governance in Prisma.
+
+- Own AGENTS alignment, documentation policy, and information-routing standards.
+- Keep project guidance synchronized with current tools, scripts, and skill ownership.
+- Delegate skill-authoring mechanics to the skill-development owner.
+
+## Scope Boundary
+
+- Use this skill for AGENTS maintenance, policy updates, and repository standards.
+- Use `../skill-development/SKILL.md` for refactoring or authoring the structure of individual skills.
+
+## When to Use
+
+Use this skill when the user asks to update AGENTS, document project policy, track known limitations, or align repository standards.
+
 ## Overview
 
 Guidelines for maintaining consistent project documentation and visibility into technical constraints.
@@ -60,3 +77,13 @@ Rules:
 
 - All documentation must be written in **English**.
 - All code comments must be written in **English**.
+
+## Related Skills
+
+- `../skill-development/SKILL.md`
+- `../documentation/SKILL.md`
+
+## References
+
+- `AGENTS.md`
+- `../skill-development/SKILL.md`

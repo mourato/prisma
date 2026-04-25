@@ -5,6 +5,18 @@ description: This skill should be used when the user asks to "apply Swift style 
 
 # Swift Coding Conventions
 
+## Role
+
+Use this skill as the canonical owner for Swift-specific style, naming, type-safety, and module-organization guidance in Prisma.
+
+- Own Swift-language idioms and lint-aligned writing rules.
+- Keep Swift conventions aligned with `.swiftlint.yml` and repository module structure.
+- Delegate language-agnostic readability advice to the code-quality owner.
+
+## When to Use
+
+Use this skill when the user asks to apply Swift style conventions, improve type safety, refactor API naming, or organize Swift modules.
+
 ## Overview
 
 Standards for consistency, readability, and type safety in this Swift codebase.
@@ -79,3 +91,13 @@ Use this section as the practical "how to write code here" reference. Keep it al
 - **Imports**: Keep imports minimal and consistently ordered.
 - **Standard Library**: Prefer native Swift APIs over heavier Foundation alternatives when equivalent.
 - **Resources**: Use `Bundle.module` for Swift Package resources.
+
+## Related Skills
+
+- `../code-quality/SKILL.md`
+- `../swift-package-manager/SKILL.md`
+
+## References
+
+- `.swiftlint.yml`
+- `../code-quality/SKILL.md`

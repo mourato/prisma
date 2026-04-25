@@ -5,6 +5,23 @@ description: This skill should be used when the user asks to "design error types
 
 # Error Handling & Propagation
 
+## Role
+
+Use this skill as the canonical owner for failure modeling and recovery guidance in Prisma.
+
+- Own error-type design, propagation rules, and recovery-path expectations.
+- Keep failure handling explicit, diagnosable, and stable under error conditions.
+- Delegate logging/telemetry shape to the observability owner.
+
+## Scope Boundary
+
+- Use this skill for error enums, propagation behavior, recovery strategy, and graceful failure paths.
+- Use `../observability-diagnostics/SKILL.md` for diagnostic signal design and telemetry shape.
+
+## When to Use
+
+Use this skill when the user asks to design error types, improve error propagation, add recovery paths, or standardize error logging.
+
 ## Overview
 
 Standards for managing failure states in a predictable, informative, and safe manner.

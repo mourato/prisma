@@ -5,6 +5,20 @@ description: This skill should be used when the user asks to "add #Preview", "im
 
 # Preview Coverage
 
+## Role
+
+Use this skill as the canonical owner for SwiftUI preview coverage expectations in Prisma.
+
+- Own preview presence, preview-state breadth, and preview-safe execution rules.
+- Keep preview guidance aligned with the repository preview-check script.
+- Delegate UI composition and UX direction to the SwiftUI and design owners.
+
+## Scope Boundary
+
+- Use this skill for preview requirements and preview-specific safety patterns.
+- Use `../swiftui-patterns/SKILL.md` for view composition and state-management guidance.
+- Use `../native-app-designer/SKILL.md` for interface direction and UX acceptance criteria.
+
 ## Overview
 
 Standards for creating and maintaining SwiftUI previews across `MeetingAssistantCoreUI`.
@@ -48,3 +62,8 @@ The check fails if any SwiftUI view under `Packages/MeetingAssistantCore/Sources
 
 - `scripts/preview-check.sh`
 - `.agents/skills/swiftui-patterns/SKILL.md`
+
+## Related Skills
+
+- `../swiftui-patterns/SKILL.md`
+- `../native-app-designer/SKILL.md`

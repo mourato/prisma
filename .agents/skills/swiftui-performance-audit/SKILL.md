@@ -7,6 +7,18 @@ description: This skill should be used when the user asks to "fix janky SwiftUI 
 
 _Attribution: copied from @Dimillian’s `Dimillian/Skills` (2025-12-31)._
 
+## Role
+
+Use this skill as the canonical owner for diagnosing SwiftUI render/update/layout performance issues in Prisma.
+
+- Own instrumentation-first analysis of SwiftUI jank, layout thrash, and invalidation storms.
+- Keep SwiftUI runtime diagnosis separate from general performance tuning and animation design.
+- Delegate non-SwiftUI bottlenecks to their specialist owners.
+
+## When to Use
+
+Use this skill when the user asks to fix janky SwiftUI scrolling, reduce excessive view updates, diagnose layout thrash, or audit SwiftUI runtime performance.
+
 ## Overview
 
 Audit SwiftUI view performance end-to-end, from instrumentation and baselining to root-cause analysis and concrete remediation steps.
@@ -192,6 +204,12 @@ Provide:
 - A short metrics table (before/after if available).
 - Top issues (ordered by impact).
 - Proposed fixes with estimated effort.
+
+## Related Skills
+
+- `../swiftui-patterns/SKILL.md`
+- `../performance/SKILL.md`
+- `../swiftui-animation/SKILL.md`
 
 ## References
 

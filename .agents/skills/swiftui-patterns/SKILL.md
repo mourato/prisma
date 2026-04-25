@@ -5,6 +5,21 @@ description: This skill should be used when the user asks to "build SwiftUI view
 
 # SwiftUI Patterns
 
+## Role
+
+Use this skill as the canonical owner for SwiftUI composition, state handling, and layout patterns in Prisma.
+
+- Own view composition, navigation, state wrappers, and reusable UI-block guidance.
+- Keep SwiftUI implementation advice aligned with design-system reuse and preview expectations.
+- Delegate UX direction, advanced motion, and runtime performance to their specialist owners.
+
+## Scope Boundary
+
+- Use this skill for building SwiftUI views, managing SwiftUI state, and structuring layouts.
+- Use `../native-app-designer/SKILL.md` for UI/UX direction.
+- Use `../swiftui-animation/SKILL.md` for advanced motion systems.
+- Use `../swiftui-performance-audit/SKILL.md` for render/update performance issues.
+
 ## Overview
 
 Recommended patterns for SwiftUI development in the Prisma project.
@@ -284,6 +299,13 @@ HStack(spacing: 0) {
 - Use `PreviewRuntime.isRunning` for startup task suppression when needed.
 - Use `PreviewStateContainer` when interactive bindings are required.
 - Validate coverage with `make preview-check`.
+
+## Related Skills
+
+- `../native-app-designer/SKILL.md`
+- `../swiftui-animation/SKILL.md`
+- `../swiftui-performance-audit/SKILL.md`
+- `.agents/skills/preview-coverage/SKILL.md`
 
 ## References
 

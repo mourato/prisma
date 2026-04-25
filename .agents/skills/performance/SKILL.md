@@ -5,6 +5,24 @@ description: This skill should be used when the user asks to "optimize CPU/memor
 
 # Performance Optimization
 
+## Role
+
+Use this skill as the canonical owner for app-wide performance and resource-efficiency guidance in Prisma.
+
+- Own CPU, memory, startup, and measurement practices outside primarily SwiftUI-rendering issues.
+- Keep optimization advice measurement-first and baseline-driven.
+- Delegate SwiftUI runtime and audio hot-path issues to their specialist owners.
+
+## Scope Boundary
+
+- Use this skill for app-wide/system-level performance work.
+- Use `../swiftui-performance-audit/SKILL.md` for SwiftUI rendering/update/layout performance.
+- Use `../audio-realtime/SKILL.md` for low-latency audio callback and buffering constraints.
+
+## When to Use
+
+Use this skill when the user asks to optimize CPU, memory, or startup, profile with Instruments, or improve app-wide performance outside primary SwiftUI rendering issues.
+
 ## Overview
 
 Standards for maintaining a fast, responsive, and resource-efficient application.

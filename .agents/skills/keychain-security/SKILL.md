@@ -5,6 +5,14 @@ description: This skill should be used when the user asks to "store secret in Ke
 
 # Keychain Security
 
+## Role
+
+Use this skill as the canonical owner for credential persistence through Keychain in Prisma.
+
+- Own secure local secret storage and retrieval guidance.
+- Keep Keychain usage aligned with the shared Infrastructure abstractions.
+- Delegate broader security posture and transport concerns to their specialist owners.
+
 ## Scope Boundaries
 
 - Use this skill for local secret persistence through KeychainManager/KeychainProvider.
@@ -12,6 +20,10 @@ description: This skill should be used when the user asks to "store secret in Ke
 - Use ../networking/SKILL.md for transport and API request hardening concerns.
 
 Guidance for secure credential storage in the B2 modular architecture.
+
+## When to Use
+
+Use this skill when the user asks to store a secret in Keychain, retrieve an API key securely, delete credentials, or harden `KeychainManager` usage.
 
 ## Module ownership
 
@@ -76,3 +88,8 @@ let value = try keychain.retrieve(for: .aiAPIKeyOpenAI)
 
 - `Packages/MeetingAssistantCore/Sources/Infrastructure/Services/KeychainManager.swift`
 - `AGENTS.md` (branch workflow + language policy)
+
+## Related Skills
+
+- `../security/SKILL.md`
+- `../networking/SKILL.md`

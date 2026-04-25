@@ -5,9 +5,17 @@ description: This skill should be used when the user asks to "debug a bug", "inv
 
 # Debugging Strategies
 
+## Role
+
+Use this skill as the canonical owner for cross-cutting debugging methodology in Prisma.
+
+- Own investigation structure when the root cause is still unknown.
+- Focus on evidence gathering, hypothesis testing, and narrowing scope before subsystem-specific fixes.
+- Delegate known bottlenecks or specialized runtime problems to the matching domain owner.
+
 Transform debugging from guesswork into systematic investigation.
 
-## When to Use This Skill
+## When to Use
 
 - Tracking down elusive bugs
 - Investigating crashes and flaky behavior
@@ -519,7 +527,13 @@ afterEach(() => {
 - [ ] Stale data (refresh database)
 ```
 
-## Resources
+## Related Skills
+
+- `../observability-diagnostics/SKILL.md`
+- `../performance/SKILL.md`
+- `../swiftui-performance-audit/SKILL.md`
+
+## References
 
 - **[references/debugging-tools-guide.md](references/debugging-tools-guide.md)**: Comprehensive tool documentation
 - **[references/performance-profiling.md](references/performance-profiling.md)**: Performance debugging guide

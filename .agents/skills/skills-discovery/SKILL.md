@@ -5,6 +5,23 @@ description: This skill should be used when the user asks to "find skills", "sea
 
 # Skills Discovery
 
+## Role
+
+Use this skill as the canonical owner for discovering and optionally installing external skills.
+
+- Own the decision process for when to search outside the local skill set.
+- Own quality criteria for proposing external skills.
+- Keep installation optional and user-confirmed.
+
+## Scope Boundary
+
+- Use this skill to find, evaluate, and optionally install external skills.
+- Use `../skill-development/SKILL.md` to design or refactor local skills already present in the repository.
+
+## When to Use
+
+Use this skill when the user asks to find skills, search the skills registry, install a skill, or manage installed skills.
+
 Use this skill to discover and optionally install external skills from the `skills.sh` ecosystem.
 
 ## When to search for skills
@@ -91,4 +108,9 @@ Do not install these automatically. Use them as references or propose them when 
 
 ## Related Skills
 
+- `../skill-development/SKILL.md`
+
+## References
+
+- [skills.sh](https://skills.sh/)
 - `../skill-development/SKILL.md`

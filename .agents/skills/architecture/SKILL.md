@@ -5,6 +5,24 @@ description: This skill should be used when the user asks to "design module boun
 
 # Architecture Principles
 
+## Role
+
+Use this skill as the canonical owner for architecture and dependency-boundary guidance in Prisma.
+
+- Own module boundaries, Clean Architecture application, and dependency-injection expectations.
+- Keep architectural advice aligned with the current package/module split.
+- Delegate platform-specific implementation details to the relevant subsystem owners.
+
+## Scope Boundary
+
+- Use this skill for module ownership, dependency direction, and cross-layer abstractions.
+- Use `../macos-development/SKILL.md` for platform implementation details.
+- Use `../code-quality/SKILL.md` when the task is readability-oriented rather than architectural.
+
+## When to Use
+
+Use this skill when the user asks to design module boundaries, apply Clean Architecture, refactor architecture, or define dependency injection.
+
 ## Overview
 
 Project architectural standards ensuring testability, maintainability, and clear separation of concerns.

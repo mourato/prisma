@@ -5,9 +5,23 @@ description: This skill should be used when the user asks to "rebase", "cherry-p
 
 # Git Advanced Workflows
 
+## Role
+
+Use this skill as the canonical owner for advanced Git history surgery and recovery workflows in Prisma.
+
+- Own rebase, cherry-pick, bisect, reflog, and complex branch-repair guidance.
+- Complement, but do not replace, the standard Git workflow skill.
+- Keep destructive-history operations explicit and deliberate.
+
+## Scope Boundary
+
+- Use this skill for advanced Git operations and recovery scenarios.
+- Use `../git-workflow/SKILL.md` for standard branch, commit, PR, and cleanup flow.
+- Use `../git-worktree/SKILL.md` for optional worktree-specific operations.
+
 Master advanced Git techniques to maintain clean history, collaborate effectively, and recover from any situation with confidence.
 
-## When to Use This Skill
+## When to Use
 
 - Cleaning up commit history before merging
 - Applying specific commits across branches
@@ -388,7 +402,12 @@ git reflog
 git branch recovered-branch abc123
 ```
 
-## Resources
+## Related Skills
+
+- `../git-workflow/SKILL.md`
+- `../git-worktree/SKILL.md`
+
+## References
 
 - **references/git-rebase-guide.md**: Deep dive into interactive rebase
 - **references/git-conflict-resolution.md**: Advanced conflict resolution strategies

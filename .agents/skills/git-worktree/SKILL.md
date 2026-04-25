@@ -5,6 +5,23 @@ description: This skill should be used when the user asks to "use git worktree",
 
 # Git Worktrees
 
+## Role
+
+Use this skill as the canonical owner for optional and legacy worktree workflows in Prisma.
+
+- Own the repository-specific policy for when worktrees are acceptable.
+- Provide the minimal command surface for safe worktree creation and cleanup.
+- Keep worktrees explicitly secondary to the default single-checkout branch workflow.
+
+## Scope Boundary
+
+- Use this skill for worktree-specific operations and migration away from older worktree setups.
+- Use `../git-workflow/SKILL.md` for the default branch/commit/PR workflow.
+
+## When to Use
+
+Use this skill when the user asks to use git worktree, migrate away from worktrees, or handle legacy worktree setup in this repository.
+
 Git worktrees let you check out multiple branches into different directories at the same time.
 
 Project default: do not use worktrees for routine development. Use a single checkout with feature branches.

@@ -5,6 +5,18 @@ description: This skill should be used when the user asks to "improve code reada
 
 # Code Quality Standards
 
+## Role
+
+Use this skill as the canonical owner for language-agnostic readability and maintainability guidance in Prisma.
+
+- Own naming clarity, decomposition, duplication reduction, and comment quality.
+- Keep code-quality advice independent from language-specific syntax details.
+- Delegate Swift-specific idioms and style rules to the Swift conventions owner.
+
+## When to Use
+
+Use this skill when the task is about improving readability, renaming for clarity, refactoring duplicated logic, or applying clean-code conventions.
+
 ## Overview
 
 Fundamental rules for writing clean, self-explanatory, and maintainable code.
@@ -32,3 +44,13 @@ Fundamental rules for writing clean, self-explanatory, and maintainable code.
 - **Linting**: Ensure `swiftlint` and `swiftformat` run before commit.
 - **Refactoring**: Apply the Boy Scout Rule and leave code cleaner than found.
 - **Review Size**: Keep changes small and atomic to improve review quality.
+
+## Related Skills
+
+- `../swift-conventions/SKILL.md`
+- `../code-review/SKILL.md`
+
+## References
+
+- `../swift-conventions/SKILL.md`
+- `../code-review/SKILL.md`

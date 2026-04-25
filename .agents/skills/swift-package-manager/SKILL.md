@@ -5,6 +5,19 @@ description: This skill should be used when the user asks to "edit Package.swift
 
 # Dependency Management (SPM)
 
+## Role
+
+Use this skill as the canonical owner for Swift Package Manager guidance in Prisma.
+
+- Own `Package.swift`, package dependency policy, and package-resolution troubleshooting guidance.
+- Keep package guidance aligned with the checked-in Xcode project/workspace workflow.
+- Delegate broader macOS implementation concerns to the platform owner.
+
+## Scope Boundary
+
+- Use this skill for package declarations, dependency updates, lock files, and Swift Package commands.
+- Use `../macos-development/SKILL.md` for platform implementation guidance outside package management.
+
 ## Overview
 
 Guidelines for using Swift Package Manager to manage internal and external codebase dependencies.
@@ -116,4 +129,8 @@ swift package resolve
 
 - [Package.swift](Packages/MeetingAssistantCore/Package.swift)
 - [Swift Package Manager Documentation](https://developer.apple.com/documentation/swift_packages)
+
+## Related Skills
+
+- `../macos-development/SKILL.md`
 

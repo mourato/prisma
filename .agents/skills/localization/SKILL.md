@@ -5,6 +5,19 @@ description: This skill should be used when the user asks to "localize UI text",
 
 # Localization and Accessible Copy
 
+## Role
+
+Use this skill as the canonical owner for localization and accessible copy in Prisma.
+
+- Own localized string usage, locale-file hygiene, and accessibility-copy key patterns.
+- Keep UI text aligned with shared localization helpers and bundle-resolution rules.
+- Delegate broad accessibility interaction audits to the accessibility owner.
+
+## Scope Boundary
+
+- Use this skill for localized strings, localization-key cleanup, and accessible copy text.
+- Use `../accessibility-audit/SKILL.md` for keyboard focus, reduced motion, overlays, and broader accessibility behavior.
+
 ## Overview
 
 Guide for internationalization and accessible copy in Prisma.
@@ -117,3 +130,8 @@ Follow this pattern for consistent naming:
 - [Localizable.strings](../../../Packages/MeetingAssistantCore/Sources/Common/Resources/en.lproj/Localizable.strings)
 - [Apple Accessibility Guide](https://developer.apple.com/documentation/accessibility)
 - `../accessibility-audit/SKILL.md`
+
+## Related Skills
+
+- `../accessibility-audit/SKILL.md`
+- `../swiftui-patterns/SKILL.md`

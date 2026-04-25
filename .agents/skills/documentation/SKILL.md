@@ -5,6 +5,24 @@ description: This skill should be used when the user asks to "write/update docum
 
 # Documentation Standards
 
+## Role
+
+Use this skill as the canonical owner for documentation practices in Prisma.
+
+- Own DocC guidance, code-comment conventions, and documentation research order.
+- Keep repository guidance aligned with the actual tool surface available in this environment.
+- Delegate repository policy maintenance and external skill discovery to their specialist owners.
+
+## Scope Boundary
+
+- Use this skill for writing or refining documentation and DocC comments.
+- Use `../project-standards/SKILL.md` for project policy, AGENTS maintenance, and guidance governance.
+- Use `../skills-discovery/SKILL.md` when the task is to find or install an external skill.
+
+## When to Use
+
+Use this skill when the user asks to write or update documentation, add DocC comments, improve MARK organization, or research API docs.
+
 ## Overview
 
 Detailed guidance on documenting Swift code and researching external APIs with the tools that are actually available in this environment.
@@ -92,3 +110,8 @@ Use `// MARK:` to organize code into logical sections:
 
 - [Meeting.swift](Packages/MeetingAssistantCore/Sources/Domain/Models/Meeting.swift)
 - [Apple DocC Guide](https://developer.apple.com/documentation/docc)
+
+## Related Skills
+
+- `../project-standards/SKILL.md`
+- `../skills-discovery/SKILL.md`

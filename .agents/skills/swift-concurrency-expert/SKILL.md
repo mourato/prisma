@@ -5,6 +5,23 @@ description: This skill should be used when the user asks to "fix Swift concurre
 
 # Swift Concurrency Expert
 
+## Role
+
+Use this skill as the canonical owner for Swift concurrency diagnostics and remediation in Prisma.
+
+- Own actor-isolation fixes, Sendable remediation, and compiler-driven concurrency triage.
+- Keep concurrency fixes minimal, behavior-preserving, and explicit about ownership boundaries.
+- Delegate conceptual-only concurrency teaching to the concurrency bridge skill.
+
+## Scope Boundary
+
+- Use this skill for concrete Swift concurrency compiler issues and remediation.
+- Use `../concurrency/SKILL.md` for conceptual guidance without concrete compiler remediation.
+
+## When to Use
+
+Use this skill when the user asks to fix Swift concurrency errors, resolve actor isolation issues, remediate Sendable diagnostics, or upgrade to Swift 6.2 concurrency.
+
 ## Overview
 
 Review and fix Swift Concurrency issues in Swift 6.2+ codebases by applying actor isolation, Sendable safety, and modern concurrency patterns with minimal behavior changes.

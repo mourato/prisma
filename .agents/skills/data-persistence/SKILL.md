@@ -5,6 +5,24 @@ description: This skill should be used when the user asks to "store/load data", 
 
 # Data Persistence Strategies
 
+## Role
+
+Use this skill as the canonical owner for storage, repository, and migration guidance in Prisma.
+
+- Own persistence-mechanism choice, migration expectations, and repository abstraction guidance.
+- Keep storage advice aligned with data integrity and recoverability requirements.
+- Delegate secret storage and broader security baseline decisions to their specialist owners.
+
+## Scope Boundary
+
+- Use this skill for repositories, storage design, migration planning, and persistence synchronization.
+- Use `../keychain-security/SKILL.md` for credential persistence.
+- Use `../security/SKILL.md` for sensitive-data policy beyond persistence mechanics.
+
+## When to Use
+
+Use this skill when the user asks to store/load data, design repositories, plan migrations, or implement persistence synchronization.
+
 ## Overview
 
 Guidelines for choosing the right storage mechanism and ensuring data integrity and security.

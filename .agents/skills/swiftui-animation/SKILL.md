@@ -5,18 +5,26 @@ description: This skill should be used when the user asks to "implement SwiftUI 
 
 # SwiftUI Animation Expert
 
-Expert guidance for implementing advanced SwiftUI animations and Metal shader integration. Covers animation curves, springs, transitions, matched geometry effects, PhaseAnimator, KeyframeAnimator, and GPU-accelerated shader effects.
+## Role
 
-## Scope Boundaries
+Use this skill as the canonical owner for advanced motion systems in Prisma SwiftUI surfaces.
 
-Use this skill when animation/motion behavior is the core implementation concern.
+- Own transitions, choreography, matched geometry, keyframes, and shader-based animation guidance.
+- Keep animation advice separate from general layout/state composition and runtime performance diagnosis.
+- Delegate UX direction and composition fundamentals to the relevant specialist owners.
+
+## Scope Boundary
+
+Use this skill when animation or motion behavior is the core implementation concern.
 
 Out of scope for this skill:
 - Generic SwiftUI state/layout patterns without motion complexity (`swiftui-patterns`)
 - Runtime render/update performance diagnosis (`swiftui-performance-audit`)
 - Pure visual ideation/high-fidelity creative direction (`native-app-designer`)
 
-## When to Use This Skill
+Expert guidance for implementing advanced SwiftUI animations and Metal shader integration. Covers animation curves, springs, transitions, matched geometry effects, PhaseAnimator, KeyframeAnimator, and GPU-accelerated shader effects.
+
+## When to Use
 
 - Understanding motion design principles and when to use animation
 - Making animations accessible and platform-appropriate
@@ -217,3 +225,14 @@ Circle()
 - Verify `.metal` file is added to target
 - Check shader function signature matches expected format
 - Ensure `maxSampleOffset` is set correctly for distortion effects
+
+## Related Skills
+
+- `../swiftui-patterns/SKILL.md`
+- `../swiftui-performance-audit/SKILL.md`
+- `../native-app-designer/SKILL.md`
+
+## References
+
+- `../swiftui-patterns/SKILL.md`
+- `../swiftui-performance-audit/SKILL.md`
