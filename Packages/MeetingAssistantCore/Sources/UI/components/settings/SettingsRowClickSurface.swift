@@ -69,12 +69,8 @@ private struct SettingsRowClickCaptureRepresentable: NSViewRepresentable {
 
 private final class SettingsRowClickCaptureView: NSView {
     weak var coordinator: SettingsRowClickCaptureRepresentable.Coordinator? {
-        didSet {
-            pendingSingleClickWorkItem?.cancel()
-        }
+        didSet {}
     }
-
-    private var pendingSingleClickWorkItem: DispatchWorkItem?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -99,35 +95,25 @@ private final class SettingsRowClickCaptureView: NSView {
         guard let coordinator else { return }
 
         if event.clickCount >= 2 {
-            pendingSingleClickWorkItem?.cancel()
-            pendingSingleClickWorkItem = nil
             coordinator.handleDoubleClick()
             return
         }
 
-        guard coordinator.onSingleClick != nil else {
-            return
-        }
-
-        let workItem = DispatchWorkItem { [weak coordinator] in
-            coordinator?.handleSingleClick()
-        }
-        pendingSingleClickWorkItem?.cancel()
-        pendingSingleClickWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + NSEvent.doubleClickInterval, execute: workItem)
+        coordinator.handleSingleClick()
     }
 }
 
 #Preview("Settings Row Click Surface") {
     SettingsRowClickSurface(
         onSingleClick: {},
-        onDoubleClick: {}
-    ) {
-        Text("Example row")
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(.quaternary)
-    }
+        onDoubleClick: {},
+        content: {
+            Text("Example row")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(.quaternary)
+        }
+    )
     .frame(width: 320)
     .padding()
 }
