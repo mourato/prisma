@@ -5,7 +5,13 @@ description: This skill should be used when the user asks to "run the task lifec
 
 # Universal Task Lifecycle
 
-## Overview
+## Role
+
+Use this skill as the canonical owner for macro task sequencing in Prisma.
+
+- Own risk classification, lane selection, and lifecycle phases.
+- Set the order of implementation, verification, review, and cleanup.
+- Delegate concrete Git commands, validation commands, and review output to their specialist owners.
 
 ## Scope Boundaries
 
@@ -13,6 +19,15 @@ description: This skill should be used when the user asks to "run the task lifec
 - Use ../git-workflow/SKILL.md for detailed Git operations.
 - Use ../quality-assurance/SKILL.md for verification strategy and command policy.
 - Use ../code-review/SKILL.md for review findings format and severity ritual.
+
+## When to Use
+
+Use this skill when the task requires any of the following:
+
+- Classifying task risk and selecting Fast vs Full lane
+- Defining the required workflow before implementation starts
+- Sequencing implementation, verification, review, and cleanup
+- Resolving overlap between Git workflow, QA workflow, and code review workflow
 
 This skill defines the **MANDATORY** operational standards for every coding task performed on this codebase.
 
@@ -28,6 +43,7 @@ Policy source:
 
 - `AGENTS.md` is the source of truth.
 - This skill operationalizes that policy and must stay aligned with it.
+- `../quality-assurance/SKILL.md` owns concrete command mapping and must only use real `Makefile` targets.
 
 ## Phase 0: Risk Classification (Required)
 
@@ -60,13 +76,7 @@ Branch policy:
    - If requirements are ambiguous, incomplete, or have high-impact trade-offs, ask concise confirmation questions before implementation.
    - This step is optional when the request is already specific enough and low-risk.
    - Do not assume behavior, scope, acceptance criteria, or destructive intent when uncertainty remains.
-4. **Branching**: Create a fresh branch from `main` (for Codex sessions prefer `codex/<task-name>`).
-5. **Setup Branch**: Create and switch to a fresh branch from `main`.
-   ```bash
-   git checkout main
-   git pull --ff-only
-   git checkout -b <branch-name>
-   ```
+4. **Branching**: Create and switch to a fresh branch from `main`. Use `../git-workflow/SKILL.md` for concrete Git commands, naming, and cleanup expectations.
 
 ## Phase 2: Implementation Loop (Green + Atomic)
 
@@ -83,16 +93,9 @@ Repeat the following loop until the task is complete:
 1. **Implement a small, coherent slice**: Prefer incremental changes that follow the selected reusable-block strategy (`reuse`, `extend`, or `create`).
 2. **Run proportional checks during development**:
    - Fast lane: staged lint/format plus scoped checks for touched files/subsystem.
-   - Full lane: run scoped checks first (targeted tests + narrow build), then `make build-test` at milestones.
-   - Prefer `make scope-check` as the default scoped command (automatic test mapping + escalation).
-   - Scoped decision order: targeted tests → narrow build (`make build-agent`/`make build`) → scope checks (`make preview-check`, `make arch-check`) → full gate.
-   - Escalate to immediate `make build-test` when build/test infrastructure, cross-module/public API, audio/persistence/concurrency/security paths, large deltas, or low-confidence test mapping are present.
-   - Prefer `make preflight` before final push/merge to run the canonical scripted gates (`build + test + lint + summary benchmark`).
-   - Use `make preflight-fast` for faster local feedback (`lint + build + test`, skips summary benchmark).
-   - When `STRICT_LINT=1`, preflight runs lint before tests to fail earlier on style violations.
-   - For AI-driven runs where token budget matters, use compact targets (`make preflight-agent`, `make preflight-agent-fast`, `make build-test`, `make lint-agent`) and inspect logs under `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`.
-   - Run `make arch-check` when changing architecture boundaries/access control/import rules.
-   - Run `make preview-check` when adding/changing SwiftUI views.
+   - Full lane: run scoped checks first, then the Full-lane merge gate at milestones when risk or churn justifies it.
+   - Use `../quality-assurance/SKILL.md` for exact commands, escalation criteria, compact-mode targets, and scope-specific checks.
+   - Keep the decision order consistent: targeted tests → narrow build → scope-specific checks → full gate.
    - If tests touch module internals, ensure the test target depends on that module explicitly in `Package.swift`.
 3. **If verification fails**: Stop and fix before progressing.
 4. **Atomic commit (green state)**:
@@ -118,10 +121,10 @@ Before the final push/merge, perform a local review using **[code-review](../cod
    - Must fix **🔴 Critical** and **🟡 Medium**.
    - Fix **🟢 Low** when it clearly improves clarity/safety with low risk.
 4. **Hard gate before push/merge**:
-   - Fast lane minimum: `make test-agent`
-   - Full lane minimum: `make build-test`
-   - `make lint` is recommended (mandatory for broad refactors)
-   - Preferred single command: `make preflight`
+   - Fast lane minimum: the Fast-lane merge gate defined in `AGENTS.md` and mapped in `../quality-assurance/SKILL.md`.
+   - Full lane minimum: the Full-lane merge gate defined in `AGENTS.md` and mapped in `../quality-assurance/SKILL.md`.
+   - `make lint` remains mandatory for broad refactors.
+   - `make preflight` remains the preferred single-command full verification path.
    - Agent compact commands are for low-noise diagnostics and do not replace required merge gates.
 5. **Atomic commits for review fixes**: Commit review-driven changes separately from feature work.
 

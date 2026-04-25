@@ -32,6 +32,26 @@ If the request is to find or install external skills, use `../skills-discovery/S
 5. Add cross-skill links for all known overlap areas.
 6. Validate structure, links, and trigger quality.
 
+## Canonical SKILL.md Template
+
+Prefer this section order unless the skill has a strong reason to differ:
+
+1. `Role`
+2. `Scope Boundary`
+3. `When to Use`
+4. Domain workflow, rules, or routing content
+5. `Verification` when the skill has a relevant validation handoff
+6. `Related Skills`
+7. `References`
+
+For workflow-oriented skills, keep ownership sharp:
+
+- `task-lifecycle` owns risk classification, lane choice, and lifecycle sequencing.
+- `quality-assurance` owns concrete command mapping and validation strategy.
+- `git-workflow` owns branch, commit, PR, and cleanup mechanics.
+- `code-review` owns findings format, severity framing, and review output.
+- Router skills should route to these owners rather than restate their rules.
+
 ## Skill Quality Checklist
 
 ### Frontmatter
@@ -45,6 +65,7 @@ If the request is to find or install external skills, use `../skills-discovery/S
 - Skill has an explicit scope boundary section.
 - Overlapping skills are referenced with clear routing criteria.
 - Canonical owner for each domain is explicit.
+- Workflow and router skills delegate to the canonical owner instead of duplicating the same policy text.
 
 ### Progressive Disclosure
 
@@ -60,6 +81,7 @@ Use available tooling and local checks to ensure consistency.
 - Validate all relative links from `SKILL.md`.
 - Verify no directory is left as an empty placeholder.
 - Ensure indexes and routing docs mention only existing skills.
+- Run `make guidance-check` after changing `AGENTS.md`, `.agents/`, or command-reference docs.
 
 ## Resource Map
 

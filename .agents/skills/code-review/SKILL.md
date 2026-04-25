@@ -5,7 +5,25 @@ description: This skill should be used when the user asks to "review this change
 
 # Code Review (Prisma)
 
-## Goal
+## Role
+
+Use this skill as the canonical owner for local review depth, findings format, and semáforo output in Prisma.
+
+- Own review framing, severity language, and output expectations.
+- Focus on correctness, regression risk, safety, and missing verification.
+- Delegate lane policy and command selection to their specialist owners.
+
+## Scope Boundary
+
+- Use `../task-lifecycle/SKILL.md` for deciding when review happens and how deep it must be by lane.
+- Use `../quality-assurance/SKILL.md` for validation commands and merge gates.
+- Use subsystem skills for domain-specific review details when the change is in a specialized area.
+
+## When to Use
+
+Use this skill when the user asks to review a change, audit a PR, find risks before merge, or produce a semáforo-style findings report.
+
+## Review Focus
 
 Perform a pragmatic review of the change set before the final push, focusing on:
 
@@ -16,7 +34,7 @@ Perform a pragmatic review of the change set before the final push, focusing on:
 - Maintainability (duplication, cohesion, coupling, naming)
 - Testability (injection points, pure logic)
 
-## How to run
+## Review Workflow
 
 ### 1) Scope
 
@@ -59,8 +77,14 @@ Suggested columns:
 - Impact
 - Recommendation
 
-## Expected output
+## Output Contract
 
 - A summary table (traffic-light).
 - Objective notes with references to files/symbols.
 - Short, actionable next steps.
+
+## Related Skills
+
+- `../task-lifecycle/SKILL.md`
+- `../quality-assurance/SKILL.md`
+- Domain specialist skills relevant to the reviewed change

@@ -228,8 +228,9 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 ## Minimum Verification Gates
 
 **Before push/merge (mandatory):**
-- ✓ Fast lane: `make scope-check` or `make test-agent`
+- ✓ Fast lane: `make scope-check`
 - ✓ Full lane: `make test-full` + `make build-test`
+- ✓ Guidance changes (`AGENTS.md`, `.agents/`, command docs): `make guidance-check`
 
 **Recommended before merge:**
 - ✓ `make preflight` — full validation

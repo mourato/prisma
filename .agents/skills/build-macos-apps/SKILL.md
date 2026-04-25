@@ -30,6 +30,10 @@ Use this skill for intake and routing only. Do not add duplicated implementation
 - XCTest implementation details -> `testing-xctest`
 - Accessibility audit and keyboard/focus review -> `accessibility-audit`
 
+## When to Use
+
+Use this skill when the request is broad and macOS-oriented, and the first job is to route quickly to the right owner rather than provide deep implementation guidance.
+
 ## Intake
 
 Ask the user what they need:
@@ -59,7 +63,14 @@ Ask the user what they need:
 - Implementation references live under `../macos-development/references/`.
 - Routing, risk, and merge policy live in `../task-lifecycle/SKILL.md`.
 - Verification commands live in `../quality-assurance/SKILL.md`.
+- External skills are optional. Do not route to an external skill unless it is already installed locally or the user explicitly asks to discover/install one via `../skills-discovery/SKILL.md`.
 - If a topic already has a specialist owner, route there instead of adding more guidance here.
+
+## Verification Handoff
+
+- Use `../task-lifecycle/SKILL.md` when the request needs lane selection or lifecycle sequencing.
+- Use `../quality-assurance/SKILL.md` when the request needs concrete validation commands.
+- Use `../code-review/SKILL.md` when the request is a review rather than an implementation task.
 
 ## Release Command Surface (Current)
 
@@ -85,7 +96,7 @@ Recent release automation churn (commits `51c53eb`, `37bcb34`, `d82fb9d`, `09bb4
 
 ### Routing Note
 
-When a task is specifically about failing GitHub Actions checks, route to `gh-fix-ci` first, then return to this skill for macOS release workflow wiring.
+When a task is specifically about failing GitHub Actions checks, inspect the workflow directly with `gh run view --log-failed` and pair the investigation with `../debugging-strategies/SKILL.md`, then return here for macOS release workflow wiring.
 
 ## 2026-03-05 Progression Drill
 
@@ -100,7 +111,7 @@ When a task is specifically about failing GitHub Actions checks, route to `gh-fi
 1. Add a mandatory release handoff checklist: checkout ref, artifact paths, executable permissions, appcast key path, version parity.
 2. On every release workflow task, require one local parity run via `scripts/ci-release-parity.sh` before proposing merge.
 3. Capture "first failing step + root mismatch" in PR notes to reduce repeated CI-only debugging loops.
-4. Route CI-check triage to `gh-fix-ci` first when failure originates in GitHub Actions logs, then return here for workflow wiring changes.
+4. Triage CI-check failures with `gh run view --log-failed` plus `../debugging-strategies/SKILL.md`, then return here for workflow wiring changes.
 
 ## 2026-03-06 Progression Drill
 
@@ -115,7 +126,7 @@ When a task is specifically about failing GitHub Actions checks, route to `gh-fi
 1. For every signing/release task, run a two-mode preflight: default auto-detect path and forced override path (`MA_RELEASE_SIGNING_MODE=adhoc|self-signed`).
 2. Require a deterministic checklist item in task notes: keychain identity discovery result, selected signing mode, and final `make dmg` path taken.
 3. Treat any parity-script diff (`scripts/ci-release-parity.sh`) as release-surface change and require explicit mapping to expected Sparkle/appcast behavior.
-4. If signing failures are runner- or env-sensitive, route first triage to `gh-fix-ci`, then return here only for workflow/command-surface corrections.
+4. If signing failures are runner- or env-sensitive, inspect GitHub Actions logs with `gh run view --log-failed` first, then return here only for workflow/command-surface corrections.
 
 ## Related Skills
 

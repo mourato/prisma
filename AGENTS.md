@@ -48,10 +48,12 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 - **GitHub**: Drive interactions through `gh` CLI (issues, PRs, comments); use `--body-file` for multiline content
 - **Broad context**: Use deepwiki for repository-wide perspective (optional if local context suffices)
 - **External code research priority**: When inspecting code from other projects, use this order: `MCP grep` (default) → `gh` CLI → deepwiki → web search (last resort)
+- **Command surface authority**: `Makefile` is the canonical command surface. `AGENTS.md` defines lane policy; `.agents/skills/quality-assurance/SKILL.md` maps that policy to concrete commands and must only reference real `Makefile` targets.
 - **Build & test**: See [Build and Test Reference](./.agents/docs/build-and-test.md)
 - **Distribution**: Use `make dmg` as the single DMG entrypoint; it auto-detects the configured local self-signed identity in keychain
 - **Skill routing**: See [Skill Routing Guide](./.agents/docs/skill-routing.md)
 - **Code style source of truth**: `.swiftlint.yml` defines enforceable style budgets/rules. Keep lint-mapped writing guidance in `.agents/skills/swift-conventions/SKILL.md` and update that skill in the same PR whenever `.swiftlint.yml` changes.
+- **Guidance validation**: When changing `AGENTS.md`, `.agents/`, or referenced command docs, run `make guidance-check` to validate local links and `make` targets.
 
 ---
 
@@ -82,9 +84,8 @@ Additional maintainability limits:
 When guidance conflicts, apply this order:
 
 1. `AGENTS.md` (this file)
-2. `.agents/rules/*`
-3. Relevant skill instructions in `.agents/skills/*`
-4. Reference docs and inline comments/examples
+2. Relevant skill instructions in `.agents/skills/*`
+3. Reference docs and inline comments/examples
 
 If conflict remains unresolved, ask for clarification before implementing behavior changes.
 
@@ -136,8 +137,7 @@ Before implementation, classify your task:
   - `make preview-check` when changing SwiftUI views
   - `make arch-check` when changing architecture/import boundaries
 - **Merge gate:**
-  - `make lint-fix`
-  - `make test-agent`
+  - `make scope-check`
 
 **Full Lane (Medium/High Risk):**
 
@@ -146,7 +146,6 @@ Before implementation, classify your task:
 - Small slices, frequent scoped verification (targeted tests + narrow build first)
 - Run `make build-test` at key milestones (before push/merge, after large rebases, or when escalation triggers fire)
 - **Before push/merge (hard gates, no exceptions):**
-  - `make lint-fix`
   - `make build-test`
   - `make lint` (mandatory for broad refactors)
 - **Code review:** Full semáforo review (🔴/🟡/🟢). Fix all Critical + Medium findings before merge.
@@ -177,8 +176,8 @@ For every task, leave auditable evidence in the PR description, issue comment, o
 
 | Lane     | Required quality gates                                                                            | Required evidence                                                                                                                                |
 | -------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Fast** | Iteration scoped checks + `make lint-fix`, `make test-agent`                                      | Risk level, reusable-block decision (reuse/extend/create), scoped commands executed, escalation rationale (if any), test result summary          |
-| **Full** | Iteration scoped checks + `make lint-fix`, `make build-test`, and `make lint` for broad refactors | Risk level, reusable-block decision, semáforo review outcome, scoped commands executed, escalation rationale (if any), test/build result summary |
+| **Fast** | Iteration scoped checks + `make scope-check`                                                      | Risk level, reusable-block decision (reuse/extend/create), scoped commands executed, escalation rationale (if any), test result summary          |
+| **Full** | Iteration scoped checks + `make build-test`, and `make lint` for broad refactors                  | Risk level, reusable-block decision, semáforo review outcome, scoped commands executed, escalation rationale (if any), test/build result summary |
 
 ### PR & Merge Policy
 
@@ -226,6 +225,7 @@ Before responding or committing code, verify:
 - **Hard constraints:** Am I violating any hard constraint above?
 - **Code review:** Did I plan for appropriate review depth (lightweight vs. full semáforo)?
 - **Verification strategy:** Did I run scoped checks during iteration and lane gates at merge (`make test-agent` for Fast, `make build-test` for Full)?
+- **Verification strategy:** Did I run scoped checks during iteration and lane gates at merge (`make scope-check` for Fast, `make build-test` for Full)?
 - **Evidence captured:** Did I record commands/results and assumptions where applicable?
 
 **Signals of deviation:**
@@ -247,7 +247,7 @@ When deviations occur, document in GitHub issue with label `known-limitation` or
 - Apply least-privilege thinking for entitlements, capabilities, and integrations.
 - Validate and sanitize external input at module boundaries (network payloads, file content, provider responses).
 - Avoid logging sensitive data (keys, tokens, full transcripts, personal identifiers).
-- See `.agents/rules/security.md` and `.agents/skills/keychain-security/` for implementation guidance.
+- See `.agents/skills/security/` and `.agents/skills/keychain-security/` for implementation guidance.
 
 ---
 
@@ -289,23 +289,20 @@ Rules:
 | [Skill Routing Guide](./.agents/docs/skill-routing.md)       | When to use which skill; problem-specific routing |
 | [Skills Index](./.agents/SKILLS_INDEX.md)                    | Complete skill registry with triggers             |
 
-### Agent Guidelines
+### Canonical Skill Owners
 
-| Document                                 | Scope                                       |
-| ---------------------------------------- | ------------------------------------------- |
-| `.agents/rules/architecture.md`          | MVVM / Clean Architecture patterns          |
-| `.agents/rules/clean-code.md`            | Code quality guidelines                     |
-| `.agents/rules/concurrency.md`           | Async/await, actors, thread safety patterns |
-| `.agents/rules/data-persistency.md`      | Data storage strategies                     |
-| `.agents/rules/error-handling.md`        | Error propagation and logging               |
-| `.agents/rules/external-dependencies.md` | Dependency management                       |
-| `.agents/rules/lifecycle-and-memory.md`  | Memory management                           |
-| `.agents/rules/network.md`               | URLSession and API patterns                 |
-| `.agents/rules/performance.md`           | Optimization guidelines                     |
-| `.agents/rules/security.md`              | Security best practices                     |
-| `.agents/rules/swift-style.md`           | Swift style conventions                     |
-| `.agents/rules/testing.md`               | Testing guidelines                          |
-| `.agents/rules/type-security.md`         | Type safety patterns                        |
+| Skill | Scope |
+| ----- | ----- |
+| `.agents/skills/architecture/` | Module boundaries, Clean Architecture, dependency injection |
+| `.agents/skills/code-quality/` | Readability, maintainability, duplication reduction |
+| `.agents/skills/concurrency/` | Async/await, actors, and thread-safety concepts |
+| `.agents/skills/data-persistence/` | Storage strategy, repositories, and migrations |
+| `.agents/skills/error-handling/` | Error modeling, propagation, and recovery |
+| `.agents/skills/networking/` | URLSession, request/response modeling, resiliency |
+| `.agents/skills/performance/` | CPU, memory, startup, and energy optimization |
+| `.agents/skills/security/` | Sensitive data controls and validation |
+| `.agents/skills/swift-conventions/` | Swift style, naming, type safety, and module conventions |
+| `.agents/skills/testing-xctest/` | XCTest structure, async tests, doubles, and deterministic assertions |
 
 ### Skills (Conditional, Load When Relevant)
 

@@ -5,15 +5,31 @@ description: This skill should be used when the user asks to "write tests", "cre
 
 # Quality Assurance Standards
 
-## Overview
+## Role
 
-This skill owns verification strategy and command selection for the repository.
+Use this skill as the canonical owner for verification strategy and command selection in Prisma.
 
 Core policy alignment:
 
 - `AGENTS.md` and `../task-lifecycle/SKILL.md` own risk classification and lane policy.
 - This skill translates those lanes into concrete validation commands.
+- `Makefile` is the canonical command surface; if a skill/doc mentions a different target name, fix the doc rather than inventing aliases.
 - When running checks via AI agents, prefer compact `*-agent` targets to reduce context volume while preserving failure diagnostics.
+
+## Scope Boundaries
+
+- Own command mapping, validation order, escalation triggers, and scope-based checks.
+- Do not own risk classification, lane selection, Git workflow, or review output formatting.
+- Delegate XCTest implementation details to `../testing-xctest/SKILL.md`.
+
+## When to Use
+
+Use this skill when the task requires any of the following:
+
+- Choosing which validation commands to run for a given change
+- Deciding between scoped validation and full gates
+- Mapping Fast/Full lane policy to concrete repository commands
+- Selecting extra checks such as preview, architecture, parity, or compact agent runs
 
 ## Verification by Lane
 
@@ -23,7 +39,7 @@ Minimum expectation:
 
 - Run staged lint/format checks (or equivalent lightweight checks).
 - Run scoped checks first (targeted tests + relevant scope checks) when the change could affect behavior.
-- Before push/merge, run `make scope-check` or `make test-agent`.
+- Before push/merge, run `make scope-check`.
 
 ### Full lane (Medium/High risk)
 
@@ -60,6 +76,7 @@ Run these only when relevant to the changed scope:
 
 - `make arch-check` for architecture boundary/access-control/import-rule changes.
 - `make preview-check` when adding/changing SwiftUI views.
+- `make guidance-check` when editing `AGENTS.md`, `.agents/`, or command/reference docs.
 - `make test-verbose` or targeted `./scripts/run-tests.sh ...` commands when debugging flaky or scope-specific tests.
 - Use `../testing-xctest/SKILL.md` when the task is about structuring or writing XCTest code rather than selecting verification gates.
 
@@ -107,7 +124,13 @@ Compact-mode notes:
 - Scripts emit deterministic `AGENT_*` summary lines for pass/fail parsing.
 - Use compact mode for iteration; keep `make build-test` as merge gate for Medium/High tasks.
 
-## Hooks and automation
+## Related Skills
+
+- `../task-lifecycle/SKILL.md`
+- `../testing-xctest/SKILL.md`
+- `../code-review/SKILL.md`
+
+## Verification and Automation
 
 - Install Git hooks with:
   - `git config core.hooksPath scripts/hooks`

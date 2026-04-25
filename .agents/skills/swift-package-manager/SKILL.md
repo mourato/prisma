@@ -31,7 +31,6 @@ Activate this skill when working with:
 - Package dependency declarations
 - `swift package` commands
 - `Package.resolved` lock file
-- `make spm-proj` Xcode project generation
 - SPM dependency updates
 
 ## Key Concepts
@@ -87,57 +86,13 @@ git commit -m "deps: lock swift-log to 1.4.2"
 
 ---
 
-## Xcode Project Generation
+## Xcode Integration
 
-> **Motivation**: For developers without prior Swift experience, using an `.xcodeproj` file is the most visual and friendly way to navigate code, run the application, and use visual tools like SwiftUI Previews.
+This repository uses Swift Package Manager for package structure, but the app is developed and built through the checked-in root Xcode project and workspace.
 
-### Why Generate Xcode Project?
-
-This project uses **Swift Package Manager (SPM)** as the source of truth. Folder structure and dependencies are defined in `Package.swift`.
-
-For day-to-day development, we generate a disposable `.xcodeproj` file. This allows:
-1. Visual file navigation
-2. Auto-complete and visual refactoring
-3. **SwiftUI Previews** usage (visual hot reload)
-4. Visual debugging with breakpoints
-
-### How to Generate the Project
-
-Whenever you add files or change dependencies:
-
-```bash
-make spm-proj
-```
-
-This will create (or update) the file `Packages/MeetingAssistantCore/MeetingAssistantCore.xcodeproj`.
-
-### How to Open and Use
-
-1. After generating, open the project:
-   ```bash
-   open Packages/MeetingAssistantCore/MeetingAssistantCore.xcodeproj
-   ```
-
-2. **To Run Previews (Hot Reload)**:
-   - Open any View file (e.g., `MeetingView.swift`)
-   - On the right side, you'll see the "Canvas"
-   - If paused, click the "Refresh" icon or press `Cmd + Option + P`
-   - Any code changes reflect almost instantly in the Preview
-
-### Troubleshooting
-
-**Project doesn't compile after generation:**
-- Try cleaning the build: `Product > Clean Build Folder` (Cmd + Shift + K)
-- If it persists, delete the generated project and regenerate:
-  ```bash
-  rm -rf Packages/MeetingAssistantCore/MeetingAssistantCore.xcodeproj
-  make spm-proj
-  ```
-
-**Previews don't work:**
-- Make sure you're running on simulator or Mac (Designed for iPad)
-- Verify the correct scheme is selected
-- Try closing and reopening the Canvas
+- Use `MeetingAssistant.xcodeproj` / `MeetingAssistant.xcworkspace` for app navigation, debugging, and previews.
+- Treat `Package.swift` as the source of truth for package targets and dependencies.
+- Do not document or rely on `swift package generate-xcodeproj` or any generated Xcode-project workflow in this repository.
 
 ---
 
@@ -149,9 +104,6 @@ swift package show-dependencies
 
 # Update to latest versions
 swift package update
-
-# Generate Xcode project
-swift package generate-xcodeproj
 
 # Clean build cache
 swift package clean

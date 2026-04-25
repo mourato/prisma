@@ -108,6 +108,14 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 - Skill development: `skill-development`
 - External skill discovery: `skills-discovery`
 
+### Engineering Workflow Ownership
+
+- `task-lifecycle`: risk classification, lane selection, lifecycle sequencing
+- `quality-assurance`: validation strategy, command mapping, escalation to full gates
+- `git-workflow`: branch, commit, PR, and cleanup mechanics
+- `code-review`: findings format, severity framing, semáforo review output
+- `build-macos-apps`: macOS request intake and routing only
+
 ---
 
 ## Skill Dependencies

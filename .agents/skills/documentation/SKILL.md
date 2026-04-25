@@ -26,7 +26,7 @@ Preferred order:
 3. Official SDK or framework source
 4. Web lookup only when the information is not available locally
 
-For OpenAI-specific work, route to `openai-docs` when available.
+If an external skill would materially help, treat it as optional and use `../skills-discovery/SKILL.md` explicitly rather than assuming that skill is installed.
 
 ## 3. Tool-Agnostic Principles
 

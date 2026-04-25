@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-full test-full-agent test-smoke test-perf test-sensitive test-appkit test-parity test-parity-agent test-swift test-verbose test-strict test-ci-strict scope-check scope-check-agent benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-full test-full-agent test-smoke test-perf test-sensitive test-appkit test-parity test-parity-agent test-swift test-verbose test-strict test-ci-strict scope-check scope-check-agent benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check guidance-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -46,6 +46,7 @@ help:
 	@echo "  make lint-fix       - Auto-fix linting issues"
 	@echo "  make arch-check     - Run architecture boundary checks"
 	@echo "  make preview-check  - Verify all SwiftUI views have previews"
+	@echo "  make guidance-check - Validate AGENTS/skills/docs links and make target references"
 	@echo "  make preflight      - Run preflight script (build + test + lint + benchmark)"
 	@echo "  make preflight-fast - Run fast preflight (lint + build + test)"
 	@echo "  make preflight-agent - Run preflight in compact machine-readable mode"
@@ -203,6 +204,10 @@ arch-check:
 preview-check:
 	@echo -e "$(BLUE)Checking SwiftUI preview coverage...$(NC)"
 	@./scripts/preview-check.sh
+
+guidance-check:
+	@echo -e "$(BLUE)Validating AGENTS/skills/docs guidance...$(NC)"
+	@python3 ./scripts/validate-agent-guidance.py
 
 preflight:
 	@echo -e "$(BLUE)Running preflight checks...$(NC)"

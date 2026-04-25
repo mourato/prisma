@@ -5,40 +5,39 @@ description: This skill should be used when the user asks for standard Git flow 
 
 # Git Workflow
 
-## Overview
+## Role
 
-Comprehensive Git patterns for branch management, commit standards, and pull requests in the Prisma project.
+Use this skill as the canonical owner for day-to-day Git operations in Prisma.
+
+- Own branch setup, branch naming, commit structure, PR hygiene, and cleanup.
+- Own safe GitHub CLI body patterns.
+- Delegate lane policy, verification commands, and review output to their specialist owners.
+
+## Scope Boundary
+
+- Use `../task-lifecycle/SKILL.md` for risk classification and lifecycle sequencing.
+- Use `../quality-assurance/SKILL.md` for concrete validation commands and merge gates.
+- Use `../code-review/SKILL.md` for findings format and semáforo review output.
 
 ## When to Use
 
 Activate this skill whenever you are:
-- Starting a new task or conversation that requires code changes.
-- Preparing to commit changes or create a pull request.
-- Managing branches or historical repository state.
-- Applying the risk-based Fast/Full workflow from `AGENTS.md`.
+- Creating or switching branches for a task
+- Structuring commits or preparing a PR
+- Cleaning up branches after merge
+- Sending rich GitHub issue/PR text through `gh`
 
-## Core Principles
+## Core Standards
 
-### 1. Risk-based Branch Workflow
-Follow `AGENTS.md` lane selection:
-1. **Low risk (Fast lane)**: use a feature branch in the current checkout.
-2. **Medium/High risk (Full lane)**: use an isolated feature branch in the current checkout.
-3. **Before merge**: apply lane hard gates (`make test` for Fast; `make build-test` for Full).
+Before merge, apply the lane policy from `../task-lifecycle/SKILL.md` and the command mapping from `../quality-assurance/SKILL.md`.
 
-### 2. Atomic Commits
+### 1. Atomic Commits
 Break your work into small, self-contained units.
 - **One task = One (or more) Commits**: Do not combine refactoring, bug fixes, and new features.
 - **Commit Early & Often**: Capture each logical step (e.g., "add view model", "implement view").
 - **Safe State**: Do not commit knowingly broken code.
 
-### 3. Pre-Commit Verification
-Before creating a commit, run proportional checks:
-- Fast lane: staged lint/format and targeted tests when relevant.
-- Full lane: targeted tests and/or `make build` while iterating.
-- Run `make arch-check` only when architecture boundaries/access-control are affected.
-- Run `make preview-check` when SwiftUI views are added/changed.
-
-### 4. Pre-Push / Pre-Merge Code Review
+### 2. Pre-Push / Pre-Merge Code Review
 Before the final push/merge, perform a local review using **[code-review](../code-review/SKILL.md)**.
 
 - Fast lane: lightweight checklist review is acceptable.
@@ -46,10 +45,11 @@ Before the final push/merge, perform a local review using **[code-review](../cod
 - Fix **🔴 Critical** and **🟡 Medium** findings.
 - Re-verify lane hard gate and commit fixes atomically.
 
-### 5. Hard Gates by Lane
-- **Fast lane (Low risk)**: `make test` before push/merge.
-- **Full lane (Medium/High risk)**: `make build-test` before push/merge.
-- `make lint` is recommended and mandatory for broad refactors.
+### 3. PR Hygiene
+
+- Keep feature, refactor, cleanup, and review-fix commits separate when possible.
+- Ensure documentation changes travel with behavior or contract changes.
+- Use `--body-file` with `gh` for multiline content.
 
 ## Key Concepts
 
@@ -113,7 +113,7 @@ git checkout -b feature/my-new-feature
 If the repository has a PR template, use it.
 
 Before opening a PR (or before merging locally), ensure:
-- [ ] Lane hard gate passed (`make test` for Fast; `make build-test` for Full)
+- [ ] Lane hard gate from `task-lifecycle` + `quality-assurance` passed
 - [ ] Review findings fixed (all 🔴/🟡)
 - [ ] Lint completed when required by scope
 - [ ] Documentation updated when behavior/contracts changed
@@ -160,6 +160,13 @@ For complex Git operations, see the **[git-advanced-workflows](../git-advanced-w
 - Cherry-picking specific commits
 - Troubleshooting with `git bisect`
 - History recovery with `reflog`
+
+## Related Skills
+
+- `../task-lifecycle/SKILL.md`
+- `../quality-assurance/SKILL.md`
+- `../code-review/SKILL.md`
+- `../git-advanced-workflows/SKILL.md`
 
 ## References
 
