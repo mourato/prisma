@@ -28,15 +28,22 @@ public enum AppDesignSystem {
     // MARK: - Colors
 
     public enum Colors {
+        private static func isDarkAppearance(_ appearance: NSAppearance) -> Bool {
+            if let bestMatch = appearance.bestMatch(from: [.darkAqua, .aqua]) {
+                return bestMatch == .darkAqua
+            }
+
+            return appearance.name.rawValue.localizedCaseInsensitiveContains("dark")
+        }
+
         private static func dynamicNSColor(
             light: @escaping @autoclosure () -> NSColor,
             dark: @escaping @autoclosure () -> NSColor
         ) -> NSColor {
             NSColor(name: nil) { appearance in
-                switch appearance.bestMatch(from: [.aqua, .darkAqua]) {
-                case .darkAqua:
+                if isDarkAppearance(appearance) {
                     dark()
-                default:
+                } else {
                     light()
                 }
             }
@@ -139,15 +146,21 @@ public enum AppDesignSystem {
         }
 
         public static var subtleFill: Color {
-            Color.primary.opacity(Accessibility.increaseContrast ? 0.11 : 0.05)
+            let lightFill = NSColor.black.withAlphaComponent(Accessibility.increaseContrast ? 0.08 : 0.04)
+            let darkFill = NSColor.white.withAlphaComponent(Accessibility.increaseContrast ? 0.12 : 0.08)
+            return Color(nsColor: dynamicNSColor(light: lightFill, dark: darkFill))
         }
 
         public static var subtleFill2: Color {
-            Color.primary.opacity(Accessibility.increaseContrast ? 0.08 : 0.03)
+            let lightFill = NSColor.black.withAlphaComponent(Accessibility.increaseContrast ? 0.06 : 0.025)
+            let darkFill = NSColor.white.withAlphaComponent(Accessibility.increaseContrast ? 0.1 : 0.05)
+            return Color(nsColor: dynamicNSColor(light: lightFill, dark: darkFill))
         }
 
         public static var secondaryFill: Color {
-            Color.secondary.opacity(Accessibility.increaseContrast ? 0.16 : 0.1)
+            let lightFill = NSColor.black.withAlphaComponent(Accessibility.increaseContrast ? 0.1 : 0.07)
+            let darkFill = NSColor.white.withAlphaComponent(Accessibility.increaseContrast ? 0.16 : 0.11)
+            return Color(nsColor: dynamicNSColor(light: lightFill, dark: darkFill))
         }
 
         public static var selectionFill: Color {

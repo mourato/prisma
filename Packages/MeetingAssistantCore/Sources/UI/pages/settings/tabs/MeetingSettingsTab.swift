@@ -594,7 +594,7 @@ public struct MeetingSettingsTab: View {
             onSelect: isAutoDetectEnabled ? nil : {
                 meetingViewModel.selectPrompt(AppSettingsStore.noPostProcessingPromptId, forceSelect: true)
             },
-            unselectedStrokeColor: Color.secondary.opacity(0.1),
+            unselectedStrokeColor: AppDesignSystem.Colors.settingsCardStroke,
             showMenu: false,
             preserveMenuSpacing: true,
             menuAccessibilityLabel: "transcription.ai_actions".localized

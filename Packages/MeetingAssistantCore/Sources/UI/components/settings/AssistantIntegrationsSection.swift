@@ -87,7 +87,7 @@ public struct AssistantIntegrationsSection: View {
                 HStack(spacing: 12) {
                     if isCardStyle {
                         RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                            .fill(Color.secondary.opacity(0.12))
+                            .fill(AppDesignSystem.Colors.secondaryFill)
                             .frame(width: 36, height: 36)
                             .overlay(
                                 Image(systemName: "line.3.horizontal")
@@ -119,7 +119,7 @@ public struct AssistantIntegrationsSection: View {
                 Image(systemName: "pencil")
                     .padding(AppDesignSystem.Layout.compactInset)
                     .background(
-                        Circle().fill(Color.secondary.opacity(0.12))
+                        Circle().fill(AppDesignSystem.Colors.secondaryFill)
                     )
             }
             .buttonStyle(.plain)
@@ -136,7 +136,7 @@ public struct AssistantIntegrationsSection: View {
         .padding(isCardStyle ? 12 : 0)
         .background(
             RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius)
-                .strokeBorder(isCardStyle ? Color.secondary.opacity(0.2) : Color.clear, lineWidth: 1)
+                .strokeBorder(isCardStyle ? AppDesignSystem.Colors.settingsCardStroke : Color.clear, lineWidth: 1)
         )
     }
 

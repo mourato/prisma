@@ -51,7 +51,7 @@ public struct SettingsThemePicker: View {
             .overlay {
                 if isSelected {
                     Circle()
-                        .stroke(color == .system ? Color.primary.opacity(0.3) : Color(nsColor: color.nsColor), lineWidth: 3)
+                        .stroke(color == .system ? AppDesignSystem.Colors.settingsCardStroke : Color(nsColor: color.nsColor), lineWidth: 3)
                         .frame(width: 36, height: 36)
                 }
             }

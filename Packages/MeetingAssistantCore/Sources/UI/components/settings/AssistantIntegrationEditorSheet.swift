@@ -222,11 +222,11 @@ public struct AssistantIntegrationEditorSheet: View {
                 .padding(.vertical, 8)
                 .background(
                     RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                        .fill(isUsedInDeepLink ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
+                        .fill(isUsedInDeepLink ? AppDesignSystem.Colors.accent.opacity(0.12) : AppDesignSystem.Colors.subtleFill)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                        .strokeBorder(isUsedInDeepLink ? Color.accentColor.opacity(0.55) : Color.secondary.opacity(0.2), lineWidth: 1)
+                        .strokeBorder(isUsedInDeepLink ? AppDesignSystem.Colors.accent.opacity(0.55) : AppDesignSystem.Colors.settingsCardStroke, lineWidth: 1)
                 )
                 .opacity(isJustCopied ? 0.9 : 1)
             }
