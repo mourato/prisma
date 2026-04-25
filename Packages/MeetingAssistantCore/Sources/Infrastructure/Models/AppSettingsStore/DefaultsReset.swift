@@ -31,7 +31,7 @@ public extension AppSettingsStore {
         useSystemDefaultInput = true
         microphoneWhenChargingUID = nil
         microphoneOnBatteryUID = nil
-        audioDuckingEnabled = false
+        recordingMediaHandlingMode = .none
         audioDuckingLevelPercent = Self.defaultAudioDuckingLevelPercent
         autoIncreaseMicrophoneVolume = false
         removeSilenceBeforeProcessing = false

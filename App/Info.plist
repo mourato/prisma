@@ -22,9 +22,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.4.23</string>
+	<string>0.4.24</string>
 	<key>CFBundleVersion</key>
-	<string>53</string>
+	<string>54</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>LSMinimumSystemVersion</key>
@@ -32,7 +32,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Prisma needs to control browsers to capture the active tab URL during recording.</string>
+	<string>Prisma needs to control supported apps to capture browser context and pause media during recording.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Prisma needs calendar access to show upcoming events and use them as meeting context.</string>
 	<key>NSCalendarsUsageDescription</key>

@@ -93,5 +93,38 @@ public extension AppSettingsStore {
         }
     }
 
+    /// How Prisma should handle currently playing media for microphone-only recordings.
+    enum RecordingMediaHandlingMode: String, CaseIterable, Codable, Sendable {
+        case none
+        case duckAudio
+        case pauseMedia
+
+        public var displayNameKey: String {
+            switch self {
+            case .none: "settings.general.recording_media_handling.none"
+            case .duckAudio: "settings.general.recording_media_handling.duck_audio"
+            case .pauseMedia: "settings.general.recording_media_handling.pause_media"
+            }
+        }
+
+        public var usesDucking: Bool {
+            switch self {
+            case .none:
+                false
+            case .duckAudio, .pauseMedia:
+                true
+            }
+        }
+
+        public var prefersPauseBeforeFallback: Bool {
+            switch self {
+            case .pauseMedia:
+                true
+            case .none, .duckAudio:
+                false
+            }
+        }
+    }
+
     // Moved to main class body to support @Published storage
 }

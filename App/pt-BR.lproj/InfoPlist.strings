@@ -1,5 +1,5 @@
 /* Privacy Usage Descriptions */
-"NSAppleEventsUsageDescription" = "O Prisma precisa controlar navegadores para capturar a URL da aba ativa durante a gravação.";
+"NSAppleEventsUsageDescription" = "O Prisma precisa controlar apps compatíveis para capturar o contexto do navegador e pausar a mídia durante a gravação.";
 "NSCalendarsFullAccessUsageDescription" = "O Prisma precisa acessar o calendário para mostrar os próximos eventos e usá-los como contexto da reunião.";
 "NSCalendarsUsageDescription" = "O Prisma precisa acessar o calendário para mostrar os próximos eventos e usá-los como contexto da reunião.";
 "NSMicrophoneUsageDescription" = "O Prisma precisa acessar o microfone para capturar áudio quando a captura de tela não estiver disponível.";

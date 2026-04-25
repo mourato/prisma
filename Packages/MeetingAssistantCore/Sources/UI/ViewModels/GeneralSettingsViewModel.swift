@@ -70,9 +70,9 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
-    @Published public var audioDuckingEnabled: Bool {
+    @Published public var recordingMediaHandlingMode: AppSettingsStore.RecordingMediaHandlingMode {
         didSet {
-            settingsStore.audioDuckingEnabled = audioDuckingEnabled
+            settingsStore.recordingMediaHandlingMode = recordingMediaHandlingMode
         }
     }
 
@@ -218,7 +218,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         autoCopyTranscriptionToClipboard = settingsStore.autoCopyTranscriptionToClipboard
         shortcutDoubleTapIntervalMilliseconds = settingsStore.shortcutDoubleTapIntervalMilliseconds
         autoPasteTranscriptionToActiveApp = settingsStore.autoPasteTranscriptionToActiveApp
-        audioDuckingEnabled = settingsStore.audioDuckingEnabled
+        recordingMediaHandlingMode = settingsStore.recordingMediaHandlingMode
         audioDuckingLevelPercent = settingsStore.audioDuckingLevelPercent
         useSystemDefaultInput = settingsStore.useSystemDefaultInput
         microphoneWhenChargingUID = settingsStore.microphoneWhenChargingUID
@@ -239,6 +239,10 @@ public class GeneralSettingsViewModel: ObservableObject {
 
         setupDeviceObservation()
         rebuildAvailableDevices()
+    }
+
+    public var usesDuckingControls: Bool {
+        recordingMediaHandlingMode.usesDucking
     }
 
     public var cleanupConfirmationMessage: String {

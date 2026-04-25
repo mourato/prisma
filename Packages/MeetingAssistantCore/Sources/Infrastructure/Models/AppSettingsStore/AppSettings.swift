@@ -232,9 +232,18 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(microphoneOnBatteryUID, forKey: Keys.microphoneOnBatteryUID) }
     }
 
-    /// Whether system output volume should be reduced while recording Dictation/Assistant.
-    @Published public var audioDuckingEnabled: Bool {
-        didSet { UserDefaults.standard.set(audioDuckingEnabled, forKey: Keys.audioDuckingEnabled) }
+    /// How currently playing media should be handled for microphone-only recordings.
+    @Published public var recordingMediaHandlingMode: RecordingMediaHandlingMode {
+        didSet {
+            UserDefaults.standard.set(recordingMediaHandlingMode.rawValue, forKey: Keys.recordingMediaHandlingMode)
+            UserDefaults.standard.set(recordingMediaHandlingMode.usesDucking, forKey: Keys.audioDuckingEnabled)
+        }
+    }
+
+    /// Backward-compatible facade used by legacy callers and tests.
+    public var audioDuckingEnabled: Bool {
+        get { recordingMediaHandlingMode.usesDucking }
+        set { recordingMediaHandlingMode = newValue ? .duckAudio : .none }
     }
 
     /// Target percentage of the current system output volume while recording.
@@ -707,7 +716,7 @@ public class AppSettingsStore: ObservableObject {
         useSystemDefaultInput = audioSettings.useSystemDefaultInput
         microphoneWhenChargingUID = audioSettings.microphoneWhenChargingUID
         microphoneOnBatteryUID = audioSettings.microphoneOnBatteryUID
-        audioDuckingEnabled = audioSettings.audioDuckingEnabled
+        recordingMediaHandlingMode = audioSettings.recordingMediaHandlingMode
         audioDuckingLevelPercent = audioSettings.audioDuckingLevelPercent
         autoIncreaseMicrophoneVolume = audioSettings.autoIncreaseMicrophoneVolume
         removeSilenceBeforeProcessing = audioSettings.removeSilenceBeforeProcessing

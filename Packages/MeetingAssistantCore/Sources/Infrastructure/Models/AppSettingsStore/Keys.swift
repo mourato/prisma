@@ -30,6 +30,7 @@ extension AppSettingsStore {
         static let useSystemDefaultInput = "useSystemDefaultInput"
         static let microphoneWhenChargingUID = "microphoneWhenChargingUID"
         static let microphoneOnBatteryUID = "microphoneOnBatteryUID"
+        static let recordingMediaHandlingMode = "recordingMediaHandlingMode"
         static let audioDuckingEnabled = "audioDuckingEnabled"
         static let audioDuckingLevelPercent = "audioDuckingLevelPercent"
         // Legacy key kept only for one-time migration into Audio Ducking settings.

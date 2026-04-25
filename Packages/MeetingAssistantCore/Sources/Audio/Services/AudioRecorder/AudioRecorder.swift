@@ -103,10 +103,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     var validationTimer: Timer?
     public var onRecordingError: (@Sendable (Error) -> Void)?
 
-    private let muteController = SystemAudioMuteController.shared
-    private var outputMuteSession: SystemAudioMuteController.OutputMuteSession?
-    private var outputDuckingLevelPercent: Int?
-    private var outputMuteTask: Task<Void, Never>?
+    let muteController: any OutputDuckingControlling
+    let mediaPlaybackController: any MediaPlaybackControlling
+    var outputMuteSession: SystemAudioMuteController.OutputMuteSession?
+    var pausedMediaSession: MediaPlaybackResumeSession?
+    var outputDuckingLevelPercent: Int?
+    var outputMuteTask: Task<Void, Never>?
     let deviceManager = AudioDeviceManager()
     let microphoneInputSelectionResolver: MicrophoneInputSelectionResolver
     var micDiagnosticsTimer: Timer?
@@ -119,7 +121,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     var fallbackRecorder: AVAudioRecorder?
     private var fallbackMeterTimer: Timer?
     private var settingsSubscriptions = Set<AnyCancellable>()
-    private var lastMeterSnapshotDate: Date?
+    var lastMeterSnapshotDate: Date?
     private let mixedBufferCallbackStorage = MixedBufferCallbackStorage()
     var activeRecordingSource: RecordingSource?
     var inputDeviceRecoveryTask: Task<Void, Never>?
@@ -130,7 +132,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         set { mixedBufferCallbackStorage.set(newValue) }
     }
 
-    init() {
+    init(
+        muteController: any OutputDuckingControlling = SystemAudioMuteController.shared,
+        mediaPlaybackController: any MediaPlaybackControlling = MediaPlaybackController.shared
+    ) {
+        self.muteController = muteController
+        self.mediaPlaybackController = mediaPlaybackController
         microphoneInputSelectionResolver = MicrophoneInputSelectionResolver(deviceManager: deviceManager)
 
         // Setup worker callbacks to bridge back to MainActor
@@ -215,78 +222,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         inputDeviceRecoveryTask?.cancel()
         isRecoveringInputDevice = false
         activeRecordingSource = nil
+        let settings = try prepareRecordingAttempt(outputURL: outputURL, source: source)
 
-        // Reset per-session mute state
-        resetOutputMuteState()
-
-        AppLogger.info(
-            "Starting recording",
-            category: .recordingManager,
-            extra: ["path": outputURL.path, "source": source.rawValue]
-        )
-        activeRecordingSource = source
-        lastMeterSnapshotDate = nil
-        latestMeterSnapshot = nil
-        currentBarPowerLevels = []
-        let settings = AppSettingsStore.shared
-
-        prepareOutputDuckingIfNeeded(source: source, settings: settings)
-
-        setMeetingMicrophoneEnabled(true)
-        let shouldBoostMicInputVolume = settings.autoIncreaseMicrophoneVolume
-            && settings.useSystemDefaultInput
-            && (source == .microphone || source == .all)
-        if shouldBoostMicInputVolume {
-            increaseDefaultMicrophoneInputVolumeIfPossible()
-        }
-
-        // 1. Check Microphone Permissions first if needed
-        if source == .microphone || source == .all, AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
-            AppLogger.error("Microphone permission denied. Cannot start recording.", category: .recordingManager)
-            restoreOutputMuteIfNeeded()
-            throw AudioRecorderError.permissionDenied
-        }
-
-        // 2. Prepare engine
-        let engine = injectedEngine ?? AVAudioEngine()
-        audioEngine = engine // Retain generic reference
-
-        // 2.5 Validate Output HW Format early
-        // AVAudioEngine is driven by the output device. If it has invalid format
-        // (0 sample rate / 0 channels), the engine either fails (-10875) or runs
-        // with a broken I/O cycle that delivers zero-filled input buffers.
-        let outputFormat = engine.outputNode.outputFormat(forBus: 0)
-        AppLogger.info(
-            "Output node format",
-            category: .recordingManager,
-            extra: [
-                "sampleRate": outputFormat.sampleRate,
-                "channels": outputFormat.channelCount,
-                "commonFormat": outputFormat.commonFormat.rawValue,
-            ]
-        )
-
-        if outputFormat.sampleRate <= 0 || outputFormat.channelCount == 0 {
-            AppLogger.fault(
-                "Output device has invalid hardware format — audio capture will fail",
-                category: .recordingManager,
-                extra: [
-                    "sampleRate": outputFormat.sampleRate,
-                    "channels": outputFormat.channelCount,
-                ]
-            )
-        }
-
-        // 3. Determine Hardware Sample Rate
-        // Use the input device's nominal sample rate when recording microphone audio.
-        // Falling back to the output node rate can cause USB devices to enter a perpetual
-        // "reconfig pending" loop when in/out rates differ, producing silence.
-        let targetSampleRate = resolveTargetSampleRate(
-            engine: engine,
-            source: source
-        )
-
-        AppLogger.info("Resolved target sample rate: \(targetSampleRate)", category: .recordingManager)
+        let (engine, targetSampleRate) = prepareEngineForRecording(source: source)
 
         do {
             // For mic-only recordings, use AVAudioRecorder directly.
@@ -335,10 +273,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             }
             throw error
         }
-    }
-
-    public func setMeetingMicrophoneEnabled(_ isEnabled: Bool) {
-        microphoneMixingDestination?.volume = isEnabled ? 1.0 : 0.0
     }
 
     // MARK: - Simple Mic Recording (AVAudioRecorder)
@@ -432,7 +366,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         if simpleRecorder != nil {
             _ = stopSimpleMicRecording()
-            restoreOutputMuteIfNeeded()
+            restoreOutputInterruptionIfNeeded()
             isRecording = false
             currentAveragePower = -160.0
             currentPeakPower = -160.0
@@ -443,7 +377,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         if let recorder = fallbackRecorder {
             stopFallbackRecorder(recorder)
-            restoreOutputMuteIfNeeded()
+            restoreOutputInterruptionIfNeeded()
             isRecording = false
             currentAveragePower = -160.0
             currentPeakPower = -160.0
@@ -457,7 +391,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         cleanupEngine()
 
         // Restore audio output if we muted it
-        restoreOutputMuteIfNeeded()
+        restoreOutputInterruptionIfNeeded()
 
         // Finalize worker - wait for all buffers to be processed
         let url = await worker.stop()
@@ -490,155 +424,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         return url
     }
 
-    private func restoreOutputMuteIfNeeded() {
-        outputMuteTask?.cancel()
-        outputMuteTask = nil
-
-        guard let session = outputMuteSession else { return }
-        outputMuteSession = nil
-        outputDuckingLevelPercent = nil
-        muteController.restoreOutputState(from: session)
-    }
-
-    private func resetOutputMuteState() {
-        outputMuteTask?.cancel()
-        outputMuteTask = nil
-        outputMuteSession = nil
-        outputDuckingLevelPercent = nil
-    }
-
-    private func scheduleOutputMuteIfNeeded() {
-        guard outputMuteSession != nil, outputDuckingLevelPercent != nil else { return }
-
-        outputMuteTask?.cancel()
-        outputMuteTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: Constants.outputMuteDelayAfterStart)
-            guard let self, isRecording else { return }
-            applyOutputMuteIfNeeded()
-        }
-    }
-
-    private func applyOutputMuteIfNeeded() {
-        guard var session = outputMuteSession, let duckingLevelPercent = outputDuckingLevelPercent else { return }
-
-        do {
-            try muteController.applyDucking(to: &session, levelPercent: duckingLevelPercent)
-            outputMuteSession = session
-        } catch {
-            AppLogger.warning(
-                "Failed to apply system audio ducking",
-                category: .recordingManager,
-                extra: ["error": error.localizedDescription]
-            )
-        }
-    }
-
-    private func prepareOutputDuckingIfNeeded(source: RecordingSource, settings: AppSettingsStore) {
-        // Output ducking must only apply to Dictation/Assistant (mic-only).
-        // Meetings (system + mic) must preserve the system output volume.
-        let configuredDuckingLevelPercent = AppSettingsStore.clampedAudioDuckingLevelPercent(
-            settings.audioDuckingLevelPercent
-        )
-        let shouldDuckOutput = settings.audioDuckingEnabled
-            && source == .microphone
-            && configuredDuckingLevelPercent < 100
-
-        guard shouldDuckOutput else { return }
-
-        // IMPORTANT: Skip ducking when output and input are the same device.
-        // Reducing aggregate output in this case can also affect capture.
-        if let outID = deviceManager.getDefaultOutputDeviceID(),
-           let inID = deviceManager.getDefaultInputDeviceIDRaw(),
-           outID == inID
-        {
-            AppLogger.warning(
-                "Skipping output ducking: output device is the same as input device",
-                category: .recordingManager,
-                extra: ["deviceID": outID, "deviceName": deviceManager.getDeviceName(for: outID) ?? "Unknown"]
-            )
-            return
-        }
-
-        outputMuteSession = muteController.prepareOutputMuteSession()
-        outputDuckingLevelPercent = configuredDuckingLevelPercent
-    }
-
-    func cleanupEngine() {
-        if let mixer = mixerNode {
-            mixer.removeTap(onBus: 0)
-        }
-
-        mixerNode = nil
-        systemAudioSourceNode = nil
-        microphoneMixingDestination = nil
-
-        if let engine = audioEngine {
-            stopMicDiagnostics(for: engine.inputNode)
-            if engine.isRunning {
-                engine.stop()
-            }
-            engine.reset()
-
-            audioEngine = nil
-        }
-    }
-
-    private var shouldUseRealtimeMicrophonePipeline: Bool {
-        FeatureFlags.enableIncrementalDictationTranscription
-            && FeatureFlags.enableRealtimeVADForDictation
-            && onMixedAudioBuffer != nil
-    }
-
-    private var hasPendingStartupResources: Bool {
-        audioEngine != nil
-            || mixerNode != nil
-            || systemAudioSourceNode != nil
-            || currentRecordingURL != nil
-            || fallbackRecorder != nil
-    }
-
-    private func cleanupAfterFailedStart() async {
-        validationTimer?.invalidate()
-        validationTimer = nil
-
-        if let recorder = fallbackRecorder {
-            stopFallbackRecorder(recorder)
-        }
-
-        _ = await systemRecorder.stopRecording()
-        cleanupEngine()
-        _ = await worker.stop()
-        systemAudioQueue.clear()
-        partialBufferState.clear()
-
-        restoreOutputMuteIfNeeded()
-        isRecording = false
-        activeRecordingSource = nil
-        inputDeviceRecoveryTask?.cancel()
-        inputDeviceRecoveryTask = nil
-        isRecoveringInputDevice = false
-        currentRecordingURL = nil
-        currentAveragePower = -160.0
-        currentPeakPower = -160.0
-        currentBarPowerLevels = []
-        latestMeterSnapshot = nil
-        lastMeterSnapshotDate = nil
-    }
-
-    private func startupErrorCode(from error: Error) -> Int? {
-        if case let AudioRecorderError.failedToStartEngine(innerError) = error {
-            return (innerError as NSError).code
-        }
-
-        return (error as NSError).code
-    }
-
-    private func shouldRetryStartup(after error: Error, source _: RecordingSource, retryCount: Int) -> Bool {
-        guard retryCount < Constants.maxRetries else { return false }
-        guard let code = startupErrorCode(from: error) else { return false }
-        return Constants.retriableEngineStartErrorCodes.contains(code)
-    }
-
     func startFallbackRecorder(to outputURL: URL) throws {
         let settings: [String: Any] = [
             AVFormatIDKey: kAudioFormatMPEG4AAC,
@@ -664,7 +449,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         AppLogger.info("Fallback mic recorder started", category: .recordingManager, extra: ["path": outputURL.path])
     }
 
-    private func stopFallbackRecorder(_ recorder: AVAudioRecorder) {
+    func stopFallbackRecorder(_ recorder: AVAudioRecorder) {
         fallbackMeterTimer?.invalidate()
         fallbackMeterTimer = nil
         lastMeterSnapshotDate = nil

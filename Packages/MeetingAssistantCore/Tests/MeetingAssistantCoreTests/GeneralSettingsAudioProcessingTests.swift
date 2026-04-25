@@ -27,14 +27,14 @@ final class GeneralSettingsAudioProcessingTests: XCTestCase {
 
     func testAudioDuckingSettingsArePersistedThroughViewModelReload() {
         let firstViewModel = GeneralSettingsViewModel(settingsStore: settings)
-        firstViewModel.audioDuckingEnabled = true
+        firstViewModel.recordingMediaHandlingMode = .pauseMedia
         firstViewModel.audioDuckingLevelPercent = 28
 
         let reloadedViewModel = GeneralSettingsViewModel(settingsStore: settings)
 
-        XCTAssertTrue(settings.audioDuckingEnabled)
+        XCTAssertEqual(settings.recordingMediaHandlingMode, .pauseMedia)
         XCTAssertEqual(settings.audioDuckingLevelPercent, 28)
-        XCTAssertTrue(reloadedViewModel.audioDuckingEnabled)
+        XCTAssertEqual(reloadedViewModel.recordingMediaHandlingMode, .pauseMedia)
         XCTAssertEqual(reloadedViewModel.audioDuckingLevelPercent, 28)
     }
 }

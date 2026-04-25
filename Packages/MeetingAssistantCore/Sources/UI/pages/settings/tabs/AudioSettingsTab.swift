@@ -51,13 +51,26 @@ public struct AudioSettingsTab: View {
 
                     Divider()
 
-                    DSToggleRow(
-                        "settings.general.audio_ducking".localized,
-                        description: "settings.general.audio_ducking_desc".localized,
-                        isOn: $viewModel.audioDuckingEnabled
-                    )
+                    HStack {
+                        SettingsTitleWithPopover(
+                            title: "settings.general.recording_media_handling".localized,
+                            helperMessage: "settings.general.recording_media_handling_desc".localized
+                        )
 
-                    if viewModel.audioDuckingEnabled {
+                        Spacer()
+
+                        Picker("", selection: $viewModel.recordingMediaHandlingMode) {
+                            ForEach(AppSettingsStore.RecordingMediaHandlingMode.allCases, id: \.self) { mode in
+                                Text(mode.displayNameKey.localized)
+                                    .tag(mode)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: AppDesignSystem.Layout.smallPickerWidth)
+                    }
+
+                    if viewModel.usesDuckingControls {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 10) {
                                 Image(systemName: "speaker.slash")
@@ -87,6 +100,13 @@ public struct AudioSettingsTab: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
+
+                            if viewModel.recordingMediaHandlingMode == .pauseMedia {
+                                Text("settings.general.recording_media_handling_pause_note".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                         }
                         .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
                     }

@@ -200,7 +200,7 @@ extension AppSettingsStore {
         let useSystemDefaultInput: Bool
         let microphoneWhenChargingUID: String?
         let microphoneOnBatteryUID: String?
-        let audioDuckingEnabled: Bool
+        let recordingMediaHandlingMode: RecordingMediaHandlingMode
         let audioDuckingLevelPercent: Int
         let autoIncreaseMicrophoneVolume: Bool
         let removeSilenceBeforeProcessing: Bool
@@ -209,29 +209,47 @@ extension AppSettingsStore {
     /// Loads audio and language settings.
     static func loadAudioAndLanguageSettings() -> AudioAndLanguageSettingsValues {
         let defaults = UserDefaults.standard
+        let hasRecordingMediaHandlingMode = defaults.object(forKey: Keys.recordingMediaHandlingMode) != nil
         let hasDuckingEnabled = defaults.object(forKey: Keys.audioDuckingEnabled) != nil
         let hasDuckingLevel = defaults.object(forKey: Keys.audioDuckingLevelPercent) != nil
 
-        let audioDuckingEnabled: Bool
+        let recordingMediaHandlingMode: RecordingMediaHandlingMode
         let audioDuckingLevelPercent: Int
 
-        if !hasDuckingEnabled,
-           !hasDuckingLevel,
-           defaults.bool(forKey: Keys.muteOutputDuringRecording)
-        {
-            // Preserve old behavior for migrated users that had output mute enabled.
-            audioDuckingEnabled = true
-            audioDuckingLevelPercent = 0
-            defaults.set(audioDuckingEnabled, forKey: Keys.audioDuckingEnabled)
-            defaults.set(audioDuckingLevelPercent, forKey: Keys.audioDuckingLevelPercent)
-        } else {
-            audioDuckingEnabled = loadBoolDefaultIfUnset(forKey: Keys.audioDuckingEnabled, defaultValue: false)
+        if hasRecordingMediaHandlingMode {
+            recordingMediaHandlingMode = loadEnum(
+                forKey: Keys.recordingMediaHandlingMode,
+                defaultValue: .none
+            )
             audioDuckingLevelPercent = AppSettingsStore.clampedAudioDuckingLevelPercent(
                 loadInt(
                     forKey: Keys.audioDuckingLevelPercent,
                     defaultValue: defaultAudioDuckingLevelPercent
                 )
             )
+            defaults.set(recordingMediaHandlingMode.usesDucking, forKey: Keys.audioDuckingEnabled)
+        } else if !hasDuckingEnabled,
+           !hasDuckingLevel,
+           defaults.bool(forKey: Keys.muteOutputDuringRecording)
+        {
+            // Preserve old behavior for migrated users that had output mute enabled.
+            recordingMediaHandlingMode = .duckAudio
+            audioDuckingLevelPercent = 0
+            defaults.set(recordingMediaHandlingMode.rawValue, forKey: Keys.recordingMediaHandlingMode)
+            defaults.set(recordingMediaHandlingMode.usesDucking, forKey: Keys.audioDuckingEnabled)
+            defaults.set(audioDuckingLevelPercent, forKey: Keys.audioDuckingLevelPercent)
+        } else {
+            recordingMediaHandlingMode = loadBoolDefaultIfUnset(
+                forKey: Keys.audioDuckingEnabled,
+                defaultValue: false
+            ) ? .duckAudio : .none
+            audioDuckingLevelPercent = AppSettingsStore.clampedAudioDuckingLevelPercent(
+                loadInt(
+                    forKey: Keys.audioDuckingLevelPercent,
+                    defaultValue: defaultAudioDuckingLevelPercent
+                )
+            )
+            defaults.set(recordingMediaHandlingMode.rawValue, forKey: Keys.recordingMediaHandlingMode)
         }
 
         return AudioAndLanguageSettingsValues(
@@ -240,7 +258,7 @@ extension AppSettingsStore {
             useSystemDefaultInput: loadBoolDefaultIfUnset(forKey: Keys.useSystemDefaultInput, defaultValue: true),
             microphoneWhenChargingUID: UserDefaults.standard.string(forKey: Keys.microphoneWhenChargingUID),
             microphoneOnBatteryUID: UserDefaults.standard.string(forKey: Keys.microphoneOnBatteryUID),
-            audioDuckingEnabled: audioDuckingEnabled,
+            recordingMediaHandlingMode: recordingMediaHandlingMode,
             audioDuckingLevelPercent: audioDuckingLevelPercent,
             autoIncreaseMicrophoneVolume: UserDefaults.standard.bool(forKey: Keys.autoIncreaseMicrophoneVolume),
             removeSilenceBeforeProcessing: loadBoolDefaultIfUnset(

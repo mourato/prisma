@@ -893,6 +893,12 @@
 "settings.general.audio_ducking_desc" = "Reduz o volume do sistema durante a gravação.";
 "settings.general.audio_ducking_percent" = "%d%%";
 "settings.general.audio_ducking_note" = "Percentual do volume atual a ser usado durante a gravação. 0%% silencia completamente.";
+"settings.general.recording_media_handling" = "Mídia Durante a Gravação";
+"settings.general.recording_media_handling_desc" = "Escolha como o Prisma deve tratar a reprodução de mídia compatível durante gravações só com microfone.";
+"settings.general.recording_media_handling.none" = "Não alterar a mídia";
+"settings.general.recording_media_handling.duck_audio" = "Atenuar o áudio atual";
+"settings.general.recording_media_handling.pause_media" = "Pausar a mídia e atenuar se necessário";
+"settings.general.recording_media_handling_pause_note" = "Pausar e retomar funciona em modo de melhor esforço para apps compatíveis. Se o Prisma não conseguir pausar com segurança, ele volta para a atenuação com o nível abaixo.";
 "settings.general.auto_increase_microphone_volume" = "Aumentar automaticamente o volume do microfone";
 "settings.general.auto_increase_microphone_volume_tooltip" = "Define o volume de entrada do microfone no máximo ao iniciar uma gravação. Só funciona ao usar o dispositivo padrão do sistema.";
 "settings.general.audio_processing" = "Processamento de Áudio";
