@@ -183,12 +183,16 @@ enum CohereTranscribeModelRuntime {
     }
 
     static func load(from directory: URL, configuration: MLModelConfiguration? = nil) throws -> AsrModels {
-        var config = configuration ?? AsrModels.defaultConfiguration()
-        if configuration == nil {
+        let config: MLModelConfiguration
+        if let configuration {
+            config = configuration
+        } else {
+            let defaultConfiguration = AsrModels.defaultConfiguration()
             // Cohere public CoreML packages are frequently distributed as
             // portable .mlpackage exports; forcing ANE at first load can
             // trigger long plan-build stalls. Default to CPU+GPU for stability.
-            config.computeUnits = .cpuAndGPU
+            defaultConfiguration.computeUnits = .cpuAndGPU
+            config = defaultConfiguration
         }
 
         let preprocessorURL = try findDirectory(

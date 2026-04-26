@@ -76,7 +76,7 @@ public final class AudioMerger {
 
     private func buildComposition(_ composition: AVMutableComposition, from urls: [URL]) async throws {
         for (index, url) in urls.enumerated() {
-            let asset = AVAsset(url: url)
+            let asset = AVURLAsset(url: url)
             do {
                 let tracks = try await asset.loadTracks(withMediaType: .audio)
                 let duration = try await asset.load(.duration)

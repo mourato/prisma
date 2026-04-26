@@ -78,7 +78,7 @@ extension RecordingManager {
 
             func yield(_ buffer: AVAudioPCMBuffer) {
                 let bufferBox = SendableIncrementalAudioBufferBox(buffer: buffer)
-                lock.withLock { $0?.yield(bufferBox) }
+                _ = lock.withLock { $0?.yield(bufferBox) }
             }
 
             func finishAndClear() {

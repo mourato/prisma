@@ -54,7 +54,7 @@ extension AudioRecorder {
         return (engine, targetSampleRate)
     }
 
-    func prepareRecordingAttempt(outputURL: URL, source: RecordingSource) throws -> AppSettingsStore {
+    func prepareRecordingAttempt(outputURL: URL, source: RecordingSource) throws {
         resetOutputInterruptionState()
 
         AppLogger.info(
@@ -72,8 +72,6 @@ extension AudioRecorder {
         setMeetingMicrophoneEnabled(true)
         applyMicrophoneBoostIfNeeded(settings: settings, source: source)
         try validateRecordingPermissionIfNeeded(source: source)
-
-        return settings
     }
 
     func restoreOutputInterruptionIfNeeded() {

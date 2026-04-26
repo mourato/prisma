@@ -171,9 +171,7 @@ public struct EnhancementsSettingsTab: View {
                             TextEditor(text: excludedBundleIDsBinding)
                                 .font(.caption.monospaced())
                                 .frame(minHeight: 72)
-                                .padding(AppDesignSystem.Layout.textAreaPadding)
-                                .background(AppDesignSystem.Colors.subtleFill2)
-                                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+                                .enhancementsEditorSurface()
 
                             SettingsTitleWithPopover(
                                 title: "settings.context_awareness.base_exclusions".localized,
@@ -303,13 +301,7 @@ public struct EnhancementsSettingsTab: View {
                     TextEditor(text: $systemGuidelinesDraft)
                         .font(.body)
                         .frame(minHeight: 250)
-                        .padding(AppDesignSystem.Layout.textAreaPadding)
-                        .background(AppDesignSystem.Colors.textBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                                .stroke(AppDesignSystem.Colors.separator, lineWidth: 1)
-                        )
+                        .enhancementsEditorSurface(fill: AppDesignSystem.Colors.secondaryFill)
 
                     HStack {
                         Spacer()
@@ -414,6 +406,14 @@ public struct EnhancementsSettingsTab: View {
             return
         }
         NSWorkspace.shared.open(url)
+    }
+}
+
+private extension View {
+    func enhancementsEditorSurface(fill: Color = AppDesignSystem.Colors.subtleFill2) -> some View {
+        padding(AppDesignSystem.Layout.textAreaPadding)
+            .background(fill)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
     }
 }
 

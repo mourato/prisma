@@ -78,7 +78,7 @@ extension AudioRecorder {
     }
 
     func verifyFileIntegrity(url: URL) {
-        let asset = AVAsset(url: url)
+        let asset = AVURLAsset(url: url)
         Task {
             do {
                 let duration = try await asset.load(.duration)

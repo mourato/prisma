@@ -222,7 +222,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         inputDeviceRecoveryTask?.cancel()
         isRecoveringInputDevice = false
         activeRecordingSource = nil
-        let settings = try prepareRecordingAttempt(outputURL: outputURL, source: source)
+        try prepareRecordingAttempt(outputURL: outputURL, source: source)
 
         let (engine, targetSampleRate) = prepareEngineForRecording(source: source)
 

@@ -143,28 +143,23 @@ public struct EnhancementsProviderModelsPage: View {
 
 extension EnhancementsProviderModelsPage {
     var providerRegistrationsSection: some View {
-        DSCard {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("settings.enhancements.providers.active_title".localized)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Text("settings.enhancements.providers.active_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Button {
-                        isShowingProviderPicker = true
-                    } label: {
-                        Label("settings.enhancements.providers.add".localized, systemImage: "plus")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.regular)
+        DSGroup(
+            "settings.enhancements.providers.active_title".localized,
+            icon: "square.stack.3d.up",
+            headerAccessory: {
+                Button {
+                    isShowingProviderPicker = true
+                } label: {
+                    Label("settings.enhancements.providers.add".localized, systemImage: "plus")
                 }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
+            },
+            content: {
+                VStack(alignment: .leading, spacing: 10) {
+                Text("settings.enhancements.providers.active_desc".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 if activeRegistrations.isEmpty {
                     Text("settings.enhancements.providers.empty".localized)
@@ -190,7 +185,8 @@ extension EnhancementsProviderModelsPage {
                     )
                 }
             }
-        }
+            }
+        )
     }
 
     func registrationRow(_ registration: EnhancementsProviderRegistration) -> some View {
@@ -247,7 +243,7 @@ extension EnhancementsProviderModelsPage {
     }
 
     var executionModelSelectorsSection: some View {
-        DSCard {
+        DSGroup("settings.enhancements.provider_models.title".localized, icon: "slider.horizontal.3") {
             VStack(alignment: .leading, spacing: 10) {
                 selectorRow(
                     title: "settings.enhancements.selector.meeting.title".localized,
