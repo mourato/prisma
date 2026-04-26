@@ -7,10 +7,19 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct DSGroup<Content: View, HeaderAccessory: View>: View {
-    private let title: String
+    private let title: String?
     private let icon: String?
     private let headerAccessory: HeaderAccessory
     private let content: Content
+
+    public init(@ViewBuilder content: () -> Content)
+        where HeaderAccessory == EmptyView
+    {
+        title = nil
+        icon = nil
+        headerAccessory = EmptyView()
+        self.content = content()
+    }
 
     public init(_ title: String, icon: String? = nil, @ViewBuilder content: () -> Content)
         where HeaderAccessory == EmptyView
@@ -35,19 +44,21 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                if let icon {
-                    Image(systemName: icon)
-                        .foregroundStyle(AppDesignSystem.Colors.accent)
+            if let title {
+                HStack(spacing: 8) {
+                    if let icon {
+                        Image(systemName: icon)
+                            .foregroundStyle(AppDesignSystem.Colors.accent)
+                    }
+
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+
+                    headerAccessory
                 }
-
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-
-                headerAccessory
+                .padding(.leading, 4)
             }
-            .padding(.leading, 4)
 
             DSCard(style: .settings) {
                 content
@@ -59,9 +70,13 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
 }
 
 #Preview("DSGroup") {
-    DSGroup("Design Group", icon: "cube.fill", headerAccessory: {
-        DSBadge("Preview", kind: .neutral)
-    }) {
+    DSGroup(
+        "Design Group",
+        icon: "cube.fill",
+        headerAccessory: {
+            DSBadge("Preview", kind: .neutral)
+        },
+        content: {
         VStack(alignment: .leading, spacing: 8) {
             Text("Reusable layout container.")
                 .foregroundStyle(.secondary)
@@ -69,6 +84,7 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
                 .foregroundStyle(.secondary)
         }
         .padding()
-    }
+        }
+    )
     .padding()
 }

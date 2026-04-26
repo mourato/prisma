@@ -19,7 +19,7 @@ public struct VocabularySettingsTab: View {
                 title: "settings.section.vocabulary".localized,
                 description: "settings.vocabulary.description".localized
             )
-            DSCard(style: .settings) {
+            DSGroup {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("settings.vocabulary.applied_order_note".localized)
                         .font(.caption2)
@@ -71,42 +71,40 @@ public struct VocabularySettingsTab: View {
         HStack(spacing: 12) {
             SettingsRowClickSurface(
                 onSingleClick: {
-                    selectedRuleID = rule.id
+                    selectRule(rule)
                 },
                 onDoubleClick: {
-                    selectedRuleID = rule.id
-                    openRuleEditor(for: rule)
-                }
-            ) {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(rule.find)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Text(rule.replace.isEmpty ? "settings.vocabulary.empty_replace".localized : rule.replace)
+                    editRule(rule)
+                },
+                content: {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(rule.find)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Text(rule.replace.isEmpty ? "settings.vocabulary.empty_replace".localized : rule.replace)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "arrow.right")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-
-                    Spacer()
-
-                    Image(systemName: "arrow.right")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
-            }
+            )
 
             SettingsContextMenuButton(accessibilityLabel: "settings.vocabulary.actions".localized) {
                 Button {
-                    selectedRuleID = rule.id
-                    openRuleEditor(for: rule)
+                    editRule(rule)
                 } label: {
                     Label("settings.vocabulary.edit_rule".localized, systemImage: "pencil")
                 }
 
                 Button(role: .destructive) {
-                    selectedRuleID = rule.id
-                    viewModel.confirmDelete(rule)
+                    confirmDelete(rule)
                 } label: {
                     Label("settings.vocabulary.delete_rule".localized, systemImage: "trash")
                 }
@@ -118,15 +116,13 @@ public struct VocabularySettingsTab: View {
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         .contextMenu {
             Button {
-                selectedRuleID = rule.id
-                openRuleEditor(for: rule)
+                editRule(rule)
             } label: {
                 Label("settings.vocabulary.edit_rule".localized, systemImage: "pencil")
             }
 
             Button(role: .destructive) {
-                selectedRuleID = rule.id
-                viewModel.confirmDelete(rule)
+                confirmDelete(rule)
             } label: {
                 Label("settings.vocabulary.delete_rule".localized, systemImage: "trash")
             }
@@ -217,6 +213,20 @@ public struct VocabularySettingsTab: View {
     private func vocabularyRowAccessibilityLabel(for rule: VocabularyReplacementRule) -> String {
         [rule.find, rule.replace.isEmpty ? "settings.vocabulary.empty_replace".localized : rule.replace]
             .joined(separator: ", ")
+    }
+
+    private func selectRule(_ rule: VocabularyReplacementRule) {
+        selectedRuleID = rule.id
+    }
+
+    private func editRule(_ rule: VocabularyReplacementRule) {
+        selectRule(rule)
+        openRuleEditor(for: rule)
+    }
+
+    private func confirmDelete(_ rule: VocabularyReplacementRule) {
+        selectRule(rule)
+        viewModel.confirmDelete(rule)
     }
 
     private func openRuleEditor(for rule: VocabularyReplacementRule) {

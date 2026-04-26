@@ -120,12 +120,14 @@ public enum AppDesignSystem {
         }
 
         public static var settingsCardBackground: Color {
-            if Accessibility.reduceTransparency {
-                return Color(nsColor: dynamicNSColor(light: .white, dark: .controlBackgroundColor))
-            }
+            let lightSurface = NSColor.windowBackgroundColor
+                .blended(withFraction: Accessibility.increaseContrast ? 0.14 : 0.09, of: .black)
+                ?? .windowBackgroundColor
+            let darkSurface = NSColor.controlBackgroundColor
+                .blended(withFraction: Accessibility.increaseContrast ? 0.2 : 0.12, of: .white)
+                ?? .controlBackgroundColor
 
-            let darkCard = NSColor.controlBackgroundColor.withAlphaComponent(Accessibility.increaseContrast ? 0.9 : 0.72)
-            return Color(nsColor: dynamicNSColor(light: .white, dark: darkCard))
+            return Color(nsColor: dynamicNSColor(light: lightSurface, dark: darkSurface))
         }
 
         public static var cardStroke: Color {

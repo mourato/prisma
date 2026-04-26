@@ -37,14 +37,20 @@ public struct DSCard<Content: View>: View {
         .background(
             RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(backgroundColor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(strokeColor, lineWidth: 0.5)
-                )
+                .overlay {
+                    if showsStroke {
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(strokeColor, lineWidth: 0.5)
+                    }
+                }
         )
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowYOffset)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var showsStroke: Bool {
+        style == .standard
     }
 
     private var backgroundColor: Color {
@@ -70,7 +76,7 @@ public struct DSCard<Content: View>: View {
         case .standard:
             .clear
         case .settings:
-            AppDesignSystem.Colors.settingsCardShadow
+            .clear
         }
     }
 
@@ -79,7 +85,7 @@ public struct DSCard<Content: View>: View {
         case .standard:
             0
         case .settings:
-            2
+            0
         }
     }
 
@@ -88,7 +94,7 @@ public struct DSCard<Content: View>: View {
         case .standard:
             0
         case .settings:
-            1
+            0
         }
     }
 }

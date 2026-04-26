@@ -185,33 +185,18 @@ public struct ServiceSettingsContent: View {
     }
 
     private var performanceSection: some View {
-        DSCard {
-            HStack(spacing: 12) {
-                Image(systemName: "speedometer")
-                    .font(.title3)
-                    .foregroundStyle(AppDesignSystem.Colors.warning)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("settings.service.high_performance".localized)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    Text("settings.service.no_internet".localized)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-            }
+        DSGroup("settings.service.high_performance".localized, icon: "speedometer") {
+            Text("settings.service.no_internet".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var statusSection: some View {
-        DSCard {
+        DSGroup("settings.service.status".localized, icon: "dot.radiowaves.left.and.right") {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("settings.service.status".localized)
-                        .font(.headline)
-
                     HStack(spacing: 6) {
                         Circle()
                             .fill(viewModel.transcriptionStatus.color)
