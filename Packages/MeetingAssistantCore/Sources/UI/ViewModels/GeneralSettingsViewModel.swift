@@ -245,6 +245,42 @@ public class GeneralSettingsViewModel: ObservableObject {
         recordingMediaHandlingMode.usesDucking
     }
 
+    public var currentPowerSourceState: PowerSourceState {
+        PowerSourceStateProvider().currentPowerSourceState()
+    }
+
+    public var systemDefaultInputDevice: AudioInputDevice? {
+        availableDevices.first(where: { $0.isDefault && $0.isAvailable })
+            ?? availableDevices.first(where: \.isDefault)
+    }
+
+    public func microphoneUID(for powerSource: PowerSourceState) -> String? {
+        switch powerSource {
+        case .charging:
+            microphoneWhenChargingUID
+        case .battery:
+            microphoneOnBatteryUID
+        }
+    }
+
+    public func setMicrophoneUID(_ uid: String?, for powerSource: PowerSourceState) {
+        switch powerSource {
+        case .charging:
+            microphoneWhenChargingUID = uid
+        case .battery:
+            microphoneOnBatteryUID = uid
+        }
+    }
+
+    public func selectedMicrophone(for powerSource: PowerSourceState) -> AudioInputDevice? {
+        guard let uid = microphoneUID(for: powerSource) else { return nil }
+        return availableDevices.first(where: { $0.id == uid })
+    }
+
+    public func refreshAudioInputDevices() {
+        deviceManager.refreshDevices()
+    }
+
     public var cleanupConfirmationMessage: String {
         let preview = cleanupPreview
 

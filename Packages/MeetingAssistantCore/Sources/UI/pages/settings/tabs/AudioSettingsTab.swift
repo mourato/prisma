@@ -8,11 +8,53 @@ import SwiftUI
 
 // MARK: - Audio Settings Tab
 
+private enum AudioInputMode: CaseIterable, Identifiable {
+    case systemDefault
+    case customDevice
+
+    var id: Self { self }
+
+    var iconSystemName: String {
+        switch self {
+        case .systemDefault:
+            "desktopcomputer"
+        case .customDevice:
+            "mic.fill"
+        }
+    }
+
+    var titleKey: String {
+        switch self {
+        case .systemDefault:
+            "settings.general.audio_input_mode.system_default"
+        case .customDevice:
+            "settings.general.audio_input_mode.custom_device"
+        }
+    }
+
+    var descriptionKey: String {
+        switch self {
+        case .systemDefault:
+            "settings.general.audio_input_mode.system_default_desc"
+        case .customDevice:
+            "settings.general.audio_input_mode.custom_device_desc"
+        }
+    }
+}
+
+private struct AudioDeviceOption: Identifiable {
+    let id: String
+    let device: AudioInputDevice?
+
+    static let fallback = AudioDeviceOption(id: "__system_default_fallback__", device: nil)
+}
+
 /// Tab for shared audio hardware settings like devices, formats, and system muting.
 public struct AudioSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
     @State private var previewingSound: SoundFeedbackSound?
     @State private var previewResetTask: Task<Void, Never>?
+    @State private var selectedCustomPowerSource = PowerSourceStateProvider().currentPowerSourceState()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init() {}
@@ -26,27 +68,15 @@ public struct AudioSettingsTab: View {
 
             // Audio Devices
             DSGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
-                VStack(alignment: .leading, spacing: 12) {
-                    DSToggleRow(
-                        "settings.general.use_system_default_input".localized,
-                        description: "settings.general.use_system_default_input_desc".localized,
-                        isOn: $viewModel.useSystemDefaultInput.animated()
-                    )
+                VStack(alignment: .leading, spacing: 16) {
+                    audioInputModePicker
 
-                    if !viewModel.useSystemDefaultInput {
-                        VStack(alignment: .leading, spacing: 16) {
-                            microphonePickerRow(
-                                title: "settings.general.microphone_when_charging".localized,
-                                selection: $viewModel.microphoneWhenChargingUID,
-                                helperMessage: "settings.general.power_based_microphone_desc".localized
-                            )
-
-                            microphonePickerRow(
-                                title: "settings.general.microphone_on_battery".localized,
-                                selection: $viewModel.microphoneOnBatteryUID
-                            )
-                        }
-                        .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
+                    if audioInputMode == .systemDefault {
+                        systemDefaultDeviceSection
+                            .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
+                    } else {
+                        customDeviceSection
+                            .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
                     }
 
                     Divider()
@@ -200,46 +230,6 @@ public struct AudioSettingsTab: View {
         }
     }
 
-    private func microphonePickerRow(
-        title: String,
-        selection: Binding<String?>,
-        helperMessage: String? = nil
-    ) -> some View {
-        HStack {
-            SettingsTitleWithPopover(
-                title: title,
-                helperMessage: helperMessage
-            )
-
-            Spacer()
-
-            Picker("", selection: selection) {
-                Text("settings.general.device_not_selected".localized)
-                    .tag(String?.none)
-
-                ForEach(viewModel.availableDevices) { device in
-                    Text(microphoneOptionTitle(for: device))
-                        .tag(Optional(device.id))
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(width: AppDesignSystem.Layout.smallPickerWidth)
-        }
-    }
-
-    private func microphoneOptionTitle(for device: AudioInputDevice) -> String {
-        if !device.isAvailable {
-            return "\(device.name) (\("settings.general.device_unavailable".localized))"
-        }
-
-        if device.isDefault {
-            return "\(device.name) (\("settings.general.device_default".localized))"
-        }
-
-        return device.name
-    }
-
     private var audioDuckingSliderBinding: Binding<Double> {
         Binding(
             get: { Double(viewModel.audioDuckingLevelPercent) },
@@ -258,6 +248,312 @@ public struct AudioSettingsTab: View {
             previewingSound = nil
         }
     }
+}
+
+private extension AudioSettingsTab {
+    var audioInputMode: AudioInputMode {
+        viewModel.useSystemDefaultInput ? .systemDefault : .customDevice
+    }
+
+    var audioInputModePicker: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                audioInputModeCards
+            }
+
+            VStack(spacing: 12) {
+                audioInputModeCards
+            }
+        }
+    }
+
+    var audioInputModeCards: some View {
+        ForEach(AudioInputMode.allCases) { mode in
+            SettingsSelectableCard(
+                iconSystemName: mode.iconSystemName,
+                title: mode.titleKey.localized,
+                description: mode.descriptionKey.localized,
+                isSelected: audioInputMode == mode
+            ) {
+                viewModel.useSystemDefaultInput = mode == .systemDefault
+                if mode == .customDevice {
+                    selectedCustomPowerSource = viewModel.currentPowerSourceState
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    var systemDefaultDeviceSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("settings.general.current_device".localized)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+
+            SettingsInlineList(
+                items: [AudioDeviceOption(id: viewModel.systemDefaultInputDevice?.id ?? "__current_system_default__", device: viewModel.systemDefaultInputDevice)],
+                emptyText: "settings.general.audio_devices_empty".localized
+            ) { option in
+                audioDeviceStatusRow(
+                    iconSystemName: option.device == nil ? "desktopcomputer" : "mic.fill",
+                    title: option.device?.name ?? "settings.general.device_not_selected".localized,
+                    description: option.device == nil ? "settings.general.current_device_empty_desc".localized : "settings.general.current_device_desc".localized,
+                    isSelected: false,
+                    badges: option.device == nil ? [] : [BadgeConfig(title: "settings.general.device_active".localized, kind: .success)]
+                )
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+            }
+        }
+    }
+
+    var customDeviceSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("settings.general.power_based_microphone_desc".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            customPowerSourcePicker
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .center, spacing: 12) {
+                    Text("settings.general.available_devices".localized)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+
+                    Spacer()
+
+                    Button {
+                        viewModel.refreshAudioInputDevices()
+                    } label: {
+                        Label("settings.general.refresh".localized, systemImage: "arrow.clockwise")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(AppDesignSystem.Colors.accent)
+                }
+
+                SettingsInlineList(
+                    items: audioDeviceOptions(for: selectedCustomPowerSource),
+                    emptyText: "settings.general.audio_devices_empty".localized
+                ) { option in
+                    audioDeviceSelectionRow(option: option, powerSource: selectedCustomPowerSource)
+                }
+            }
+        }
+    }
+
+    var customPowerSourcePicker: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                customPowerSourceCards
+            }
+
+            VStack(spacing: 12) {
+                customPowerSourceCards
+            }
+        }
+    }
+
+    var customPowerSourceCards: some View {
+        Group {
+            SettingsSelectableCard(
+                iconSystemName: "powerplug.fill",
+                title: "settings.general.microphone_when_charging".localized,
+                description: "settings.general.microphone_when_charging_desc".localized,
+                isSelected: selectedCustomPowerSource == .charging
+            ) {
+                selectedCustomPowerSource = .charging
+            }
+            .frame(maxWidth: .infinity)
+
+            SettingsSelectableCard(
+                iconSystemName: "battery.75",
+                title: "settings.general.microphone_on_battery".localized,
+                description: "settings.general.microphone_on_battery_desc".localized,
+                isSelected: selectedCustomPowerSource == .battery
+            ) {
+                selectedCustomPowerSource = .battery
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    func audioDeviceOptions(for powerSource: PowerSourceState) -> [AudioDeviceOption] {
+        let selectedUID = viewModel.microphoneUID(for: powerSource)
+        let currentPowerSource = viewModel.currentPowerSourceState
+
+        let sortedDevices = viewModel.availableDevices.sorted { lhs, rhs in
+            let lhsRank = audioDeviceSortRank(device: lhs, selectedUID: selectedUID, powerSource: powerSource, currentPowerSource: currentPowerSource)
+            let rhsRank = audioDeviceSortRank(device: rhs, selectedUID: selectedUID, powerSource: powerSource, currentPowerSource: currentPowerSource)
+
+            if lhsRank != rhsRank {
+                return lhsRank < rhsRank
+            }
+
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+
+        return sortedDevices.map { AudioDeviceOption(id: $0.id, device: $0) } + [.fallback]
+    }
+
+    func audioDeviceSortRank(
+        device: AudioInputDevice,
+        selectedUID: String?,
+        powerSource: PowerSourceState,
+        currentPowerSource: PowerSourceState
+    ) -> Int {
+        if device.id == selectedUID, powerSource == currentPowerSource {
+            return 0
+        }
+
+        if device.id == selectedUID {
+            return 1
+        }
+
+        if device.isDefault {
+            return 2
+        }
+
+        if !device.isAvailable {
+            return 4
+        }
+
+        return 3
+    }
+
+    func audioDeviceSelectionRow(option: AudioDeviceOption, powerSource: PowerSourceState) -> some View {
+        let selectedUID = viewModel.microphoneUID(for: powerSource)
+        let isSelected = option.device?.id == selectedUID || (option.device == nil && selectedUID == nil)
+        let isActiveSelection = isSelected && powerSource == viewModel.currentPowerSourceState
+
+        return Button {
+            viewModel.setMicrophoneUID(option.device?.id, for: powerSource)
+        } label: {
+            audioDeviceStatusRow(
+                iconSystemName: audioDeviceIconSystemName(for: option.device),
+                title: option.device?.name ?? "settings.general.device_not_selected".localized,
+                description: audioDeviceDescription(for: option.device),
+                isSelected: isSelected,
+                badges: audioDeviceBadges(for: option.device, isActiveSelection: isActiveSelection)
+            )
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(audioDeviceAccessibilityLabel(for: option, powerSource: powerSource))
+    }
+
+    func audioDeviceStatusRow(
+        iconSystemName: String,
+        title: String,
+        description: String?,
+        isSelected: Bool,
+        badges: [BadgeConfig]
+    ) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: iconSystemName)
+                .foregroundStyle(isSelected ? AppDesignSystem.Colors.accent : .secondary)
+                .frame(width: 18)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundStyle(.primary)
+
+                if let description {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Spacer(minLength: 12)
+
+            HStack(spacing: 6) {
+                ForEach(badges) { badge in
+                    DSBadge(badge.title, kind: badge.kind)
+                }
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(AppDesignSystem.Colors.success)
+                }
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(isSelected ? AppDesignSystem.Colors.selectionFill : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                .stroke(
+                    isSelected ? AppDesignSystem.Colors.selectionStroke : Color.clear,
+                    lineWidth: 1
+                )
+        )
+        .contentShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+    }
+
+    func audioDeviceDescription(for device: AudioInputDevice?) -> String? {
+        guard let device else {
+            return "settings.general.device_not_selected_desc".localized
+        }
+
+        if !device.isAvailable {
+            return "settings.general.device_unavailable_desc".localized
+        }
+
+        return nil
+    }
+
+    func audioDeviceBadges(for device: AudioInputDevice?, isActiveSelection: Bool) -> [BadgeConfig] {
+        var badges: [BadgeConfig] = []
+
+        if isActiveSelection {
+            badges.append(BadgeConfig(title: "settings.general.device_active".localized, kind: .success))
+        }
+
+        if let device {
+            if !device.isAvailable {
+                badges.append(BadgeConfig(title: "settings.general.device_unavailable".localized, kind: .warning))
+            } else if device.isDefault {
+                badges.append(BadgeConfig(title: "settings.general.device_default".localized, kind: .neutral))
+            }
+        }
+
+        return badges
+    }
+
+    func audioDeviceIconSystemName(for device: AudioInputDevice?) -> String {
+        guard let device else {
+            return "arrow.uturn.backward.circle"
+        }
+
+        if !device.isAvailable {
+            return "mic.slash"
+        }
+
+        return device.isDefault ? "mic.fill" : "mic"
+    }
+
+    func audioDeviceAccessibilityLabel(for option: AudioDeviceOption, powerSource: PowerSourceState) -> String {
+        let powerSourceLabel = powerSource == .charging
+            ? "settings.general.microphone_when_charging".localized
+            : "settings.general.microphone_on_battery".localized
+
+        let deviceName = option.device?.name ?? "settings.general.device_not_selected".localized
+        return "\(powerSourceLabel): \(deviceName)"
+    }
+}
+
+private struct BadgeConfig: Identifiable {
+    let id = UUID()
+    let title: String
+    let kind: DSBadge.Kind
 }
 
 #Preview {
