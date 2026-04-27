@@ -136,6 +136,68 @@ public enum AppDesignSystem {
             return Color(nsColor: dynamicNSColor(light: lightTint, dark: darkTint))
         }
 
+        public static var settingsTitleBarTint: Color {
+            if Accessibility.reduceTransparency {
+                return settingsCanvasBackground
+            }
+
+            let lightTint = NSColor.windowBackgroundColor.withAlphaComponent(
+                Accessibility.increaseContrast ? 0.42 : 0.22
+            )
+            let darkBase = NSColor.windowBackgroundColor
+                .blended(withFraction: 0.18, of: .black)
+                ?? .windowBackgroundColor
+            let darkTint = darkBase.withAlphaComponent(
+                Accessibility.increaseContrast ? 0.36 : 0.20
+            )
+
+            return Color(nsColor: dynamicNSColor(light: lightTint, dark: darkTint))
+        }
+
+        public static var settingsTitleBarHighlight: Color {
+            let lightHighlight = NSColor.white.withAlphaComponent(
+                Accessibility.increaseContrast ? 0.12 : 0.06
+            )
+            let darkHighlight = NSColor.white.withAlphaComponent(
+                Accessibility.increaseContrast ? 0.08 : 0.04
+            )
+
+            return Color(nsColor: dynamicNSColor(light: lightHighlight, dark: darkHighlight))
+        }
+
+        public static var settingsTitleBarShadow: Color {
+            let lightShadow = NSColor.black.withAlphaComponent(
+                Accessibility.increaseContrast ? 0.08 : 0.05
+            )
+            let darkShadow = NSColor.black.withAlphaComponent(
+                Accessibility.increaseContrast ? 0.12 : 0.08
+            )
+
+            return Color(nsColor: dynamicNSColor(light: lightShadow, dark: darkShadow))
+        }
+
+        public static var settingsTitleBarNoise: Color {
+            let lightNoise = NSColor.black.withAlphaComponent(
+                Accessibility.increaseContrast ? 0.03 : 0.012
+            )
+            let darkNoise = NSColor.white.withAlphaComponent(
+                Accessibility.increaseContrast ? 0.025 : 0.01
+            )
+
+            return Color(nsColor: dynamicNSColor(light: lightNoise, dark: darkNoise))
+        }
+
+        public static var settingsTitleBarDivider: Color {
+            let lightDivider = NSColor.black.withAlphaComponent(
+                Accessibility.increaseContrast ? 0.08 : 0.04
+            )
+            let darkDivider = NSColor.white.withAlphaComponent(
+                Accessibility.increaseContrast ? 0.10 : 0.05
+            )
+
+            return Color(nsColor: dynamicNSColor(light: lightDivider, dark: darkDivider))
+        }
+
         public static var cardBackground: Color {
             if Accessibility.reduceTransparency {
                 return controlBackground
@@ -336,6 +398,7 @@ public enum AppDesignSystem {
 
         public static let controlHeight: CGFloat = 34
         public static let compactButtonHeight: CGFloat = 30
+        public static let settingsTitleBarMaterialHeight: CGFloat = 56
         public static let recordingIndicatorMiniHeight: CGFloat = 38
         public static let recordingIndicatorClassicHeight: CGFloat = 42
         public static let recordingIndicatorSuperHeight: CGFloat = 98

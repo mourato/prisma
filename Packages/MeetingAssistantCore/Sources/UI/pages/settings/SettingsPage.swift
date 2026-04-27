@@ -66,6 +66,14 @@ public struct SettingsView: View {
                 detailView
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+            .overlay(alignment: .top) {
+                if usesToolbarChrome {
+                    SettingsTitleBarMaterialBackground()
+                        .frame(height: AppDesignSystem.Layout.settingsTitleBarMaterialHeight)
+                        .frame(maxWidth: .infinity)
+                        .ignoresSafeArea(edges: .top)
+                }
+            }
             .modifier(SettingsDetailChromeModifier(legacyHeader: detailNavigationBar))
             .tint(AppDesignSystem.Colors.accent)
         }
@@ -300,7 +308,9 @@ public struct SettingsView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.ultraThinMaterial)
+        .background {
+            SettingsTitleBarMaterialBackground(usesBottomFade: false)
+        }
         .overlay(alignment: .bottom) {
             Divider()
         }
