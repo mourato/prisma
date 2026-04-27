@@ -9,23 +9,19 @@ import SwiftUI
 public struct DSGroup<Content: View, HeaderAccessory: View>: View {
     private let title: String?
     private let icon: String?
+    private let surfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity
     private let headerAccessory: HeaderAccessory
     private let content: Content
 
-    public init(@ViewBuilder content: () -> Content)
+    public init(
+        surfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity = .subtle,
+        @ViewBuilder content: () -> Content
+    )
         where HeaderAccessory == EmptyView
     {
         title = nil
         icon = nil
-        headerAccessory = EmptyView()
-        self.content = content()
-    }
-
-    public init(_ title: String, icon: String? = nil, @ViewBuilder content: () -> Content)
-        where HeaderAccessory == EmptyView
-    {
-        self.title = title
-        self.icon = icon
+        self.surfaceIntensity = surfaceIntensity
         headerAccessory = EmptyView()
         self.content = content()
     }
@@ -33,11 +29,28 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
     public init(
         _ title: String,
         icon: String? = nil,
+        surfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity = .subtle,
+        @ViewBuilder content: () -> Content
+    )
+        where HeaderAccessory == EmptyView
+    {
+        self.title = title
+        self.icon = icon
+        self.surfaceIntensity = surfaceIntensity
+        headerAccessory = EmptyView()
+        self.content = content()
+    }
+
+    public init(
+        _ title: String,
+        icon: String? = nil,
+        surfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity = .subtle,
         @ViewBuilder headerAccessory: () -> HeaderAccessory,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
         self.icon = icon
+        self.surfaceIntensity = surfaceIntensity
         self.headerAccessory = headerAccessory()
         self.content = content()
     }
@@ -60,7 +73,7 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
                 .padding(.leading, 4)
             }
 
-            DSCard(style: .settings) {
+            DSCard(style: .settings, settingsSurfaceIntensity: surfaceIntensity) {
                 content
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -73,6 +86,7 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
     DSGroup(
         "Design Group",
         icon: "cube.fill",
+        surfaceIntensity: .strong,
         headerAccessory: {
             DSBadge("Preview", kind: .neutral)
         },

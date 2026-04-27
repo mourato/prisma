@@ -50,6 +50,9 @@ struct SystemPromptEditorSheet: View {
             footer
         }
         .frame(width: Constants.sheetWidth, height: Constants.sheetHeight)
+        .background {
+            SettingsWindowBackground()
+        }
     }
 
     // MARK: - Header
@@ -72,7 +75,7 @@ struct SystemPromptEditorSheet: View {
             .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.chipCornerRadius))
         }
         .padding()
-        .background(AppDesignSystem.Colors.settingsCanvasBackground)
+        .background(AppDesignSystem.Colors.settingsGlassBackground)
     }
 
     // MARK: - Sections
@@ -122,7 +125,7 @@ struct SystemPromptEditorSheet: View {
             .disabled(systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding()
-        .background(AppDesignSystem.Colors.settingsCanvasBackground)
+        .background(AppDesignSystem.Colors.settingsGlassBackground)
     }
 }
 

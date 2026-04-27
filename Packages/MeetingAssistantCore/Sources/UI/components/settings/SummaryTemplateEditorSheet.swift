@@ -55,6 +55,9 @@ public struct SummaryTemplateEditorSheet: View {
             footer
         }
         .frame(width: Constants.sheetWidth, height: Constants.sheetHeight)
+        .background {
+            SettingsWindowBackground()
+        }
     }
 
     private var header: some View {
@@ -64,7 +67,7 @@ public struct SummaryTemplateEditorSheet: View {
             Spacer()
         }
         .padding()
-        .background(AppDesignSystem.Colors.settingsCanvasBackground)
+        .background(AppDesignSystem.Colors.settingsGlassBackground)
     }
 
     private var footer: some View {
@@ -85,7 +88,7 @@ public struct SummaryTemplateEditorSheet: View {
             .disabled(summaryTemplate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding()
-        .background(AppDesignSystem.Colors.settingsCanvasBackground)
+        .background(AppDesignSystem.Colors.settingsGlassBackground)
     }
 }
 

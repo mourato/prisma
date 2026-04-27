@@ -13,17 +13,20 @@ public struct DSCard<Content: View>: View {
     }
 
     private let style: Style
+    private let settingsSurfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity
     private let cornerRadius: CGFloat
     private let padding: CGFloat
     private let content: Content
 
     public init(
         style: Style = .standard,
+        settingsSurfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity = .subtle,
         cornerRadius: CGFloat = AppDesignSystem.Layout.cardCornerRadius,
         padding: CGFloat = AppDesignSystem.Layout.cardPadding,
         @ViewBuilder content: () -> Content
     ) {
         self.style = style
+        self.settingsSurfaceIntensity = settingsSurfaceIntensity
         self.cornerRadius = cornerRadius
         self.padding = padding
         self.content = content()
@@ -58,7 +61,7 @@ public struct DSCard<Content: View>: View {
         case .standard:
             AppDesignSystem.Colors.cardBackground
         case .settings:
-            AppDesignSystem.Colors.settingsCardBackground
+            AppDesignSystem.Colors.settingsCardBackground(intensity: settingsSurfaceIntensity)
         }
     }
 

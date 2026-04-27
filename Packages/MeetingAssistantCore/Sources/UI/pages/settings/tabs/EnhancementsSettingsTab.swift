@@ -171,7 +171,7 @@ public struct EnhancementsSettingsTab: View {
                             TextEditor(text: excludedBundleIDsBinding)
                                 .font(.caption.monospaced())
                                 .frame(minHeight: 72)
-                                .enhancementsEditorSurface()
+                                .enhancementsEditorSurface(intensity: .subtle)
 
                             SettingsTitleWithPopover(
                                 title: "settings.context_awareness.base_exclusions".localized,
@@ -301,7 +301,7 @@ public struct EnhancementsSettingsTab: View {
                     TextEditor(text: $systemGuidelinesDraft)
                         .font(.body)
                         .frame(minHeight: 250)
-                        .enhancementsEditorSurface(fill: AppDesignSystem.Colors.secondaryFill)
+                        .enhancementsEditorSurface(intensity: .strong)
 
                     HStack {
                         Spacer()
@@ -410,9 +410,11 @@ public struct EnhancementsSettingsTab: View {
 }
 
 private extension View {
-    func enhancementsEditorSurface(fill: Color = AppDesignSystem.Colors.subtleFill2) -> some View {
+    func enhancementsEditorSurface(
+        intensity: AppDesignSystem.SettingsSurfaceIntensity = .subtle
+    ) -> some View {
         padding(AppDesignSystem.Layout.textAreaPadding)
-            .background(fill)
+            .background(AppDesignSystem.Colors.settingsInlineBackground(intensity: intensity))
             .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
     }
 }

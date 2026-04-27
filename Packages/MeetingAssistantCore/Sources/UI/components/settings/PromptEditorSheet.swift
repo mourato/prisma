@@ -69,6 +69,9 @@ public struct PromptEditorSheet: View {
             footer
         }
         .frame(width: Constants.sheetWidth, height: Constants.sheetHeight)
+        .background {
+            SettingsWindowBackground()
+        }
     }
 
     // MARK: - Header
@@ -81,7 +84,7 @@ public struct PromptEditorSheet: View {
             Spacer()
         }
         .padding()
-        .background(AppDesignSystem.Colors.settingsCanvasBackground)
+        .background(AppDesignSystem.Colors.settingsGlassBackground)
     }
 
     // MARK: - Title Section
@@ -202,7 +205,7 @@ public struct PromptEditorSheet: View {
             .disabled(!isValid)
         }
         .padding(16)
-        .background(AppDesignSystem.Colors.settingsCanvasBackground)
+        .background(AppDesignSystem.Colors.settingsGlassBackground)
     }
 
     // MARK: - Validation

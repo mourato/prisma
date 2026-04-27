@@ -61,8 +61,7 @@ public struct SettingsView: View {
             sidebar
         } detail: {
             ZStack(alignment: .topLeading) {
-                AppDesignSystem.Colors.settingsCanvasBackground
-                    .ignoresSafeArea()
+                SettingsWindowBackground()
 
                 detailView
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

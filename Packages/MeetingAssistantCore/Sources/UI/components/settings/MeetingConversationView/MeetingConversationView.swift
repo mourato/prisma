@@ -111,7 +111,9 @@ public struct MeetingConversationView: View {
                 composer
             }
         }
-        .background(AppDesignSystem.Colors.settingsCanvasBackground)
+        .background {
+            SettingsWindowBackground()
+        }
         .sheet(isPresented: $isShowingModelSelector) {
             EnhancementsModelSelectionSheet(
                 options: modelOptions,
