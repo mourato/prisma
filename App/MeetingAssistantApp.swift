@@ -577,6 +577,8 @@ final class SettingsWindowController {
         settingsWindow.titlebarAppearsTransparent = true
         settingsWindow.toolbarStyle = .unified
         settingsWindow.toolbar = NSToolbar(identifier: NSToolbar.Identifier(AppIdentity.settingsToolbarIdentifier))
+        settingsWindow.isOpaque = false
+        settingsWindow.backgroundColor = .clear
         settingsWindow.isMovableByWindowBackground = false
         settingsWindow.tabbingMode = .disallowed
         if #available(macOS 11.0, *) {
@@ -588,7 +590,12 @@ final class SettingsWindowController {
 
         settingsWindow.setFrameAutosaveName(AppIdentity.settingsWindowAutosaveName)
         settingsWindow.isReleasedWhenClosed = false
-        settingsWindow.contentViewController = NSHostingController(rootView: SettingsView())
+        let hostingController = NSHostingController(rootView: SettingsView())
+        hostingController.view.wantsLayer = true
+        hostingController.view.layer?.backgroundColor = NSColor.clear.cgColor
+        settingsWindow.contentViewController = hostingController
+        settingsWindow.contentView?.wantsLayer = true
+        settingsWindow.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
 
         if layoutEvaluation.shouldCenterWindow {
             settingsWindow.center()

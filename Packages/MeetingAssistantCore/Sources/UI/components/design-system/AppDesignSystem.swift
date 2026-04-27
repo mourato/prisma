@@ -127,10 +127,10 @@ public enum AppDesignSystem {
             }
 
             let lightTint = NSColor.windowBackgroundColor.withAlphaComponent(
-                Accessibility.increaseContrast ? 0.62 : 0.46
+                Accessibility.increaseContrast ? 0.34 : 0.18
             )
             let darkTint = NSColor.controlBackgroundColor.withAlphaComponent(
-                Accessibility.increaseContrast ? 0.58 : 0.4
+                Accessibility.increaseContrast ? 0.32 : 0.16
             )
 
             return Color(nsColor: dynamicNSColor(light: lightTint, dark: darkTint))
