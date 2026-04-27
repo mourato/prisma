@@ -150,6 +150,18 @@ public enum AppDesignSystem {
         public static func settingsCardBackground(
             intensity: AppDesignSystem.SettingsSurfaceIntensity = .subtle
         ) -> Color {
+            if !Accessibility.reduceTransparency {
+                let alpha = settingsCardAlpha(for: intensity)
+                let lightSurface = NSColor.windowBackgroundColor.withAlphaComponent(
+                    Accessibility.increaseContrast ? alpha.highContrastLight : alpha.light
+                )
+                let darkSurface = NSColor.controlBackgroundColor.withAlphaComponent(
+                    Accessibility.increaseContrast ? alpha.highContrastDark : alpha.dark
+                )
+
+                return Color(nsColor: dynamicNSColor(light: lightSurface, dark: darkSurface))
+            }
+
             let blendFractions = settingsCardBlendFractions(for: intensity)
             let lightSurface = NSColor.windowBackgroundColor
                 .blended(
@@ -198,20 +210,20 @@ public enum AppDesignSystem {
         }
 
         public static var subtleFill: Color {
-            let lightFill = NSColor.black.withAlphaComponent(Accessibility.increaseContrast ? 0.08 : 0.04)
-            let darkFill = NSColor.white.withAlphaComponent(Accessibility.increaseContrast ? 0.12 : 0.08)
+            let lightFill = NSColor.black.withAlphaComponent(Accessibility.increaseContrast ? 0.06 : 0.028)
+            let darkFill = NSColor.white.withAlphaComponent(Accessibility.increaseContrast ? 0.1 : 0.06)
             return Color(nsColor: dynamicNSColor(light: lightFill, dark: darkFill))
         }
 
         public static var subtleFill2: Color {
-            let lightFill = NSColor.black.withAlphaComponent(Accessibility.increaseContrast ? 0.06 : 0.025)
-            let darkFill = NSColor.white.withAlphaComponent(Accessibility.increaseContrast ? 0.1 : 0.05)
+            let lightFill = NSColor.black.withAlphaComponent(Accessibility.increaseContrast ? 0.045 : 0.016)
+            let darkFill = NSColor.white.withAlphaComponent(Accessibility.increaseContrast ? 0.08 : 0.032)
             return Color(nsColor: dynamicNSColor(light: lightFill, dark: darkFill))
         }
 
         public static var secondaryFill: Color {
-            let lightFill = NSColor.black.withAlphaComponent(Accessibility.increaseContrast ? 0.1 : 0.07)
-            let darkFill = NSColor.white.withAlphaComponent(Accessibility.increaseContrast ? 0.16 : 0.11)
+            let lightFill = NSColor.black.withAlphaComponent(Accessibility.increaseContrast ? 0.08 : 0.045)
+            let darkFill = NSColor.white.withAlphaComponent(Accessibility.increaseContrast ? 0.13 : 0.075)
             return Color(nsColor: dynamicNSColor(light: lightFill, dark: darkFill))
         }
 
@@ -232,11 +244,11 @@ public enum AppDesignSystem {
         }
 
         public static var settingsTopFadeLeading: Color {
-            settingsCanvasBackground
+            Accessibility.reduceTransparency ? settingsCanvasBackground : settingsGlassBackground
         }
 
         public static var settingsTopFadeTrailing: Color {
-            settingsCanvasBackground.opacity(Accessibility.reduceTransparency ? 1 : 0)
+            Accessibility.reduceTransparency ? settingsCanvasBackground : settingsGlassBackground.opacity(0)
         }
 
         private static func settingsCardBlendFractions(
@@ -263,6 +275,34 @@ public enum AppDesignSystem {
                     dark: 0.14,
                     highContrastLight: 0.17,
                     highContrastDark: 0.22
+                )
+            }
+        }
+
+        private static func settingsCardAlpha(
+            for intensity: AppDesignSystem.SettingsSurfaceIntensity
+        ) -> SettingsCardBlendFractions {
+            switch intensity {
+            case .subtle:
+                SettingsCardBlendFractions(
+                    light: 0.54,
+                    dark: 0.24,
+                    highContrastLight: 0.66,
+                    highContrastDark: 0.34
+                )
+            case .regular:
+                SettingsCardBlendFractions(
+                    light: 0.64,
+                    dark: 0.32,
+                    highContrastLight: 0.74,
+                    highContrastDark: 0.42
+                )
+            case .strong:
+                SettingsCardBlendFractions(
+                    light: 0.76,
+                    dark: 0.42,
+                    highContrastLight: 0.84,
+                    highContrastDark: 0.52
                 )
             }
         }
