@@ -69,6 +69,13 @@ public struct SettingsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
             .modifier(SettingsDetailChromeModifier(legacyHeader: detailNavigationBar))
+            .overlay(alignment: .top) {
+                if usesToolbarChrome {
+                    Rectangle()
+                        .fill(AppDesignSystem.Colors.settingsTitleBarDivider)
+                        .frame(height: 1)
+                }
+            }
             .tint(AppDesignSystem.Colors.accent)
         }
         .navigationSplitViewStyle(.balanced)
@@ -77,7 +84,8 @@ public struct SettingsView: View {
                 settingsToolbarContent
             }
         }
-        .toolbarBackgroundVisibility(.automatic, for: .windowToolbar)
+        .toolbarBackground(AppDesignSystem.Colors.settingsCanvasBackground, for: .windowToolbar)
+        .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .subtleScrollbars()
