@@ -238,7 +238,9 @@ private extension SettingsView {
 
     private var legacyDetailNavigationBar: some View {
         HStack(spacing: 12) {
-            legacySidebarToggleButton
+            if !navigationService.isSettingsSidebarVisible {
+                legacySidebarToggleButton
+            }
 
             HStack(spacing: 6) {
                 legacyNavigationHistoryButton(
