@@ -38,6 +38,7 @@ public struct SettingsView: View {
     private let chromeMode: ChromeMode
     private let settingsStore = AppSettingsStore.shared
     @State private var selectedSection: SettingsSection = .metrics
+    @State private var settingsSearchText = ""
     @State private var metricsNavigationState = SettingsSubpageNavigationState<MetricsDashboardRoute>()
     @State private var transcriptionsNavigationHistory = TranscriptionsNavigationHistory()
     @State private var transcriptionsSearchText = ""
@@ -115,25 +116,12 @@ public struct SettingsView: View {
     // MARK: - Sidebar
 
     private var sidebar: some View {
-        List(selection: sidebarSelectionBinding) {
-            Section("about.title".localized) {
-                ForEach(SettingsSection.primarySections) { section in
-                    NavigationLink(value: section) {
-                        sidebarLabel(for: section)
-                    }
-                }
-            }
-
-            Section("settings.title".localized) {
-                ForEach(SettingsSection.settingsSections) { section in
-                    NavigationLink(value: section) {
-                        sidebarLabel(for: section)
-                    }
-                }
-            }
-        }
+        SettingsSidebarView(
+            selectedSection: $selectedSection,
+            searchText: $settingsSearchText,
+            onSelectSection: selectSection
+        )
         .subtleScrollbars()
-        .listStyle(.sidebar)
         .frame(maxHeight: .infinity, alignment: .top)
         .navigationSplitViewColumnWidth(
             min: LayoutConstants.sidebarMinWidth,
@@ -142,41 +130,12 @@ public struct SettingsView: View {
         )
     }
 
-    private func sidebarLabel(for section: SettingsSection) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: section.icon)
-                .symbolRenderingMode(.monochrome)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 20, height: 20)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(section.sidebarIconBackgroundColor)
-                )
-            Text(section.title)
-                .font(
-                    .system(
-                        size: AppDesignSystem.Layout.sidebarLabelFontSize,
-                        weight: .regular
-                    )
-                )
-                .lineLimit(1)
-        }
-        .padding(.vertical, 2)
-    }
+}
 
-    private var sidebarSelectionBinding: Binding<SettingsSection> {
-        Binding(
-            get: { selectedSection },
-            set: { newSection in
-                selectSection(newSection)
-            }
-        )
-    }
-
+private extension SettingsView {
     // MARK: - Detail View
 
-    private var usesToolbarChrome: Bool {
+    var usesToolbarChrome: Bool {
         switch chromeMode {
         case .toolbar:
             return true
