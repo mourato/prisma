@@ -21,8 +21,6 @@ public struct SettingsWindowBackground: View {
 
 public struct SettingsTitleBarMaterialBackground: View {
     private enum Layout {
-        static let radialHighlightRadius: CGFloat = 160
-        static let noiseStep: CGFloat = 6
         static let fadeStart: CGFloat = 0.9
     }
 
@@ -44,7 +42,7 @@ public struct SettingsTitleBarMaterialBackground: View {
 
                 Rectangle()
                     .fill(AppDesignSystem.Colors.settingsTitleBarTint)
-                    .opacity(0.06)
+                    .opacity(0.04)
             }
 
             LinearGradient(
@@ -56,17 +54,6 @@ public struct SettingsTitleBarMaterialBackground: View {
                 endPoint: .bottom
             )
 
-            RadialGradient(
-                colors: [
-                    AppDesignSystem.Colors.settingsTitleBarHighlight.opacity(0.7),
-                    .clear,
-                ],
-                center: UnitPoint(x: 0.18, y: 0),
-                startRadius: 0,
-                endRadius: Layout.radialHighlightRadius
-            )
-            .blendMode(.screen)
-
             LinearGradient(
                 colors: [
                     .clear,
@@ -75,11 +62,6 @@ public struct SettingsTitleBarMaterialBackground: View {
                 startPoint: .top,
                 endPoint: .bottom
             )
-
-            if !AppDesignSystem.Accessibility.reduceTransparency {
-                SettingsTitleBarNoiseOverlay(step: Layout.noiseStep)
-                    .blendMode(.overlay)
-            }
         }
         .overlay(alignment: .bottom) {
             Rectangle()
@@ -125,42 +107,6 @@ private struct SettingsWindowVisualEffectBackground: NSViewRepresentable {
         view.blendingMode = blendingMode
         view.state = .followsWindowActiveState
         view.isEmphasized = false
-    }
-}
-
-private struct SettingsTitleBarNoiseOverlay: View {
-    let step: CGFloat
-
-    var body: some View {
-        Canvas(rendersAsynchronously: true) { context, size in
-            let columns = Int(ceil(size.width / step))
-            let rows = Int(ceil(size.height / step))
-
-            for column in 0..<columns {
-                for row in 0..<rows {
-                    let value = noiseValue(column: column, row: row)
-                    guard value > 0.6 else { continue }
-
-                    let alpha = (value - 0.6) * 0.14
-                    let rect = CGRect(
-                        x: CGFloat(column) * step,
-                        y: CGFloat(row) * step,
-                        width: 1,
-                        height: 1
-                    )
-
-                    context.fill(
-                        Path(rect),
-                        with: .color(AppDesignSystem.Colors.settingsTitleBarNoise.opacity(alpha))
-                    )
-                }
-            }
-        }
-    }
-
-    private func noiseValue(column: Int, row: Int) -> Double {
-        let hash = (column &* 73_856_093) ^ (row &* 19_349_663)
-        return Double(abs(hash % 1_000)) / 1_000
     }
 }
 
