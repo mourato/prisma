@@ -107,8 +107,6 @@ public struct StylesSettingsTab: View {
 
     private func styleRowContent(_ style: DictationStyle) -> some View {
         HStack(spacing: 12) {
-            styleTargetIcons(for: style)
-
             VStack(alignment: .leading, spacing: 2) {
                 Text(styleDisplayName(style))
                     .font(.headline)
@@ -118,8 +116,9 @@ public struct StylesSettingsTab: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
+            styleTargetIcons(for: style)
 
             styleSummary(for: style)
         }
