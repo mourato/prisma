@@ -52,6 +52,7 @@ public struct DSCallout: View {
             Image(systemName: kind.symbolName)
                 .font(.title2)
                 .foregroundStyle(kind.tintColor)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)

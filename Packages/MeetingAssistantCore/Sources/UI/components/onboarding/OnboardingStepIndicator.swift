@@ -45,6 +45,7 @@ private struct StepCircle: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
+                    .accessibilityHidden(true)
             } else {
                 Text("\(step.index)")
                     .font(.system(size: 14, weight: .medium))

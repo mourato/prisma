@@ -70,6 +70,7 @@ public struct TranscriptionStatusView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(statusIconColor)
         }
+            .accessibilityHidden(true)
     }
 
     private var statusIconImage: some View {
@@ -188,6 +189,7 @@ public struct TranscriptionStatusView: View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(AppDesignSystem.Colors.error)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading) {
                 Text(error.localizedDescription)

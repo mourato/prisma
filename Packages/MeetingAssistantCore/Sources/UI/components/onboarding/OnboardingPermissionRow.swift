@@ -33,6 +33,7 @@ public struct OnboardingPermissionRow: View {
                     Circle()
                         .fill(Color.secondary.opacity(0.1))
                 )
+                .accessibilityHidden(true)
 
             // Title and Description
             VStack(alignment: .leading, spacing: 4) {
@@ -75,6 +76,7 @@ public struct OnboardingPermissionRow: View {
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.green)
+                    .accessibilityHidden(true)
                 Text("onboarding.permissions.granted".localized)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.green)
@@ -84,6 +86,7 @@ public struct OnboardingPermissionRow: View {
             Button(action: onOpenSettings) {
                 HStack(spacing: 4) {
                     Image(systemName: "gear")
+                        .accessibilityHidden(true)
                     Text("onboarding.permissions.open_settings".localized)
                 }
             }

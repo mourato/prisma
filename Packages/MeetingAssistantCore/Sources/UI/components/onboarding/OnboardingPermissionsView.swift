@@ -29,6 +29,7 @@ public struct OnboardingPermissionsView: View {
                 Image(systemName: "shield.checkered")
                     .font(.system(size: 48))
                     .foregroundColor(.accentColor)
+                    .accessibilityHidden(true)
 
                 Text("onboarding.permissions.title".localized)
                     .font(.title2)
