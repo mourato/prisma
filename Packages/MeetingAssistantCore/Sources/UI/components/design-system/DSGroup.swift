@@ -91,13 +91,13 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
             DSBadge("Preview", kind: .neutral)
         },
         content: {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Reusable layout container.")
-                .foregroundStyle(.secondary)
-            Text("Contains a title, optional icon, and accessory.")
-                .foregroundStyle(.secondary)
-        }
-        .padding()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Reusable layout container.")
+                    .foregroundStyle(.secondary)
+                Text("Contains a title, optional icon, and accessory.")
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
         }
     )
     .padding()

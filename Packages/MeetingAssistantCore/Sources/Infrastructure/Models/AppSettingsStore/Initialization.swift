@@ -249,8 +249,8 @@ extension AppSettingsStore {
             )
             defaults.set(recordingMediaHandlingMode.usesDucking, forKey: Keys.audioDuckingEnabled)
         } else if !hasDuckingEnabled,
-           !hasDuckingLevel,
-           defaults.bool(forKey: Keys.muteOutputDuringRecording)
+                  !hasDuckingLevel,
+                  defaults.bool(forKey: Keys.muteOutputDuringRecording)
         {
             // Preserve old behavior for migrated users that had output mute enabled.
             recordingMediaHandlingMode = .duckAudio

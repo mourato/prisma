@@ -57,9 +57,6 @@ public struct EnhancementsSettingsTab: View {
             )
 
             mainSection
-            if postProcessingViewModel.settings.postProcessingEnabled {
-                meetingIntelligenceSection
-            }
             contextAwarenessSection
         }
     }
@@ -249,27 +246,6 @@ public struct EnhancementsSettingsTab: View {
             }
         }
         .task { refreshScreenRecordingPermission() }
-    }
-
-    private var meetingIntelligenceSection: some View {
-        DSGroup("settings.enhancements.meeting_intelligence_model".localized, icon: "bubble.left.and.bubble.right.fill") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.itemSpacing) {
-                DSToggleRow(
-                    "transcription.qa.title".localized,
-                    description: "settings.enhancements.qa_enabled_desc".localized,
-                    isOn: $postProcessingViewModel.settings.meetingQnAEnabled
-                )
-
-                if !postProcessingViewModel.settings.isEnhancementsInferenceReady {
-                    Divider()
-                    DSCallout(
-                        kind: .info,
-                        title: "settings.enhancements.selector.moved_title".localized,
-                        message: "settings.enhancements.selector.moved_message".localized
-                    )
-                }
-            }
-        }
     }
 
     private var providerModelsPage: some View {

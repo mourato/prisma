@@ -38,6 +38,10 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         cancellables = nil
     }
 
+}
+
+extension TranscriptionSettingsViewModelTests {
+
     func testLoadTranscriptions() async {
         // Given
         let mockId1 = UUID()

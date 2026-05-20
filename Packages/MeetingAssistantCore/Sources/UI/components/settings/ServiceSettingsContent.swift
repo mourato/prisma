@@ -8,13 +8,16 @@ import SwiftUI
 
 public struct ServiceSettingsContent: View {
     @StateObject private var viewModel: ServiceSettingsViewModel
+    @ObservedObject private var settings: AppSettingsStore
     private let runInitialTasks: Bool
 
     public init(
         viewModel: ServiceSettingsViewModel = ServiceSettingsViewModel(),
+        settings: AppSettingsStore = .shared,
         runInitialTasks: Bool = !PreviewRuntime.isRunning
     ) {
         _viewModel = StateObject(wrappedValue: viewModel)
+        _settings = ObservedObject(wrappedValue: settings)
         self.runInitialTasks = runInitialTasks
     }
 
@@ -104,44 +107,46 @@ public struct ServiceSettingsContent: View {
 
                     Divider()
 
-                    GridRow {
-                        Text("settings.service.diarization".localized)
-                            .foregroundStyle(.secondary)
+                    if settings.isMeetingTranscriptionEnabled {
+                        GridRow {
+                            Text("settings.service.diarization".localized)
+                                .foregroundStyle(.secondary)
 
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text("settings.service.diarization_model_name".localized)
-                                    .fontWeight(.medium)
-                                Text(
-                                    viewModel.isDiarizationLoaded
-                                        ? "settings.service.installed".localized
-                                        : "settings.service.not_installed".localized
-                                )
-                                .font(.caption2)
-                                .foregroundStyle(viewModel.isDiarizationLoaded ? AppDesignSystem.Colors.success : .secondary)
-                            }
-
-                            Spacer()
-
-                            if viewModel.isDiarizationLoaded {
-                                Button(role: .destructive) {
-                                    viewModel.deleteDiarizationModels()
-                                } label: {
-                                    Image(systemName: "trash")
-                                        .foregroundStyle(AppDesignSystem.Colors.error)
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text("settings.service.diarization_model_name".localized)
+                                        .fontWeight(.medium)
+                                    Text(
+                                        viewModel.isDiarizationLoaded
+                                            ? "settings.service.installed".localized
+                                            : "settings.service.not_installed".localized
+                                    )
+                                    .font(.caption2)
+                                    .foregroundStyle(viewModel.isDiarizationLoaded ? AppDesignSystem.Colors.success : .secondary)
                                 }
-                                .buttonStyle(.borderless)
-                                .help("settings.service.delete_model".localized)
-                            } else {
-                                Button {
-                                    viewModel.downloadDiarizationModels()
-                                } label: {
-                                    Image(systemName: "arrow.down.circle")
-                                        .font(.title3)
-                                        .foregroundStyle(AppDesignSystem.Colors.accent)
+
+                                Spacer()
+
+                                if viewModel.isDiarizationLoaded {
+                                    Button(role: .destructive) {
+                                        viewModel.deleteDiarizationModels()
+                                    } label: {
+                                        Image(systemName: "trash")
+                                            .foregroundStyle(AppDesignSystem.Colors.error)
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .help("settings.service.delete_model".localized)
+                                } else {
+                                    Button {
+                                        viewModel.downloadDiarizationModels()
+                                    } label: {
+                                        Image(systemName: "arrow.down.circle")
+                                            .font(.title3)
+                                            .foregroundStyle(AppDesignSystem.Colors.accent)
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .help("settings.service.download_model".localized)
                                 }
-                                .buttonStyle(.borderless)
-                                .help("settings.service.download_model".localized)
                             }
                         }
                     }

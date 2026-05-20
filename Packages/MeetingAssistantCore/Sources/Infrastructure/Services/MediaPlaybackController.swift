@@ -99,7 +99,9 @@ protocol AppleScriptMediaPlaybackAutomating {
 }
 
 private extension AppleScriptMediaPlaybackAutomating {
-    static var automationPermissionDeniedErrorCode: Int { -1_743 }
+    static var automationPermissionDeniedErrorCode: Int {
+        -1_743
+    }
 
     func pauseIfPlaying(logger: Logger) -> AppleScriptMediaPlaybackResult {
         guard isRunning else { return .notRunning }
@@ -116,7 +118,7 @@ private extension AppleScriptMediaPlaybackAutomating {
             return .unsupported
         }
 
-        logger.info("Paused media playback for recording: \(self.applicationName, privacy: .public)")
+        logger.info("Paused media playback for recording: \(applicationName, privacy: .public)")
         return .paused(MediaPlaybackResumeSession(target: target))
     }
 
@@ -136,7 +138,7 @@ private extension AppleScriptMediaPlaybackAutomating {
 
     private func executeString(scriptSource: String, logger: Logger) -> String? {
         guard let script = NSAppleScript(source: scriptSource) else {
-            logger.error("Failed to compile AppleScript for \(self.applicationName, privacy: .public)")
+            logger.error("Failed to compile AppleScript for \(applicationName, privacy: .public)")
             return nil
         }
 
@@ -152,7 +154,7 @@ private extension AppleScriptMediaPlaybackAutomating {
 
     private func execute(scriptSource: String, logger: Logger) -> Bool {
         guard let script = NSAppleScript(source: scriptSource) else {
-            logger.error("Failed to compile AppleScript for \(self.applicationName, privacy: .public)")
+            logger.error("Failed to compile AppleScript for \(applicationName, privacy: .public)")
             return false
         }
 
@@ -171,11 +173,11 @@ private extension AppleScriptMediaPlaybackAutomating {
         let errorMessage = errorInfo[NSAppleScript.errorMessage] as? String ?? "unknown"
         if errorNumber == Self.automationPermissionDeniedErrorCode {
             logger.warning(
-                "AppleScript automation permission denied for \(self.applicationName, privacy: .public): \(errorMessage, privacy: .public)"
+                "AppleScript automation permission denied for \(applicationName, privacy: .public): \(errorMessage, privacy: .public)"
             )
         } else {
             logger.debug(
-                "AppleScript error for \(self.applicationName, privacy: .public) [\(errorNumber ?? 0)]: \(errorMessage, privacy: .public)"
+                "AppleScript error for \(applicationName, privacy: .public) [\(errorNumber ?? 0)]: \(errorMessage, privacy: .public)"
             )
         }
     }

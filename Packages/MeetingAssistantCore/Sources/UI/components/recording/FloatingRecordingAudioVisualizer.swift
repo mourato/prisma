@@ -117,7 +117,7 @@ struct AudioVisualizer: View {
 
     private var bounceLevels: [Double] {
         guard barCount > 0 else { return [] }
-        let bounceLevel = max(0.0, min(1.0, (14.0 - minHeight) / max(maxHeight - minHeight, 0.0001)))
+        let bounceLevel = max(0.0, min(1.0, (14.0 - minHeight) / max(maxHeight - minHeight, 0.0_001)))
         return (0..<barCount).map { index in
             index == bounceIndex ? bounceLevel : 0.0
         }

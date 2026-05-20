@@ -8,9 +8,14 @@ import SwiftUI
 
 public struct ServiceTranscriptionProviderSection: View {
     @ObservedObject private var viewModel: ServiceSettingsViewModel
+    @ObservedObject private var settings: AppSettingsStore
 
-    public init(viewModel: ServiceSettingsViewModel) {
+    public init(
+        viewModel: ServiceSettingsViewModel,
+        settings: AppSettingsStore = .shared
+    ) {
         self.viewModel = viewModel
+        _settings = ObservedObject(wrappedValue: settings)
     }
 
     public var body: some View {
@@ -115,7 +120,9 @@ public struct ServiceTranscriptionProviderSection: View {
                     message: "settings.service.transcription_provider.meeting_local.message".localized(with: viewModel.meetingLocalModelDisplayName)
                 )
 
-                if viewModel.shouldShowMeetingDiarizationAutoDisableWarning {
+                if settings.isMeetingTranscriptionEnabled,
+                   viewModel.shouldShowMeetingDiarizationAutoDisableWarning
+                {
                     DSCallout(
                         kind: .warning,
                         title: "settings.service.transcription_provider.meeting_diarization_warning.title".localized,

@@ -157,34 +157,34 @@ extension EnhancementsProviderModelsPage {
             },
             content: {
                 VStack(alignment: .leading, spacing: 10) {
-                Text("settings.enhancements.providers.active_desc".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if activeRegistrations.isEmpty {
-                    Text("settings.enhancements.providers.empty".localized)
+                    Text("settings.enhancements.providers.active_desc".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .padding(.vertical, 6)
-                } else {
-                    ForEach(Array(activeRegistrations.enumerated()), id: \.element.id) { index, registration in
-                        registrationRow(registration)
-                        if index < activeRegistrations.count - 1 {
-                            Divider()
+
+                    if activeRegistrations.isEmpty {
+                        Text("settings.enhancements.providers.empty".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.vertical, 6)
+                    } else {
+                        ForEach(Array(activeRegistrations.enumerated()), id: \.element.id) { index, registration in
+                            registrationRow(registration)
+                            if index < activeRegistrations.count - 1 {
+                                Divider()
+                            }
                         }
                     }
-                }
 
-                if let fetchError = viewModel.enhancementsProviderModelsFetchError,
-                   !fetchError.isEmpty
-                {
-                    DSCallout(
-                        kind: .warning,
-                        title: "settings.enhancements.provider_models.error.title".localized,
-                        message: fetchError
-                    )
+                    if let fetchError = viewModel.enhancementsProviderModelsFetchError,
+                       !fetchError.isEmpty
+                    {
+                        DSCallout(
+                            kind: .warning,
+                            title: "settings.enhancements.provider_models.error.title".localized,
+                            message: fetchError
+                        )
+                    }
                 }
-            }
             }
         )
     }

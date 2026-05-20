@@ -99,250 +99,265 @@ public struct MeetingSettingsTab: View {
             )
 
             DSGroup("settings.capabilities.title".localized, icon: "switch.2") {
-                VStack(alignment: .leading, spacing: 12) {
-                    DSToggleRow(
-                        "settings.capabilities.meeting_transcription".localized,
-                        description: "settings.capabilities.meeting_transcription_desc".localized,
-                        isOn: $meetingViewModel.settings.isMeetingTranscriptionEnabled
-                    )
-
-                    if !meetingViewModel.settings.isMeetingTranscriptionEnabled {
-                        DSCallout(
-                            kind: .info,
-                            title: "settings.capabilities.meeting_transcription_disabled_title".localized,
-                            message: "settings.capabilities.meeting_transcription_disabled_desc".localized
-                        )
-                    }
-                }
+                DSToggleRow(
+                    "settings.capabilities.meeting_transcription".localized,
+                    description: "settings.capabilities.meeting_transcription_desc".localized,
+                    isOn: $meetingViewModel.settings.isMeetingTranscriptionEnabled
+                )
             }
 
-            ShortcutSettingsSection(
-                groupTitle: "settings.shortcuts.meeting".localized,
-                descriptionText: "settings.shortcuts.meeting_desc".localized,
-                settingsContent: {
-                    VStack(alignment: .leading, spacing: 12) {
-                        if let healthPresentation = shortcutsViewModel.shortcutCaptureHealthPresentation {
-                            ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
-                                shortcutsViewModel.openShortcutCaptureHealthAction()
+            if meetingViewModel.settings.isMeetingTranscriptionEnabled {
+                ShortcutSettingsSection(
+                    groupTitle: "settings.shortcuts.meeting".localized,
+                    descriptionText: "settings.shortcuts.meeting_desc".localized,
+                    settingsContent: {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if let healthPresentation = shortcutsViewModel.shortcutCaptureHealthPresentation {
+                                ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
+                                    shortcutsViewModel.openShortcutCaptureHealthAction()
+                                }
                             }
-                        }
 
-                        DSModifierShortcutEditor(
-                            shortcut: $shortcutsViewModel.meetingShortcutDefinition,
-                            conflictMessage: shortcutsViewModel.meetingModifierConflictMessage
-                        )
-                    }
-                }
-            )
-
-            DSGroup("settings.meetings.monitoring_access.title".localized, icon: "app.badge") {
-                SettingsDrillDownButtonRow(
-                    title: "settings.meetings.monitoring_access.button".localized,
-                    subtitle: "settings.meetings.monitoring_access.desc".localized,
-                    accessibilityHint: "settings.meetings.monitoring_access.accessibility_hint".localized
-                ) {
-                    updateNavigationState(to: .monitoringTargets)
-                }
-            }
-
-            DSGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
-                VStack(alignment: .leading, spacing: 16) {
-                    DSToggleRow(
-                        "settings.general.auto_start".localized,
-                        isOn: $meetingViewModel.settings.autoStartRecording
-                    )
-
-                    Divider()
-
-                    DSToggleRow(
-                        "settings.general.merge_audio".localized,
-                        isOn: $meetingViewModel.settings.shouldMergeAudioFiles
-                    )
-                }
-            }
-
-            DSGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
-                SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)
-            }
-
-            DSGroup("settings.meetings.notes_typography.title".localized, icon: "textformat.size") {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        SettingsTitleWithPopover(
-                            title: "settings.meetings.notes_typography.font_family".localized,
-                            helperTitle: "settings.meetings.notes_typography.title".localized,
-                            helperMessage: "settings.meetings.notes_typography.desc".localized
-                        )
-                        Spacer()
-                        Picker("", selection: $meetingViewModel.settings.meetingNotesFontFamilyKey) {
-                            Text("settings.meetings.notes_typography.font_system".localized)
-                                .tag(MeetingNotesTypographyDefaults.systemFontFamilyKey)
-                            ForEach(availableMeetingNotesFontFamilies, id: \.self) { family in
-                                Text(family).tag(family)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
-                    }
-
-                    Divider()
-
-                    HStack {
-                        Text("settings.meetings.notes_typography.font_size".localized)
-                        Spacer()
-                        Picker("", selection: $meetingViewModel.settings.meetingNotesFontSize) {
-                            ForEach(MeetingNotesTypographyDefaults.supportedFontSizes, id: \.self) { size in
-                                Text("\(Int(size))").tag(size)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
-                    }
-                }
-            }
-
-            DSGroup("settings.meetings.export".localized, icon: "folder.fill") {
-                VStack(alignment: .leading, spacing: 16) {
-                    DSToggleRow(
-                        "settings.meetings.auto_export".localized,
-                        description: "settings.meetings.auto_export_desc".localized,
-                        isOn: $meetingViewModel.settings.autoExportSummaries
-                    )
-
-                    if meetingViewModel.settings.autoExportSummaries {
-                        Divider()
-
-                        HStack {
-                            SettingsTitleWithPopover(
-                                title: "settings.meetings.export_location".localized,
-                                helperMessage: "settings.meetings.export_location_desc".localized
+                            DSModifierShortcutEditor(
+                                shortcut: $shortcutsViewModel.meetingShortcutDefinition,
+                                conflictMessage: shortcutsViewModel.meetingModifierConflictMessage
                             )
-                            Spacer()
-                            if let url = meetingViewModel.settings.summaryExportFolder {
-                                Text(url.lastPathComponent)
-                                    .foregroundStyle(.secondary)
-                                    .truncationMode(.middle)
-                            } else {
-                                Text("settings.meetings.no_folder_selected".localized)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Button("common.select".localized) {
-                                meetingViewModel.selectExportFolder()
-                            }
                         }
+                    }
+                )
+
+                DSGroup("settings.meetings.monitoring_access.title".localized, icon: "app.badge") {
+                    SettingsDrillDownButtonRow(
+                        title: "settings.meetings.monitoring_access.button".localized,
+                        subtitle: "settings.meetings.monitoring_access.desc".localized,
+                        accessibilityHint: "settings.meetings.monitoring_access.accessibility_hint".localized
+                    ) {
+                        updateNavigationState(to: .monitoringTargets)
+                    }
+                }
+
+                DSGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
+                    VStack(alignment: .leading, spacing: 16) {
+                        DSToggleRow(
+                            "settings.general.auto_start".localized,
+                            isOn: $meetingViewModel.settings.autoStartRecording
+                        )
 
                         Divider()
 
                         DSToggleRow(
-                            "settings.meetings.template_enabled".localized,
-                            description: "settings.meetings.template_enabled_desc".localized,
-                            isOn: $meetingViewModel.settings.summaryTemplateEnabled
+                            "settings.general.merge_audio".localized,
+                            isOn: $meetingViewModel.settings.shouldMergeAudioFiles
                         )
+                    }
+                }
 
-                        Divider()
+                meetingIntelligenceSection
 
+                DSGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
+                    SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)
+                }
+
+                DSGroup("settings.meetings.notes_typography.title".localized, icon: "textformat.size") {
+                    VStack(alignment: .leading, spacing: 16) {
                         HStack {
                             SettingsTitleWithPopover(
-                                title: "settings.meetings.export_safety_policy".localized,
-                                helperMessage: "settings.meetings.export_safety_policy_desc".localized
+                                title: "settings.meetings.notes_typography.font_family".localized,
+                                helperTitle: "settings.meetings.notes_typography.title".localized,
+                                helperMessage: "settings.meetings.notes_typography.desc".localized
                             )
                             Spacer()
-                            Picker("", selection: $meetingViewModel.settings.summaryExportSafetyPolicyLevel) {
-                                ForEach(SummaryExportSafetyPolicyLevel.allCases, id: \.self) { level in
-                                    Text(exportSafetyPolicyLabel(level)).tag(level)
+                            Picker("", selection: $meetingViewModel.settings.meetingNotesFontFamilyKey) {
+                                Text("settings.meetings.notes_typography.font_system".localized)
+                                    .tag(MeetingNotesTypographyDefaults.systemFontFamilyKey)
+                                ForEach(availableMeetingNotesFontFamilies, id: \.self) { family in
+                                    Text(family).tag(family)
                                 }
                             }
                             .labelsHidden()
                             .pickerStyle(.menu)
                         }
 
-                        if meetingViewModel.settings.summaryExportFolder == nil {
-                            Text("settings.meetings.export_location_required".localized)
-                                .font(.caption)
-                                .foregroundStyle(AppDesignSystem.Colors.error)
-                        }
+                        Divider()
 
-                        if meetingViewModel.settings.summaryTemplateEnabled {
+                        HStack {
+                            Text("settings.meetings.notes_typography.font_size".localized)
+                            Spacer()
+                            Picker("", selection: $meetingViewModel.settings.meetingNotesFontSize) {
+                                ForEach(MeetingNotesTypographyDefaults.supportedFontSizes, id: \.self) { size in
+                                    Text("\(Int(size))").tag(size)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                        }
+                    }
+                }
+
+                DSGroup("settings.meetings.export".localized, icon: "folder.fill") {
+                    VStack(alignment: .leading, spacing: 16) {
+                        DSToggleRow(
+                            "settings.meetings.auto_export".localized,
+                            description: "settings.meetings.auto_export_desc".localized,
+                            isOn: $meetingViewModel.settings.autoExportSummaries
+                        )
+
+                        if meetingViewModel.settings.autoExportSummaries {
                             Divider()
 
-                            HStack(spacing: 8) {
-                                Image(systemName: "doc.text")
-                                    .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
+                            HStack {
                                 SettingsTitleWithPopover(
-                                    title: "settings.meetings.template".localized,
-                                    helperMessage: "settings.meetings.template_desc".localized,
-                                    font: .subheadline,
-                                    fontWeight: .semibold
+                                    title: "settings.meetings.export_location".localized,
+                                    helperMessage: "settings.meetings.export_location_desc".localized
                                 )
+                                Spacer()
+                                if let url = meetingViewModel.settings.summaryExportFolder {
+                                    Text(url.lastPathComponent)
+                                        .foregroundStyle(.secondary)
+                                        .truncationMode(.middle)
+                                } else {
+                                    Text("settings.meetings.no_folder_selected".localized)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Button("common.select".localized) {
+                                    meetingViewModel.selectExportFolder()
+                                }
                             }
 
+                            Divider()
+
+                            DSToggleRow(
+                                "settings.meetings.template_enabled".localized,
+                                description: "settings.meetings.template_enabled_desc".localized,
+                                isOn: $meetingViewModel.settings.summaryTemplateEnabled
+                            )
+
+                            Divider()
+
                             HStack {
+                                SettingsTitleWithPopover(
+                                    title: "settings.meetings.export_safety_policy".localized,
+                                    helperMessage: "settings.meetings.export_safety_policy_desc".localized
+                                )
                                 Spacer()
-                                Button {
-                                    showSummaryTemplateEditor = true
-                                } label: {
-                                    Label("settings.meetings.template.edit".localized, systemImage: "pencil")
+                                Picker("", selection: $meetingViewModel.settings.summaryExportSafetyPolicyLevel) {
+                                    ForEach(SummaryExportSafetyPolicyLevel.allCases, id: \.self) { level in
+                                        Text(exportSafetyPolicyLabel(level)).tag(level)
+                                    }
                                 }
-                                .buttonStyle(.bordered)
-                                .controlSize(.regular)
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+                            }
+
+                            if meetingViewModel.settings.summaryExportFolder == nil {
+                                Text("settings.meetings.export_location_required".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(AppDesignSystem.Colors.error)
+                            }
+
+                            if meetingViewModel.settings.summaryTemplateEnabled {
+                                Divider()
+
+                                HStack(spacing: 8) {
+                                    Image(systemName: "doc.text")
+                                        .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
+                                    SettingsTitleWithPopover(
+                                        title: "settings.meetings.template".localized,
+                                        helperMessage: "settings.meetings.template_desc".localized,
+                                        font: .subheadline,
+                                        fontWeight: .semibold
+                                    )
+                                }
+
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        showSummaryTemplateEditor = true
+                                    } label: {
+                                        Label("settings.meetings.template.edit".localized, systemImage: "pencil")
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.regular)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                DSGroup("settings.meetings.prompts".localized, icon: "sparkles") {
+                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.cardPadding) {
+                        HStack {
+                            SettingsTitleWithPopover(
+                                title: "settings.meetings.summary_output_language".localized,
+                                helperMessage: "settings.meetings.summary_output_language_desc".localized
+                            )
+                            Spacer()
+                            Picker("", selection: $meetingViewModel.settings.meetingSummaryOutputLanguage) {
+                                ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
+                                    Text(meetingSummaryOutputLanguageLabel(language))
+                                        .tag(language)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                        }
+
+                        Divider()
+
+                        DSToggleRow(
+                            "settings.meetings.autodetect_type".localized,
+                            description: "settings.meetings.autodetect_type_desc".localized,
+                            isOn: $meetingViewModel.settings.meetingTypeAutoDetectEnabled
+                        )
+
+                        HStack {
+                            Text("settings.post_processing.choose_active".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Spacer()
+
+                            Button {
+                                meetingViewModel.editingPrompt = nil
+                                meetingViewModel.showPromptEditor = true
+                            } label: {
+                                Label(
+                                    "settings.post_processing.new_prompt".localized,
+                                    systemImage: "plus"
+                                )
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
+                        }
+
+                        VStack(spacing: 8) {
+                            noPostProcessingRow()
+                            ForEach(meetingViewModel.availablePrompts) { prompt in
+                                promptRow(prompt: prompt)
                             }
                         }
                     }
                 }
             }
+        }
+    }
 
-            DSGroup("settings.meetings.prompts".localized, icon: "sparkles") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.cardPadding) {
-                    HStack {
-                        SettingsTitleWithPopover(
-                            title: "settings.meetings.summary_output_language".localized,
-                            helperMessage: "settings.meetings.summary_output_language_desc".localized
-                        )
-                        Spacer()
-                        Picker("", selection: $meetingViewModel.settings.meetingSummaryOutputLanguage) {
-                            ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
-                                Text(meetingSummaryOutputLanguageLabel(language))
-                                    .tag(language)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
-                    }
+    private var meetingIntelligenceSection: some View {
+        DSGroup("settings.enhancements.meeting_intelligence_model".localized, icon: "bubble.left.and.bubble.right.fill") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.itemSpacing) {
+                DSToggleRow(
+                    "transcription.qa.title".localized,
+                    description: "settings.enhancements.qa_enabled_desc".localized,
+                    isOn: $meetingViewModel.settings.meetingQnAEnabled
+                )
 
+                if !meetingViewModel.settings.isEnhancementsInferenceReady {
                     Divider()
-
-                    DSToggleRow(
-                        "settings.meetings.autodetect_type".localized,
-                        description: "settings.meetings.autodetect_type_desc".localized,
-                        isOn: $meetingViewModel.settings.meetingTypeAutoDetectEnabled
+                    DSCallout(
+                        kind: .info,
+                        title: "settings.enhancements.selector.moved_title".localized,
+                        message: "settings.enhancements.selector.moved_message".localized
                     )
-
-                    HStack {
-                        Text("settings.post_processing.choose_active".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Spacer()
-
-                        Button {
-                            meetingViewModel.editingPrompt = nil
-                            meetingViewModel.showPromptEditor = true
-                        } label: {
-                            Label(
-                                "settings.post_processing.new_prompt".localized,
-                                systemImage: "plus"
-                            )
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                    }
-
-                    VStack(spacing: 8) {
-                        noPostProcessingRow()
-                        ForEach(meetingViewModel.availablePrompts) { prompt in
-                            promptRow(prompt: prompt)
-                        }
-                    }
                 }
             }
         }

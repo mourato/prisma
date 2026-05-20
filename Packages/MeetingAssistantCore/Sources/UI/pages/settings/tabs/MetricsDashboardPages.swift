@@ -1,10 +1,12 @@
 import Charts
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
+import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 struct MetricsDashboardIndexPage: View {
     @ObservedObject var viewModel: MetricsDashboardViewModel
+    @ObservedObject private var settings = AppSettingsStore.shared
     let openMoreInsights: () -> Void
     let openEventDetail: (MeetingCalendarEventSnapshot) -> Void
 
@@ -25,10 +27,12 @@ struct MetricsDashboardIndexPage: View {
 
             MetricsDashboardActivitySection(viewModel: viewModel)
             MetricsDashboardMoreInsightsLinkSection(openMoreInsights: openMoreInsights)
-            MetricsDashboardUpcomingEventsSection(
-                viewModel: viewModel,
-                onOpenEventDetail: openEventDetail
-            )
+            if settings.isMeetingTranscriptionEnabled {
+                MetricsDashboardUpcomingEventsSection(
+                    viewModel: viewModel,
+                    onOpenEventDetail: openEventDetail
+                )
+            }
         }
     }
 }

@@ -109,6 +109,10 @@ final class RecordingManagerTests: XCTestCase {
         try await super.tearDown()
     }
 
+}
+
+extension RecordingManagerTests {
+
     // MARK: - Basic Tests
 
     func testInitialization() throws {

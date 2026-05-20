@@ -34,66 +34,59 @@ public struct AssistantIntegrationsSection: View {
                     isOn: $settings.isAssistantIntegrationsEnabled
                 )
 
-                if !settings.isAssistantIntegrationsEnabled {
-                    DSCallout(
-                        kind: .info,
-                        title: "settings.capabilities.assistant_integrations_disabled_title".localized,
-                        message: "settings.capabilities.assistant_integrations_disabled_desc".localized
-                    )
-                }
+                if settings.isAssistantIntegrationsEnabled {
+                    Divider()
 
-                Divider()
-
-                Text("settings.assistant.integrations.description".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Divider()
-
-                Text("settings.assistant.integrations.built_in".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                ForEach(viewModel.builtInIntegrations) { integration in
-                    integrationRow(integration: integration, isCardStyle: false)
-                }
-
-                Divider()
-
-                HStack {
-                    Text("settings.assistant.integrations.custom".localized)
+                    Text("settings.assistant.integrations.description".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    Spacer()
+                    Divider()
 
-                    Button {
-                        viewModel.addIntegration()
-                    } label: {
-                        Label(
-                            "settings.assistant.integrations.new".localized,
-                            systemImage: "plus"
-                        )
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.regular)
-                }
-
-                ForEach(viewModel.customIntegrations) { integration in
-                    integrationRow(integration: integration, isCardStyle: true)
-                }
-
-                if let statusMessage = viewModel.raycastTestStatusMessage {
-                    let statusColor = viewModel.raycastTestStatusIsError
-                        ? AppDesignSystem.Colors.error
-                        : AppDesignSystem.Colors.success
-
-                    Text(statusMessage)
+                    Text("settings.assistant.integrations.built_in".localized)
                         .font(.caption)
-                        .foregroundStyle(statusColor)
+                        .foregroundStyle(.secondary)
+
+                    ForEach(viewModel.builtInIntegrations) { integration in
+                        integrationRow(integration: integration, isCardStyle: false)
+                    }
+
+                    Divider()
+
+                    HStack {
+                        Text("settings.assistant.integrations.custom".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Button {
+                            viewModel.addIntegration()
+                        } label: {
+                            Label(
+                                "settings.assistant.integrations.new".localized,
+                                systemImage: "plus"
+                            )
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                    }
+
+                    ForEach(viewModel.customIntegrations) { integration in
+                        integrationRow(integration: integration, isCardStyle: true)
+                    }
+
+                    if let statusMessage = viewModel.raycastTestStatusMessage {
+                        let statusColor = viewModel.raycastTestStatusIsError
+                            ? AppDesignSystem.Colors.error
+                            : AppDesignSystem.Colors.success
+
+                        Text(statusMessage)
+                            .font(.caption)
+                            .foregroundStyle(statusColor)
+                    }
                 }
             }
-            .disabled(!settings.isAssistantIntegrationsEnabled)
         }
     }
 
@@ -104,34 +97,35 @@ public struct AssistantIntegrationsSection: View {
                     editingIntegration = integration
                 },
                 content: {
-                HStack(spacing: 12) {
-                    if isCardStyle {
-                        RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                            .fill(AppDesignSystem.Colors.secondaryFill)
-                            .frame(width: 36, height: 36)
-                            .overlay(
-                                Image(systemName: "line.3.horizontal")
-                                    .foregroundStyle(.secondary)
-                            )
+                    HStack(spacing: 12) {
+                        if isCardStyle {
+                            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                                .fill(AppDesignSystem.Colors.secondaryFill)
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Image(systemName: "line.3.horizontal")
+                                        .foregroundStyle(.secondary)
+                                )
+                        }
+
+                        Text(integration.name)
+                            .font(.body)
+                            .fontWeight(.medium)
+
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("settings.assistant.integrations.shortcut.direct".localized)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Text(shortcutSummary(for: integration))
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                        }
+
+                        Spacer()
                     }
-
-                    Text(integration.name)
-                        .font(.body)
-                        .fontWeight(.medium)
-
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("settings.assistant.integrations.shortcut.direct".localized)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        Text(shortcutSummary(for: integration))
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.primary)
-                    }
-
-                    Spacer()
                 }
-            })
+            )
 
             Button {
                 editingIntegration = integration

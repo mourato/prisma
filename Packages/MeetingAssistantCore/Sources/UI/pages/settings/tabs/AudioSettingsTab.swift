@@ -12,7 +12,9 @@ private enum AudioInputMode: CaseIterable, Identifiable {
     case systemDefault
     case customDevice
 
-    var id: Self { self }
+    var id: Self {
+        self
+    }
 
     var iconSystemName: String {
         switch self {
