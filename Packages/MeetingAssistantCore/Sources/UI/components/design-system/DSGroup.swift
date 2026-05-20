@@ -14,7 +14,7 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
     private let content: Content
 
     public init(
-        surfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity = .subtle,
+        surfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity = .regular,
         @ViewBuilder content: () -> Content
     )
         where HeaderAccessory == EmptyView
@@ -29,7 +29,7 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
     public init(
         _ title: String,
         icon: String? = nil,
-        surfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity = .subtle,
+        surfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity = .regular,
         @ViewBuilder content: () -> Content
     )
         where HeaderAccessory == EmptyView
@@ -44,7 +44,7 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
     public init(
         _ title: String,
         icon: String? = nil,
-        surfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity = .subtle,
+        surfaceIntensity: AppDesignSystem.SettingsSurfaceIntensity = .regular,
         @ViewBuilder headerAccessory: () -> HeaderAccessory,
         @ViewBuilder content: () -> Content
     ) {

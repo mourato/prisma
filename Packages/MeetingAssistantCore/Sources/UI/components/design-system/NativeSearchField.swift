@@ -46,8 +46,9 @@ struct NativeSearchField: NSViewRepresentable {
         switch style {
         case .standard:
             searchField.isBezeled = true
-            searchField.isBordered = false
+            searchField.isBordered = true
             searchField.drawsBackground = true
+            searchField.backgroundColor = .textBackgroundColor
             searchField.bezelStyle = .roundedBezel
         case .liquidGlass:
             // Keep the native rounded search-field geometry so focus and text/icon insets remain correct.
