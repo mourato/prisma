@@ -1,7 +1,7 @@
 import Darwin
 import Foundation
 
-struct RustAudioKernelFFI {
+struct RustAudioKernelFFI: @unchecked Sendable {
     enum ResultCode: Int32 {
         case ok = 0
         case nullPointer = 1
@@ -32,7 +32,7 @@ struct RustAudioKernelFFI {
     }
 
     func version() -> UInt32 {
-        versionImpl()
+        return versionImpl()
     }
 
     func computeRmsPeak(samples: [Float]) -> RmsPeakResult? {
@@ -63,8 +63,16 @@ struct AKRmsPeakResult {
 
 extension RustAudioKernelFFI {
     static func loadFromProcessSymbols() -> RustAudioKernelFFI? {
-        guard let versionSymbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "ak_version"),
-              let rmsPeakSymbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "ak_compute_rms_peak_f32")
+        if let ffi = loadFromSymbols(symbolHandle: UnsafeMutableRawPointer(bitPattern: -2)) {
+            return ffi
+        }
+
+        return loadFromBundledDynamicLibrary()
+    }
+
+    private static func loadFromSymbols(symbolHandle: UnsafeMutableRawPointer?) -> RustAudioKernelFFI? {
+        guard let versionSymbol = dlsym(symbolHandle, "ak_version"),
+              let rmsPeakSymbol = dlsym(symbolHandle, "ak_compute_rms_peak_f32")
         else {
             return nil
         }
@@ -76,5 +84,48 @@ extension RustAudioKernelFFI {
             versionImpl: versionImpl,
             computeRmsPeakImpl: computeRmsPeakImpl
         )
+    }
+
+    private static func loadFromBundledDynamicLibrary() -> RustAudioKernelFFI? {
+        let loadFlags = RTLD_NOW | RTLD_LOCAL
+        for libraryPath in bundledLibraryCandidatePaths() {
+            guard let handle = dlopen(libraryPath, loadFlags) else {
+                continue
+            }
+
+            guard let ffi = loadFromSymbols(symbolHandle: handle) else {
+                dlclose(handle)
+                continue
+            }
+
+            return ffi
+        }
+
+        return nil
+    }
+
+    private static func bundledLibraryCandidatePaths() -> [String] {
+        let libraryName = "libaudio_kernels_rust.dylib"
+        var paths: [String] = []
+
+        let envPath = ProcessInfo.processInfo.environment["MA_RUST_AUDIO_KERNELS_DYLIB_PATH"]?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let envPath, !envPath.isEmpty {
+            paths.append(envPath)
+        }
+
+        if let frameworksURL = Bundle.main.privateFrameworksURL {
+            paths.append(frameworksURL.appendingPathComponent(libraryName).path)
+        }
+
+        if let executableURL = Bundle.main.executableURL {
+            let frameworkURL = executableURL
+                .deletingLastPathComponent()
+                .appendingPathComponent("../Frameworks/\(libraryName)")
+                .standardizedFileURL
+            paths.append(frameworkURL.path)
+        }
+
+        var seen = Set<String>()
+        return paths.filter { seen.insert($0).inserted }
     }
 }

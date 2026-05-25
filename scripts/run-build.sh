@@ -17,6 +17,7 @@ source "${SCRIPT_DIR}/lib/agent-output.sh"
 
 XCODEPROJ="${PROJECT_ROOT}/${XCODEPROJ_NAME}"
 DERIVED_DATA="${PROJECT_ROOT}/.xcode-build"
+RUST_STAGE_SCRIPT="${SCRIPT_DIR}/stage-rust-audio-kernels.sh"
 
 CONFIGURATION="Debug"
 AGENT_MODE=0
@@ -95,6 +96,17 @@ if [ ! -x "${SAFE_XCODEBUILD_SCRIPT}" ]; then
     exit 1
 fi
 
+if [ ! -x "${RUST_STAGE_SCRIPT}" ]; then
+    MSG="Rust staging helper not executable at ${RUST_STAGE_SCRIPT}"
+    if [ "${AGENT_MODE}" -eq 1 ]; then
+        ma_agent_write_result_json "${RESULT_PATH}" "build" "FAIL" 0 "${LOG_PATH}" 1 "${MSG}"
+        ma_agent_emit_result "build" "FAIL" 0 "${LOG_PATH}" 1 "${MSG}" "${RESULT_PATH}"
+    else
+        echo "Error: ${MSG}"
+    fi
+    exit 1
+fi
+
 START_TIME=$(date +%s)
 
 # Start progress indicator
@@ -110,6 +122,15 @@ fi
     --destination 'platform=macOS' \
     --action build >"${LOG_PATH}" 2>&1
 EXIT_CODE=$?
+
+if [ "${EXIT_CODE}" -eq 0 ]; then
+    if "${RUST_STAGE_SCRIPT}" --configuration "${CONFIGURATION}" --derived-data "${DERIVED_DATA}" >>"${LOG_PATH}" 2>&1; then
+        :
+    else
+        STAGE_EXIT_CODE=$?
+        EXIT_CODE=${STAGE_EXIT_CODE}
+    fi
+fi
 END_TIME=$(date +%s)
 
 # Stop progress indicator
