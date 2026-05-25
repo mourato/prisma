@@ -59,11 +59,11 @@ private struct SubtleScrollbarsConfigurator: NSViewRepresentable {
 
 public extension View {
     func subtleScrollbars() -> some View {
-        background(
+        settingsWindowScrollEdgeEffect()
+        .background(
             SubtleScrollbarsConfigurator()
                 .frame(width: 0, height: 0)
         )
-        .settingsWindowScrollEdgeEffect()
     }
 }
 
@@ -71,8 +71,8 @@ private extension View {
     @ViewBuilder
     func settingsWindowScrollEdgeEffect() -> some View {
         if #available(macOS 26.0, *) {
-            scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
-                .scrollEdgeEffectHidden(false, for: [.top, .bottom])
+            scrollEdgeEffectStyle(.soft, for: .all)
+                .scrollEdgeEffectHidden(false, for: .all)
         } else {
             self
         }

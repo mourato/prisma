@@ -23,7 +23,6 @@ private enum LayoutConstants {
 public struct SettingsView: View {
     private enum ToolbarLayout {
         static let transcriptionsSearchWidth: CGFloat = 230
-        static let titleSpacing: CGFloat = 10
     }
 
     fileprivate enum ChromeMode {
@@ -67,7 +66,10 @@ public struct SettingsView: View {
                 detailView
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .modifier(SettingsDetailChromeModifier(legacyHeader: detailNavigationBar))
+            .modifier(SettingsDetailChromeModifier(
+                legacyHeader: detailNavigationBar,
+                usesToolbarChrome: usesToolbarChrome
+            ))
             .overlay(alignment: .top) {
                 if usesToolbarChrome {
                     Rectangle()
@@ -79,12 +81,13 @@ public struct SettingsView: View {
         }
         .navigationSplitViewStyle(.balanced)
         .navigationTitle(settingsNavigationTitle)
+        .toolbarTitleDisplayMode(.inline)
         .toolbar {
             if usesToolbarChrome {
                 settingsToolbarContent
             }
         }
-        .toolbarBackground(AppDesignSystem.Colors.settingsCanvasBackground, for: .windowToolbar)
+        .toolbarBackground(usesToolbarChrome ? Color.clear : AppDesignSystem.Colors.settingsCanvasBackground, for: .windowToolbar)
         .toolbarBackgroundVisibility(settingsToolbarBackgroundVisibility, for: .windowToolbar)
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -145,7 +148,7 @@ private extension SettingsView {
             guard #available(macOS 26.0, *) else {
                 return false
             }
-            return !PreviewRuntime.isRunning
+            return true
         }
     }
 
@@ -158,7 +161,7 @@ private extension SettingsView {
     }
 
     var settingsNavigationTitle: String {
-        ""
+        usesToolbarChrome ? selectedSection.title : ""
     }
 
     @ToolbarContentBuilder
@@ -166,12 +169,6 @@ private extension SettingsView {
         if #available(macOS 26.0, *) {
             ToolbarItem(placement: .navigation) {
                 toolbarNavigationControlGroup
-            }
-
-            ToolbarSpacer(.fixed, placement: .navigation)
-
-            ToolbarItem(placement: .navigation) {
-                toolbarSectionTitle
             }
 
             if shouldShowTranscriptionsSearch {
@@ -221,8 +218,8 @@ private extension SettingsView {
 
     @available(macOS 26.0, *)
     private var tahoeDetailNavigationBar: some View {
-        HStack(spacing: ToolbarLayout.titleSpacing) {
-            toolbarLeadingGroup
+        HStack {
+            toolbarNavigationControlGroup
             if shouldShowTranscriptionsSearch {
                 Spacer()
                 transcriptionsToolbarSearchField
@@ -251,29 +248,6 @@ private extension SettingsView {
             .disabled(!canNavigateForward)
         }
         .controlGroupStyle(.navigation)
-    }
-
-    @available(macOS 26.0, *)
-    private var toolbarLeadingGroup: some View {
-        HStack(spacing: ToolbarLayout.titleSpacing) {
-            toolbarNavigationControlGroup
-            toolbarSectionTitle
-        }
-    }
-
-    @available(macOS 26.0, *)
-    private var toolbarSectionTitle: some View {
-        Label {
-            Text(selectedSection.title)
-                .font(.headline)
-                .lineLimit(1)
-        } icon: {
-            Image(systemName: selectedSection.icon)
-                .symbolRenderingMode(.monochrome)
-                .font(.system(size: 12, weight: .semibold))
-        }
-        .labelStyle(.titleAndIcon)
-        .fixedSize(horizontal: true, vertical: false)
     }
 
     private var legacyDetailNavigationBar: some View {
@@ -520,9 +494,10 @@ private extension SettingsView {
 
 private struct SettingsDetailChromeModifier<LegacyHeader: View>: ViewModifier {
     let legacyHeader: LegacyHeader
+    let usesToolbarChrome: Bool
 
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *), !PreviewRuntime.isRunning {
+        if usesToolbarChrome {
             content
         } else {
             content.safeAreaInset(edge: .top, spacing: 0) {
