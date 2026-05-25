@@ -3,6 +3,26 @@
 import XCTest
 
 final class RustEnergyMeterKernelTests: XCTestCase {
+    private var originalRustDylibPath: String?
+
+    override func setUp() {
+        super.setUp()
+        if let value = getenv("MA_RUST_AUDIO_KERNELS_DYLIB_PATH") {
+            originalRustDylibPath = String(cString: value)
+        } else {
+            originalRustDylibPath = nil
+        }
+    }
+
+    override func tearDown() {
+        if let originalRustDylibPath {
+            setenv("MA_RUST_AUDIO_KERNELS_DYLIB_PATH", originalRustDylibPath, 1)
+        } else {
+            unsetenv("MA_RUST_AUDIO_KERNELS_DYLIB_PATH")
+        }
+        super.tearDown()
+    }
+
     func testMakeMeterSnapshot_WhenFFIProvidesRmsPeak_UsesFFIResultForGlobalMeters() throws {
         let buffer = try makeMonoBuffer(samples: [0.2, 0.3, 0.4, 0.5])
         let ffi = RustAudioKernelFFI(
@@ -50,6 +70,27 @@ final class RustEnergyMeterKernelTests: XCTestCase {
         )
 
         let kernel = RustEnergyMeterKernel(ffi: nil)
+        let rustSnapshot = try XCTUnwrap(kernel.makeMeterSnapshot(from: buffer, barCount: 2))
+
+        XCTAssertEqual(rustSnapshot.averagePowerDB, swiftSnapshot.averagePowerDB, accuracy: 0.001)
+        XCTAssertEqual(rustSnapshot.peakPowerDB, swiftSnapshot.peakPowerDB, accuracy: 0.001)
+        XCTAssertEqual(rustSnapshot.barPowerDBLevels, swiftSnapshot.barPowerDBLevels)
+    }
+
+    func testLoadFromProcessSymbols_WithBundledRustDylibPath_UsesRustImplementation() throws {
+        let buffer = try makeMonoBuffer(samples: [0.2, 0.3, 0.4, 0.5])
+        let swiftSnapshot = try XCTUnwrap(
+            SwiftEnergyMeterKernel.shared.makeMeterSnapshot(from: buffer, barCount: 2)
+        )
+        guard let dylibPath = resolveRustDylibPath() else {
+            throw XCTSkip("Rust dylib not staged; run build with MA_RUST_AUDIO_KERNELS_BUILD=on")
+        }
+        setenv("MA_RUST_AUDIO_KERNELS_DYLIB_PATH", dylibPath, 1)
+
+        let ffi = RustAudioKernelFFI.loadFromProcessSymbols()
+        XCTAssertNotNil(ffi)
+
+        let kernel = RustEnergyMeterKernel(ffi: ffi)
         let rustSnapshot = try XCTUnwrap(kernel.makeMeterSnapshot(from: buffer, barCount: 2))
 
         XCTAssertEqual(rustSnapshot.averagePowerDB, swiftSnapshot.averagePowerDB, accuracy: 0.001)
@@ -117,5 +158,26 @@ final class RustEnergyMeterKernelTests: XCTestCase {
             channelData[1][index] = right[index]
         }
         return buffer
+    }
+
+    private func resolveRustDylibPath() -> String? {
+        let rootPath = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .path
+        let directPath = "\(rootPath)/.xcode-build/Build/Products/Debug/Prisma.app/Contents/Frameworks/libaudio_kernels_rust.dylib"
+        if FileManager.default.fileExists(atPath: directPath) {
+            return directPath
+        }
+
+        let xpcPath = "\(rootPath)/.xcode-build/Build/Products/Debug/PrismaAI.xpc/Contents/Frameworks/libaudio_kernels_rust.dylib"
+        if FileManager.default.fileExists(atPath: xpcPath) {
+            return xpcPath
+        }
+
+        return nil
     }
 }

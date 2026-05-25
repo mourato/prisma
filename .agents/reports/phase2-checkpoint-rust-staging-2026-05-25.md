@@ -45,3 +45,14 @@
   - `.xcode-build/Build/Products/Debug/PrismaAI.xpc/Contents/Frameworks/libaudio_kernels_rust.dylib`
 - `codesign -dv` confirms staged dylibs are ad-hoc signed (`Signature=adhoc`).
 - Feature flag remains unchanged: `FeatureFlags.enableRustAudioMathKernels = false`.
+
+### Runtime Checkpoint (Rust Loader Path)
+- Added runtime-focused test coverage in:
+  - `Packages/MeetingAssistantCore/Tests/MeetingAssistantCoreTests/RustEnergyMeterKernelTests.swift`
+- New validation scenario:
+  - Sets `MA_RUST_AUDIO_KERNELS_DYLIB_PATH` to staged dylib path.
+  - Calls `RustAudioKernelFFI.loadFromProcessSymbols()` and verifies Rust-backed metering path produces expected values.
+  - Uses `XCTSkip` when dylib is not staged to keep suite deterministic outside on-mode build flows.
+- Verification command:
+  - `./scripts/run-tests.sh --suite dev --test 'RustEnergyMeterKernelTests|AudioKernelProviderTests'`
+  - Result: `Total: 8 | Passed: 8 | Failed: 0`
