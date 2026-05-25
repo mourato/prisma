@@ -42,6 +42,7 @@ extension RecordingManager {
             inputSource: resolveInputSourceLabel(for: meeting, recordingSource: source),
             storage: storage,
             transcriptionClientBox: transcriptionClientBox,
+            voiceActivityKernel: makeVoiceActivityKernel(),
             callbacks: .init(
                 onProcessedDurationChanged: { [weak self] processedDuration in
                     Task { @MainActor [weak self] in

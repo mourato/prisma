@@ -26,6 +26,7 @@ actor IncrementalDictationTranscriptionCoordinator {
         inputSource: String?,
         storage: any StorageService,
         transcriptionClientBox: RecordingManager.UncheckedTranscriptionServiceBox,
+        voiceActivityKernel: any VoiceActivityKernel = RealtimeVoiceActivityWindowAssembler(),
         callbacks: Callbacks
     ) {
         core = IncrementalTranscriptionCoordinatorCore(
@@ -35,6 +36,7 @@ actor IncrementalDictationTranscriptionCoordinator {
                 inputSource: inputSource,
                 storage: storage,
                 transcriptionClientBox: transcriptionClientBox,
+                voiceActivityKernel: voiceActivityKernel,
                 onPreviewTextChanged: callbacks.onPreviewTextChanged,
                 onProcessedDurationChanged: callbacks.onProcessedDurationChanged,
                 fallbackLogMessage: "Dictation incremental transcription degraded; full-file fallback required"

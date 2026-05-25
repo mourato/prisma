@@ -40,6 +40,7 @@ extension RecordingManager {
             inputSource: resolveInputSourceLabel(for: meeting, recordingSource: source),
             storage: storage,
             transcriptionClientBox: transcriptionClientBox,
+            voiceActivityKernel: makeVoiceActivityKernel(),
             callbacks: IncrementalDictationTranscriptionCoordinator.Callbacks(
                 onPreviewTextChanged: { [weak self] previewText in
                     Task { @MainActor [weak self] in

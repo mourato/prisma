@@ -99,6 +99,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     let transcriptPreprocessor = TranscriptIntelligencePreprocessor()
     let activeAppContextProvider: any ActiveAppContextProvider
     let captureContextResolver: any CaptureContextResolving
+    let makeVoiceActivityKernel: () -> any VoiceActivityKernel
     let apiKeyExists: (AIProvider) -> Bool
     var browserProviders: [String: BrowserActiveTabURLProviding] = BrowserProviderRegistry.defaultProviders()
 
@@ -248,6 +249,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         textContextPolicy: TextContextPolicy = .default,
         activeAppContextProvider: any ActiveAppContextProvider = NSWorkspaceActiveAppContextProvider(),
         captureContextResolver: any CaptureContextResolving = CaptureContextResolver.shared,
+        makeVoiceActivityKernel: @escaping () -> any VoiceActivityKernel = { RealtimeVoiceActivityWindowAssembler() },
         meetingNotesRichTextStore: any MeetingNotesRichTextStoreProtocol = MeetingNotesRichTextStore(),
         meetingNotesMarkdownStore: any MeetingNotesMarkdownDocumentStoreProtocol = MeetingNotesMarkdownDocumentStore.shared,
         apiKeyExists: @escaping (AIProvider) -> Bool = { provider in
@@ -270,6 +272,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.textContextPolicy = textContextPolicy
         self.activeAppContextProvider = activeAppContextProvider
         self.captureContextResolver = captureContextResolver
+        self.makeVoiceActivityKernel = makeVoiceActivityKernel
         self.meetingNotesRichTextStore = meetingNotesRichTextStore
         self.meetingNotesMarkdownStore = meetingNotesMarkdownStore
         self.apiKeyExists = apiKeyExists

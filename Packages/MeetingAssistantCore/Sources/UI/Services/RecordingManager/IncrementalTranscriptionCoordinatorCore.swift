@@ -13,6 +13,7 @@ actor IncrementalTranscriptionCoordinatorCore {
         let inputSource: String?
         let storage: any StorageService
         let transcriptionClientBox: RecordingManager.UncheckedTranscriptionServiceBox
+        let voiceActivityKernel: any VoiceActivityKernel
         let onPreviewTextChanged: (@Sendable (String) -> Void)?
         let onProcessedDurationChanged: @Sendable (Double) -> Void
         let fallbackLogMessage: String
@@ -23,7 +24,7 @@ actor IncrementalTranscriptionCoordinatorCore {
     private let inputSource: String?
     private let storage: any StorageService
     private let transcriptionClientBox: RecordingManager.UncheckedTranscriptionServiceBox
-    private let assembler = RealtimeVoiceActivityWindowAssembler()
+    private let voiceActivityKernel: any VoiceActivityKernel
     private let onPreviewTextChanged: (@Sendable (String) -> Void)?
     private let onProcessedDurationChanged: @Sendable (Double) -> Void
     private let fallbackLogMessage: String
@@ -47,6 +48,7 @@ actor IncrementalTranscriptionCoordinatorCore {
         inputSource = configuration.inputSource
         storage = configuration.storage
         transcriptionClientBox = configuration.transcriptionClientBox
+        voiceActivityKernel = configuration.voiceActivityKernel
         onPreviewTextChanged = configuration.onPreviewTextChanged
         onProcessedDurationChanged = configuration.onProcessedDurationChanged
         fallbackLogMessage = configuration.fallbackLogMessage
@@ -69,7 +71,7 @@ actor IncrementalTranscriptionCoordinatorCore {
         guard !requiresLegacyFallback else { return }
 
         do {
-            let windows = try await assembler.append(buffer: bufferBox.buffer)
+            let windows = try await voiceActivityKernel.append(buffer: bufferBox.buffer)
             for window in windows {
                 try await transcribe(window: window)
             }
@@ -89,7 +91,7 @@ actor IncrementalTranscriptionCoordinatorCore {
         } else {
             .normal
         }
-        await assembler.setAdaptiveQualityMode(mode)
+        await voiceActivityKernel.setAdaptiveQualityMode(mode)
     }
 
     func finishAccumulation() async throws {
@@ -98,7 +100,7 @@ actor IncrementalTranscriptionCoordinatorCore {
         }
 
         do {
-            let windows = try await assembler.finish()
+            let windows = try await voiceActivityKernel.finish()
             for window in windows {
                 try await transcribe(window: window)
             }

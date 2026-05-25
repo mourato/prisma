@@ -74,6 +74,7 @@ actor AudioRecordingWorker {
     private var meteringBarCount = 0
     private var adaptiveMeteringMode: AdaptiveMeteringMode = .normal
     private var pendingMeterSnapshotSkips = 0
+    private let energyMeterKernel: any EnergyMeterKernel
 
     /// Non-isolated buffer queue for synchronous enqueue from tap
     private nonisolated let bufferQueue = AudioBufferQueue(capacity: 100)
@@ -82,7 +83,9 @@ actor AudioRecordingWorker {
     private var processingTask: Task<Void, Never>?
     private let bufferSignalStorage = BufferSignalStorage()
 
-    init() {}
+    init(energyMeterKernel: any EnergyMeterKernel = SwiftEnergyMeterKernel.shared) {
+        self.energyMeterKernel = energyMeterKernel
+    }
 
     // MARK: - Callback Setters
 
@@ -269,7 +272,10 @@ actor AudioRecordingWorker {
         updateAdaptiveMeteringMode()
 
         if shouldEmitMeterSnapshot(),
-           let snapshot = Self.makeMeterSnapshot(from: buffer, barCount: effectiveMeteringBarCount)
+           let snapshot = energyMeterKernel.makeMeterSnapshot(
+               from: buffer,
+               barCount: effectiveMeteringBarCount
+           )
         {
             onPowerUpdate?(
                 snapshot.averagePowerDB,
@@ -353,67 +359,6 @@ actor AudioRecordingWorker {
         from buffer: AVAudioPCMBuffer,
         barCount: Int
     ) -> MeterSnapshot? {
-        guard let channelData = buffer.floatChannelData else { return nil }
-        let channelCount = Int(buffer.format.channelCount)
-        let frameLength = Int(buffer.frameLength)
-        let sampleRate = buffer.format.sampleRate
-        guard channelCount > 0, frameLength > 0, sampleRate > 0 else { return nil }
-
-        var maxRMS: Float = 0.0
-        var maxPeak: Float = 0.0
-
-        // Check all channels to find sound (in case mic is not on channel 0)
-        for ch in 0..<channelCount {
-            let channel = channelData[ch]
-            var sum: Float = 0.0
-            var peak: Float = 0.0
-
-            for frame in 0..<frameLength {
-                let sample = abs(channel[frame])
-                if sample > peak { peak = sample }
-                sum += sample * sample
-            }
-
-            let rms = sqrt(sum / Float(frameLength))
-            if rms > maxRMS { maxRMS = rms }
-            if peak > maxPeak { maxPeak = peak }
-        }
-
-        let sanitizedBarCount = max(0, barCount)
-        let barPowerDBLevels: [Float] = if sanitizedBarCount == 0 {
-            []
-        } else {
-            (0..<sanitizedBarCount).map { bucketIndex in
-                let start = Int(Double(bucketIndex) * Double(frameLength) / Double(sanitizedBarCount))
-                let end = Int(Double(bucketIndex + 1) * Double(frameLength) / Double(sanitizedBarCount))
-                guard end > start else { return -160.0 }
-
-                var maxBucketPeak: Float = 0.0
-
-                for channelIndex in 0..<channelCount {
-                    let channel = channelData[channelIndex]
-
-                    for frame in start..<end {
-                        let sample = abs(channel[frame])
-                        if sample > maxBucketPeak {
-                            maxBucketPeak = sample
-                        }
-                    }
-                }
-
-                return 20.0 * log10(max(maxBucketPeak, 1e-10))
-            }
-        }
-
-        // Use a wider range for metering to capture more subtle sounds
-        let averagePowerDb = 20.0 * log10(max(maxRMS, 1e-10))
-        let peakPowerDb = 20.0 * log10(max(maxPeak, 1e-10))
-
-        return MeterSnapshot(
-            averagePowerDB: averagePowerDb,
-            peakPowerDB: peakPowerDb,
-            barPowerDBLevels: barPowerDBLevels,
-            deltaTime: Double(frameLength) / sampleRate
-        )
+        SwiftEnergyMeterKernel.shared.makeMeterSnapshot(from: buffer, barCount: barCount)
     }
 }

@@ -39,6 +39,7 @@ public protocol AudioSilenceCompacting: Sendable {
 
 public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sendable {
     private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "AudioSilenceCompactor")
+    private let silenceAnalysisKernel: any SilenceAnalysisKernel
 
     private enum Constants {
         static let windowDurationSeconds = 0.03
@@ -49,19 +50,27 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
         static let analysisChunkFrames: AVAudioFrameCount = 8_192
     }
 
-    public init() {}
+    public init() {
+        silenceAnalysisKernel = SwiftSilenceAnalysisKernel()
+    }
+
+    init(silenceAnalysisKernel: any SilenceAnalysisKernel) {
+        self.silenceAnalysisKernel = silenceAnalysisKernel
+    }
 
     public func compactForTranscription(
         inputURL: URL,
         outputURL: URL,
         format: AppSettingsStore.AudioFormat
     ) async throws -> AudioCompactionResult {
-        try await Task.detached(priority: .userInitiated) {
+        let silenceAnalysisKernel = self.silenceAnalysisKernel
+        return try await Task.detached(priority: .userInitiated) {
             try await Self.compact(
                 inputURL: inputURL,
                 outputURL: outputURL,
                 format: format,
-                logger: self.logger
+                logger: self.logger,
+                silenceAnalysisKernel: silenceAnalysisKernel
             )
         }
         .value
@@ -71,7 +80,8 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
         inputURL: URL,
         outputURL: URL,
         format: AppSettingsStore.AudioFormat,
-        logger: Logger
+        logger: Logger,
+        silenceAnalysisKernel: any SilenceAnalysisKernel
     ) async throws -> AudioCompactionResult {
         guard FileManager.default.fileExists(atPath: inputURL.path) else {
             throw AudioSilenceCompactorError.inputFileNotFound
@@ -81,7 +91,7 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
             try FileManager.default.removeItem(at: outputURL)
         }
 
-        let analysis = try analyzeAudio(inputURL: inputURL)
+        let analysis = try silenceAnalysisKernel.analyze(inputURL: inputURL)
         let originalDuration = analysis.durationSeconds
 
         guard !analysis.keepRanges.isEmpty else {
@@ -119,7 +129,7 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
         )
     }
 
-    private static func analyzeAudio(inputURL: URL) throws -> AudioAnalysis {
+    fileprivate static func analyzeAudio(inputURL: URL) throws -> AudioAnalysis {
         let audioFile = try AVAudioFile(forReading: inputURL)
         let sampleRate = audioFile.processingFormat.sampleRate
         let totalFrames = AVAudioFramePosition(audioFile.length)
@@ -480,6 +490,17 @@ private struct AudioAnalysis {
     var durationSeconds: Double {
         guard sampleRate > 0 else { return 0 }
         return Double(totalFrames) / sampleRate
+    }
+}
+
+private struct SwiftSilenceAnalysisKernel: SilenceAnalysisKernel {
+    func analyze(inputURL: URL) throws -> AudioSilenceAnalysis {
+        let analysis = try AudioSilenceCompactor.analyzeAudio(inputURL: inputURL)
+        return AudioSilenceAnalysis(
+            sampleRate: analysis.sampleRate,
+            totalFrames: analysis.totalFrames,
+            keepRanges: analysis.keepRanges
+        )
     }
 }
 

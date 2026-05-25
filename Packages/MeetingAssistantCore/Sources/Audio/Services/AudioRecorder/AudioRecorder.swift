@@ -99,7 +99,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Worker & State
 
     /// Thread-safe worker that handles file writing and processing off the main actor.
-    let worker = AudioRecordingWorker()
+    let worker: AudioRecordingWorker
     var validationTimer: Timer?
     public var onRecordingError: (@Sendable (Error) -> Void)?
 
@@ -133,9 +133,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     init(
+        energyMeterKernel: any EnergyMeterKernel = SwiftEnergyMeterKernel.shared,
         muteController: any OutputDuckingControlling = SystemAudioMuteController.shared,
         mediaPlaybackController: any MediaPlaybackControlling = MediaPlaybackController.shared
     ) {
+        worker = AudioRecordingWorker(energyMeterKernel: energyMeterKernel)
         self.muteController = muteController
         self.mediaPlaybackController = mediaPlaybackController
         microphoneInputSelectionResolver = MicrophoneInputSelectionResolver(deviceManager: deviceManager)
