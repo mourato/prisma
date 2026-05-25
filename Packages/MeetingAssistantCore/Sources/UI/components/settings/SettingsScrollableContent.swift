@@ -20,6 +20,8 @@ public struct SettingsScrollableContent<Content: View>: View {
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
         .subtleScrollbars()
     }
 }

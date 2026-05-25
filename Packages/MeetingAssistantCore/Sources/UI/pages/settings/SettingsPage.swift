@@ -23,8 +23,6 @@ private enum LayoutConstants {
 public struct SettingsView: View {
     private enum ToolbarLayout {
         static let transcriptionsSearchWidth: CGFloat = 230
-        static let navigationButtonSize: CGFloat = 32
-        static let navigationDividerHeight: CGFloat = 18
         static let titleSpacing: CGFloat = 10
     }
 
@@ -80,6 +78,7 @@ public struct SettingsView: View {
             .tint(AppDesignSystem.Colors.accent)
         }
         .navigationSplitViewStyle(.balanced)
+        .navigationTitle(settingsNavigationTitle)
         .toolbar {
             if usesToolbarChrome {
                 settingsToolbarContent
@@ -89,7 +88,6 @@ public struct SettingsView: View {
         .toolbarBackgroundVisibility(settingsToolbarBackgroundVisibility, for: .windowToolbar)
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .subtleScrollbars()
         .onAppear {
             persistSidebarVisibility(columnVisibility)
             if let sectionId = navigationService.requestedSettingsSection,
@@ -121,7 +119,6 @@ public struct SettingsView: View {
             searchText: $settingsSearchText,
             onSelectSection: selectSection
         )
-        .subtleScrollbars()
         .frame(maxHeight: .infinity, alignment: .top)
         .navigationSplitViewColumnWidth(
             min: LayoutConstants.sidebarMinWidth,
@@ -158,11 +155,15 @@ private extension SettingsView {
         return .visible
     }
 
+    var settingsNavigationTitle: String {
+        usesToolbarChrome ? selectedSection.title : ""
+    }
+
     @ToolbarContentBuilder
     private var settingsToolbarContent: some ToolbarContent {
         if #available(macOS 26.0, *) {
             ToolbarItem(placement: .navigation) {
-                toolbarLeadingGroup
+                toolbarNavigationControlGroup
             }
 
             if shouldShowTranscriptionsSearch {
@@ -225,9 +226,29 @@ private extension SettingsView {
     }
 
     @available(macOS 26.0, *)
+    private var toolbarNavigationControlGroup: some View {
+        ControlGroup {
+            Button(action: navigateBack) {
+                Label("transcription.qa.navigation.back".localized, systemImage: "chevron.left")
+            }
+            .help("transcription.qa.navigation.back".localized)
+            .accessibilityLabel("transcription.qa.navigation.back".localized)
+            .disabled(!canNavigateBack)
+
+            Button(action: navigateForward) {
+                Label("transcription.qa.navigation.forward".localized, systemImage: "chevron.right")
+            }
+            .help("transcription.qa.navigation.forward".localized)
+            .accessibilityLabel("transcription.qa.navigation.forward".localized)
+            .disabled(!canNavigateForward)
+        }
+        .controlGroupStyle(.navigation)
+    }
+
+    @available(macOS 26.0, *)
     private var toolbarLeadingGroup: some View {
         HStack(spacing: ToolbarLayout.titleSpacing) {
-            glassNavigationPill
+            toolbarNavigationControlGroup
             toolbarSectionTitle
         }
     }
@@ -303,29 +324,6 @@ private extension SettingsView {
         )
     }
 
-    @available(macOS 26.0, *)
-    private var glassNavigationPill: some View {
-        HStack(spacing: 0) {
-            toolbarNavigationButton(
-                systemImage: "chevron.left",
-                helpKey: "transcription.qa.navigation.back",
-                isEnabled: canNavigateBack,
-                action: navigateBack
-            )
-
-            Divider()
-                .frame(height: ToolbarLayout.navigationDividerHeight)
-                .padding(.vertical, 7)
-
-            toolbarNavigationButton(
-                systemImage: "chevron.right",
-                helpKey: "transcription.qa.navigation.forward",
-                isEnabled: canNavigateForward,
-                action: navigateForward
-            )
-        }
-    }
-
     private var legacySidebarToggleButton: some View {
         Button(action: toggleSidebar) {
             Image(systemName: "sidebar.left")
@@ -340,28 +338,6 @@ private extension SettingsView {
         )
         .help(sidebarToggleHelpText)
         .accessibilityLabel(sidebarToggleHelpText)
-    }
-
-    @available(macOS 26.0, *)
-    private func toolbarNavigationButton(
-        systemImage: String,
-        helpKey: String,
-        isEnabled: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .symbolRenderingMode(.monochrome)
-                .font(.system(size: 13, weight: .medium))
-                .frame(width: ToolbarLayout.navigationButtonSize, height: ToolbarLayout.navigationButtonSize)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(isEnabled ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.secondary.opacity(0.75)))
-        .opacity(isEnabled ? 1 : 0.65)
-        .help(helpKey.localized)
-        .accessibilityLabel(helpKey.localized)
-        .disabled(!isEnabled)
     }
 
     private func legacyNavigationHistoryButton(
