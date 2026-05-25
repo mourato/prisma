@@ -86,7 +86,7 @@ public struct SettingsView: View {
             }
         }
         .toolbarBackground(AppDesignSystem.Colors.settingsCanvasBackground, for: .windowToolbar)
-        .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
+        .toolbarBackgroundVisibility(settingsToolbarBackgroundVisibility, for: .windowToolbar)
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .subtleScrollbars()
@@ -148,6 +148,14 @@ private extension SettingsView {
             }
             return !PreviewRuntime.isRunning
         }
+    }
+
+    var settingsToolbarBackgroundVisibility: Visibility {
+        if #available(macOS 26.0, *), usesToolbarChrome {
+            return .automatic
+        }
+
+        return .visible
     }
 
     @ToolbarContentBuilder
@@ -580,4 +588,8 @@ private struct SettingsToolbarChromePreview: View {
 
 #Preview("Settings Content") {
     SettingsView(chromeMode: .none)
+}
+
+#Preview("Settings Content (Toolbar)") {
+    SettingsView(chromeMode: .toolbar)
 }

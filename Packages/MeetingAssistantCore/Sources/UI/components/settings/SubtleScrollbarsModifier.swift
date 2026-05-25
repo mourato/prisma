@@ -72,6 +72,7 @@ private extension View {
     func settingsWindowScrollEdgeEffect() -> some View {
         if #available(macOS 26.0, *) {
             scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
+                .scrollEdgeEffectHidden(false, for: [.top, .bottom])
         } else {
             self
         }
