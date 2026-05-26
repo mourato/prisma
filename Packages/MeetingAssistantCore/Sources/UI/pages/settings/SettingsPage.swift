@@ -70,13 +70,6 @@ public struct SettingsView: View {
                 legacyHeader: detailNavigationBar,
                 usesToolbarChrome: usesToolbarChrome
             ))
-            .overlay(alignment: .top) {
-                if usesToolbarChrome {
-                    Rectangle()
-                        .fill(AppDesignSystem.Colors.settingsTitleBarDivider)
-                        .frame(height: 1)
-                }
-            }
             .tint(AppDesignSystem.Colors.accent)
         }
         .navigationSplitViewStyle(.balanced)
@@ -87,11 +80,9 @@ public struct SettingsView: View {
                 settingsToolbarContent
             }
         }
-        .toolbarBackground(usesToolbarChrome ? Color.clear : AppDesignSystem.Colors.settingsCanvasBackground, for: .windowToolbar)
-        .toolbarBackgroundVisibility(settingsToolbarBackgroundVisibility, for: .windowToolbar)
+        .modifier(SettingsToolbarBackgroundModifier(usesToolbarChrome: usesToolbarChrome))
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .subtleScrollbars()
         .onAppear {
             persistSidebarVisibility(columnVisibility)
             if let sectionId = navigationService.requestedSettingsSection,
@@ -123,7 +114,6 @@ public struct SettingsView: View {
             searchText: $settingsSearchText,
             onSelectSection: selectSection
         )
-        .subtleScrollbars()
         .frame(maxHeight: .infinity, alignment: .top)
         .navigationSplitViewColumnWidth(
             min: LayoutConstants.sidebarMinWidth,
@@ -150,14 +140,6 @@ private extension SettingsView {
             }
             return true
         }
-    }
-
-    var settingsToolbarBackgroundVisibility: Visibility {
-        if #available(macOS 26.0, *), usesToolbarChrome {
-            return .automatic
-        }
-
-        return .visible
     }
 
     var settingsNavigationTitle: String {
@@ -503,6 +485,20 @@ private struct SettingsDetailChromeModifier<LegacyHeader: View>: ViewModifier {
             content.safeAreaInset(edge: .top, spacing: 0) {
                 legacyHeader
             }
+        }
+    }
+}
+
+private struct SettingsToolbarBackgroundModifier: ViewModifier {
+    let usesToolbarChrome: Bool
+
+    func body(content: Content) -> some View {
+        if usesToolbarChrome {
+            content
+        } else {
+            content
+                .toolbarBackground(AppDesignSystem.Colors.settingsCanvasBackground, for: .windowToolbar)
+                .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
         }
     }
 }

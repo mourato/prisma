@@ -28,7 +28,19 @@ public class NavigationService: ObservableObject {
     /// Opens the settings/dashboard window.
     public func openSettings() {
         if let openSettingsHandler {
+            let previousPolicy = NSApp.activationPolicy()
+            if previousPolicy == .accessory {
+                NSApp.setActivationPolicy(.regular)
+            }
+
+            NSApp.activate(ignoringOtherApps: true)
             openSettingsHandler()
+
+            if previousPolicy == .accessory {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    NSApp.setActivationPolicy(.accessory)
+                }
+            }
             return
         }
 

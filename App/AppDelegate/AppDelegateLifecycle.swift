@@ -154,7 +154,7 @@ extension AppDelegate {
     private func openSettingsOnLaunchIfEnabled() {
         guard settingsStore.showSettingsOnLaunch else { return }
         promoteAppForWindowPresentation()
-        settingsWindowController.showSettingsWindow()
+        NavigationService.shared.openSettings()
     }
 
     /// Keeps indicator prewarming out of the launch critical path.
@@ -182,16 +182,13 @@ extension AppDelegate {
             guard hasStatusButton, isStatusItemVisible else {
                 logger.fault("Primary UI did not initialize correctly. Presenting settings recovery window.")
                 promoteAppForWindowPresentation()
-                settingsWindowController.showSettingsWindow()
+                NavigationService.shared.openSettings()
                 return
             }
         }
     }
 
     private func configureNavigationService() {
-        NavigationService.shared.registerOpenSettingsHandler { [weak self] in
-            self?.settingsWindowController.showSettingsWindow()
-        }
         NavigationService.shared.registerOpenOnboardingHandler { [weak self] in
             self?.promoteAppForWindowPresentation()
             self?.presentOnboarding {}
@@ -215,7 +212,8 @@ extension AppDelegate {
                     self?.cancelRecordingFromMenu()
                 },
                 openSettings: { [weak self] in
-                    self?.settingsWindowController.showSettingsWindow()
+                    self?.promoteAppForWindowPresentation()
+                    NavigationService.shared.openSettings()
                 },
                 openHistory: { [weak self] in
                     self?.openHistory()
@@ -249,7 +247,7 @@ extension AppDelegate {
 
             logger.fault("Launch recovery triggered: no visible status item and no visible window.")
             promoteAppForWindowPresentation()
-            settingsWindowController.showSettingsWindow()
+            NavigationService.shared.openSettings()
         }
     }
 

@@ -281,6 +281,8 @@ public struct TranscriptionsSettingsTab: View {
             .padding(.top, 48)
             .padding(.horizontal, 24)
         }
+        .settingsScrollEdgeEffect()
+        .subtleScrollbars()
         .scrollIndicators(.hidden)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -343,6 +345,7 @@ public struct TranscriptionsSettingsTab: View {
             }
         }
         .listStyle(.plain)
+        .settingsScrollEdgeEffect()
         .scrollContentBackground(.hidden)
         .background(Color.clear)
         .subtleScrollbars()

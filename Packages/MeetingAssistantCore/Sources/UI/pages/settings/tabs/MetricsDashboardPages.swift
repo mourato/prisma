@@ -164,6 +164,8 @@ struct MetricsDashboardEventDetailPage: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .settingsScrollEdgeEffect()
+                .subtleScrollbars()
                 .frame(maxHeight: 220)
             }
         }

@@ -14,17 +14,13 @@ public struct ModelsSettingsTab: View {
     public init() {}
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.sectionSpacing) {
-                SettingsSectionHeader(
-                    title: "settings.section.models".localized,
-                    description: "settings.models.description".localized
-                )
+        SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: "settings.section.models".localized,
+                description: "settings.models.description".localized
+            )
 
-                ServiceSettingsContent()
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
+            ServiceSettingsContent()
         }
     }
 }

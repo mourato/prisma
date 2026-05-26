@@ -13,16 +13,24 @@ public struct SettingsScrollableContent<Content: View>: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: spacing) {
-                content
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .leading, spacing: spacing) {
+                    content
+                }
+                .padding(EdgeInsets(top: 0, leading: 20, bottom: 20, trailing: 20))
+                .frame(
+                    minWidth: geometry.size.width,
+                    minHeight: geometry.size.height,
+                    alignment: .topLeading
+                )
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .settingsScrollEdgeEffect()
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+            .subtleScrollbars()
         }
-        .scrollContentBackground(.hidden)
-        .background(Color.clear)
-        .subtleScrollbars()
     }
 }
 

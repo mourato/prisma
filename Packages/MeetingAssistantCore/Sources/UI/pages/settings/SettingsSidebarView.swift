@@ -37,6 +37,7 @@ struct SettingsSidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        .settingsScrollEdgeEffect()
         .searchable(
             text: $searchText,
             placement: .sidebar,
@@ -81,6 +82,7 @@ struct SettingsSidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        .settingsScrollEdgeEffect()
         .searchable(
             text: $searchText,
             placement: .sidebar,
