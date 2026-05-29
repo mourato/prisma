@@ -1,7 +1,7 @@
 import Foundation
-import XCTest
 @testable import MeetingAssistantCoreAI
 @testable import MeetingAssistantCoreInfrastructure
+import XCTest
 
 final class CohereTranscribeModelRuntimeTests: XCTestCase {
     func testParseVocabularyData_WhenCoreMLManifestContainsIDToToken_ReturnsIndexedVocabulary() throws {
@@ -80,6 +80,47 @@ final class CohereTranscribeModelRuntimeTests: XCTestCase {
         try manifestData.write(to: manifestURL)
 
         XCTAssertFalse(CohereTranscribeModelRuntime.modelsExist(at: directory))
+    }
+
+    func testCompiledModelDirectory_WhenSourceContentsChange_ProducesDifferentFingerprint() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let encoderURL = directory.appendingPathComponent("cohere_encoder.mlpackage", isDirectory: true)
+        try FileManager.default.createDirectory(at: encoderURL, withIntermediateDirectories: true)
+        let weightsURL = encoderURL.appendingPathComponent("weights.bin")
+        try Data("v1".utf8).write(to: weightsURL)
+
+        let firstCompiledURL = try CohereTranscribeModelRuntime.compiledModelDirectory(
+            for: .encoder,
+            artifactURL: encoderURL,
+            modelDirectory: directory
+        )
+
+        try Data("v2".utf8).write(to: weightsURL)
+
+        let secondCompiledURL = try CohereTranscribeModelRuntime.compiledModelDirectory(
+            for: .encoder,
+            artifactURL: encoderURL,
+            modelDirectory: directory
+        )
+
+        XCTAssertNotEqual(firstCompiledURL, secondCompiledURL)
+    }
+
+    func testPersistedCompiledModelDirectories_WhenArtifactsExist_ReturnsAllCompiledDirectories() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let compiledRoot = CohereTranscribeModelRuntime.compiledArtifactsRootDirectory(baseDirectory: directory)
+        let encoderCompiled = compiledRoot.appendingPathComponent("encoder/ENCODER.mlmodelc", isDirectory: true)
+        let decoderCompiled = compiledRoot.appendingPathComponent("decoder/DECODER.mlmodelc", isDirectory: true)
+        try FileManager.default.createDirectory(at: encoderCompiled, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: decoderCompiled, withIntermediateDirectories: true)
+
+        let directories = CohereTranscribeModelRuntime.persistedCompiledModelDirectories(at: directory)
+
+        XCTAssertEqual(Set(directories.map(\.standardizedFileURL)), Set([encoderCompiled.standardizedFileURL, decoderCompiled.standardizedFileURL]))
     }
 
     @MainActor

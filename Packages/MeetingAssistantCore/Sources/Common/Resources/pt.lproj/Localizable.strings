@@ -173,7 +173,7 @@
 "settings.storage.cleanup_now" = "Limpar áudios com mais de %d dias";
 "settings.storage.cleanup_success" = "Limpeza concluída com sucesso.";
 "settings.storage.cleanup_confirm_title" = "Limpar armazenamento";
-"settings.storage.cleanup_confirm_message" = "Isso irá excluir arquivos de áudio do disco:\n\nArquivos de áudio: %d (%@)\n\nOs dados da dashboard e do histórico serão preservados.";
+"settings.storage.cleanup_confirm_message" = "Isso irá excluir arquivos de armazenamento do disco:\n\nArquivos de áudio: %d (%@)\nCache local de IA: %d (%@)\n\nOs dados da dashboard e do histórico serão preservados.";
 "settings.storage.cleanup_confirm_delete" = "Excluir";
 "settings.storage.cleanup_confirm_cancel" = "Cancelar";
 "meeting.app.imported" = "Arquivo Importado";

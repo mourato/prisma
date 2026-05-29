@@ -26,6 +26,12 @@ extension AppDelegate {
         globalShortcutController.start()
         recordingCancelShortcutController.start()
         setupCapabilityObservation()
+
+        // Run auto-cleanup before model warmup so stale caches can be purged safely.
+        Task {
+            await performCleanup()
+        }
+
         applyMeetingTranscriptionCapabilityState(isEnabled: settingsStore.isMeetingTranscriptionEnabled)
         applyAssistantIntegrationsCapabilityState(isEnabled: settingsStore.isAssistantIntegrationsEnabled)
         setupRecordingObservation()
@@ -34,11 +40,6 @@ extension AppDelegate {
         updateMenuTitles() // Initial update
 
         localModelResidencyCoordinator.startMonitoring()
-
-        // Run auto-cleanup logic
-        Task {
-            await performCleanup()
-        }
 
         // Set initial activation policy based on user settings
         applyDockVisibility(settingsStore.showInDock)
@@ -124,6 +125,12 @@ extension AppDelegate {
         globalShortcutController.start()
         recordingCancelShortcutController.start()
         setupCapabilityObservation()
+
+        // Run auto-cleanup before model warmup so stale caches can be purged safely.
+        Task {
+            await performCleanup()
+        }
+
         applyMeetingTranscriptionCapabilityState(isEnabled: settingsStore.isMeetingTranscriptionEnabled)
         applyAssistantIntegrationsCapabilityState(isEnabled: settingsStore.isAssistantIntegrationsEnabled)
         setupRecordingObservation()
@@ -132,11 +139,6 @@ extension AppDelegate {
         updateMenuTitles()
 
         localModelResidencyCoordinator.startMonitoring()
-
-        // Run auto-cleanup logic
-        Task {
-            await performCleanup()
-        }
 
         // Set initial activation policy based on user settings
         applyDockVisibility(settingsStore.showInDock)

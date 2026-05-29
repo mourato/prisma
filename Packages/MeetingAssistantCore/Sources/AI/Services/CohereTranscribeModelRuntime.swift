@@ -18,7 +18,7 @@ enum CohereTranscribeModelRuntime {
         "FluidInference/cohere-transcribe-03-2026-coreml-6bit",
     ]
 
-    private enum ModelComponent: String, CaseIterable {
+    enum ModelComponent: String, CaseIterable {
         case preprocessor
         case encoder
         case decoder
@@ -217,10 +217,30 @@ enum CohereTranscribeModelRuntime {
         preprocessorConfig.allowLowPrecisionAccumulationOnGPU = true
         preprocessorConfig.computeUnits = .cpuOnly
 
-        let encoderModel = try loadModel(from: encoderURL, configuration: config)
-        let preprocessorModel = try loadModel(from: preprocessorURL, configuration: preprocessorConfig)
-        let decoderModel = try loadModel(from: decoderURL, configuration: config)
-        let jointModel = try loadModel(from: jointURL, configuration: config)
+        let encoderModel = try loadModel(
+            component: .encoder,
+            from: encoderURL,
+            modelDirectory: directory,
+            configuration: config
+        )
+        let preprocessorModel = try loadModel(
+            component: .preprocessor,
+            from: preprocessorURL,
+            modelDirectory: directory,
+            configuration: preprocessorConfig
+        )
+        let decoderModel = try loadModel(
+            component: .decoder,
+            from: decoderURL,
+            modelDirectory: directory,
+            configuration: config
+        )
+        let jointModel = try loadModel(
+            component: .joint,
+            from: jointURL,
+            modelDirectory: directory,
+            configuration: config
+        )
 
         let vocabulary = try loadVocabulary(from: vocabularyURL)
 
@@ -235,15 +255,110 @@ enum CohereTranscribeModelRuntime {
         )
     }
 
-    private static func loadModel(from artifactURL: URL, configuration: MLModelConfiguration) throws -> MLModel {
+    private static func loadModel(
+        component: ModelComponent,
+        from artifactURL: URL,
+        modelDirectory: URL,
+        configuration: MLModelConfiguration
+    ) throws -> MLModel {
         // Public Cohere repos commonly ship .mlpackage artifacts. Compile them
         // on-device before loading to avoid "not a valid .mlmodelc" runtime failures.
         if artifactURL.pathExtension == "mlpackage" {
-            let compiledURL = try MLModel.compileModel(at: artifactURL)
-            return try MLModel(contentsOf: compiledURL, configuration: configuration)
+            let compiledURL = try resolveCompiledModelURL(
+                for: component,
+                artifactURL: artifactURL,
+                modelDirectory: modelDirectory
+            )
+
+            do {
+                return try MLModel(contentsOf: compiledURL, configuration: configuration)
+            } catch {
+                let fileManager = FileManager.default
+                try? fileManager.removeItem(at: compiledURL)
+                let rebuiltURL = try buildCompiledModelURL(
+                    for: component,
+                    artifactURL: artifactURL,
+                    modelDirectory: modelDirectory,
+                    destinationURL: compiledURL,
+                    fileManager: fileManager
+                )
+                return try MLModel(contentsOf: rebuiltURL, configuration: configuration)
+            }
         }
 
         return try MLModel(contentsOf: artifactURL, configuration: configuration)
+    }
+
+    static func compiledArtifactsRootDirectory(baseDirectory: URL = defaultCacheDirectory()) -> URL {
+        baseDirectory.appendingPathComponent("Compiled", isDirectory: true)
+    }
+
+    static func currentCompiledArtifactDirectories(at modelDirectory: URL = defaultCacheDirectory()) throws -> [URL] {
+        ModelComponent.allCases.compactMap { component in
+            guard let artifactURL = try? findDirectory(matchingAnyOf: component.artifactCandidates, under: modelDirectory) else {
+                return nil
+            }
+            guard artifactURL.pathExtension == "mlpackage" else { return nil }
+            return try? compiledModelDirectory(for: component, artifactURL: artifactURL, modelDirectory: modelDirectory)
+        }
+    }
+
+    static func persistedCompiledModelDirectories(
+        at modelDirectory: URL = defaultCacheDirectory(),
+        fileManager: FileManager = .default
+    ) -> [URL] {
+        let rootDirectory = compiledArtifactsRootDirectory(baseDirectory: modelDirectory)
+        guard fileManager.fileExists(atPath: rootDirectory.path) else { return [] }
+
+        let resourceKeys: [URLResourceKey] = [.isDirectoryKey]
+        let componentDirectories = (try? fileManager.contentsOfDirectory(
+            at: rootDirectory,
+            includingPropertiesForKeys: resourceKeys,
+            options: [.skipsHiddenFiles]
+        )) ?? []
+
+        return componentDirectories.flatMap { componentDirectory in
+            ((try? fileManager.contentsOfDirectory(
+                at: componentDirectory,
+                includingPropertiesForKeys: resourceKeys,
+                options: [.skipsHiddenFiles]
+            )) ?? []).filter { candidate in
+                let values = try? candidate.resourceValues(forKeys: Set(resourceKeys))
+                return values?.isDirectory == true && candidate.pathExtension == "mlmodelc"
+            }
+        }
+    }
+
+    static func compiledModelDirectory(
+        for component: ModelComponent,
+        artifactURL: URL,
+        modelDirectory: URL = defaultCacheDirectory()
+    ) throws -> URL {
+        let fingerprint = try modelArtifactFingerprint(for: artifactURL)
+        return compiledArtifactsRootDirectory(baseDirectory: modelDirectory)
+            .appendingPathComponent(component.rawValue, isDirectory: true)
+            .appendingPathComponent("\(fingerprint).mlmodelc", isDirectory: true)
+    }
+
+    static func pruneCompiledModelCache(
+        for component: ModelComponent,
+        keeping keepDirectory: URL,
+        in modelDirectory: URL = defaultCacheDirectory(),
+        fileManager: FileManager = .default
+    ) {
+        let componentDirectory = compiledArtifactsRootDirectory(baseDirectory: modelDirectory)
+            .appendingPathComponent(component.rawValue, isDirectory: true)
+        guard fileManager.fileExists(atPath: componentDirectory.path) else { return }
+
+        let entries = (try? fileManager.contentsOfDirectory(
+            at: componentDirectory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        )) ?? []
+
+        for entry in entries where entry.standardizedFileURL != keepDirectory.standardizedFileURL {
+            try? fileManager.removeItem(at: entry)
+        }
     }
 
     private static func shouldDownload(path: String) -> Bool {
@@ -324,6 +439,94 @@ enum CohereTranscribeModelRuntime {
     private static func loadVocabulary(from vocabularyURL: URL) throws -> [Int: String] {
         let data = try Data(contentsOf: vocabularyURL)
         return try parseVocabularyData(data, sourceName: vocabularyURL.lastPathComponent)
+    }
+
+    private static func resolveCompiledModelURL(
+        for component: ModelComponent,
+        artifactURL: URL,
+        modelDirectory: URL
+    ) throws -> URL {
+        let compiledURL = try compiledModelDirectory(for: component, artifactURL: artifactURL, modelDirectory: modelDirectory)
+        let fileManager = FileManager.default
+
+        if fileManager.fileExists(atPath: compiledURL.path) {
+            return compiledURL
+        }
+
+        return try buildCompiledModelURL(
+            for: component,
+            artifactURL: artifactURL,
+            modelDirectory: modelDirectory,
+            destinationURL: compiledURL,
+            fileManager: fileManager
+        )
+    }
+
+    private static func buildCompiledModelURL(
+        for component: ModelComponent,
+        artifactURL: URL,
+        modelDirectory: URL,
+        destinationURL: URL,
+        fileManager: FileManager
+    ) throws -> URL {
+        try fileManager.createDirectory(
+            at: destinationURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            try fileManager.removeItem(at: destinationURL)
+        }
+
+        let temporaryCompiledURL = try MLModel.compileModel(at: artifactURL)
+        try fileManager.moveItem(at: temporaryCompiledURL, to: destinationURL)
+        pruneCompiledModelCache(for: component, keeping: destinationURL, in: modelDirectory, fileManager: fileManager)
+        return destinationURL
+    }
+
+    private static func modelArtifactFingerprint(for artifactURL: URL) throws -> String {
+        let fileManager = FileManager.default
+        let resourceKeys: [URLResourceKey] = [.isDirectoryKey, .contentModificationDateKey, .fileSizeKey]
+        var records = [artifactURL.lastPathComponent]
+
+        let values = try artifactURL.resourceValues(forKeys: Set(resourceKeys))
+        if values.isDirectory == true {
+            guard let enumerator = fileManager.enumerator(
+                at: artifactURL,
+                includingPropertiesForKeys: resourceKeys,
+                options: [.skipsHiddenFiles]
+            ) else {
+                return stableFingerprint(for: records)
+            }
+
+            for case let candidateURL as URL in enumerator {
+                let candidateValues = try candidateURL.resourceValues(forKeys: Set(resourceKeys))
+                let relativePath = candidateURL.path.replacingOccurrences(of: artifactURL.path + "/", with: "")
+                let modificationTime = Int64(candidateValues.contentModificationDate?.timeIntervalSince1970 ?? 0)
+                let fileSize = candidateValues.isDirectory == true ? 0 : (candidateValues.fileSize ?? 0)
+                records.append("\(relativePath)|\(modificationTime)|\(fileSize)")
+            }
+        } else {
+            let modificationTime = Int64(values.contentModificationDate?.timeIntervalSince1970 ?? 0)
+            records.append("\(artifactURL.lastPathComponent)|\(modificationTime)|\(values.fileSize ?? 0)")
+        }
+
+        return stableFingerprint(for: records.sorted())
+    }
+
+    private static func stableFingerprint(for records: [String]) -> String {
+        var hash: UInt64 = 1_469_598_103_934_665_603
+
+        for record in records {
+            for byte in record.utf8 {
+                hash ^= UInt64(byte)
+                hash &*= 1_099_511_628_211
+            }
+            hash ^= 0xff
+            hash &*= 1_099_511_628_211
+        }
+
+        return String(format: "%016llX", hash)
     }
 
     static func parseVocabularyData(_ data: Data, sourceName: String) throws -> [Int: String] {

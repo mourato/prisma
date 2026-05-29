@@ -58,6 +58,11 @@ public enum AppIdentity {
         return currentURL
     }
 
+    public static func cachesBaseDirectory(fileManager: FileManager = .default) -> URL {
+        fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
+            ?? fileManager.temporaryDirectory
+    }
+
     private static func migrateLegacyDirectoryIfNeeded(from legacyURL: URL, to currentURL: URL, fileManager: FileManager) {
         guard fileManager.fileExists(atPath: legacyURL.path),
               !fileManager.fileExists(atPath: currentURL.path)

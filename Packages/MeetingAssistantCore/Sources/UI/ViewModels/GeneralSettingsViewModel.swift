@@ -15,6 +15,7 @@ import SwiftUI
 public class GeneralSettingsViewModel: ObservableObject {
     private let settingsStore: AppSettingsStore
     private let storage: StorageService
+    private let localAICacheMaintenance: LocalAICacheMaintenanceService
 
     @Published public var autoStartRecording: Bool {
         didSet {
@@ -198,6 +199,7 @@ public class GeneralSettingsViewModel: ObservableObject {
     @Published public var cleanupInProgress = false
     @Published public var cleanupError: String?
     @Published public var cleanupPreview: RetentionCleanupPreview?
+    @Published public var localAICacheCleanupPreview: LocalAICacheCleanupPreview?
 
     private let deviceManager = AudioDeviceManager()
     private var cancellables = Set<AnyCancellable>()
@@ -205,10 +207,12 @@ public class GeneralSettingsViewModel: ObservableObject {
 
     public init(
         settingsStore: AppSettingsStore = .shared,
-        storage: StorageService = FileSystemStorageService.shared
+        storage: StorageService = FileSystemStorageService.shared,
+        localAICacheMaintenance: LocalAICacheMaintenanceService = .shared
     ) {
         self.settingsStore = settingsStore
         self.storage = storage
+        self.localAICacheMaintenance = localAICacheMaintenance
         autoStartRecording = settingsStore.autoStartRecording
         recordingsPath = settingsStore.recordingsDirectory
         audioFormat = settingsStore.audioFormat
@@ -283,18 +287,23 @@ public class GeneralSettingsViewModel: ObservableObject {
 
     public var cleanupConfirmationMessage: String {
         let preview = cleanupPreview
+        let cachePreview = localAICacheCleanupPreview
 
         let audioCount = preview?.audioCount ?? 0
+        let cacheCount = cachePreview?.candidateCount ?? 0
 
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
 
         let audioSize = formatter.string(fromByteCount: preview?.totalAudioBytes ?? 0)
+        let cacheSize = formatter.string(fromByteCount: cachePreview?.totalBytes ?? 0)
 
         return String(
             format: "settings.storage.cleanup_confirm_message".localized,
             audioCount,
-            audioSize
+            audioSize,
+            cacheCount,
+            cacheSize
         )
     }
 
@@ -373,6 +382,7 @@ public class GeneralSettingsViewModel: ObservableObject {
 
         cleanupError = nil
         cleanupPreview = nil
+        localAICacheCleanupPreview = nil
         cleanupInProgress = true
 
         Task { [weak self] in
@@ -380,7 +390,9 @@ public class GeneralSettingsViewModel: ObservableObject {
 
             do {
                 let preview = try await storage.computeRetentionCleanupPreview(olderThanDays: autoDeletePeriodDays)
+                let cachePreview = try await localAICacheMaintenance.computeCleanupPreview(olderThanDays: autoDeletePeriodDays)
                 cleanupPreview = preview
+                localAICacheCleanupPreview = cachePreview
                 showCleanupConfirmationDialog = true
             } catch {
                 cleanupError = error.localizedDescription
@@ -393,6 +405,7 @@ public class GeneralSettingsViewModel: ObservableObject {
     public func confirmCleanup() {
         guard !cleanupInProgress else { return }
         guard let preview = cleanupPreview else { return }
+        let cachePreview = localAICacheCleanupPreview
 
         cleanupError = nil
         cleanupInProgress = true
@@ -401,7 +414,12 @@ public class GeneralSettingsViewModel: ObservableObject {
             guard let self else { return }
 
             do {
+                _ = FluidAIModelManager.shared.unloadDiarizationFromMemoryIfPossible()
+                _ = FluidAIModelManager.shared.unloadASRFromMemoryIfPossible()
                 _ = try await storage.performRetentionCleanup(preview: preview)
+                if let cachePreview {
+                    _ = try await localAICacheMaintenance.performCleanup(preview: cachePreview)
+                }
                 showCleanupSuccessAlert = true
             } catch {
                 cleanupError = error.localizedDescription
@@ -409,6 +427,7 @@ public class GeneralSettingsViewModel: ObservableObject {
 
             cleanupInProgress = false
             cleanupPreview = nil
+            localAICacheCleanupPreview = nil
         }
     }
 }
