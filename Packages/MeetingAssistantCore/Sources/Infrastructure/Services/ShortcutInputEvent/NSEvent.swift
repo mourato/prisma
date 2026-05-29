@@ -14,12 +14,26 @@ public extension ShortcutInputEvent {
             .keyDown
         }
 
+        let isRepeat: Bool
+        let charactersIgnoringModifiers: String?
+
+        switch kind {
+        case .flagsChanged:
+            // AppKit may vend synthetic flagsChanged events from menu bar interaction
+            // that do not support key-event accessors like isARepeat.
+            isRepeat = false
+            charactersIgnoringModifiers = nil
+        case .keyDown, .keyUp:
+            isRepeat = systemEvent.isARepeat
+            charactersIgnoringModifiers = systemEvent.charactersIgnoringModifiers
+        }
+
         self.init(
             kind: kind,
             keyCode: systemEvent.keyCode,
             modifierFlagsRawValue: systemEvent.modifierFlags.rawValue,
-            isRepeat: systemEvent.isARepeat,
-            charactersIgnoringModifiers: systemEvent.charactersIgnoringModifiers
+            isRepeat: isRepeat,
+            charactersIgnoringModifiers: charactersIgnoringModifiers
         )
     }
 }

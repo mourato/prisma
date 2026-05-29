@@ -29,6 +29,7 @@ extension AppDelegate {
 
     func setupContextMenu() {
         contextMenu = NSMenu()
+        contextMenu?.delegate = self
 
         // Dictate (Mic Only)
         let dictateItem = createMenuItem(
@@ -370,7 +371,6 @@ extension AppDelegate {
         // Show context menu
         statusItem?.menu = menu
         button.performClick(nil)
-        statusItem?.menu = nil // Reset so left-click works again
     }
 
     // MARK: - Menu Actions
@@ -475,5 +475,12 @@ extension AppDelegate {
                 logger.error("Failed to perform auto-cleanup: \(error.localizedDescription)")
             }
         }
+    }
+}
+
+extension AppDelegate: NSMenuDelegate {
+    func menuDidClose(_ menu: NSMenu) {
+        guard menu === contextMenu else { return }
+        statusItem?.menu = nil
     }
 }

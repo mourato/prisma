@@ -1,5 +1,6 @@
 import XCTest
 import MeetingAssistantCore
+import AppKit
 
 /// Tests for the pluggable input backend architecture.
 /// These tests verify that the ShortcutInputBackend protocol and its implementations
@@ -114,6 +115,31 @@ final class ShortcutInputBackendTests: XCTestCase {
 
         XCTAssertEqual(event.kind, .flagsChanged)
         XCTAssertEqual(event.modifierFlagsRawValue, NSEvent.ModifierFlags.command.union(.shift).rawValue)
+    }
+
+    func testSystemFlagsChangedEventDoesNotReadKeyOnlyFields() throws {
+        let systemEvent = try XCTUnwrap(
+            NSEvent.keyEvent(
+                with: .flagsChanged,
+                location: .zero,
+                modifierFlags: [.command],
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                characters: "",
+                charactersIgnoringModifiers: "",
+                isARepeat: false,
+                keyCode: 55
+            )
+        )
+
+        let event = ShortcutInputEvent(systemEvent: systemEvent)
+
+        XCTAssertEqual(event.kind, .flagsChanged)
+        XCTAssertEqual(event.keyCode, 55)
+        XCTAssertEqual(event.modifierFlagsRawValue, NSEvent.ModifierFlags.command.rawValue)
+        XCTAssertFalse(event.isRepeat)
+        XCTAssertNil(event.charactersIgnoringModifiers)
     }
 
     // MARK: - Test Sequence Tests
