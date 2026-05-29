@@ -468,6 +468,13 @@ extension AppDelegate {
 extension AppDelegate: NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         guard menu === contextMenu else { return }
+        isContextMenuOpen = true
         updateMenuTitles()
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        guard menu === contextMenu else { return }
+        isContextMenuOpen = false
+        syncCommandMenuStateIfNeeded(force: true)
     }
 }

@@ -539,4 +539,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var hasConfiguredCapabilityObservers = false
     var lastRecordingUIRenderState: RecordingUIRenderState?
     var lastAppCommandState = AppCommandState()
+    var isContextMenuOpen = false
+    var hasPendingCommandMenuSync = false
 }

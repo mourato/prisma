@@ -385,12 +385,18 @@ extension AppDelegate {
         recordingCancelShortcutController.refresh()
     }
 
-    private func syncCommandMenuStateIfNeeded(force: Bool = false) {
+    func syncCommandMenuStateIfNeeded(force: Bool = false) {
         guard force || NSApp.isActive else {
             return
         }
 
+        guard !isContextMenuOpen else {
+            hasPendingCommandMenuSync = true
+            return
+        }
+
         AppCommandRouter.shared.update(state: lastAppCommandState)
+        hasPendingCommandMenuSync = false
     }
 
     func recordingCancelShortcutStateSnapshot() -> RecordingCancelShortcutState {
