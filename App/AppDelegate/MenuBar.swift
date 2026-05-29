@@ -122,7 +122,7 @@ extension AppDelegate {
     }
 
     func updateMenuTitles() {
-        renderRecordingSection(for: AppCommandRouter.shared.state)
+        renderRecordingSection(for: lastAppCommandState)
     }
 
     private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutName: KeyboardShortcuts.Name) {

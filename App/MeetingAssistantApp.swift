@@ -538,4 +538,5 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var dockObserver: AnyCancellable?
     var hasConfiguredCapabilityObservers = false
     var lastRecordingUIRenderState: RecordingUIRenderState?
+    var lastAppCommandState = AppCommandState()
 }

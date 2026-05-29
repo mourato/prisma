@@ -29,6 +29,7 @@ extension AppDelegate {
         applyMeetingTranscriptionCapabilityState(isEnabled: settingsStore.isMeetingTranscriptionEnabled)
         applyAssistantIntegrationsCapabilityState(isEnabled: settingsStore.isAssistantIntegrationsEnabled)
         setupRecordingObservation()
+        setupCommandMenuObservation()
         prewarmFloatingIndicatorIfEligible()
         updateMenuTitles() // Initial update
 
@@ -126,6 +127,7 @@ extension AppDelegate {
         applyMeetingTranscriptionCapabilityState(isEnabled: settingsStore.isMeetingTranscriptionEnabled)
         applyAssistantIntegrationsCapabilityState(isEnabled: settingsStore.isAssistantIntegrationsEnabled)
         setupRecordingObservation()
+        setupCommandMenuObservation()
         prewarmFloatingIndicatorIfEligible()
         updateMenuTitles()
 
@@ -296,6 +298,15 @@ extension AppDelegate {
         refreshRecordingUIState()
     }
 
+    private func setupCommandMenuObservation() {
+        NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.syncCommandMenuStateIfNeeded(force: true)
+            }
+            .store(in: &cancellables)
+    }
+
     private func refreshRecordingUIState() {
         let isRecording = recordingManager.isRecording
         let isStarting = recordingManager.isStartingRecording
@@ -337,7 +348,8 @@ extension AppDelegate {
             isMeetingNotesPanelVisible: recordingManager.isMeetingNotesPanelVisible
         )
 
-        AppCommandRouter.shared.update(state: commandState)
+        lastAppCommandState = commandState
+        syncCommandMenuStateIfNeeded()
         updateMenuTitles()
 
         guard renderState != lastRecordingUIRenderState else {
@@ -369,6 +381,14 @@ extension AppDelegate {
 
         updateMenuTitles()
         recordingCancelShortcutController.refresh()
+    }
+
+    private func syncCommandMenuStateIfNeeded(force: Bool = false) {
+        guard force || NSApp.isActive else {
+            return
+        }
+
+        AppCommandRouter.shared.update(state: lastAppCommandState)
     }
 
     func recordingCancelShortcutStateSnapshot() -> RecordingCancelShortcutState {
