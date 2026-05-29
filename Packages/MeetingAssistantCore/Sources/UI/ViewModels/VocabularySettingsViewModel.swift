@@ -53,17 +53,18 @@ public final class VocabularySettingsViewModel: ObservableObject {
 
     @discardableResult
     public func saveRule(find: String, replace: String) -> Bool {
-        let normalizedFind = find.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalizedFind.isEmpty else {
+        let normalizedFindVariants = VocabularyReplacementRule.normalizedVariants(from: find)
+        guard !normalizedFindVariants.isEmpty else {
             editorValidationError = .emptyFind
             return false
         }
 
         let editingRuleId = editingRule?.id
-        let normalizedFindKey = normalizedFind.lowercased()
-        let hasDuplicate = settings.vocabularyReplacementRules.contains {
-            guard $0.id != editingRuleId else { return false }
-            return $0.find.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalizedFindKey
+        let normalizedFindKeys = Set(normalizedFindVariants.map { $0.lowercased() })
+        let hasDuplicate = settings.vocabularyReplacementRules.contains { rule in
+            guard rule.id != editingRuleId else { return false }
+            let existingKeys = Set(rule.normalizedFindVariants.map { $0.lowercased() })
+            return normalizedFindKeys.isDisjoint(with: existingKeys) == false
         }
         guard !hasDuplicate else {
             editorValidationError = .duplicatedFind
@@ -74,7 +75,7 @@ public final class VocabularySettingsViewModel: ObservableObject {
         var updatedRules = settings.vocabularyReplacementRules
         let updatedRule = VocabularyReplacementRule(
             id: editingRuleId ?? UUID(),
-            find: normalizedFind,
+            find: normalizedFindVariants.joined(separator: ", "),
             replace: normalizedReplace
         )
 

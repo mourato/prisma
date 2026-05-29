@@ -110,17 +110,21 @@ extension AppSettingsStore {
         var ordered: [VocabularyReplacementRule] = []
 
         for rule in rules {
-            let normalizedFind = rule.find.trimmingCharacters(in: .whitespacesAndNewlines)
-            let normalizedFindKey = normalizedFind.lowercased()
-            guard !normalizedFind.isEmpty, !seenFindValues.contains(normalizedFindKey) else {
+            let normalizedVariants = rule.normalizedFindVariants.filter { variant in
+                seenFindValues.contains(variant.lowercased()) == false
+            }
+            guard !normalizedVariants.isEmpty else {
                 continue
             }
 
-            seenFindValues.insert(normalizedFindKey)
+            for variant in normalizedVariants {
+                seenFindValues.insert(variant.lowercased())
+            }
+
             ordered.append(
                 VocabularyReplacementRule(
                     id: rule.id,
-                    find: normalizedFind,
+                    find: normalizedVariants.joined(separator: ", "),
                     replace: rule.replace.trimmingCharacters(in: .whitespacesAndNewlines)
                 )
             )

@@ -270,30 +270,7 @@ public final class TranscribeAudioUseCase: Sendable {
         to text: String,
         with rules: [VocabularyReplacementRule]
     ) -> String {
-        var output = text
-
-        for rule in rules {
-            let find = rule.find.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !find.isEmpty else { continue }
-
-            let escapedFind = NSRegularExpression.escapedPattern(for: find)
-            let pattern = "\\b\(escapedFind)\\b"
-
-            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
-                continue
-            }
-
-            let escapedReplacement = NSRegularExpression.escapedTemplate(for: rule.replace)
-            let range = NSRange(output.startIndex..<output.endIndex, in: output)
-            output = regex.stringByReplacingMatches(
-                in: output,
-                options: [],
-                range: range,
-                withTemplate: escapedReplacement
-            )
-        }
-
-        return output
+        VocabularyReplacementRule.apply(rules: rules, to: text)
     }
 
     private func applyVocabularyReplacements(
