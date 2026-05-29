@@ -273,6 +273,13 @@ enum CohereTranscribeModelRuntime {
             do {
                 return try MLModel(contentsOf: compiledURL, configuration: configuration)
             } catch {
+                reportCompiledModelEvent(
+                    name: "recompile_after_load_failure",
+                    component: component,
+                    artifactURL: artifactURL,
+                    compiledURL: compiledURL,
+                    extra: ["failure": error.localizedDescription]
+                )
                 let fileManager = FileManager.default
                 try? fileManager.removeItem(at: compiledURL)
                 let rebuiltURL = try buildCompiledModelURL(
@@ -450,6 +457,13 @@ enum CohereTranscribeModelRuntime {
         let fileManager = FileManager.default
 
         if fileManager.fileExists(atPath: compiledURL.path) {
+            reportCompiledModelEvent(
+                name: "cache_hit",
+                component: component,
+                artifactURL: artifactURL,
+                compiledURL: compiledURL,
+                extra: [:]
+            )
             return compiledURL
         }
 
@@ -478,10 +492,50 @@ enum CohereTranscribeModelRuntime {
             try fileManager.removeItem(at: destinationURL)
         }
 
+        let compileStartedAt = Date()
         let temporaryCompiledURL = try MLModel.compileModel(at: artifactURL)
         try fileManager.moveItem(at: temporaryCompiledURL, to: destinationURL)
         pruneCompiledModelCache(for: component, keeping: destinationURL, in: modelDirectory, fileManager: fileManager)
+
+        let compileDurationMs = Int(Date().timeIntervalSince(compileStartedAt) * 1_000)
+        reportCompiledModelEvent(
+            name: "compiled_persist",
+            component: component,
+            artifactURL: artifactURL,
+            compiledURL: destinationURL,
+            extra: ["compile_duration_ms": String(max(compileDurationMs, 0))]
+        )
+        PerformanceMonitor.shared.reportMetric(
+            name: "cohere_compiled_model_compile_duration_ms",
+            value: Double(max(compileDurationMs, 0)),
+            unit: "ms"
+        )
         return destinationURL
+    }
+
+    private static func reportCompiledModelEvent(
+        name: String,
+        component: ModelComponent,
+        artifactURL: URL,
+        compiledURL: URL,
+        extra: [String: String]
+    ) {
+        var payload: [String: Any] = [
+            "event": name,
+            "component": component.rawValue,
+            "source_artifact": artifactURL.lastPathComponent,
+            "compiled_artifact": compiledURL.lastPathComponent,
+        ]
+
+        for (key, value) in extra {
+            payload[key] = value
+        }
+
+        AppLogger.info(
+            "Cohere compiled model lifecycle",
+            category: .transcription,
+            extra: payload
+        )
     }
 
     private static func modelArtifactFingerprint(for artifactURL: URL) throws -> String {
