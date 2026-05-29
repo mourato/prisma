@@ -21,9 +21,6 @@ extension AppDelegate {
             button.image = image
             button.title = image == nil ? String(AppIdentity.displayName.prefix(1)) : ""
             button.imagePosition = image == nil ? .noImage : .imageOnly
-            button.action = #selector(handleStatusItemClick)
-            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            button.target = self
         }
     }
 
@@ -94,6 +91,8 @@ extension AppDelegate {
             action: #selector(quitApp),
             keyEquivalent: "q"
         ))
+
+        statusItem?.menu = contextMenu
     }
 
     /// Creates a localized menu item with the given key and action.
@@ -358,21 +357,6 @@ extension AppDelegate {
         item.keyEquivalentModifierMask = []
     }
 
-    @objc private func handleStatusItemClick() {
-        showContextMenu()
-    }
-
-    private func showContextMenu() {
-        guard let menu = contextMenu, let button = statusItem?.button else { return }
-
-        // Update shortcuts/titles before showing
-        updateMenuTitles()
-
-        // Show context menu
-        statusItem?.menu = menu
-        button.performClick(nil)
-    }
-
     // MARK: - Menu Actions
 
     @objc func openSettings() {
@@ -479,8 +463,8 @@ extension AppDelegate {
 }
 
 extension AppDelegate: NSMenuDelegate {
-    func menuDidClose(_ menu: NSMenu) {
+    func menuWillOpen(_ menu: NSMenu) {
         guard menu === contextMenu else { return }
-        statusItem?.menu = nil
+        updateMenuTitles()
     }
 }
