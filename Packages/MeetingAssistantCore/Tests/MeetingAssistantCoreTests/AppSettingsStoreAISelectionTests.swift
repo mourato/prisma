@@ -76,6 +76,14 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertTrue(settings.smartSpacingAndCapitalizationEnabled)
     }
 
+    func testResetDefaultsEnablesSmartParagraphs() {
+        settings.smartParagraphsEnabled = false
+
+        settings.resetToDefaults()
+
+        XCTAssertTrue(settings.smartParagraphsEnabled)
+    }
+
     func testResetDefaultsRestoresMeetingNotesTypographySettings() {
         settings.meetingNotesFontFamilyKey = "Helvetica"
         settings.meetingNotesFontSize = 24
@@ -111,6 +119,20 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         settings.dictationStructuredPostProcessingEnabled = false
         XCTAssertEqual(
             UserDefaults.standard.object(forKey: "dictationStructuredPostProcessingEnabled") as? Bool,
+            false
+        )
+    }
+
+    func testSmartParagraphsSettingIsPersisted() {
+        settings.smartParagraphsEnabled = true
+        XCTAssertEqual(
+            UserDefaults.standard.object(forKey: "smartParagraphsEnabled") as? Bool,
+            true
+        )
+
+        settings.smartParagraphsEnabled = false
+        XCTAssertEqual(
+            UserDefaults.standard.object(forKey: "smartParagraphsEnabled") as? Bool,
             false
         )
     }

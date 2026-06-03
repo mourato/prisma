@@ -44,7 +44,7 @@ public struct DictationSettingsTab: View {
             )
 
             // Workflow
-            DSGroup("settings.dictation.workflow".localized, icon: "cpu") {
+            DSGroup("settings.dictation.text_handling".localized, icon: "cpu") {
                 VStack(alignment: .leading, spacing: 16) {
                     DSToggleRow(
                         "settings.general.auto_copy_transcription".localized,
@@ -65,6 +65,14 @@ public struct DictationSettingsTab: View {
                         "settings.dictation.smart_spacing".localized,
                         description: "settings.dictation.smart_spacing_desc".localized,
                         isOn: $viewModel.smartSpacingAndCapitalizationEnabled
+                    )
+
+                    Divider()
+
+                    DSToggleRow(
+                        "settings.dictation.smart_paragraphs".localized,
+                        description: "settings.dictation.smart_paragraphs_desc".localized,
+                        isOn: $viewModel.smartParagraphsEnabled
                     )
                 }
             }

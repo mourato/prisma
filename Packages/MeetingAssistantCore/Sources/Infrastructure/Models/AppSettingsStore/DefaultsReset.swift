@@ -38,6 +38,7 @@ public extension AppSettingsStore {
         autoIncreaseMicrophoneVolume = false
         removeSilenceBeforeProcessing = false
         smartSpacingAndCapitalizationEnabled = true
+        smartParagraphsEnabled = true
         shortcutActivationMode = .holdOrToggle
         dictationShortcutActivationMode = .holdOrToggle
         shortcutDoubleTapIntervalMilliseconds = Self.defaultShortcutDoubleTapIntervalMilliseconds

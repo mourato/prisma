@@ -109,6 +109,8 @@
 "settings.general.auto_paste_transcription" = "Auto paste transcript into the active app";
 "settings.dictation.smart_spacing" = "Smart spacing and capitalization";
 "settings.dictation.smart_spacing_desc" = "Adds spaces around dictated text when needed and lowercases the first character inside a sentence. Runs locally and uses Accessibility when available.";
+"settings.dictation.smart_paragraphs" = "Smart paragraphs";
+"settings.dictation.smart_paragraphs_desc" = "Breaks long dictated text into paragraphs at sentence boundaries after about 45 words or 4 substantial sentences. Runs locally on your Mac.";
 "settings.general.recordings_path_hint" = "Path";
 "settings.general.choose" = "Choose...";
 "settings.general.monitored_apps" = "Monitored Apps";
@@ -119,6 +121,7 @@
 
 "settings.meetings.workflow" = "Workflow";
 "settings.dictation.workflow" = "Workflow";
+"settings.dictation.text_handling" = "Text handling";
 
 /* Meetings Export */
 "settings.meetings.export" = "Export";

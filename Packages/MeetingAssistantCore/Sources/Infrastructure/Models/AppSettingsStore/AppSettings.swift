@@ -313,6 +313,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(smartSpacingAndCapitalizationEnabled, forKey: Keys.smartSpacingAndCapitalizationEnabled) }
     }
 
+    /// Breaks long dictated text into paragraphs before delivery.
+    @Published public var smartParagraphsEnabled: Bool {
+        didSet { UserDefaults.standard.set(smartParagraphsEnabled, forKey: Keys.smartParagraphsEnabled) }
+    }
+
     /// Whether pressing Escape cancels recording.
     @Published public var useEscapeToCancelRecording: Bool {
         didSet { UserDefaults.standard.set(useEscapeToCancelRecording, forKey: Keys.useEscapeToCancelRecording) }
@@ -756,6 +761,10 @@ public class AppSettingsStore: ObservableObject {
         removeSilenceBeforeProcessing = audioSettings.removeSilenceBeforeProcessing
         smartSpacingAndCapitalizationEnabled = Self.loadBoolDefaultIfUnset(
             forKey: Keys.smartSpacingAndCapitalizationEnabled,
+            defaultValue: true
+        )
+        smartParagraphsEnabled = Self.loadBoolDefaultIfUnset(
+            forKey: Keys.smartParagraphsEnabled,
             defaultValue: true
         )
 

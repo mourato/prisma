@@ -112,5 +112,6 @@ extension AppSettingsStore {
         static let webMeetingTargets = "webMeetingTargets"
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
         static let smartSpacingAndCapitalizationEnabled = "smartSpacingAndCapitalizationEnabled"
+        static let smartParagraphsEnabled = "smartParagraphsEnabled"
     }
 }

@@ -30,6 +30,17 @@ public struct TranscriptionDeliveryService {
         guard shouldAutoCopy || shouldAutoPaste else { return }
 
         let baseText = transcriptionDeliveryText(from: transcription)
+        let paragraphFormattedText: String
+        if shouldApplySmartParagraphs(
+            transcription: transcription,
+            shouldDeliver: shouldAutoCopy || shouldAutoPaste,
+            settings: settings
+        ) {
+            paragraphFormattedText = SmartParagraphFormatter.format(dictatedText: baseText)
+        } else {
+            paragraphFormattedText = baseText
+        }
+
         let textToCopy: String
         if shouldApplySmartSpacing(
             transcription: transcription,
@@ -37,9 +48,9 @@ public struct TranscriptionDeliveryService {
             settings: settings
         ) {
             let cursorContext = cursorTextContextProvider.fetchCursorTextContext()
-            textToCopy = SmartSpacingFormatter.format(dictatedText: baseText, cursorContext: cursorContext)
+            textToCopy = SmartSpacingFormatter.format(dictatedText: paragraphFormattedText, cursorContext: cursorContext)
         } else {
-            textToCopy = baseText
+            textToCopy = paragraphFormattedText
         }
 
         pasteboard.clearContents()
@@ -87,6 +98,16 @@ public struct TranscriptionDeliveryService {
     ) -> Bool {
         shouldDeliver
             && settings.smartSpacingAndCapitalizationEnabled
+            && transcription.capturePurpose == .dictation
+    }
+
+    private static func shouldApplySmartParagraphs(
+        transcription: Transcription,
+        shouldDeliver: Bool,
+        settings: DeliverySettingsConfig
+    ) -> Bool {
+        shouldDeliver
+            && settings.smartParagraphsEnabled
             && transcription.capturePurpose == .dictation
     }
 

@@ -17,6 +17,7 @@ struct MockDeliverySettings: DeliverySettingsConfig {
     var autoCopyTranscriptionToClipboard: Bool
     var autoPasteTranscriptionToActiveApp: Bool
     var smartSpacingAndCapitalizationEnabled: Bool
+    var smartParagraphsEnabled: Bool
 }
 
 struct MockCursorTextContextProvider: CursorTextContextProvider {
@@ -177,6 +178,62 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         XCTAssertEqual(mockPasteboard.storedString, " store today")
     }
 
+    func testDeliver_WithSmartParagraphsEnabled_ParagraphizesBeforeSpacing() {
+        let meeting = Meeting(app: .unknown)
+        let text = [
+            "We reviewed the roadmap and captured all launch blockers.",
+            "The design team confirmed the new sidebar and toolbar direction.",
+            "Engineering agreed to finish the migration before the beta cutoff.",
+            "Support prepared the updated macros for customer rollout questions.",
+            "Marketing will publish the announcement once the release build is ready.",
+        ].joined(separator: " ")
+        let transcription = Transcription(meeting: meeting, text: text, rawText: text)
+        let settings = makeSettings(autoCopy: true, autoPaste: false, smartSpacingEnabled: true, smartParagraphsEnabled: true)
+        TranscriptionDeliveryService.cursorTextContextProvider = MockCursorTextContextProvider(
+            context: CursorTextContext(
+                previousCharacter: nil,
+                nextCharacter: nil,
+                isEmptyDocument: false,
+                support: .supported
+            )
+        )
+
+        TranscriptionDeliveryService.deliver(
+            transcription: transcription,
+            settings: settings,
+            pasteboard: mockPasteboard
+        )
+
+        XCTAssertEqual(
+            mockPasteboard.storedString,
+            [
+                "We reviewed the roadmap and captured all launch blockers. The design team confirmed the new sidebar and toolbar direction. Engineering agreed to finish the migration before the beta cutoff. Support prepared the updated macros for customer rollout questions.",
+                "Marketing will publish the announcement once the release build is ready.",
+            ].joined(separator: "\n\n")
+        )
+    }
+
+    func testDeliver_WithSmartParagraphsDisabled_KeepsSingleBlockText() {
+        let meeting = Meeting(app: .unknown)
+        let text = [
+            "We reviewed the roadmap and captured all launch blockers.",
+            "The design team confirmed the new sidebar and toolbar direction.",
+            "Engineering agreed to finish the migration before the beta cutoff.",
+            "Support prepared the updated macros for customer rollout questions.",
+            "Marketing will publish the announcement once the release build is ready.",
+        ].joined(separator: " ")
+        let transcription = Transcription(meeting: meeting, text: text, rawText: text)
+        let settings = makeSettings(autoCopy: true, autoPaste: false, smartSpacingEnabled: false, smartParagraphsEnabled: false)
+
+        TranscriptionDeliveryService.deliver(
+            transcription: transcription,
+            settings: settings,
+            pasteboard: mockPasteboard
+        )
+
+        XCTAssertEqual(mockPasteboard.storedString, text)
+    }
+
     func testDeliver_WithPermissionDeniedFallback_AppendsTrailingSpace() {
         let meeting = Meeting(app: .unknown)
         let transcription = Transcription(meeting: meeting, text: kDictationText, rawText: "Hello")
@@ -224,12 +281,14 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
     private func makeSettings(
         autoCopy: Bool,
         autoPaste: Bool,
-        smartSpacingEnabled: Bool = true
+        smartSpacingEnabled: Bool = true,
+        smartParagraphsEnabled: Bool = true
     ) -> MockDeliverySettings {
         MockDeliverySettings(
             autoCopyTranscriptionToClipboard: autoCopy,
             autoPasteTranscriptionToActiveApp: autoPaste,
-            smartSpacingAndCapitalizationEnabled: smartSpacingEnabled
+            smartSpacingAndCapitalizationEnabled: smartSpacingEnabled,
+            smartParagraphsEnabled: smartParagraphsEnabled
         )
     }
 }

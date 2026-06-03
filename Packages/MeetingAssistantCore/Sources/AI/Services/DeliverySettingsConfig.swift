@@ -7,6 +7,7 @@ public protocol DeliverySettingsConfig {
     var autoCopyTranscriptionToClipboard: Bool { get }
     var autoPasteTranscriptionToActiveApp: Bool { get }
     var smartSpacingAndCapitalizationEnabled: Bool { get }
+    var smartParagraphsEnabled: Bool { get }
 }
 
 /// Extend existing AppSettingsStore to conform to the protocol directly.

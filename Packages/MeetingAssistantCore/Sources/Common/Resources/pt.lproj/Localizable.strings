@@ -110,6 +110,8 @@
 "settings.general.auto_paste_transcription" = "Colar transcrição automaticamente no app ativo";
 "settings.dictation.smart_spacing" = "Espaçamento e capitalização inteligentes";
 "settings.dictation.smart_spacing_desc" = "Adiciona espaços ao redor do texto ditado quando necessário e coloca a primeira letra em minúscula dentro de uma frase. Roda localmente e usa Acessibilidade quando disponível.";
+"settings.dictation.smart_paragraphs" = "Parágrafos inteligentes";
+"settings.dictation.smart_paragraphs_desc" = "Divide ditados longos em parágrafos nos limites de frase após cerca de 45 palavras ou 4 frases substanciais. Roda localmente no seu Mac.";
 "settings.general.recordings_path_hint" = "Caminho";
 "settings.general.choose" = "Escolher...";
 "settings.general.monitored_apps" = "Apps Monitorados";
@@ -120,6 +122,7 @@
 
 "settings.meetings.workflow" = "Fluxo de Trabalho";
 "settings.dictation.workflow" = "Fluxo de Trabalho";
+"settings.dictation.text_handling" = "Tratamento de texto";
 
 /* Exportação de Reuniões */
 "settings.meetings.export" = "Exportação";
