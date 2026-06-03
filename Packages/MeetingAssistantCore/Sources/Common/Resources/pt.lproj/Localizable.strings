@@ -453,7 +453,27 @@
 
 /* Service Settings */
 "settings.service.title" = "Serviço";
-"settings.models.description" = "Configure o provedor de transcrição, o modelo de transcrição, o estado do serviço e as opções de performance.";
+"settings.models.description" = "Escolha como Ditado, Assistant e Transcrição de Reuniões usam modelos locais e em nuvem.";
+"settings.models.routing.title" = "Ditado e Assistant";
+"settings.models.routing.description" = "Escolha qual origem de modelo fica ativa para Ditado e Assistant. Configure os modelos locais e em nuvem abaixo.";
+"settings.models.routing.active_model" = "Ativo:";
+"settings.models.local_models.title" = "Modelos Locais";
+"settings.models.local_models.description" = "Gerencie runtimes de transcrição on-device disponíveis offline neste Mac.";
+"settings.models.local_models.download" = "Baixar";
+"settings.models.local_models.remove" = "Remover";
+"settings.models.local_models.used_for_meetings" = "Usado em reuniões";
+"settings.models.local_models.capability.incremental" = "Transcrição incremental";
+"settings.models.local_models.capability.diarization" = "Identificação de oradores";
+"settings.models.local_models.capability.basic" = "Transcrição offline";
+"settings.models.cloud_models.title" = "Modelos em Nuvem";
+"settings.models.cloud_models.description" = "Configure provedores em nuvem e seus modelos de transcrição disponíveis.";
+"settings.models.cloud_models.provider_ready" = "Chave de API salva";
+"settings.models.cloud_models.provider_requires_key" = "Chave de API obrigatória";
+"settings.models.cloud_models.active_provider" = "Ativo";
+"settings.models.meeting_transcription.title" = "Transcrição de Reuniões";
+"settings.models.meeting_transcription.description" = "As reuniões usam uma seleção dedicada de modelo local, independente de Ditado e Assistant.";
+"settings.models.meeting_transcription.diarization_description" = "Runtime opcional de identificação de oradores usado quando o modelo selecionado para reuniões oferece suporte à diarização.";
+"settings.models.runtime.title" = "Runtime";
 "settings.models.transcription_provider.title" = "Provedor de Transcrição do Ditado";
 "settings.models.transcription_model" = "Modelo de Transcrição";
 "settings.models.high_performance" = "Alta Performance";

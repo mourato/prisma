@@ -452,7 +452,27 @@
 
 /* Service Settings */
 "settings.service.title" = "Service";
-"settings.models.description" = "Configure transcription provider, transcription model, service status, and performance settings.";
+"settings.models.description" = "Choose how Dictation, Assistant, and Meeting transcription use local and cloud models.";
+"settings.models.routing.title" = "Dictation and Assistant";
+"settings.models.routing.description" = "Choose which model source is active for Dictation and Assistant. Configure local and cloud models below.";
+"settings.models.routing.active_model" = "Active:";
+"settings.models.local_models.title" = "Local Models";
+"settings.models.local_models.description" = "Manage on-device transcription runtimes available offline on this Mac.";
+"settings.models.local_models.download" = "Download";
+"settings.models.local_models.remove" = "Remove";
+"settings.models.local_models.used_for_meetings" = "Used for meetings";
+"settings.models.local_models.capability.incremental" = "Incremental transcription";
+"settings.models.local_models.capability.diarization" = "Speaker diarization";
+"settings.models.local_models.capability.basic" = "Offline transcription";
+"settings.models.cloud_models.title" = "Cloud Models";
+"settings.models.cloud_models.description" = "Configure cloud providers and their available transcription models.";
+"settings.models.cloud_models.provider_ready" = "API key saved";
+"settings.models.cloud_models.provider_requires_key" = "API key required";
+"settings.models.cloud_models.active_provider" = "Active";
+"settings.models.meeting_transcription.title" = "Meeting Transcription";
+"settings.models.meeting_transcription.description" = "Meetings use a dedicated local model selection independent from Dictation and Assistant.";
+"settings.models.meeting_transcription.diarization_description" = "Optional speaker-identification runtime used when the selected meeting model supports diarization.";
+"settings.models.runtime.title" = "Runtime";
 "settings.models.transcription_provider.title" = "Dictation Transcription Provider";
 "settings.models.transcription_model" = "Transcription Model";
 "settings.models.high_performance" = "High Performance";

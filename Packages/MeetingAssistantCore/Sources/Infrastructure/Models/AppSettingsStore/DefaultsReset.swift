@@ -13,6 +13,7 @@ public extension AppSettingsStore {
         enhancementsProviderSelectedModelsByRegistration = [:]
         transcriptionDictationSelection = .default
         transcriptionProviderSelectedModels = [:]
+        meetingTranscriptionLocalModel = .parakeetTdt06BV3
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
         userPrompts = []
         dictationPrompts = []

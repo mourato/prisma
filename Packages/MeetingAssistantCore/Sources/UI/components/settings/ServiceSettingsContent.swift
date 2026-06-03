@@ -1,3 +1,4 @@
+import AppKit
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -8,25 +9,29 @@ import SwiftUI
 
 public struct ServiceSettingsContent: View {
     @StateObject private var viewModel: ServiceSettingsViewModel
-    @ObservedObject private var settings: AppSettingsStore
     private let runInitialTasks: Bool
 
     public init(
         viewModel: ServiceSettingsViewModel = ServiceSettingsViewModel(),
-        settings: AppSettingsStore = .shared,
+        settings _: AppSettingsStore = .shared,
         runInitialTasks: Bool = !PreviewRuntime.isRunning
     ) {
         _viewModel = StateObject(wrappedValue: viewModel)
-        _settings = ObservedObject(wrappedValue: settings)
         self.runInitialTasks = runInitialTasks
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: AppDesignSystem.Layout.sectionSpacing) {
-            transcriptionProviderSection
-            modelInfoSection
+            ServiceTranscriptionProviderSection(viewModel: viewModel)
+            localModelsSection
+            cloudModelsSection
+
+            if viewModel.shouldShowMeetingSection {
+                meetingTranscriptionSection
+            }
+
+            runtimeSection
             statusSection
-            performanceSection
         }
         .task {
             guard runInitialTasks else { return }
@@ -35,166 +40,333 @@ public struct ServiceSettingsContent: View {
         }
     }
 
-    private var transcriptionProviderSection: some View {
-        ServiceTranscriptionProviderSection(viewModel: viewModel)
-    }
-
-    private var modelInfoSection: some View {
-        DSGroup("settings.models.transcription_model".localized, icon: "waveform") {
+    private var localModelsSection: some View {
+        DSGroup("settings.models.local_models.title".localized, icon: "internaldrive") {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(AppDesignSystem.Colors.accent.opacity(0.1))
-                            .frame(width: 48, height: 48)
-                        Image(systemName: "cpu")
-                            .font(.title2)
-                            .foregroundStyle(AppDesignSystem.Colors.accent)
-                    }
+                Text("settings.models.local_models.description".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("settings.service.on_device".localized)
-                            .font(.headline)
-                        Text("settings.service.ane_opt".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                ForEach(viewModel.localModels) { localModel in
+                    localModelRow(localModel)
+                    if localModel.id != viewModel.localModels.last?.id {
+                        Divider()
                     }
                 }
 
-                Divider().padding(.vertical, 4)
-
-                Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 12) {
-                    GridRow {
-                        Text("settings.service.model".localized)
-                            .foregroundStyle(.secondary)
-
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(viewModel.meetingLocalModelDisplayName)
-                                    .fontWeight(.medium)
-                                Text(asrStatusText)
-                                    .font(.caption2)
-                                    .foregroundStyle(asrStatusColor)
-                            }
-
-                            Spacer()
-
-                            if viewModel.modelState == .downloading || viewModel.modelState == .loading {
-                                ProgressView()
-                                    .controlSize(.small)
-                            } else if viewModel.isASRInstalled {
-                                Button(role: .destructive) {
-                                    viewModel.deleteASRModels()
-                                } label: {
-                                    Image(systemName: "trash")
-                                        .foregroundStyle(AppDesignSystem.Colors.error)
-                                }
-                                .buttonStyle(.borderless)
-                                .help("settings.service.delete_model".localized)
-                            } else {
-                                Button {
-                                    viewModel.downloadASRModels()
-                                } label: {
-                                    Image(systemName: "arrow.down.circle")
-                                        .font(.title3)
-                                        .foregroundStyle(AppDesignSystem.Colors.accent)
-                                }
-                                .buttonStyle(.borderless)
-                                .help("settings.service.download_model".localized)
-                            }
-                        }
-                    }
-
-                    Divider()
-
-                    if settings.isMeetingTranscriptionEnabled {
-                        GridRow {
-                            Text("settings.service.diarization".localized)
-                                .foregroundStyle(.secondary)
-
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text("settings.service.diarization_model_name".localized)
-                                        .fontWeight(.medium)
-                                    Text(
-                                        viewModel.isDiarizationLoaded
-                                            ? "settings.service.installed".localized
-                                            : "settings.service.not_installed".localized
-                                    )
-                                    .font(.caption2)
-                                    .foregroundStyle(viewModel.isDiarizationLoaded ? AppDesignSystem.Colors.success : .secondary)
-                                }
-
-                                Spacer()
-
-                                if viewModel.isDiarizationLoaded {
-                                    Button(role: .destructive) {
-                                        viewModel.deleteDiarizationModels()
-                                    } label: {
-                                        Image(systemName: "trash")
-                                            .foregroundStyle(AppDesignSystem.Colors.error)
-                                    }
-                                    .buttonStyle(.borderless)
-                                    .help("settings.service.delete_model".localized)
-                                } else {
-                                    Button {
-                                        viewModel.downloadDiarizationModels()
-                                    } label: {
-                                        Image(systemName: "arrow.down.circle")
-                                            .font(.title3)
-                                            .foregroundStyle(AppDesignSystem.Colors.accent)
-                                    }
-                                    .buttonStyle(.borderless)
-                                    .help("settings.service.download_model".localized)
-                                }
-                            }
-                        }
-                    }
-
-                    GridRow {
-                        Text("settings.service.languages".localized)
-                            .foregroundStyle(.secondary)
-                        Text("settings.service.languages_desc".localized)
-                            .fontWeight(.medium)
-                    }
-
-                    GridRow(alignment: .top) {
-                        Text("settings.service.model_residency_timeout".localized)
-                            .foregroundStyle(.secondary)
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Picker(
-                                "settings.service.model_residency_timeout".localized,
-                                selection: Binding(
-                                    get: { viewModel.modelResidencyTimeout },
-                                    set: { viewModel.modelResidencyTimeout = $0 }
-                                )
-                            ) {
-                                ForEach(viewModel.modelResidencyTimeoutOptions, id: \.self) { option in
-                                    Text(option.displayName)
-                                        .tag(option)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .labelsHidden()
-
-                            Text("settings.service.model_residency_timeout.help".localized)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                if let errorMessage = viewModel.localModelActionErrorMessage {
+                    DSCallout(
+                        kind: .error,
+                        title: "common.error".localized,
+                        message: errorMessage
+                    )
                 }
-                .font(.subheadline)
             }
         }
     }
 
-    private var performanceSection: some View {
-        DSGroup("settings.models.high_performance".localized, icon: "speedometer") {
-            Text("settings.service.no_internet".localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+    private func localModelRow(_ descriptor: ServiceSettingsViewModel.LocalModelDescriptor) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text(descriptor.displayName)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+
+                    if viewModel.selectedMeetingLocalModel == descriptor.model,
+                       viewModel.shouldShowMeetingSection
+                    {
+                        Text("settings.models.local_models.used_for_meetings".localized)
+                            .font(.caption2)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(AppDesignSystem.Colors.accent.opacity(0.12))
+                            .foregroundStyle(AppDesignSystem.Colors.accent)
+                            .clipShape(Capsule())
+                    }
+                }
+
+                Text(localModelCapabilityText(descriptor))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text(viewModel.localModelStatusText(descriptor.model))
+                    .font(.caption2)
+                    .foregroundStyle(viewModel.localModelStatusColor(descriptor.model))
+            }
+
+            Spacer()
+
+            if viewModel.isLocalModelBusy(descriptor.model) {
+                ProgressView()
+                    .controlSize(.small)
+            } else if viewModel.isLocalModelInstalled(descriptor.model) {
+                Button(role: .destructive) {
+                    viewModel.deleteLocalModel(descriptor.model)
+                } label: {
+                    Label("settings.models.local_models.remove".localized, systemImage: "trash")
+                }
+                .buttonStyle(.bordered)
+            } else {
+                Button {
+                    viewModel.downloadLocalModel(descriptor.model)
+                } label: {
+                    Label("settings.models.local_models.download".localized, systemImage: "arrow.down.circle")
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+    }
+
+    private var cloudModelsSection: some View {
+        DSGroup("settings.models.cloud_models.title".localized, icon: "cloud") {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("settings.models.cloud_models.description".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                ForEach(viewModel.cloudProviders) { provider in
+                    cloudProviderCard(provider)
+                }
+            }
+        }
+    }
+
+    private func cloudProviderCard(_ provider: ServiceSettingsViewModel.CloudProviderDescriptor) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(provider.displayName)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Text(
+                        provider.isReady
+                            ? "settings.models.cloud_models.provider_ready".localized
+                            : "settings.models.cloud_models.provider_requires_key".localized
+                    )
+                    .font(.caption)
+                    .foregroundStyle(provider.isReady ? AppDesignSystem.Colors.success : .secondary)
+                }
+
+                Spacer()
+
+                if viewModel.selectedDictationProvider == provider.provider {
+                    Text("settings.models.cloud_models.active_provider".localized)
+                        .font(.caption2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(AppDesignSystem.Colors.accent.opacity(0.12))
+                        .foregroundStyle(AppDesignSystem.Colors.accent)
+                        .clipShape(Capsule())
+                }
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text("settings.service.transcription_provider.model".localized)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 100, alignment: .leading)
+
+                Picker(
+                    "",
+                    selection: Binding(
+                        get: { provider.selectedModelID },
+                        set: { viewModel.updateCloudProviderModel($0, for: provider.provider) }
+                    )
+                ) {
+                    ForEach(provider.availableModelIDs, id: \.self) { modelID in
+                        Text(viewModel.displayName(forModelID: modelID)).tag(modelID)
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+
+            if provider.provider == .elevenLabs, !provider.isReady {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("settings.ai.api_key".localized)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 100, alignment: .leading)
+
+                    SecureField(
+                        "settings.ai.api_key_placeholder".localized,
+                        text: Binding(
+                            get: { viewModel.transcriptionAPIKeyInputsByProvider[provider.provider.rawValue] ?? "" },
+                            set: { viewModel.transcriptionAPIKeyInputsByProvider[provider.provider.rawValue] = $0 }
+                        )
+                    )
+                    .textFieldStyle(.roundedBorder)
+
+                    Button("common.save".localized) {
+                        viewModel.saveTranscriptionAPIKey(
+                            viewModel.transcriptionAPIKeyInputsByProvider[provider.provider.rawValue] ?? "",
+                            for: provider.provider
+                        )
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(
+                        (viewModel.transcriptionAPIKeyInputsByProvider[provider.provider.rawValue] ?? "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                            .isEmpty
+                    )
+                }
+            }
+
+            HStack(spacing: 8) {
+                if provider.isReady {
+                    HStack(spacing: 8) {
+                        Image(systemName: "lock.fill")
+                            .font(.caption)
+                            .foregroundStyle(AppDesignSystem.Colors.success)
+                        Text("settings.ai.keychain_secure".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Button {
+                        viewModel.removeTranscriptionAPIKey(for: provider.provider)
+                    } label: {
+                        Text("settings.ai.remove_key".localized)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(AppDesignSystem.Colors.error)
+                } else {
+                    Text(
+                        "settings.service.transcription_provider.missing_key.message".localized(
+                            with: provider.displayName
+                        )
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                if let url = provider.apiKeyURL {
+                    Button("settings.service.transcription_provider.get_api_key".localized(with: provider.displayName)) {
+                        NSWorkspace.shared.open(url)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+        .padding(14)
+        .background(AppDesignSystem.Colors.settingsCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                .stroke(AppDesignSystem.Colors.settingsCardStroke, lineWidth: 1)
+        )
+    }
+
+    private var meetingTranscriptionSection: some View {
+        DSGroup("settings.models.meeting_transcription.title".localized, icon: "waveform.and.person.filled") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("settings.models.meeting_transcription.description".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("settings.service.model".localized)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 100, alignment: .leading)
+
+                    Picker(
+                        "",
+                        selection: Binding(
+                            get: { viewModel.selectedMeetingLocalModel },
+                            set: { viewModel.updateMeetingLocalModel($0) }
+                        )
+                    ) {
+                        ForEach(viewModel.localModels) { localModel in
+                            Text(localModel.displayName).tag(localModel.model)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+
+                if viewModel.shouldShowMeetingDiarizationAutoDisableWarning {
+                    DSCallout(
+                        kind: .warning,
+                        title: "settings.service.transcription_provider.meeting_diarization_warning.title".localized,
+                        message: "settings.service.transcription_provider.meeting_diarization_warning.message".localized(
+                            with: viewModel.meetingLocalModelDisplayName
+                        )
+                    )
+                }
+
+                Divider()
+
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("settings.service.diarization_model_name".localized)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Text("settings.models.meeting_transcription.diarization_description".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(
+                            viewModel.isDiarizationLoaded
+                                ? "settings.service.installed".localized
+                                : "settings.service.not_installed".localized
+                        )
+                        .font(.caption2)
+                        .foregroundStyle(viewModel.isDiarizationLoaded ? AppDesignSystem.Colors.success : .secondary)
+                    }
+
+                    Spacer()
+
+                    if viewModel.isDiarizationLoaded {
+                        Button(role: .destructive) {
+                            viewModel.deleteDiarizationModels()
+                        } label: {
+                            Label("settings.models.local_models.remove".localized, systemImage: "trash")
+                        }
+                        .buttonStyle(.bordered)
+                    } else {
+                        Button {
+                            viewModel.downloadDiarizationModels()
+                        } label: {
+                            Label("settings.models.local_models.download".localized, systemImage: "arrow.down.circle")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+            }
+        }
+    }
+
+    private var runtimeSection: some View {
+        DSGroup("settings.models.runtime.title".localized, icon: "cpu") {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 10) {
+                    Text("settings.service.model_residency_timeout".localized)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 160, alignment: .leading)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Picker(
+                            "settings.service.model_residency_timeout".localized,
+                            selection: Binding(
+                                get: { viewModel.modelResidencyTimeout },
+                                set: { viewModel.modelResidencyTimeout = $0 }
+                            )
+                        ) {
+                            ForEach(viewModel.modelResidencyTimeoutOptions, id: \.self) { option in
+                                Text(option.displayName).tag(option)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+
+                        Text("settings.service.model_residency_timeout.help".localized)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Text("settings.service.no_internet".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -223,44 +395,31 @@ public struct ServiceSettingsContent: View {
 
                 Spacer()
 
-                Button(
-                    action: { viewModel.testConnection() },
-                    label: {
-                        if viewModel.transcriptionStatus == .testing {
-                            ProgressView().controlSize(.small)
-                        } else {
-                            Label(
-                                "settings.service.verify".localized,
-                                systemImage: "arrow.clockwise"
-                            )
-                        }
+                Button(action: { viewModel.testConnection() }) {
+                    if viewModel.transcriptionStatus == .testing {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Label("settings.service.verify".localized, systemImage: "arrow.clockwise")
                     }
-                )
+                }
                 .buttonStyle(.bordered)
                 .disabled(viewModel.transcriptionStatus == .testing)
             }
         }
     }
 
-    private var asrStatusText: String {
-        switch viewModel.modelState {
-        case .loaded: "settings.service.installed".localized
-        case .downloading: "transcription.model_state.downloading".localized
-        case .loading: "transcription.model_state.loading".localized
-        case .unloaded: viewModel.isASRInstalled ? "settings.service.installed".localized : "settings.service.not_installed".localized
-        case .error: "transcription.model_state.error".localized
+    private func localModelCapabilityText(_ descriptor: ServiceSettingsViewModel.LocalModelDescriptor) -> String {
+        var capabilities: [String] = []
+        if descriptor.supportsIncrementalTranscription {
+            capabilities.append("settings.models.local_models.capability.incremental".localized)
         }
-    }
-
-    private var asrStatusColor: Color {
-        switch viewModel.modelState {
-        case .loaded: AppDesignSystem.Colors.success
-        case .downloading, .loading: AppDesignSystem.Colors.warning
-        case .unloaded:
-            viewModel.isASRInstalled ? AppDesignSystem.Colors.success : .secondary
-        case .error:
-            .secondary
+        if descriptor.supportsDiarization {
+            capabilities.append("settings.models.local_models.capability.diarization".localized)
         }
+        if capabilities.isEmpty {
+            capabilities.append("settings.models.local_models.capability.basic".localized)
+        }
+        return capabilities.joined(separator: " · ")
     }
 }
 

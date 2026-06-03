@@ -12,6 +12,7 @@ extension AppSettingsStore {
         static let enhancementsProviderSelectedModelsByRegistration = "enhancementsProviderSelectedModelsByRegistration"
         static let transcriptionDictationSelection = "transcriptionDictationSelection"
         static let transcriptionProviderSelectedModels = "transcriptionProviderSelectedModels"
+        static let meetingTranscriptionLocalModel = "meetingTranscriptionLocalModel"
         static let systemPrompt = "postProcessingSystemPrompt"
         static let userPrompts = "postProcessingUserPrompts"
         static let selectedPromptId = "postProcessingSelectedPromptId"

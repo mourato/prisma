@@ -210,6 +210,24 @@ extension AppSettingsStore {
         return normalized
     }
 
+    static func loadMeetingTranscriptionLocalModel(
+        transcriptionProviderSelectedModels: [String: String]
+    ) -> LocalTranscriptionModel {
+        if let storedValue = UserDefaults.standard.string(forKey: Keys.meetingTranscriptionLocalModel),
+           let model = LocalTranscriptionModel(rawValue: storedValue)
+        {
+            return model
+        }
+
+        if let legacyLocalModel = transcriptionProviderSelectedModels[TranscriptionProvider.local.rawValue],
+           let model = LocalTranscriptionModel(rawValue: legacyLocalModel)
+        {
+            return model
+        }
+
+        return .parakeetTdt06BV3
+    }
+
     static func loadUUID(forKey key: String) -> UUID? {
         UserDefaults.standard.string(forKey: key).flatMap(UUID.init(uuidString:))
     }

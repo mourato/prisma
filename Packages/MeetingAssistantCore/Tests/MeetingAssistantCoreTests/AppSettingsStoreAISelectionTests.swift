@@ -1,5 +1,5 @@
-import XCTest
 @testable import MeetingAssistantCore
+import XCTest
 
 @MainActor
 final class AppSettingsStoreAISelectionTests: XCTestCase {
@@ -91,7 +91,7 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         settings.resetToDefaults()
 
         XCTAssertEqual(settings.meetingNotesFontFamilyKey, "__system__")
-        XCTAssertEqual(settings.meetingNotesFontSize, 16, accuracy: 0.0001)
+        XCTAssertEqual(settings.meetingNotesFontSize, 16, accuracy: 0.0_001)
     }
 
     func testMeetingNotesTypographySettingsNormalizeAndPersist() {
@@ -99,14 +99,14 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         settings.meetingNotesFontSize = 15
 
         XCTAssertEqual(settings.meetingNotesFontFamilyKey, "__system__")
-        XCTAssertEqual(settings.meetingNotesFontSize, 14, accuracy: 0.0001)
+        XCTAssertEqual(settings.meetingNotesFontSize, 14, accuracy: 0.0_001)
         XCTAssertEqual(
             UserDefaults.standard.string(forKey: "meetingNotesFontFamilyKey"),
             "__system__"
         )
         let persistedSize = UserDefaults.standard.object(forKey: "meetingNotesFontSize") as? Double
         XCTAssertNotNil(persistedSize)
-        XCTAssertEqual(persistedSize ?? 0, 14, accuracy: 0.0001)
+        XCTAssertEqual(persistedSize ?? 0, 14, accuracy: 0.0_001)
     }
 
     func testDictationStructuredPostProcessingSettingIsPersisted() {
@@ -442,10 +442,11 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertEqual(resolved.selectedModel, MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID)
     }
 
-    func testResolvedTranscriptionSelection_MeetingUsesLastSelectedLocalModel() {
+    func testResolvedTranscriptionSelection_MeetingUsesDedicatedMeetingLocalModel() {
+        settings.updateMeetingTranscriptionLocalModel(.cohereTranscribe032026CoreML6Bit)
         settings.updateTranscriptionDictationSelection(
             provider: .local,
-            model: MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
+            model: MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID
         )
         settings.updateTranscriptionDictationSelection(
             provider: .groq,
@@ -459,6 +460,36 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
             resolved.selectedModel,
             MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
         )
+    }
+
+    func testMeetingTranscriptionLocalModel_IsPersistedIndependently() {
+        settings.updateMeetingTranscriptionLocalModel(.cohereTranscribe032026CoreML6Bit)
+        settings.updateTranscriptionDictationSelection(
+            provider: .local,
+            model: MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID
+        )
+
+        XCTAssertEqual(
+            UserDefaults.standard.string(forKey: "meetingTranscriptionLocalModel"),
+            MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
+        )
+        XCTAssertEqual(
+            settings.transcriptionSelectedModel(for: .local),
+            MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID
+        )
+    }
+
+    func testResolvedTranscriptionSelection_MeetingModelDoesNotChangeWhenDictationLocalModelChanges() {
+        settings.updateMeetingTranscriptionLocalModel(.parakeetTdt06BV3)
+        settings.updateTranscriptionDictationSelection(
+            provider: .local,
+            model: MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
+        )
+
+        let resolved = settings.resolvedTranscriptionSelection(for: .meeting)
+
+        XCTAssertEqual(resolved.provider, .local)
+        XCTAssertEqual(resolved.selectedModel, MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID)
     }
 
     func testResolvedTranscriptionSelection_DictationFollowsConfiguredProvider() {
@@ -506,10 +537,7 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
     }
 
     func testSupportsIncrementalTranscription_DisabledWhenMeetingLocalModelDoesNotSupportIt() {
-        settings.updateTranscriptionDictationSelection(
-            provider: .local,
-            model: MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
-        )
+        settings.updateMeetingTranscriptionLocalModel(.cohereTranscribe032026CoreML6Bit)
         settings.updateTranscriptionDictationSelection(
             provider: .groq,
             model: "whisper-large-v3-turbo"

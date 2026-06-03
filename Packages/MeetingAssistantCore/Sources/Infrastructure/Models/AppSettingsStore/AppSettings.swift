@@ -77,6 +77,16 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(transcriptionProviderSelectedModels, forKey: Keys.transcriptionProviderSelectedModels) }
     }
 
+    /// Dedicated local transcription model used by meeting transcription.
+    @Published public var meetingTranscriptionLocalModel: LocalTranscriptionModel {
+        didSet {
+            UserDefaults.standard.set(
+                meetingTranscriptionLocalModel.rawValue,
+                forKey: Keys.meetingTranscriptionLocalModel
+            )
+        }
+    }
+
     // MARK: - Post-Processing Properties
 
     /// Custom system prompt for post-processing.
@@ -728,6 +738,7 @@ public class AppSettingsStore: ObservableObject {
         enhancementsProviderSelectedModelsByRegistration = ai.enhancementsProviderSelectedModelsByRegistration
         transcriptionDictationSelection = ai.transcriptionDictationSelection
         transcriptionProviderSelectedModels = ai.transcriptionProviderSelectedModels
+        meetingTranscriptionLocalModel = ai.meetingTranscriptionLocalModel
 
         let postProcessing = Self.loadPostProcessingSettings()
         systemPrompt = postProcessing.systemPrompt

@@ -26,6 +26,24 @@ extension FluidAIModelManager {
         return try await runtime.downloadAndLoad()
     }
 
+    func asrModelDirectory(for model: LocalTranscriptionModel) -> URL {
+        switch model {
+        case .parakeetTdt06BV3:
+            AsrModels.defaultCacheDirectory(for: .v3)
+        case .cohereTranscribe032026CoreML6Bit:
+            CohereTranscribeModelRuntime.defaultCacheDirectory()
+        }
+    }
+
+    func removeASRModelFromDisk(_ model: LocalTranscriptionModel) throws {
+        let fileManager = FileManager.default
+        let targetDirectory = asrModelDirectory(for: model)
+
+        if fileManager.fileExists(atPath: targetDirectory.path) {
+            try fileManager.removeItem(at: targetDirectory)
+        }
+    }
+
     func hasDiarizationModelsOnDisk() -> Bool {
         let fallbackLogger = Logger(subsystem: AppIdentity.logSubsystem, category: "FluidAIModelManager")
         let fileManager = FileManager.default

@@ -20,6 +20,19 @@ public extension AppSettingsStore {
         setTranscriptionProviderSelectedModel(normalizedModel, for: provider)
     }
 
+    func updateTranscriptionModel(_ model: String, for provider: TranscriptionProvider) {
+        let normalizedModel = normalizedTranscriptionModelID(model, for: provider)
+
+        if transcriptionDictationSelection.provider == provider {
+            transcriptionDictationSelection = TranscriptionProviderSelection(
+                provider: provider,
+                selectedModel: normalizedModel
+            )
+        }
+
+        setTranscriptionProviderSelectedModel(normalizedModel, for: provider)
+    }
+
     func updateTranscriptionDictationSelection(
         provider: TranscriptionProvider,
         model: String
@@ -54,7 +67,7 @@ public extension AppSettingsStore {
         case .meeting:
             return TranscriptionProviderSelection(
                 provider: .local,
-                selectedModel: transcriptionSelectedModel(for: .local)
+                selectedModel: meetingTranscriptionLocalModel.rawValue
             )
         case .dictation, .assistant:
             let provider = transcriptionDictationSelection.provider
@@ -63,6 +76,10 @@ public extension AppSettingsStore {
                 selectedModel: transcriptionSelectedModel(for: provider)
             )
         }
+    }
+
+    func updateMeetingTranscriptionLocalModel(_ model: LocalTranscriptionModel) {
+        meetingTranscriptionLocalModel = model
     }
 
     func shouldUseRemoteTranscription(for mode: TranscriptionExecutionMode) -> Bool {

@@ -35,6 +35,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     @Published public var isASRInstalled: Bool = false
     @Published public var isDiarizationLoaded: Bool = false
     @Published public private(set) var loadedASRLocalModelID: String?
+    @Published public private(set) var lastRequestedASRLocalModelID: String?
     @Published public private(set) var lastASRActivityAt: Date?
     @Published public private(set) var lastDiarizationActivityAt: Date?
 
@@ -136,6 +137,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             return
         }
 
+        lastRequestedASRLocalModelID = requestedModel.rawValue
         modelState = .downloading
         downloadPhase = .downloadingASR
         lastError = nil
@@ -270,42 +272,40 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     /// Deletes the downloaded ASR models from disk and unloads from memory.
     public func deleteASRModels() {
+        LocalTranscriptionModel.allCases.forEach { deleteASRModels(for: $0.rawValue) }
+    }
+
+    /// Deletes a specific downloaded ASR model from disk and unloads it from memory if needed.
+    public func deleteASRModels(for localModelID: String) {
+        let requestedModel = resolveLocalModel(from: localModelID)
         guard modelState != .downloading, modelState != .loading else { return }
-        guard !isASRInUse else {
+
+        let isLoadedModel = loadedASRLocalModelID == requestedModel.rawValue
+        guard !isLoadedModel || !isASRInUse else {
             logger.warning("Skipped ASR model deletion because transcription is currently in progress.")
             return
         }
 
-        // Unload from memory
-        asrManager = nil
-        cohereAsrManager = nil
-        loadedASRLocalModelID = nil
-        modelState = .unloaded
-        isASRInstalled = false
-        lastASRActivityAt = nil
+        if isLoadedModel {
+            asrManager = nil
+            cohereAsrManager = nil
+            loadedASRLocalModelID = nil
+            modelState = .unloaded
+            lastASRActivityAt = nil
 
-        // Remove from disk
-        let fileManager = FileManager.default
-        guard let supportDir = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
-        let modelsDir = supportDir.appendingPathComponent("FluidAudio/Models")
+            if downloadPhase == .ready {
+                downloadPhase = .idle
+            }
+        }
 
         do {
-            if fileManager.fileExists(atPath: modelsDir.path) {
-                let contents = try fileManager.contentsOfDirectory(at: modelsDir, includingPropertiesForKeys: nil)
-                let knownModelFolders = Set(LocalTranscriptionModel.allCases.map(\.rawValue))
-                for url in contents {
-                    // Safe heuristic: delete known ASR model folders
-                    if knownModelFolders.contains(url.lastPathComponent)
-                        || url.lastPathComponent.contains("parakeet")
-                    {
-                        try fileManager.removeItem(at: url)
-                        logger.info("Deleted ASR model: \(url.lastPathComponent)")
-                    }
-                }
-            }
+            try removeASRModelFromDisk(requestedModel)
+            logger.info("Deleted ASR model: \(requestedModel.rawValue, privacy: .public)")
         } catch {
             logger.error("Failed to delete ASR models: \(error.localizedDescription)")
         }
+
+        refreshInstalledModelStates()
     }
 
     /// Deletes the downloaded diarization models from disk and unloads from memory.
