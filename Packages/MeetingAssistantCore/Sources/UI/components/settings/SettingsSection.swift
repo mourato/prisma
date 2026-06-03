@@ -37,8 +37,8 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     public static let settingsSections: [SettingsSection] = [
         .general,
         .models,
-        .vocabulary,
         .enhancements,
+        .vocabulary,
         .audio,
         .permissions,
     ]

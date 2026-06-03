@@ -224,7 +224,10 @@ public final class AssistantVoiceCommandService: ObservableObject {
             executionMode: .assistant,
             diarizationEnabledOverride: false
         )
-        let command = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let command = normalizedAssistantTranscription(
+            transcription.text,
+            vocabularyReplacementRules: settings.vocabularyReplacementRules
+        )
 
         logPayloadIfNeeded("Assistant transcription payload", [
             "rawLength": transcription.text.count,
@@ -250,6 +253,15 @@ public final class AssistantVoiceCommandService: ObservableObject {
         )
 
         return (command, executionFlow, selectedIntegration)
+    }
+
+    func normalizedAssistantTranscription(
+        _ text: String,
+        vocabularyReplacementRules: [VocabularyReplacementRule]
+    ) -> String {
+        VocabularyReplacementRule
+            .apply(rules: vocabularyReplacementRules, to: text)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func resolveSelectedIntegration(for executionFlow: AssistantExecutionFlow) -> AssistantIntegrationConfig? {
