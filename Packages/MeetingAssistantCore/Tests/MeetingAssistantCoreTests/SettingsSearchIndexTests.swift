@@ -22,10 +22,22 @@ final class SettingsSearchIndexTests: XCTestCase {
         XCTAssertTrue(results.allSatisfy { !$0.title.isEmpty && !$0.detail.isEmpty })
     }
 
-    func testSectionMappingRoutesIntegrationKeysToAssistantSection() {
+    func testSectionMappingRoutesIntegrationKeysToIntegrationsSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.integrations.header_desc")
 
-        XCTAssertEqual(section, .assistant)
+        XCTAssertEqual(section, .integrations)
+    }
+
+    func testSectionMappingRoutesMeetingCapabilityKeyToMeetingsSection() {
+        let section = SettingsSearchIndex.section(forLocalizationKey: "settings.capabilities.meeting_transcription")
+
+        XCTAssertEqual(section, .meetings)
+    }
+
+    func testSectionMappingRoutesIntegrationCapabilityKeyToIntegrationsSection() {
+        let section = SettingsSearchIndex.section(forLocalizationKey: "settings.capabilities.assistant_integrations")
+
+        XCTAssertEqual(section, .integrations)
     }
 
     func testSectionMappingRoutesStylesKeysToDictationSection() {

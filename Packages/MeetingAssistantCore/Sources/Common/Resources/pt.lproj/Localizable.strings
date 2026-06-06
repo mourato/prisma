@@ -538,7 +538,6 @@
 "settings.shortcuts.toggle_recording" = "Alternar Gravação";
 "settings.shortcuts.toggle_recording_desc" = "Inicia ou encerra a gravação atual";
 "settings.shortcuts.reset" = "Resetar para atalhos padrão";
-"settings.capabilities.title" = "Recursos Opcionais";
 "settings.capabilities.meeting_transcription" = "Transcrição de Reuniões";
 "settings.capabilities.meeting_transcription_desc" = "Ativa fluxos de gravação e transcrição de reuniões.";
 "settings.capabilities.meeting_transcription_disabled_title" = "Transcrição de reuniões desativada";

@@ -67,7 +67,6 @@ extension SettingsSearchIndex {
         "settings.assistant.visual_feedback_desc",
         "settings.capabilities.meeting_transcription",
         "settings.capabilities.meeting_transcription_desc",
-        "settings.capabilities.title",
         "settings.context_awareness.accessibility_text",
         "settings.context_awareness.accessibility_text_desc",
         "settings.context_awareness.base_exclusions",

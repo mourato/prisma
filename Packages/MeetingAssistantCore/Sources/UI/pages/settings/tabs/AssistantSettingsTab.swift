@@ -13,13 +13,10 @@ public struct AssistantSettingsTab: View {
     }
 
     @StateObject private var viewModel = AssistantShortcutSettingsViewModel()
-    @StateObject private var integrationViewModel = IntegrationSettingsViewModel()
     @State private var previewController: AssistantScreenBorderController?
     @State private var previewTask: Task<Void, Never>?
     @State private var isPreviewRunning = false
     @State private var glowSizeInput = ""
-    @State private var editingIntegration: AssistantIntegrationConfig?
-    @State private var advancedIntegrationDraft: AssistantIntegrationConfig?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init() {}
@@ -32,7 +29,6 @@ public struct AssistantSettingsTab: View {
             )
             assistantControlsSection
             visualFeedbackSection
-            integrationsSection
         }
         .onAppear {
             glowSizeInput = String(Int(viewModel.glowSize))
@@ -45,47 +41,6 @@ public struct AssistantSettingsTab: View {
         }
         .onDisappear {
             stopPreviewIfNeeded()
-        }
-        .sheet(item: $editingIntegration) { integration in
-            AssistantIntegrationEditorSheet(
-                integration: integration,
-                onApplyAndClose: { draft in
-                    if let conflictMessage = integrationViewModel.saveIntegrationWithModifierValidation(draft.integration) {
-                        return conflictMessage
-                    }
-                    editingIntegration = nil
-                    return nil
-                },
-                onDelete: { id in
-                    integrationViewModel.removeIntegration(id: id)
-                    editingIntegration = nil
-                },
-                onOpenAdvanced: { draft in
-                    advancedIntegrationDraft = draft.integration
-                    editingIntegration = nil
-                }
-            )
-        }
-        .sheet(item: $advancedIntegrationDraft) { integration in
-            AssistantIntegrationBashScriptSheet(
-                scriptConfig: integration.advancedScript,
-                scriptTestOutput: integrationViewModel.scriptTestOutput,
-                scriptTestErrorMessage: integrationViewModel.scriptTestErrorMessage,
-                onSave: { scriptConfig in
-                    var updated = integration
-                    updated.advancedScript = scriptConfig
-                    integrationViewModel.saveIntegration(updated)
-                    advancedIntegrationDraft = nil
-                    integrationViewModel.clearScriptTestResult()
-                },
-                onTest: { script, input in
-                    await integrationViewModel.testScript(script: script, input: input)
-                },
-                onClose: {
-                    advancedIntegrationDraft = nil
-                    integrationViewModel.clearScriptTestResult()
-                }
-            )
         }
     }
 
@@ -216,13 +171,6 @@ public struct AssistantSettingsTab: View {
                 }
             }
         }
-    }
-
-    private var integrationsSection: some View {
-        AssistantIntegrationsSection(
-            viewModel: integrationViewModel,
-            editingIntegration: $editingIntegration
-        )
     }
 
     private var previewButton: some View {

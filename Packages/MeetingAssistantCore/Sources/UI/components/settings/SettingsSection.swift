@@ -30,6 +30,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         .metrics,
         .dictation,
         .assistant,
+        .integrations,
         .meetings,
         .transcriptions,
     ]

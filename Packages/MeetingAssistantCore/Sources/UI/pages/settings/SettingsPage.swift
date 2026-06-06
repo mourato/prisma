@@ -23,6 +23,7 @@ private enum LayoutConstants {
 public struct SettingsView: View {
     private enum ToolbarLayout {
         static let transcriptionsSearchWidth: CGFloat = 230
+        static let capabilityToggleSpacing: CGFloat = 8
     }
 
     fileprivate enum ChromeMode {
@@ -44,6 +45,7 @@ public struct SettingsView: View {
     @State private var enhancementsNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
     @State private var columnVisibility: NavigationSplitViewVisibility
     @StateObject private var navigationService = NavigationService.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @MainActor
     public init() {
@@ -159,6 +161,12 @@ private extension SettingsView {
                     transcriptionsToolbarSearchField
                 }
             }
+
+            if showsCapabilityToolbarAccessory {
+                ToolbarItem(placement: .automatic) {
+                    capabilityToolbarAccessory
+                }
+            }
         }
     }
 
@@ -206,6 +214,9 @@ private extension SettingsView {
             if shouldShowTranscriptionsSearch {
                 Spacer()
                 transcriptionsToolbarSearchField
+            } else if showsCapabilityToolbarAccessory {
+                Spacer()
+                capabilityToolbarAccessory
             }
         }
         .padding(.horizontal, 10)
@@ -264,6 +275,8 @@ private extension SettingsView {
             if shouldShowTranscriptionsSearch {
                 transcriptionsSearchField
                     .frame(width: ToolbarLayout.transcriptionsSearchWidth)
+            } else if showsCapabilityToolbarAccessory {
+                capabilityToolbarAccessory
             }
         }
         .padding(.horizontal, 16)
@@ -287,6 +300,51 @@ private extension SettingsView {
             text: $transcriptionsSearchText,
             placeholder: "settings.transcriptions.search_placeholder".localized
         )
+    }
+
+    private var showsCapabilityToolbarAccessory: Bool {
+        selectedSection == .meetings || selectedSection == .integrations
+    }
+
+    @ViewBuilder
+    private var capabilityToolbarAccessory: some View {
+        switch selectedSection {
+        case .meetings:
+            makeCapabilityToolbarToggle(
+                title: "settings.capabilities.meeting_transcription".localized,
+                isOn: Binding(
+                    get: { settingsStore.isMeetingTranscriptionEnabled },
+                    set: { settingsStore.isMeetingTranscriptionEnabled = $0 }
+                )
+            )
+        case .integrations:
+            makeCapabilityToolbarToggle(
+                title: "settings.capabilities.assistant_integrations".localized,
+                isOn: Binding(
+                    get: { settingsStore.isAssistantIntegrationsEnabled },
+                    set: { settingsStore.isAssistantIntegrationsEnabled = $0 }
+                )
+            )
+        default:
+            EmptyView()
+        }
+    }
+
+    private func makeCapabilityToolbarToggle(title: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: ToolbarLayout.capabilityToggleSpacing) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Toggle(title, isOn: isOn.animated(using: SettingsMotion.sectionAnimation))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .animation(SettingsMotion.sectionAnimation(reduceMotion: reduceMotion), value: isOn.wrappedValue)
     }
 
     private var legacySidebarToggleButton: some View {
@@ -474,7 +532,7 @@ private extension SettingsView {
         case .assistant:
             AssistantSettingsTab()
         case .integrations:
-            AssistantSettingsTab()
+            IntegrationsSettingsTab()
         case .audio:
             AudioSettingsTab()
         case .transcriptions:

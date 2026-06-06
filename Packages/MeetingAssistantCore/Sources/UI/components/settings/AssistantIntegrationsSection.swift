@@ -10,15 +10,18 @@ import SwiftUI
 public struct AssistantIntegrationsSection: View {
     @ObservedObject private var viewModel: IntegrationSettingsViewModel
     @ObservedObject private var settings: AppSettingsStore
+    private let showsCapabilityToggle: Bool
     @Binding private var editingIntegration: AssistantIntegrationConfig?
 
     public init(
         viewModel: IntegrationSettingsViewModel,
         settings: AppSettingsStore = .shared,
+        showsCapabilityToggle: Bool = true,
         editingIntegration: Binding<AssistantIntegrationConfig?>
     ) {
         _viewModel = ObservedObject(wrappedValue: viewModel)
         _settings = ObservedObject(wrappedValue: settings)
+        self.showsCapabilityToggle = showsCapabilityToggle
         _editingIntegration = editingIntegration
     }
 
@@ -28,63 +31,65 @@ public struct AssistantIntegrationsSection: View {
             icon: "puzzlepiece.extension"
         ) {
             VStack(alignment: .leading, spacing: 12) {
-                DSToggleRow(
-                    "settings.capabilities.assistant_integrations".localized,
-                    description: "settings.capabilities.assistant_integrations_desc".localized,
-                    isOn: $settings.isAssistantIntegrationsEnabled
-                )
+                if showsCapabilityToggle {
+                    DSToggleRow(
+                        "settings.capabilities.assistant_integrations".localized,
+                        description: "settings.capabilities.assistant_integrations_desc".localized,
+                        isOn: $settings.isAssistantIntegrationsEnabled
+                    )
+                }
 
-                if settings.isAssistantIntegrationsEnabled {
+                if showsCapabilityToggle {
                     Divider()
+                }
 
-                    Text("settings.assistant.integrations.description".localized)
+                Text("settings.assistant.integrations.description".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Divider()
+
+                Text("settings.assistant.integrations.built_in".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                ForEach(viewModel.builtInIntegrations) { integration in
+                    integrationRow(integration: integration, isCardStyle: false)
+                }
+
+                Divider()
+
+                HStack {
+                    Text("settings.assistant.integrations.custom".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    Divider()
+                    Spacer()
 
-                    Text("settings.assistant.integrations.built_in".localized)
+                    Button {
+                        viewModel.addIntegration()
+                    } label: {
+                        Label(
+                            "settings.assistant.integrations.new".localized,
+                            systemImage: "plus"
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                }
+
+                ForEach(viewModel.customIntegrations) { integration in
+                    integrationRow(integration: integration, isCardStyle: true)
+                }
+
+                if let statusMessage = viewModel.raycastTestStatusMessage {
+                    let statusColor = viewModel.raycastTestStatusIsError
+                        ? AppDesignSystem.Colors.error
+                        : AppDesignSystem.Colors.success
+
+                    Text(statusMessage)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    ForEach(viewModel.builtInIntegrations) { integration in
-                        integrationRow(integration: integration, isCardStyle: false)
-                    }
-
-                    Divider()
-
-                    HStack {
-                        Text("settings.assistant.integrations.custom".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Spacer()
-
-                        Button {
-                            viewModel.addIntegration()
-                        } label: {
-                            Label(
-                                "settings.assistant.integrations.new".localized,
-                                systemImage: "plus"
-                            )
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                    }
-
-                    ForEach(viewModel.customIntegrations) { integration in
-                        integrationRow(integration: integration, isCardStyle: true)
-                    }
-
-                    if let statusMessage = viewModel.raycastTestStatusMessage {
-                        let statusColor = viewModel.raycastTestStatusIsError
-                            ? AppDesignSystem.Colors.error
-                            : AppDesignSystem.Colors.success
-
-                        Text(statusMessage)
-                            .font(.caption)
-                            .foregroundStyle(statusColor)
-                    }
+                        .foregroundStyle(statusColor)
                 }
             }
         }

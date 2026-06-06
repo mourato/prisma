@@ -537,7 +537,6 @@
 "settings.shortcuts.toggle_recording" = "Toggle Recording";
 "settings.shortcuts.toggle_recording_desc" = "Starts or stops the current recording";
 "settings.shortcuts.reset" = "Reset to Default Shortcuts";
-"settings.capabilities.title" = "Optional Features";
 "settings.capabilities.meeting_transcription" = "Meeting Transcription";
 "settings.capabilities.meeting_transcription_desc" = "Enable meeting recording and transcription workflows.";
 "settings.capabilities.meeting_transcription_disabled_title" = "Meeting transcription is disabled";

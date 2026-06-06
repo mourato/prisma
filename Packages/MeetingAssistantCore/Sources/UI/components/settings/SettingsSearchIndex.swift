@@ -58,6 +58,14 @@ enum SettingsSearchIndex {
             return .audio
         }
 
+        if meetingCapabilityKeys.contains(key) {
+            return .meetings
+        }
+
+        if integrationCapabilityKeys.contains(key) {
+            return .integrations
+        }
+
         if key.hasPrefix("settings.general.") {
             return .general
         }
@@ -114,10 +122,9 @@ enum SettingsSearchIndex {
         .init(prefix: "settings.dictation.", section: .dictation),
         .init(prefix: "settings.shortcuts.header_desc", section: .dictation),
         .init(prefix: "settings.shortcuts.dictation", section: .dictation),
-        .init(prefix: "settings.capabilities.", section: .dictation),
         .init(prefix: "settings.section.assistant", section: .assistant),
         .init(prefix: "settings.assistant.", section: .assistant),
-        .init(prefix: "settings.integrations.", section: .assistant),
+        .init(prefix: "settings.integrations.", section: .integrations),
         .init(prefix: "settings.section.meetings", section: .meetings),
         .init(prefix: "settings.meetings.", section: .meetings),
         .init(prefix: "settings.shortcuts.meeting", section: .meetings),
@@ -154,6 +161,22 @@ enum SettingsSearchIndex {
 
     private static let exactMappings: [String: SettingsSection] = [
         "settings.section.metrics": .metrics,
+    ]
+
+    private static let meetingCapabilityKeys: Set<String> = [
+        "settings.capabilities.meeting_transcription",
+        "settings.capabilities.meeting_transcription_desc",
+        "settings.capabilities.meeting_transcription_disabled_title",
+        "settings.capabilities.meeting_transcription_disabled_desc",
+    ]
+
+    private static let integrationCapabilityKeys: Set<String> = [
+        "settings.capabilities.assistant_integrations",
+        "settings.capabilities.assistant_integrations_desc",
+        "settings.capabilities.assistant_integrations_disabled_title",
+        "settings.capabilities.assistant_integrations_disabled_desc",
+        "settings.integrations.header_desc",
+        "settings.section.integrations",
     ]
 
     private static let audioKeysWithinGeneralNamespace: Set<String> = [

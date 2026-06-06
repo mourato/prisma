@@ -8,16 +8,37 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct IntegrationsSettingsTab: View {
+    private enum CapabilityLayout {
+        static let disabledOpacity = 0.58
+    }
+
     @StateObject private var viewModel = IntegrationSettingsViewModel()
+    @StateObject private var settings = AppSettingsStore.shared
     @State private var editingIntegration: AssistantIntegrationConfig?
     @State private var advancedIntegrationDraft: AssistantIntegrationConfig?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init() {}
 
     public var body: some View {
         SettingsScrollableContent {
-            headerSection
+            SettingsSectionHeader(
+                title: "settings.section.integrations".localized,
+                description: "settings.integrations.header_desc".localized
+            )
+
+            capabilityStateBlock(
+                title: "settings.capabilities.assistant_integrations_disabled_title".localized,
+                message: "settings.capabilities.assistant_integrations_disabled_desc".localized
+            )
+
             integrationsSection
+                .disabled(!settings.isAssistantIntegrationsEnabled)
+                .opacity(settings.isAssistantIntegrationsEnabled ? 1 : CapabilityLayout.disabledOpacity)
+                .animation(
+                    SettingsMotion.sectionAnimation(reduceMotion: reduceMotion),
+                    value: settings.isAssistantIntegrationsEnabled
+                )
         }
         .sheet(item: $editingIntegration) { integration in
             AssistantIntegrationEditorSheet(
@@ -62,18 +83,20 @@ public struct IntegrationsSettingsTab: View {
         }
     }
 
-    private var headerSection: some View {
-        Text("settings.integrations.header_desc".localized)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
     private var integrationsSection: some View {
         AssistantIntegrationsSection(
             viewModel: viewModel,
+            showsCapabilityToggle: false,
             editingIntegration: $editingIntegration
         )
+    }
+
+    @ViewBuilder
+    private func capabilityStateBlock(title: String, message: String) -> some View {
+        if !settings.isAssistantIntegrationsEnabled {
+            SettingsStateBlock(kind: .warning, title: title, message: message)
+                .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
+        }
     }
 }
 

@@ -11,6 +11,10 @@ import SwiftUI
 
 /// Tab for meeting-specific settings like app monitoring and automation.
 public struct MeetingSettingsTab: View {
+    private enum CapabilityLayout {
+        static let disabledOpacity = 0.58
+    }
+
     @Binding private var navigationState: MeetingSettingsNavigationState
     @StateObject private var meetingViewModel: MeetingSettingsViewModel
     @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
@@ -19,6 +23,7 @@ public struct MeetingSettingsTab: View {
     @StateObject private var webTargetsViewModel: WebMeetingTargetsViewModel
     @State private var showSummaryTemplateEditor = false
     @State private var selectedWebTargetID: UUID?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         settings: AppSettingsStore = .shared,
@@ -100,15 +105,12 @@ public struct MeetingSettingsTab: View {
                 description: "settings.shortcuts.meeting_desc".localized
             )
 
-            DSGroup("settings.capabilities.title".localized, icon: "switch.2") {
-                DSToggleRow(
-                    "settings.capabilities.meeting_transcription".localized,
-                    description: "settings.capabilities.meeting_transcription_desc".localized,
-                    isOn: $meetingViewModel.settings.isMeetingTranscriptionEnabled
-                )
-            }
+            capabilityStateBlock(
+                title: "settings.capabilities.meeting_transcription_disabled_title".localized,
+                message: "settings.capabilities.meeting_transcription_disabled_desc".localized
+            )
 
-            if meetingViewModel.settings.isMeetingTranscriptionEnabled {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.sectionSpacing) {
                 ShortcutSettingsSection(
                     groupTitle: "settings.shortcuts.meeting".localized,
                     descriptionText: "settings.shortcuts.meeting_desc".localized,
@@ -344,6 +346,20 @@ public struct MeetingSettingsTab: View {
                     }
                 }
             }
+            .disabled(!meetingViewModel.settings.isMeetingTranscriptionEnabled)
+            .opacity(meetingViewModel.settings.isMeetingTranscriptionEnabled ? 1 : CapabilityLayout.disabledOpacity)
+            .animation(
+                SettingsMotion.sectionAnimation(reduceMotion: reduceMotion),
+                value: meetingViewModel.settings.isMeetingTranscriptionEnabled
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func capabilityStateBlock(title: String, message: String) -> some View {
+        if !meetingViewModel.settings.isMeetingTranscriptionEnabled {
+            SettingsStateBlock(kind: .warning, title: title, message: message)
+                .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
         }
     }
 
@@ -370,6 +386,11 @@ public struct MeetingSettingsTab: View {
 
     private var monitoringTargetsPage: some View {
         SettingsScrollableContent {
+            capabilityStateBlock(
+                title: "settings.capabilities.meeting_transcription_disabled_title".localized,
+                message: "settings.capabilities.meeting_transcription_disabled_desc".localized
+            )
+
             DSCallout(
                 kind: .info,
                 title: "settings.meetings.monitoring_access.context_title".localized,
@@ -387,6 +408,12 @@ public struct MeetingSettingsTab: View {
 
             webTargetsSection
         }
+        .disabled(!meetingViewModel.settings.isMeetingTranscriptionEnabled)
+        .opacity(meetingViewModel.settings.isMeetingTranscriptionEnabled ? 1 : CapabilityLayout.disabledOpacity)
+        .animation(
+            SettingsMotion.sectionAnimation(reduceMotion: reduceMotion),
+            value: meetingViewModel.settings.isMeetingTranscriptionEnabled
+        )
         .sheet(isPresented: $webTargetsViewModel.showEditor) {
             WebMeetingTargetEditorSheet(
                 target: webTargetsViewModel.editingTarget,
