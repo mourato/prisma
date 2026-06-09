@@ -91,7 +91,7 @@ struct MeetingNotesMarkdownEditor: View {
             Text("meeting_notes.rich_text.link_sheet.title".localized)
                 .font(.headline)
 
-            TextField("common.title".localized, text: $linkEditorDraft.label)
+            TextField("meeting_notes.rich_text.link_sheet.label_placeholder".localized, text: $linkEditorDraft.label)
                 .textFieldStyle(.roundedBorder)
 
             TextField("meeting_notes.rich_text.link_sheet.placeholder".localized, text: $linkEditorDraft.url)

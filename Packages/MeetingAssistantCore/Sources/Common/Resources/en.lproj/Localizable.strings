@@ -1239,6 +1239,7 @@
 "meeting_notes.rich_text.toolbar.ordered_list" = "Ordered list";
 "meeting_notes.rich_text.toolbar.link" = "Insert link";
 "meeting_notes.rich_text.link_sheet.title" = "Insert or edit link";
+"meeting_notes.rich_text.link_sheet.label_placeholder" = "Link text";
 "meeting_notes.rich_text.link_sheet.placeholder" = "https://example.com";
 "meeting_notes.rich_text.link_sheet.apply" = "Apply";
 "meeting_notes.rich_text.shortcuts.cheatsheet" = "Markdown shortcuts: - + Space, 1. + Space, [ ] + Space, # + Space, Enter (continue/exit lists), Tab/Shift+Tab (indent/outdent), Cmd+B/Cmd+I.";
