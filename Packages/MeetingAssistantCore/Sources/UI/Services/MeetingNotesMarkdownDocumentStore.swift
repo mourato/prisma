@@ -438,10 +438,7 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
     }
 
     private func content(from document: MeetingNotesMarkdownDocument) -> MeetingNotesContent {
-        let attributed = markdownFormatter.attributedStringForEditing(from: document.markdownBody)
-        let plainText = attributed.string
-        let richTextRTFData = rtfData(from: attributed)
-        return MeetingNotesContent(plainText: plainText, richTextRTFData: richTextRTFData)
+        MeetingNotesContent(plainText: document.markdownBody)
     }
 
     private func makeDocument(

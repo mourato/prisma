@@ -119,7 +119,10 @@ struct MetricsDashboardEventDetailPage: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    MeetingNotesRichTextEditor(content: $notesDraft)
+                    MeetingNotesMarkdownEditor(
+                        content: $notesDraft,
+                        documentId: "calendar-event-notes-\(event.eventIdentifier)"
+                    )
                         .frame(minHeight: 280)
                 }
             }

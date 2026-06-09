@@ -539,7 +539,10 @@ public struct MeetingConversationView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            MeetingNotesRichTextEditor(content: $notesDraft)
+            MeetingNotesMarkdownEditor(
+                content: $notesDraft,
+                documentId: noteDocumentId
+            )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(16)
@@ -627,6 +630,14 @@ public struct MeetingConversationView: View {
         guard content != lastSavedNotes else { return }
         onUpdateMeetingNotes(content, transcriptionID)
         lastSavedNotes = content
+    }
+
+    private var noteDocumentId: String {
+        if let transcription {
+            return "transcription-notes-\(transcription.id.uuidString)"
+        }
+
+        return "meeting-conversation-notes"
     }
 
     private var segmentListSection: some View {

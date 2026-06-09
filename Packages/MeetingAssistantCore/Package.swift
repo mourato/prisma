@@ -27,6 +27,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.2.0")),
         .package(url: "https://github.com/apple/swift-syntax.git", exact: "602.0.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
+        .package(url: "https://github.com/nodes-app/swift-markdown-engine", exact: "0.6.0"),
     ],
     targets: [
         .target(
@@ -95,6 +96,7 @@ let package = Package(
                 "MeetingAssistantCoreDomain",
                 "MeetingAssistantCoreInfrastructure",
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+                .product(name: "MarkdownEngine", package: "swift-markdown-engine"),
             ],
             path: "Sources/UI",
             resources: [

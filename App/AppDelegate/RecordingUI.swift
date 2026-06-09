@@ -117,6 +117,7 @@ extension AppDelegate {
                 plainText: recordingManager.currentMeetingNotesText,
                 richTextRTFData: recordingManager.currentMeetingNotesRichTextData
             ),
+            documentId: recordingManager.currentMeeting.map { "meeting-panel-\($0.id.uuidString)" } ?? "meeting-panel",
             onTextChange: { [weak self] content in
                 self?.recordingManager.updateMeetingNotes(content)
             },

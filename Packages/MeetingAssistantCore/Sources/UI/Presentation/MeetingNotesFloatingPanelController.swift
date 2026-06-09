@@ -18,12 +18,14 @@ public final class MeetingNotesFloatingPanelController {
 
     public func show(
         content: MeetingNotesContent,
+        documentId: String = "meeting-notes-panel",
         onTextChange: @escaping (MeetingNotesContent) -> Void,
         onClose: @escaping () -> Void
     ) {
         let panel = ensurePanel(onClose: onClose)
         let rootView = MeetingNotesFloatingPanelView(
             content: content,
+            documentId: documentId,
             onTextChange: onTextChange
         )
 
@@ -162,13 +164,16 @@ private final class PanelDelegate: NSObject, NSWindowDelegate {
 
 private struct MeetingNotesFloatingPanelView: View {
     @State private var content: MeetingNotesContent
+    let documentId: String
     let onTextChange: (MeetingNotesContent) -> Void
 
     init(
         content: MeetingNotesContent,
+        documentId: String,
         onTextChange: @escaping (MeetingNotesContent) -> Void
     ) {
         _content = State(initialValue: content)
+        self.documentId = documentId
         self.onTextChange = onTextChange
     }
 
@@ -178,7 +183,7 @@ private struct MeetingNotesFloatingPanelView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            MeetingNotesRichTextEditor(content: $content)
+            MeetingNotesMarkdownEditor(content: $content, documentId: documentId)
         }
         .padding(12)
         .onChange(of: content) { _, newValue in
@@ -190,6 +195,7 @@ private struct MeetingNotesFloatingPanelView: View {
 #Preview("Meeting Notes Floating Panel") {
     MeetingNotesFloatingPanelView(
         content: MeetingNotesContent(plainText: "- Revisar backlog\n- Alinhar owners para Q2"),
+        documentId: "meeting-notes-panel-preview",
         onTextChange: { _ in }
     )
     .frame(width: 620, height: 300)
