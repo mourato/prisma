@@ -33,8 +33,16 @@ struct MeetingNotesMarkdownEditor: View {
             editor
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .background(MeetingNotesMarkdownKeyboardHandler(
+            onBold: { NotificationCenter.default.post(name: .meetingNotesApplyBold, object: nil) },
+            onItalic: { NotificationCenter.default.post(name: .meetingNotesApplyItalic, object: nil) },
+            onLink: { NotificationCenter.default.post(name: .meetingNotesApplyLink, object: nil) }
+        ))
         .sheet(isPresented: $isShowingLinkEditor) {
             linkEditorSheet
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .meetingNotesApplyLink)) { _ in
+            prepareLinkEditor()
         }
     }
 
@@ -317,7 +325,81 @@ private struct MeetingNotesMarkdownLinkDraft {
     }
 }
 
+private struct MeetingNotesMarkdownKeyboardHandler: NSViewRepresentable {
+    let onBold: () -> Void
+    let onItalic: () -> Void
+    let onLink: () -> Void
+
+    func makeNSView(context: Context) -> KeyboardHandlerHostView {
+        let view = KeyboardHandlerHostView()
+        view.onBold = onBold
+        view.onItalic = onItalic
+        view.onLink = onLink
+        return view
+    }
+
+    func updateNSView(_ nsView: KeyboardHandlerHostView, context: Context) {
+        nsView.onBold = onBold
+        nsView.onItalic = onItalic
+        nsView.onLink = onLink
+    }
+}
+
+private final class KeyboardHandlerHostView: NSView {
+    var onBold: (() -> Void)?
+    var onItalic: (() -> Void)?
+    var onLink: (() -> Void)?
+    private var monitor: Any?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        removeMonitor()
+        guard window != nil else { return }
+        installMonitor()
+    }
+
+    private func installMonitor() {
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+            return handleKeyEvent(event)
+        }
+    }
+
+    private func removeMonitor() {
+        guard let monitor else { return }
+        NSEvent.removeMonitor(monitor)
+        self.monitor = nil
+    }
+
+    private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
+        guard event.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.command),
+              !event.modifierFlags.contains(.option),
+              !event.modifierFlags.contains(.control),
+              let chars = event.charactersIgnoringModifiers?.lowercased()
+        else { return event }
+
+        switch chars {
+        case "b":
+            onBold?()
+            return nil
+        case "i":
+            onItalic?()
+            return nil
+        case "k":
+            onLink?()
+            return nil
+        default:
+            return event
+        }
+    }
+
+    deinit {
+        removeMonitor()
+    }
+}
+
 private extension Notification.Name {
     static let meetingNotesApplyBold = Notification.Name("MeetingNotesMarkdownEditor.applyBold")
     static let meetingNotesApplyItalic = Notification.Name("MeetingNotesMarkdownEditor.applyItalic")
+    static let meetingNotesApplyLink = Notification.Name("MeetingNotesMarkdownEditor.applyLink")
 }

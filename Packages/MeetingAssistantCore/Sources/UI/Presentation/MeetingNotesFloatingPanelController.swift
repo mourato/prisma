@@ -4,6 +4,10 @@ import SwiftUI
 
 @MainActor
 public final class MeetingNotesFloatingPanelController {
+    private static let initialPanelWidth: CGFloat = 420
+    private static let initialPanelHeight: CGFloat = 400
+    private static let minimumPanelWidth: CGFloat = 320
+    private static let minimumPanelHeight: CGFloat = 220
     static let maximumScreenHeightRatio: CGFloat = 0.9
 
     private var panel: NSPanel?
@@ -47,6 +51,7 @@ public final class MeetingNotesFloatingPanelController {
         enforcePanelHeightLimit(panel)
         panel.level = .floating
         panel.orderFrontRegardless()
+        panel.makeKey()
         NSApp.activate(ignoringOtherApps: false)
     }
 
@@ -57,13 +62,12 @@ public final class MeetingNotesFloatingPanelController {
     private func ensurePanel(onClose: @escaping () -> Void) -> NSPanel {
         if let panel {
             panelDelegate?.onClose = onClose
-            enforcePanelHeightLimit(panel)
             return panel
         }
 
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 300),
-            styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
+            contentRect: NSRect(x: 0, y: 0, width: Self.initialPanelWidth, height: Self.initialPanelHeight),
+            styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -71,7 +75,9 @@ public final class MeetingNotesFloatingPanelController {
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces]
         panel.title = "recording_indicator.meeting_notes.title".localized
-        panel.minSize = NSSize(width: 320, height: 220)
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.minSize = NSSize(width: Self.minimumPanelWidth, height: Self.minimumPanelHeight)
         let delegate = PanelDelegate(
             onClose: onClose,
             onGeometryChange: { [weak self, weak panel] in
@@ -84,19 +90,17 @@ public final class MeetingNotesFloatingPanelController {
         panel.center()
 
         self.panel = panel
-        enforcePanelHeightLimit(panel)
         return panel
     }
 
     private func enforcePanelHeightLimit(_ panel: NSPanel) {
         guard let visibleFrame = targetVisibleFrame(for: panel) else { return }
         let maxHeight = max(
-            panel.minSize.height,
+            Self.minimumPanelHeight,
             floor(visibleFrame.height * Self.maximumScreenHeightRatio)
         )
 
-        let currentMaxSize = panel.maxSize
-        panel.maxSize = NSSize(width: currentMaxSize.width, height: maxHeight)
+        panel.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: maxHeight)
 
         let clampedFrame = Self.clampedPanelFrame(
             panel.frame,
@@ -107,7 +111,7 @@ public final class MeetingNotesFloatingPanelController {
             return
         }
 
-        panel.setFrame(clampedFrame, display: false)
+        panel.setFrame(clampedFrame, display: false, animate: false)
     }
 
     private func targetVisibleFrame(for panel: NSPanel) -> NSRect? {
@@ -178,14 +182,18 @@ private struct MeetingNotesFloatingPanelView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("recording_indicator.meeting_notes.help".localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        ZStack {
+            SettingsWindowBackground()
 
-            MeetingNotesMarkdownEditor(content: $content, documentId: documentId)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("recording_indicator.meeting_notes.help".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                MeetingNotesMarkdownEditor(content: $content, documentId: documentId)
+            }
+            .padding(12)
         }
-        .padding(12)
         .onChange(of: content) { _, newValue in
             onTextChange(newValue)
         }
