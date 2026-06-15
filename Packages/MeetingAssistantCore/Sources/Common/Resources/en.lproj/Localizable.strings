@@ -1271,3 +1271,25 @@
 "transcription.prompt.value.applied" = "Yes";
 "transcription.prompt.value.skipped" = "No";
 "transcription.prompt.unset" = "<unset>";
+
+/* Model Performance */
+"metrics.performance.link.title" = "Model Performance";
+"metrics.performance.link.accessibility_hint" = "Opens model performance analytics for transcription and enhancement models.";
+"metrics.performance.title" = "Model Performance";
+"metrics.performance.subtitle" = "Performance metrics for transcription and enhancement models.";
+"metrics.performance.filter.title" = "Filter";
+"metrics.performance.filter.all" = "All";
+"metrics.performance.filter.dictation" = "Dictation";
+"metrics.performance.filter.meeting" = "Meeting";
+"metrics.performance.summary.total" = "Total";
+"metrics.performance.summary.analyzable" = "Analyzable";
+"metrics.performance.summary.processed" = "Enhanced";
+"metrics.performance.transcription_models" = "Transcription Models";
+"metrics.performance.enhancement_models" = "Enhancement Models";
+"metrics.performance.empty.title" = "No performance data yet";
+"metrics.performance.empty.subtitle" = "Start transcribing to see model performance metrics.";
+"metrics.performance.transcription_count" = "%d files";
+"metrics.performance.speed_factor" = "Faster than Real-time";
+"metrics.performance.avg_audio" = "Avg. Audio";
+"metrics.performance.avg_process_time" = "Avg. Process";
+"metrics.performance.avg_enhancement_time" = "Avg. Enhancement Time";

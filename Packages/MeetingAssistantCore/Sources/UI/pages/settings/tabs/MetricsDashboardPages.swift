@@ -1,5 +1,6 @@
 import Charts
 import MeetingAssistantCoreCommon
+import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
@@ -8,6 +9,7 @@ struct MetricsDashboardIndexPage: View {
     @ObservedObject var viewModel: MetricsDashboardViewModel
     @ObservedObject private var settings = AppSettingsStore.shared
     let openMoreInsights: () -> Void
+    let openPerformance: () -> Void
     let openEventDetail: (MeetingCalendarEventSnapshot) -> Void
 
     var body: some View {
@@ -27,6 +29,7 @@ struct MetricsDashboardIndexPage: View {
 
             MetricsDashboardActivitySection(viewModel: viewModel)
             MetricsDashboardMoreInsightsLinkSection(openMoreInsights: openMoreInsights)
+            MetricsDashboardPerformanceLinkSection(openPerformance: openPerformance)
             if settings.isMeetingTranscriptionEnabled {
                 MetricsDashboardUpcomingEventsSection(
                     viewModel: viewModel,
@@ -232,6 +235,178 @@ private struct MetricsDashboardMoreInsightsLinkSection: View {
             ) {
                 openMoreInsights()
             }
+        }
+    }
+}
+
+private struct MetricsDashboardPerformanceLinkSection: View {
+    let openPerformance: () -> Void
+
+    var body: some View {
+        DSGroup {
+            SettingsDrillDownButtonRow(
+                title: "metrics.performance.link.title".localized,
+                accessibilityHint: "metrics.performance.link.accessibility_hint".localized
+            ) {
+                openPerformance()
+            }
+        }
+    }
+}
+
+struct MetricsDashboardPerformancePage: View {
+    @ObservedObject var viewModel: MetricsDashboardViewModel
+
+    @State private var analysis = ModelPerformanceAnalysis.empty
+    @State private var selectedFilter: PerformanceFilter = .all
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+
+    private let storage: StorageService = FileSystemStorageService.shared
+
+    private let columns: [GridItem] = [
+        GridItem(.adaptive(minimum: 260), spacing: 16),
+    ]
+
+    var body: some View {
+        SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: "metrics.performance.title".localized,
+                description: "metrics.performance.subtitle".localized
+            )
+
+            if let errorMessage {
+                SettingsStateBlock(kind: .warning, title: "common.error".localized, message: errorMessage) {
+                    Task { await loadPerformanceData() }
+                }
+            }
+
+            if isLoading {
+                ProgressView()
+                    .tint(AppDesignSystem.Colors.accent)
+                    .frame(maxWidth: .infinity, minHeight: 200)
+            } else if analysis.totalTranscripts == 0 {
+                MAEmptyStateView(
+                    iconName: "gauge.open.with.lines.needle.33percent",
+                    title: "metrics.performance.empty.title".localized,
+                    message: "metrics.performance.empty.subtitle".localized
+                )
+            } else {
+                summarySection
+                filterSection
+                if !analysis.transcriptionModels.isEmpty {
+                    transcriptionPerformanceSection
+                }
+                if !analysis.enhancementModels.isEmpty {
+                    enhancementPerformanceSection
+                }
+            }
+        }
+        .task {
+            await loadPerformanceData()
+        }
+    }
+
+    private var summarySection: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                PerformanceStatCard(
+                    icon: "doc.text.fill",
+                    value: "\(analysis.totalTranscripts)",
+                    label: "metrics.performance.summary.total".localized,
+                    tint: .indigo
+                )
+                PerformanceStatCard(
+                    icon: "waveform.path.ecg",
+                    value: "\(analysis.totalWithData)",
+                    label: "metrics.performance.summary.analyzable".localized,
+                    tint: .teal
+                )
+                PerformanceStatCard(
+                    icon: "sparkles",
+                    value: "\(analysis.totalProcessed)",
+                    label: "metrics.performance.summary.processed".localized,
+                    tint: .mint
+                )
+            }
+
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    PerformanceStatCard(
+                        icon: "doc.text.fill",
+                        value: "\(analysis.totalTranscripts)",
+                        label: "metrics.performance.summary.total".localized,
+                        tint: .indigo
+                    )
+                    PerformanceStatCard(
+                        icon: "waveform.path.ecg",
+                        value: "\(analysis.totalWithData)",
+                        label: "metrics.performance.summary.analyzable".localized,
+                        tint: .teal
+                    )
+                }
+                HStack(spacing: 12) {
+                    PerformanceStatCard(
+                        icon: "sparkles",
+                        value: "\(analysis.totalProcessed)",
+                        label: "metrics.performance.summary.processed".localized,
+                        tint: .mint
+                    )
+                }
+            }
+        }
+    }
+
+    private var filterSection: some View {
+        DSGroup("metrics.performance.filter.title".localized, icon: "line.3.horizontal.decrease.circle") {
+            Picker("", selection: $selectedFilter) {
+                ForEach(PerformanceFilter.allCases, id: \.self) { filter in
+                    Text(filter.displayName).tag(filter)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .onChange(of: selectedFilter) { _, _ in
+                Task { await loadPerformanceData() }
+            }
+        }
+    }
+
+    private var transcriptionPerformanceSection: some View {
+        DSGroup("metrics.performance.transcription_models".localized, icon: "waveform") {
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(analysis.transcriptionModels) { modelStat in
+                    TranscriptionModelCard(modelStat: modelStat)
+                }
+            }
+        }
+    }
+
+    private var enhancementPerformanceSection: some View {
+        DSGroup("metrics.performance.enhancement_models".localized, icon: "sparkles") {
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(analysis.enhancementModels) { modelStat in
+                    EnhancementModelCard(modelStat: modelStat)
+                }
+            }
+        }
+    }
+
+    private func loadPerformanceData() async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            let allTranscriptions = try await storage.loadTranscriptions()
+            let filtered: [Transcription] = switch selectedFilter {
+            case .all: allTranscriptions
+            case .dictation: allTranscriptions.filter { $0.capturePurpose == .dictation }
+            case .meeting: allTranscriptions.filter { $0.capturePurpose == .meeting }
+            }
+            analysis = ModelPerformanceAggregator.computeAnalysis(transcriptions: filtered)
+        } catch {
+            errorMessage = "metrics.error.load".localized
         }
     }
 }

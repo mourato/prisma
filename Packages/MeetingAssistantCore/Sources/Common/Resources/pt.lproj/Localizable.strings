@@ -1261,3 +1261,25 @@
 "transcription.prompt.value.applied" = "Sim";
 "transcription.prompt.value.skipped" = "Nao";
 "transcription.prompt.unset" = "<nao definido>";
+
+/* Model Performance */
+"metrics.performance.link.title" = "Performance dos Modelos";
+"metrics.performance.link.accessibility_hint" = "Abre a analise de performance dos modelos de transcricao e aprimoramento.";
+"metrics.performance.title" = "Performance dos Modelos";
+"metrics.performance.subtitle" = "Metricas de performance para modelos de transcricao e aprimoramento.";
+"metrics.performance.filter.title" = "Filtro";
+"metrics.performance.filter.all" = "Todas";
+"metrics.performance.filter.dictation" = "Ditado";
+"metrics.performance.filter.meeting" = "Reuniao";
+"metrics.performance.summary.total" = "Total";
+"metrics.performance.summary.analyzable" = "Analisaveis";
+"metrics.performance.summary.processed" = "Aprimorados";
+"metrics.performance.transcription_models" = "Modelos de Transcricao";
+"metrics.performance.enhancement_models" = "Modelos de Aprimoramento";
+"metrics.performance.empty.title" = "Sem dados de performance";
+"metrics.performance.empty.subtitle" = "Comece a transcrever para ver metricas dos modelos.";
+"metrics.performance.transcription_count" = "%d arquivos";
+"metrics.performance.speed_factor" = "Mais rapido que Tempo Real";
+"metrics.performance.avg_audio" = "Media Audio";
+"metrics.performance.avg_process_time" = "Media Process.";
+"metrics.performance.avg_enhancement_time" = "Media Aprimoramento";
