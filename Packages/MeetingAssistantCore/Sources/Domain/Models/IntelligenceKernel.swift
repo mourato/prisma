@@ -5,6 +5,14 @@ public enum IntelligenceKernelMode: String, CaseIterable, Codable, Sendable {
     case meeting
     case dictation
     case assistant
+
+    public var displayName: String {
+        switch self {
+        case .meeting: "meetings"
+        case .dictation: "dictations"
+        case .assistant: "assistant"
+        }
+    }
 }
 
 /// Shared request contract for post-processing through the intelligence kernel.

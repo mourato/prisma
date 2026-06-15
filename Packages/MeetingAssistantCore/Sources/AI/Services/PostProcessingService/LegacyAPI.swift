@@ -218,7 +218,7 @@ extension PostProcessingService {
             .enhancementsInferenceReadinessIssue(for: mode, apiKeyExists: nil)?
             .rawValue ?? "enhancements.not_ready"
         AppLogger.info(message, category: .transcriptionEngine, extra: ["reasonCode": reasonCode])
-        return .noAPIConfigured
+        return .configurationNotReady(reason: reasonCode, modeName: mode.displayName)
     }
 
     private func logRequestSuccess(message: String, context: RequestTraceContext, startedAt: Date) {

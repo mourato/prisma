@@ -300,6 +300,11 @@ public extension TranscriptionSettingsViewModel {
             // Refresh metadata to show the "sparkles" icon in the list if needed
             await loadTranscriptions()
 
+        } catch let error as PostProcessingError {
+            logger.error("Failed to apply post-processing: \(error.localizedDescription)")
+            let message = error.localizedDescription
+            postProcessingErrorByTranscriptionID[transcriptionID] = message
+            operationErrorMessage = message
         } catch {
             logger.error("Failed to apply post-processing: \(error.localizedDescription)")
             let message = "transcription.post_processing.error".localized

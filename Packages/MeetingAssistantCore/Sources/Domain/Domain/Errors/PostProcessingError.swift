@@ -10,6 +10,7 @@ public enum PostProcessingError: LocalizedError {
     case apiError(String)
     case emptyTranscription
     case transcriptionTooLong(Int)
+    case configurationNotReady(reason: String, modeName: String)
 
     public var errorDescription: String? {
         switch self {
@@ -29,6 +30,21 @@ public enum PostProcessingError: LocalizedError {
             "error.post_processing.empty_transcription".localized
         case let .transcriptionTooLong(count):
             "error.post_processing.transcription_too_long".localized(with: count)
+        case let .configurationNotReady(reason, modeName):
+            "error.post_processing.configuration_not_ready".localized(with: Self.localizedReason(for: reason), modeName)
+        }
+    }
+
+    private static func localizedReason(for reasonCode: String) -> String {
+        switch reasonCode {
+        case "enhancements.missing_api_key":
+            "error.post_processing.configuration_not_ready.missing_api_key".localized
+        case "enhancements.missing_model":
+            "error.post_processing.configuration_not_ready.missing_model".localized
+        case "enhancements.invalid_base_url":
+            "error.post_processing.configuration_not_ready.invalid_base_url".localized
+        default:
+            reasonCode
         }
     }
 }

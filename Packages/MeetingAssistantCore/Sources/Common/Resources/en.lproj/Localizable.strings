@@ -1006,6 +1006,10 @@
 "error.post_processing.api_error" = "API error: %@";
 "error.post_processing.empty_transcription" = "Transcription is empty";
 "error.post_processing.transcription_too_long" = "Transcription too long (%d characters). Maximum allowed: 100,000";
+"error.post_processing.configuration_not_ready" = "AI configuration not ready for %2$@: %1$@. Check your AI settings for this mode.";
+"error.post_processing.configuration_not_ready.missing_api_key" = "Missing API key";
+"error.post_processing.configuration_not_ready.missing_model" = "Missing model";
+"error.post_processing.configuration_not_ready.invalid_base_url" = "Invalid base URL";
 
 /* Transcription Errors */
 "error.transcription.service_unavailable" = "Transcription service unavailable";
@@ -1131,6 +1135,7 @@
 "transcription.content.show_all" = "Show all";
 "transcription.content.show_less" = "Show less";
 "transcription.post_processing.error" = "Post-processing failed. Please try again.";
+"transcription.post_processing.skipped_configuration" = "Post-processing skipped: AI configuration not ready for %@. Check your settings.";
 "transcription.speaker.rename.error" = "Failed to rename speaker.";
 "transcription.meeting_notes.error" = "Failed to update meeting notes.";
 "transcription.qa.tab.chat" = "Chat";
