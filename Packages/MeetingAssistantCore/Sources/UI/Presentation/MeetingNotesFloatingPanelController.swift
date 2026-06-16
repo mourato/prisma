@@ -9,6 +9,7 @@ public final class MeetingNotesFloatingPanelController {
     private static let minimumPanelWidth: CGFloat = 320
     private static let minimumPanelHeight: CGFloat = 220
     private static let maximumPanelWidth: CGFloat = 700
+    private static let maximumScreenHeightRatio: CGFloat = 0.9
     private static let autosaveName = "MeetingNotesPanel"
 
     private var panel: NSPanel?
@@ -53,6 +54,14 @@ public final class MeetingNotesFloatingPanelController {
         panel?.orderOut(nil)
     }
 
+    private func visibleFrameMaxHeight() -> CGFloat {
+        let screen = panel?.screen ?? NSScreen.main ?? NSScreen.screens.first
+        guard let visibleFrame = screen?.visibleFrame else {
+            return CGFloat.greatestFiniteMagnitude
+        }
+        return max(Self.minimumPanelHeight, floor(visibleFrame.height * Self.maximumScreenHeightRatio))
+    }
+
     private func ensurePanel(onClose: @escaping () -> Void) -> NSPanel {
         if let panel {
             panelDelegate?.onClose = onClose
@@ -70,16 +79,16 @@ public final class MeetingNotesFloatingPanelController {
         panel.collectionBehavior = [.canJoinAllSpaces]
         panel.title = "recording_indicator.meeting_notes.title".localized
         panel.minSize = NSSize(width: Self.minimumPanelWidth, height: Self.minimumPanelHeight)
-        panel.maxSize = NSSize(width: Self.maximumPanelWidth, height: CGFloat.greatestFiniteMagnitude)
+        panel.maxSize = NSSize(width: Self.maximumPanelWidth, height: visibleFrameMaxHeight())
 
         let delegate = PanelDelegate(onClose: onClose)
         panel.delegate = delegate
         panelDelegate = delegate
 
-        if !panel.setFrameUsingName(Self.autosaveName) || panel.frame.origin == .zero {
+        panel.setFrameAutosaveName(Self.autosaveName)
+        if !panel.setFrameUsingName(Self.autosaveName) {
             panel.center()
         }
-        panel.setFrameAutosaveName(Self.autosaveName)
 
         self.panel = panel
         return panel
