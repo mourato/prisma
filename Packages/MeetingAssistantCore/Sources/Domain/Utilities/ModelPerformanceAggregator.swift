@@ -18,7 +18,8 @@ public enum ModelPerformanceAggregator {
         let enhancementStats = processStats(
             for: transcriptions,
             modelNameKeyPath: \.postProcessingModel,
-            durationKeyPath: \.postProcessingDuration
+            durationKeyPath: \.postProcessingDuration,
+            audioDurationKeyPath: \.meeting.duration
         )
 
         return ModelPerformanceAnalysis(
@@ -48,9 +49,16 @@ public enum ModelPerformanceAggregator {
             let avgAudioDuration = totalAudioDuration / Double(fileCount)
 
             var speedFactor = 0.0
-            if let audioDurationKeyPath, totalProcessingTime > 0 {
-                let audioTotal = items.reduce(0) { $0 + $1[keyPath: audioDurationKeyPath] }
-                speedFactor = audioTotal / totalProcessingTime
+            if let audioDurationKeyPath {
+                let ratios = items.compactMap { item -> Double? in
+                    let audio = item[keyPath: audioDurationKeyPath]
+                    let proc = item[keyPath: durationKeyPath]
+                    guard proc > 0, audio > 0 else { return nil }
+                    return audio / proc
+                }
+                if !ratios.isEmpty {
+                    speedFactor = ratios.reduce(0, +) / Double(ratios.count)
+                }
             }
 
             return ModelPerformanceStat(
@@ -84,9 +92,16 @@ public enum ModelPerformanceAggregator {
             let avgAudioDuration = totalAudioDuration / Double(fileCount)
 
             var speedFactor = 0.0
-            if let audioDurationKeyPath, totalProcessingTime > 0 {
-                let audioTotal = items.reduce(0) { $0 + $1[keyPath: audioDurationKeyPath] }
-                speedFactor = audioTotal / totalProcessingTime
+            if let audioDurationKeyPath {
+                let ratios = items.compactMap { item -> Double? in
+                    let audio = item[keyPath: audioDurationKeyPath]
+                    let proc = item[keyPath: durationKeyPath]
+                    guard proc > 0, audio > 0 else { return nil }
+                    return audio / proc
+                }
+                if !ratios.isEmpty {
+                    speedFactor = ratios.reduce(0, +) / Double(ratios.count)
+                }
             }
 
             return ModelPerformanceStat(

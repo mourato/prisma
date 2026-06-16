@@ -130,15 +130,33 @@ struct EnhancementModelCard: View {
 
                 Divider()
 
-                VStack(alignment: .center, spacing: 4) {
-                    Text(String(format: "%.2f s", modelStat.avgProcessingTime))
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundStyle(.indigo)
-                    Text("metrics.performance.avg_enhancement_time".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                VStack(spacing: 16) {
+                    VStack {
+                        Text(String(format: "%.1fx", modelStat.speedFactor))
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundStyle(.mint)
+                        Text("metrics.performance.speed_factor".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    Divider()
+
+                    HStack {
+                        MetricDisplay(
+                            title: "metrics.performance.avg_audio".localized,
+                            value: formatDuration(modelStat.avgAudioDuration),
+                            tint: .indigo
+                        )
+                        Spacer()
+                        MetricDisplay(
+                            title: "metrics.performance.avg_enhancement_time".localized,
+                            value: String(format: "%.2f s", modelStat.avgProcessingTime),
+                            tint: .teal
+                        )
+                    }
                 }
-                .frame(maxWidth: .infinity)
             }
         }
     }
