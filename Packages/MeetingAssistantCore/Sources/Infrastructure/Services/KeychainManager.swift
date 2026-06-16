@@ -105,7 +105,12 @@ public enum KeychainManager {
     private static let serviceIdentifier = AppIdentity.keychainServiceIdentifier
     private static let legacyServiceIdentifiers = AppIdentity.legacyKeychainServiceIdentifiers
     private static let providerRegistrationAccountPrefix = "ai_api_key_registration_"
-    private static let consolidatedAccount = "prisma_consolidated_api_keys"
+    private static let consolidatedAccount = "prisma_consolidated_api_keys_v1"
+
+    // MARK: - Cache
+
+    private static let cacheLock = NSRecursiveLock()
+    private static nonisolated(unsafe) var _consolidatedCache: ConsolidatedAPIKeys?
 
     // MARK: - Keys
 
@@ -123,14 +128,13 @@ public enum KeychainManager {
     // MARK: - Consolidated Storage Model
 
     struct ConsolidatedAPIKeys: Codable {
+        static let currentVersion = 1
+
+        var version: Int = Self.currentVersion
         var providerKeys: [String: String] = [:]
         var transcriptionKeys: [String: String] = [:]
         var legacyUnifiedKey: String?
     }
-
-    // MARK: - Cache
-
-    private static nonisolated(unsafe) var consolidatedCache: ConsolidatedAPIKeys?
 
     // MARK: - Errors
 
@@ -158,24 +162,44 @@ public enum KeychainManager {
     // MARK: - Consolidated Storage
 
     private static func loadConsolidated() throws -> ConsolidatedAPIKeys {
-        if let cache = consolidatedCache {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        if let cache = _consolidatedCache {
             return cache
         }
 
-        if let existing = try retrieveConsolidatedBlob() {
-            consolidatedCache = existing
-            return existing
+        do {
+            if let existing = try retrieveConsolidatedBlob() {
+                if existing.version != ConsolidatedAPIKeys.currentVersion {
+                    AppLogger.warning(
+                        "Consolidated API keys version mismatch: \(existing.version) != \(ConsolidatedAPIKeys.currentVersion)",
+                        category: .security
+                    )
+                }
+                _consolidatedCache = existing
+                return existing
+            }
+        } catch {
+            AppLogger.error(
+                "Failed to decode consolidated API keys blob, will re-migrate",
+                category: .security,
+                error: error
+            )
         }
 
         let migrated = try migrateToConsolidated()
-        consolidatedCache = migrated
+        _consolidatedCache = migrated
         return migrated
     }
 
     private static func saveConsolidated(_ keys: ConsolidatedAPIKeys) throws {
         let data = try JSONEncoder().encode(keys)
         try storeConsolidatedBlob(data)
-        consolidatedCache = keys
+
+        cacheLock.lock()
+        _consolidatedCache = keys
+        cacheLock.unlock()
     }
 
     private static func retrieveConsolidatedBlob() throws -> ConsolidatedAPIKeys? {
@@ -252,10 +276,13 @@ public enum KeychainManager {
         if hasData {
             try saveConsolidated(keys)
 
+            // Best-effort cleanup: old individual keys are no longer needed,
+            // but failures don't affect correctness since loadConsolidated
+            // will find them on fallback and re-migrate.
             let keysToDelete = Key.allCases.filter { $0 != .aiAPIKey }
             for key in keysToDelete {
                 for serviceId in allServices {
-                    try delete(account: key.rawValue, serviceIdentifier: serviceId)
+                    try? delete(account: key.rawValue, serviceIdentifier: serviceId)
                 }
             }
         }
@@ -310,6 +337,7 @@ public enum KeychainManager {
     /// - Throws: `KeychainError` if storage fails.
     static func store(_ value: String, for key: Key) throws {
         var consolidated = try loadConsolidated()
+        guard keyValue(in: consolidated, for: key) != value else { return }
         setValue(value, in: &consolidated, for: key)
         try saveConsolidated(consolidated)
     }
@@ -346,6 +374,7 @@ public enum KeychainManager {
     /// - Throws: `KeychainError` if deletion fails.
     static func delete(for key: Key) throws {
         var consolidated = try loadConsolidated()
+        guard keyValue(in: consolidated, for: key) != nil else { return }
         setValue(nil, in: &consolidated, for: key)
         try saveConsolidated(consolidated)
     }
@@ -390,12 +419,20 @@ public enum KeychainManager {
             return value
         }
 
-        // Legacy unified key fallback (from consolidated blob)
+        // Legacy unified key fallback: migrate to provider-specific slot and
+        // delete the old individual entry so the fallback in retrieve(for:)
+        // won't re-migrate it on subsequent calls for other providers.
         if let legacyValue = try retrieve(for: .aiAPIKey), !legacyValue.isEmpty {
             var consolidated = try loadConsolidated()
             setValue(legacyValue, in: &consolidated, for: providerKey)
             setValue(nil, in: &consolidated, for: .aiAPIKey)
             try saveConsolidated(consolidated)
+
+            let allServices = [serviceIdentifier] + legacyServiceIdentifiers
+            for serviceId in allServices {
+                try? delete(account: Key.aiAPIKey.rawValue, serviceIdentifier: serviceId)
+            }
+
             return legacyValue
         }
 
@@ -422,10 +459,19 @@ public enum KeychainManager {
 
     public static func existsAPIKey(for provider: AIProvider) -> Bool {
         let providerKey = apiKeyKey(for: provider)
-        if exists(for: providerKey) {
-            return true
+        let allServices = [serviceIdentifier] + legacyServiceIdentifiers
+
+        do {
+            let consolidated = try loadConsolidated()
+            if keyValue(in: consolidated, for: providerKey) != nil { return true }
+            if keyValue(in: consolidated, for: .aiAPIKey) != nil { return true }
+        } catch {
+            return allServices.contains { exists(account: providerKey.rawValue, serviceIdentifier: $0) }
+                || allServices.contains { exists(account: Key.aiAPIKey.rawValue, serviceIdentifier: $0) }
         }
-        return exists(for: .aiAPIKey)
+
+        return allServices.contains { exists(account: providerKey.rawValue, serviceIdentifier: $0) }
+            || allServices.contains { exists(account: Key.aiAPIKey.rawValue, serviceIdentifier: $0) }
     }
 
     public static func storeTranscriptionAPIKey(_ value: String, for provider: TranscriptionProvider) throws {
@@ -622,6 +668,7 @@ public enum KeychainManager {
         ]
     }
 
+    @available(*, deprecated, message: "Use retrieveAPIKeys(for:) or retrieveAPIKeysMap(allowedProviders:) instead")
     public static func mapAPIKeyItems(
         _ items: [[String: Any]],
         allowedProviders: [AIProvider]
@@ -642,6 +689,23 @@ public enum KeychainManager {
 
             let apiKey = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !apiKey.isEmpty else { continue }
+            valuesByProvider[provider] = apiKey
+        }
+
+        return valuesByProvider
+    }
+
+    /// Reads API keys from consolidated storage for the given providers.
+    /// This is the consolidated-aware replacement for `mapAPIKeyItems(allowedProviders:)`.
+    public static func retrieveAPIKeysMap(allowedProviders: [AIProvider]) throws -> [AIProvider: String] {
+        let consolidated = try loadConsolidated()
+        var valuesByProvider: [AIProvider: String] = [:]
+
+        for provider in allowedProviders {
+            let key = apiKeyKey(for: provider)
+            let apiKey = keyValue(in: consolidated, for: key)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let apiKey, !apiKey.isEmpty else { continue }
             valuesByProvider[provider] = apiKey
         }
 
