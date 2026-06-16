@@ -105,11 +105,12 @@ public enum KeychainManager {
     private static let serviceIdentifier = AppIdentity.keychainServiceIdentifier
     private static let legacyServiceIdentifiers = AppIdentity.legacyKeychainServiceIdentifiers
     private static let providerRegistrationAccountPrefix = "ai_api_key_registration_"
+    private static let consolidatedAccount = "prisma_consolidated_api_keys"
 
     // MARK: - Keys
 
     /// Known keys for Keychain storage.
-    public enum Key: String {
+    public enum Key: String, CaseIterable {
         case aiAPIKey = "ai_api_key"
         case aiAPIKeyOpenAI = "ai_api_key_openai"
         case aiAPIKeyAnthropic = "ai_api_key_anthropic"
@@ -118,6 +119,18 @@ public enum KeychainManager {
         case aiAPIKeyCustom = "ai_api_key_custom"
         case transcriptionAPIKeyElevenLabs = "transcription_api_key_elevenlabs"
     }
+
+    // MARK: - Consolidated Storage Model
+
+    struct ConsolidatedAPIKeys: Codable {
+        var providerKeys: [String: String] = [:]
+        var transcriptionKeys: [String: String] = [:]
+        var legacyUnifiedKey: String?
+    }
+
+    // MARK: - Cache
+
+    private static nonisolated(unsafe) var consolidatedCache: ConsolidatedAPIKeys?
 
     // MARK: - Errors
 
@@ -142,6 +155,152 @@ public enum KeychainManager {
         }
     }
 
+    // MARK: - Consolidated Storage
+
+    private static func loadConsolidated() throws -> ConsolidatedAPIKeys {
+        if let cache = consolidatedCache {
+            return cache
+        }
+
+        if let existing = try retrieveConsolidatedBlob() {
+            consolidatedCache = existing
+            return existing
+        }
+
+        let migrated = try migrateToConsolidated()
+        consolidatedCache = migrated
+        return migrated
+    }
+
+    private static func saveConsolidated(_ keys: ConsolidatedAPIKeys) throws {
+        let data = try JSONEncoder().encode(keys)
+        try storeConsolidatedBlob(data)
+        consolidatedCache = keys
+    }
+
+    private static func retrieveConsolidatedBlob() throws -> ConsolidatedAPIKeys? {
+        var query = baseQuery(account: consolidatedAccount, serviceIdentifier: serviceIdentifier)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        switch status {
+        case errSecSuccess:
+            guard let data = result as? Data,
+                  let keys = try? JSONDecoder().decode(ConsolidatedAPIKeys.self, from: data)
+            else {
+                throw KeychainError.unableToConvertFromData
+            }
+            return keys
+        case errSecItemNotFound:
+            return nil
+        default:
+            throw KeychainError.unexpectedStatus(status)
+        }
+    }
+
+    private static func storeConsolidatedBlob(_ data: Data) throws {
+        let query = baseQuery(account: consolidatedAccount, serviceIdentifier: serviceIdentifier)
+        SecItemDelete(query as CFDictionary)
+
+        var addQuery = query
+        addQuery[kSecValueData as String] = data
+        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+
+        let status = SecItemAdd(addQuery as CFDictionary, nil)
+        guard status == errSecSuccess else {
+            throw KeychainError.unexpectedStatus(status)
+        }
+    }
+
+    private static func migrateToConsolidated() throws -> ConsolidatedAPIKeys {
+        var keys = ConsolidatedAPIKeys()
+        let allServices = [serviceIdentifier] + legacyServiceIdentifiers
+
+        for provider in AIProvider.allCases {
+            let key = apiKeyKey(for: provider)
+            for serviceId in allServices {
+                guard let value = try retrieve(account: key.rawValue, serviceIdentifier: serviceId),
+                      !value.isEmpty
+                else { continue }
+                keys.providerKeys[provider.rawValue] = value
+                break
+            }
+        }
+
+        for serviceId in allServices {
+            guard let value = try retrieve(account: Key.transcriptionAPIKeyElevenLabs.rawValue, serviceIdentifier: serviceId),
+                  !value.isEmpty
+            else { continue }
+            keys.transcriptionKeys[TranscriptionProvider.elevenLabs.rawValue] = value
+            break
+        }
+
+        var hasLegacyKey = false
+        for serviceId in allServices {
+            if let legacyValue = try retrieve(account: Key.aiAPIKey.rawValue, serviceIdentifier: serviceId),
+               !legacyValue.isEmpty {
+                keys.legacyUnifiedKey = legacyValue
+                hasLegacyKey = true
+                break
+            }
+        }
+
+        let hasData = !keys.providerKeys.isEmpty || !keys.transcriptionKeys.isEmpty || hasLegacyKey
+        if hasData {
+            try saveConsolidated(keys)
+
+            let keysToDelete = Key.allCases.filter { $0 != .aiAPIKey }
+            for key in keysToDelete {
+                for serviceId in allServices {
+                    try delete(account: key.rawValue, serviceIdentifier: serviceId)
+                }
+            }
+        }
+
+        return keys
+    }
+
+    private static func keyValue(in consolidated: ConsolidatedAPIKeys, for key: Key) -> String? {
+        switch key {
+        case .aiAPIKey:
+            return consolidated.legacyUnifiedKey
+        case .aiAPIKeyOpenAI:
+            return consolidated.providerKeys[AIProvider.openai.rawValue]
+        case .aiAPIKeyAnthropic:
+            return consolidated.providerKeys[AIProvider.anthropic.rawValue]
+        case .aiAPIKeyGroq:
+            return consolidated.providerKeys[AIProvider.groq.rawValue]
+        case .aiAPIKeyGoogle:
+            return consolidated.providerKeys[AIProvider.google.rawValue]
+        case .aiAPIKeyCustom:
+            return consolidated.providerKeys[AIProvider.custom.rawValue]
+        case .transcriptionAPIKeyElevenLabs:
+            return consolidated.transcriptionKeys[TranscriptionProvider.elevenLabs.rawValue]
+        }
+    }
+
+    private static func setValue(_ value: String?, in consolidated: inout ConsolidatedAPIKeys, for key: Key) {
+        switch key {
+        case .aiAPIKey:
+            consolidated.legacyUnifiedKey = value
+        case .aiAPIKeyOpenAI:
+            consolidated.providerKeys[AIProvider.openai.rawValue] = value
+        case .aiAPIKeyAnthropic:
+            consolidated.providerKeys[AIProvider.anthropic.rawValue] = value
+        case .aiAPIKeyGroq:
+            consolidated.providerKeys[AIProvider.groq.rawValue] = value
+        case .aiAPIKeyGoogle:
+            consolidated.providerKeys[AIProvider.google.rawValue] = value
+        case .aiAPIKeyCustom:
+            consolidated.providerKeys[AIProvider.custom.rawValue] = value
+        case .transcriptionAPIKeyElevenLabs:
+            consolidated.transcriptionKeys[TranscriptionProvider.elevenLabs.rawValue] = value
+        }
+    }
+
     // MARK: - Public API
 
     /// Store a string securely in the Keychain.
@@ -150,29 +309,9 @@ public enum KeychainManager {
     ///   - key: The key to store the value under.
     /// - Throws: `KeychainError` if storage fails.
     static func store(_ value: String, for key: Key) throws {
-        guard let data = value.data(using: .utf8) else {
-            throw KeychainError.unableToConvertToData
-        }
-
-        let query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
-
-        // Delete existing item if present (including legacy services).
-        SecItemDelete(query as CFDictionary)
-        for legacyServiceIdentifier in legacyServiceIdentifiers {
-            let legacyQuery = baseQuery(for: key, serviceIdentifier: legacyServiceIdentifier)
-            SecItemDelete(legacyQuery as CFDictionary)
-        }
-
-        // Add new item
-        var addQuery = query
-        addQuery[kSecValueData as String] = data
-        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-
-        let status = SecItemAdd(addQuery as CFDictionary, nil)
-
-        guard status == errSecSuccess else {
-            throw KeychainError.unexpectedStatus(status)
-        }
+        var consolidated = try loadConsolidated()
+        setValue(value, in: &consolidated, for: key)
+        try saveConsolidated(consolidated)
     }
 
     /// Retrieve a string from the Keychain.
@@ -180,17 +319,22 @@ public enum KeychainManager {
     /// - Returns: The stored string value, or `nil` if not found.
     /// - Throws: `KeychainError` if retrieval fails for reasons other than item not found.
     static func retrieve(for key: Key) throws -> String? {
-        if let value = try retrieve(for: key, serviceIdentifier: serviceIdentifier) {
+        let consolidated = try loadConsolidated()
+
+        if let value = keyValue(in: consolidated, for: key) {
             return value
         }
 
-        for legacyServiceIdentifier in legacyServiceIdentifiers {
-            guard let legacyValue = try retrieve(for: key, serviceIdentifier: legacyServiceIdentifier) else {
-                continue
-            }
+        let allServices = [serviceIdentifier] + legacyServiceIdentifiers
+        for serviceId in allServices {
+            guard let legacyValue = try retrieve(account: key.rawValue, serviceIdentifier: serviceId),
+                  !legacyValue.isEmpty
+            else { continue }
 
-            try store(legacyValue, for: key)
-            try delete(for: key, serviceIdentifier: legacyServiceIdentifier)
+            var mutableConsolidated = consolidated
+            setValue(legacyValue, in: &mutableConsolidated, for: key)
+            try saveConsolidated(mutableConsolidated)
+            try delete(account: key.rawValue, serviceIdentifier: serviceId)
             return legacyValue
         }
 
@@ -201,20 +345,26 @@ public enum KeychainManager {
     /// - Parameter key: The key to delete.
     /// - Throws: `KeychainError` if deletion fails.
     static func delete(for key: Key) throws {
-        try delete(for: key, serviceIdentifier: serviceIdentifier)
-        for legacyServiceIdentifier in legacyServiceIdentifiers {
-            try delete(for: key, serviceIdentifier: legacyServiceIdentifier)
-        }
+        var consolidated = try loadConsolidated()
+        setValue(nil, in: &consolidated, for: key)
+        try saveConsolidated(consolidated)
     }
 
     /// Check if a value exists in the Keychain.
     /// - Parameter key: The key to check.
     /// - Returns: `true` if the key exists, `false` otherwise.
     static func exists(for key: Key) -> Bool {
-        if exists(for: key, serviceIdentifier: serviceIdentifier) {
-            return true
+        do {
+            let consolidated = try loadConsolidated()
+            if keyValue(in: consolidated, for: key) != nil {
+                return true
+            }
+
+            let allServices = [serviceIdentifier] + legacyServiceIdentifiers
+            return allServices.contains { exists(account: key.rawValue, serviceIdentifier: $0) }
+        } catch {
+            return false
         }
-        return legacyServiceIdentifiers.contains { exists(for: key, serviceIdentifier: $0) }
     }
 
     // MARK: - Provider-specific helpers
@@ -240,10 +390,12 @@ public enum KeychainManager {
             return value
         }
 
-        // Legacy fallback
+        // Legacy unified key fallback (from consolidated blob)
         if let legacyValue = try retrieve(for: .aiAPIKey), !legacyValue.isEmpty {
-            try store(legacyValue, for: providerKey)
-            try delete(for: .aiAPIKey)
+            var consolidated = try loadConsolidated()
+            setValue(legacyValue, in: &consolidated, for: providerKey)
+            setValue(nil, in: &consolidated, for: .aiAPIKey)
+            try saveConsolidated(consolidated)
             return legacyValue
         }
 
