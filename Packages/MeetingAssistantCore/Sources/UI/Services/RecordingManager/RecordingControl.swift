@@ -384,7 +384,7 @@ public extension RecordingManager {
                         teardownIncrementalDictationSession()
                         let preparedAudio = await prepareAudioForTranscription(
                             audioURL: finalURL,
-                            allowSilenceRemoval: true
+                            allowSilenceRemoval: shouldRemoveSilenceBeforeTranscription(for: transcriptionSession)
                         )
                         await transcribeRecording(
                             audioURL: preparedAudio.transcriptionURL,
@@ -452,7 +452,7 @@ public extension RecordingManager {
                         teardownIncrementalMeetingSession()
                         let preparedAudio = await prepareAudioForTranscription(
                             audioURL: finalURL,
-                            allowSilenceRemoval: true
+                            allowSilenceRemoval: shouldRemoveSilenceBeforeTranscription(for: transcriptionSession)
                         )
                         await transcribeRecording(
                             audioURL: preparedAudio.transcriptionURL,
@@ -466,7 +466,7 @@ public extension RecordingManager {
                 } else {
                     let preparedAudio = await prepareAudioForTranscription(
                         audioURL: finalURL,
-                        allowSilenceRemoval: true
+                        allowSilenceRemoval: shouldRemoveSilenceBeforeTranscription(for: transcriptionSession)
                     )
                     await transcribeRecording(
                         audioURL: preparedAudio.transcriptionURL,

@@ -9,6 +9,11 @@ extension RecordingManager {
         let cleanupURL: URL?
     }
 
+    func shouldRemoveSilenceBeforeTranscription(for session: TranscriptionSessionSnapshot) -> Bool {
+        let executionMode: TranscriptionExecutionMode = session.meeting.capturePurpose == .dictation ? .dictation : .meeting
+        return !AppSettingsStore.shared.shouldUseRemoteTranscription(for: executionMode)
+    }
+
     func prepareAudioForTranscription(
         audioURL: URL,
         allowSilenceRemoval: Bool

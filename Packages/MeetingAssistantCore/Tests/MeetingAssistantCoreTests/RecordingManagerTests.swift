@@ -914,6 +914,44 @@ extension RecordingManagerTests {
         XCTAssertFalse(FileManager.default.fileExists(atPath: compactedURL.path))
     }
 
+    func testStopRecording_WithRemoteGroqTranscription_SkipsSilenceCompaction() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockMic = try XCTUnwrap(mockMic)
+        let mockSystem = try XCTUnwrap(mockSystem)
+        let mockTranscription = try XCTUnwrap(mockTranscription)
+        let mockCompactor = try XCTUnwrap(mockAudioSilenceCompactor)
+        let settings = AppSettingsStore.shared
+        let originalAudioFormat = settings.audioFormat
+        let originalRemoveSilence = settings.removeSilenceBeforeProcessing
+        let originalSelection = settings.transcriptionDictationSelection
+        let originalModels = settings.transcriptionProviderSelectedModels
+
+        defer {
+            settings.audioFormat = originalAudioFormat
+            settings.removeSilenceBeforeProcessing = originalRemoveSilence
+            settings.transcriptionDictationSelection = originalSelection
+            settings.transcriptionProviderSelectedModels = originalModels
+        }
+
+        settings.audioFormat = .m4a
+        settings.removeSilenceBeforeProcessing = true
+        settings.updateTranscriptionDictationSelection(
+            provider: .groq,
+            model: "whisper-large-v3-turbo"
+        )
+        mockMic.permissionGranted = true
+        mockSystem.permissionGranted = true
+
+        await manager.startCapture(purpose: .dictation)
+        let rawURL = try XCTUnwrap(mockMic.currentRecordingURL)
+        try writeTestAudioFile(at: rawURL)
+
+        await manager.stopRecording()
+
+        XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, rawURL)
+        XCTAssertEqual(mockCompactor.compactCallCount, 0)
+    }
+
     func testStopRecording_WhenCompactionFails_FallsBackToOriginalAudio() async throws {
         let manager = try XCTUnwrap(manager)
         let mockMic = try XCTUnwrap(mockMic)
