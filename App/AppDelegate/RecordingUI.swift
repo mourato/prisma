@@ -93,6 +93,10 @@ extension AppDelegate {
             floatingIndicatorController.show(renderState: startingState)
         } else if isProcessing {
             floatingIndicatorController.show(renderState: processingState)
+        } else if recordingManager.isTranscribing || recordingManager.isForegroundTranscribing {
+            // Safety: if transcription is active, keep showing processing even if
+            // the isProcessing flag didn't capture it due to timing.
+            floatingIndicatorController.show(renderState: processingState)
         } else {
             floatingIndicatorController.hide()
         }
