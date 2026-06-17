@@ -315,6 +315,15 @@ public enum LocalTranscriptionModel: String, CaseIterable, Codable, Sendable {
             false
         }
     }
+
+    public var displayName: String {
+        switch self {
+        case .parakeetTdt06BV3:
+            "settings.service.transcription_provider.model_option.local.parakeet".localized
+        case .cohereTranscribe032026CoreML6Bit:
+            "settings.service.transcription_provider.model_option.local.cohere".localized
+        }
+    }
 }
 
 public enum TranscriptionInputLanguageHint: String, CaseIterable, Codable, Sendable {

@@ -337,8 +337,16 @@ extension RecordingManager {
         audioURL: URL,
         diarizationEnabledOverride: Bool? = nil,
         capturePurpose: CapturePurpose = .meeting,
-        sessionID: UUID? = nil
+        sessionID: UUID? = nil,
+        modelIDOverride: String? = nil
     ) async throws -> TranscriptionResponse {
+        if let modelIDOverride, let client = transcriptionClient as? TranscriptionClient {
+            client.modelIDOverride = modelIDOverride
+        }
+        defer {
+            (transcriptionClient as? TranscriptionClient)?.modelIDOverride = nil
+        }
+
         updateVisibleTranscriptionProgress(
             phase: .processing,
             percentage: Constants.processingProgress,

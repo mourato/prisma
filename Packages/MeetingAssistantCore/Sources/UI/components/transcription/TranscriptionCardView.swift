@@ -17,6 +17,7 @@ public struct TranscriptionCardView: View {
     let isExpanded: Bool
     let audioURL: URL?
     let availablePrompts: [PostProcessingPrompt]
+    let availableTranscriptionModels: [LocalTranscriptionModel]
     let isPostProcessing: Bool
     let postProcessingErrorMessage: String?
     let onToggleExpand: () -> Void
@@ -28,6 +29,7 @@ public struct TranscriptionCardView: View {
         isExpanded: Bool,
         audioURL: URL?,
         availablePrompts: [PostProcessingPrompt] = [],
+        availableTranscriptionModels: [LocalTranscriptionModel] = [],
         isPostProcessing: Bool = false,
         postProcessingErrorMessage: String? = nil,
         onToggleExpand: @escaping () -> Void,
@@ -38,6 +40,7 @@ public struct TranscriptionCardView: View {
         self.isExpanded = isExpanded
         self.audioURL = audioURL
         self.availablePrompts = availablePrompts
+        self.availableTranscriptionModels = availableTranscriptionModels
         self.isPostProcessing = isPostProcessing
         self.postProcessingErrorMessage = postProcessingErrorMessage
         self.onToggleExpand = onToggleExpand
@@ -64,7 +67,7 @@ public struct TranscriptionCardView: View {
         case updateMeetingTitle(String?)
         case updateCapturePurpose(CapturePurpose)
         case reprocess(prompt: PostProcessingPrompt)
-        case retryTranscription
+        case retryTranscription(modelID: String?)
         case info
         case viewPrompt
         case delete
@@ -270,12 +273,25 @@ public struct TranscriptionCardView: View {
                         }
                         .disabled(filteredPrompts.isEmpty || isPostProcessing)
 
-                        Button {
-                            onAction(.retryTranscription)
-                        } label: {
-                            Label("transcription.actions.retry_transcription".localized, systemImage: "arrow.clockwise.circle")
+                        if availableTranscriptionModels.count > 1 {
+                            Menu {
+                                ForEach(availableTranscriptionModels, id: \.rawValue) { model in
+                                    Button(model.displayName) {
+                                        onAction(.retryTranscription(modelID: model.rawValue))
+                                    }
+                                }
+                            } label: {
+                                Label("transcription.actions.retry_transcription".localized, systemImage: "arrow.clockwise.circle")
+                            }
+                            .disabled(audioURL == nil)
+                        } else {
+                            Button {
+                                onAction(.retryTranscription(modelID: nil))
+                            } label: {
+                                Label("transcription.actions.retry_transcription".localized, systemImage: "arrow.clockwise.circle")
+                            }
+                            .disabled(audioURL == nil)
                         }
-                        .disabled(audioURL == nil)
 
                         if canUpdateCapturePurpose {
                             Button {
@@ -639,6 +655,7 @@ private struct TranscriptionCardPreviewContainer: View {
             isExpanded: isExpanded,
             audioURL: nil,
             availablePrompts: PostProcessingPrompt.allPredefined,
+            availableTranscriptionModels: LocalTranscriptionModel.allCases,
             onToggleExpand: { isExpanded.toggle() },
             onAction: { _ in }
         )
@@ -704,6 +721,7 @@ private extension Transcription {
         isExpanded: false,
         audioURL: nil,
         availablePrompts: PostProcessingPrompt.allPredefined,
+        availableTranscriptionModels: LocalTranscriptionModel.allCases,
         onToggleExpand: {},
         onAction: { _ in }
     )

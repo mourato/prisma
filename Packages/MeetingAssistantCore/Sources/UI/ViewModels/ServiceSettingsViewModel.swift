@@ -475,12 +475,7 @@ public final class ServiceSettingsViewModel: ObservableObject {
 
     public func displayName(forModelID modelID: String) -> String {
         if let localModel = MeetingAssistantCoreInfrastructure.LocalTranscriptionModel(rawValue: modelID) {
-            switch localModel {
-            case .parakeetTdt06BV3:
-                "settings.service.transcription_provider.model_option.local.parakeet".localized
-            case .cohereTranscribe032026CoreML6Bit:
-                "settings.service.transcription_provider.model_option.local.cohere".localized
-            }
+            localModel.displayName
         } else if modelID == "scribe_v1" {
             "settings.service.transcription_provider.model_option.elevenlabs.scribe_v1".localized
         } else if modelID == "scribe_v2" {

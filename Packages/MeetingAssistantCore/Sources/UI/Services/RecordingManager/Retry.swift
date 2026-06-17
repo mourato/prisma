@@ -7,9 +7,10 @@ import MeetingAssistantCoreInfrastructure
 // MARK: - Retry Transcription
 
 extension RecordingManager {
-    /// Retry transcription for an existing entry using the currently active model.
+    /// Retry transcription for an existing entry.
     /// - Parameter transcription: Existing transcription to overwrite with new results.
-    public func retryTranscription(for transcription: Transcription) async {
+    /// - Parameter modelID: Optional model override. When nil, uses the currently configured model.
+    public func retryTranscription(for transcription: Transcription, modelID: String? = nil) async {
         guard !isTranscribing else {
             AppLogger.info("Already transcribing", category: .recordingManager)
             return
@@ -17,7 +18,7 @@ extension RecordingManager {
 
         guard let audioURL = resolveRetryAudioURL(for: transcription) else { return }
 
-        await runRetryTranscription(audioURL: audioURL, transcription: transcription)
+        await runRetryTranscription(audioURL: audioURL, transcription: transcription, modelID: modelID)
     }
 
     func resolveRetryAudioURL(for transcription: Transcription) -> URL? {
@@ -36,7 +37,7 @@ extension RecordingManager {
         return audioURL
     }
 
-    func runRetryTranscription(audioURL: URL, transcription: Transcription) async {
+    func runRetryTranscription(audioURL: URL, transcription: Transcription, modelID: String? = nil) async {
         let preparedAudio = await prepareAudioForTranscription(
             audioURL: audioURL,
             allowSilenceRemoval: true
@@ -57,7 +58,8 @@ extension RecordingManager {
             let updated = try await performRetryTranscription(
                 audioURL: preparedAudio.transcriptionURL,
                 transcription: transcription,
-                audioDuration: audioDuration
+                audioDuration: audioDuration,
+                modelID: modelID
             )
             try await storage.saveTranscription(updated)
             RecordingIndicatorProcessingStateStore.shared.update(
@@ -78,7 +80,8 @@ extension RecordingManager {
     func performRetryTranscription(
         audioURL: URL,
         transcription: Transcription,
-        audioDuration: Double?
+        audioDuration: Double?,
+        modelID: String? = nil
     ) async throws -> Transcription {
         try await performHealthCheck(capturePurpose: transcription.meeting.capturePurpose)
 
@@ -87,7 +90,8 @@ extension RecordingManager {
         let response = try await performTranscription(
             audioURL: audioURL,
             diarizationEnabledOverride: diarizationEnabledOverride,
-            capturePurpose: transcription.meeting.capturePurpose
+            capturePurpose: transcription.meeting.capturePurpose,
+            modelIDOverride: modelID
         )
         let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
         let settings = AppSettingsStore.shared

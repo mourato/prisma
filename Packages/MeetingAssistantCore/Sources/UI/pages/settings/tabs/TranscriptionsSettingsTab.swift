@@ -307,12 +307,13 @@ public struct TranscriptionsSettingsTab: View {
                                 .padding(.top, 12)
                                 .frame(width: 50, alignment: .trailing)
 
-                            TranscriptionCardView(
+                             TranscriptionCardView(
                                 transcription: transcription,
                                 transcriptionDetail: viewModel.selectedId == transcription.id ? viewModel.selectedTranscription : nil,
                                 isExpanded: viewModel.selectedId == transcription.id,
                                 audioURL: transcription.audioFilePath != nil ? URL(fileURLWithPath: transcription.audioFilePath!) : nil,
                                 availablePrompts: viewModel.availablePrompts(for: transcription),
+                                availableTranscriptionModels: LocalTranscriptionModel.allCases,
                                 isPostProcessing: viewModel.isPostProcessing(transcriptionID: transcription.id),
                                 postProcessingErrorMessage: viewModel.postProcessingError(for: transcription.id),
                                 onToggleExpand: {
@@ -458,9 +459,9 @@ public struct TranscriptionsSettingsTab: View {
             break
         case .viewPrompt:
             break
-        case .retryTranscription:
+        case let .retryTranscription(modelID):
             Task {
-                await viewModel.retryTranscription(for: metadata)
+                await viewModel.retryTranscription(for: metadata, modelID: modelID)
             }
         case .delete:
             viewModel.confirmDeleteTranscription(metadata)

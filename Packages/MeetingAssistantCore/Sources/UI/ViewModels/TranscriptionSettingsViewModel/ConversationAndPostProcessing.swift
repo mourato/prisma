@@ -441,7 +441,7 @@ public extension TranscriptionSettingsViewModel {
         }
     }
 
-    func retryTranscription(for metadata: TranscriptionMetadata) async {
+    func retryTranscription(for metadata: TranscriptionMetadata, modelID: String? = nil) async {
         guard !recordingManager.isTranscribing else {
             return
         }
@@ -462,7 +462,7 @@ public extension TranscriptionSettingsViewModel {
                 return
             }
 
-            await recordingManager.retryTranscription(for: transcription)
+            await recordingManager.retryTranscription(for: transcription, modelID: modelID)
             await loadTranscriptions()
             if selectedId == metadata.id {
                 await loadFullTranscription(id: metadata.id)
