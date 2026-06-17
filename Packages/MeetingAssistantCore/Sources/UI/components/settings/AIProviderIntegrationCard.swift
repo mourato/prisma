@@ -313,6 +313,21 @@ private struct PreviewKeychainProvider: KeychainProvider {
     func existsAPIKey(for provider: AIProvider) -> Bool {
         false
     }
+
+    func storeAPIKey(_ value: String, for registrationID: UUID) throws {}
+    func retrieveAPIKey(for registrationID: UUID) throws -> String? {
+        nil
+    }
+
+    func retrieveAPIKeys(for registrationIDs: [UUID]) throws -> [UUID: String] {
+        [:]
+    }
+
+    func existsAPIKey(for registrationID: UUID) -> Bool {
+        false
+    }
+
+    func deleteAPIKey(for registrationID: UUID) throws {}
 }
 
 private struct PreviewLLMService: LLMService {

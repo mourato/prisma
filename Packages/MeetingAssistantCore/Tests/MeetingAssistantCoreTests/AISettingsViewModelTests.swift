@@ -1,5 +1,5 @@
-import XCTest
 @testable import MeetingAssistantCore
+import XCTest
 
 @MainActor
 final class AISettingsViewModelTests: XCTestCase {
@@ -48,7 +48,7 @@ final class AISettingsViewModelTests: XCTestCase {
         let keychain = MockKeychainProvider()
         let llmService = MockLLMService()
         try? keychain.store("sk-saved", for: KeychainManager.apiKeyKey(for: .openai))
-        llmService.fetchModelsResult = [try XCTUnwrap(LLMModel.fixture(id: "gpt-4o"))]
+        llmService.fetchModelsResult = try [XCTUnwrap(LLMModel.fixture(id: "gpt-4o"))]
 
         let viewModel = AISettingsViewModel(settings: settings, keychain: keychain, llmService: llmService)
 
@@ -142,7 +142,7 @@ final class AISettingsViewModelTests: XCTestCase {
         let keychain = MockKeychainProvider()
         let llmService = MockLLMService()
         try keychain.store("sk-google", for: KeychainManager.apiKeyKey(for: .google))
-        llmService.fetchModelsResult = [try XCTUnwrap(LLMModel.fixture(id: "gemini-2.0-flash"))]
+        llmService.fetchModelsResult = try [XCTUnwrap(LLMModel.fixture(id: "gemini-2.0-flash"))]
 
         settings.enhancementsAISelection = EnhancementsAISelection(
             provider: .google,
@@ -158,7 +158,7 @@ final class AISettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.enhancementsAvailableModels.map(\.id), ["gemini-2.0-flash"])
     }
 
-    func testUpdatingEnhancementsSelection_DoesNotChangeDefaultAPISelection() async {
+    func testUpdatingEnhancementsSelection_DoesNotChangeDefaultAPISelection() {
         settings.updateAIConfiguration(
             provider: .openai,
             baseURL: AIProvider.openai.defaultBaseURL,
@@ -173,7 +173,7 @@ final class AISettingsViewModelTests: XCTestCase {
         XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "claude-3-7-sonnet")
     }
 
-    func testPrepareEnhancementsProvider_UpdatesActiveProviderWithoutMutatingMeetingSelection() async {
+    func testPrepareEnhancementsProvider_UpdatesActiveProviderWithoutMutatingMeetingSelection() {
         settings.enhancementsAISelection = EnhancementsAISelection(
             provider: .openai,
             selectedModel: "gpt-4o-mini"
@@ -215,9 +215,9 @@ final class AISettingsViewModelTests: XCTestCase {
         let llmService = MockLLMService()
         try keychain.store("sk-openai", for: KeychainManager.apiKeyKey(for: .openai))
         try keychain.store("sk-google", for: KeychainManager.apiKeyKey(for: .google))
-        llmService.fetchModelsResultsByProvider = [
-            .openai: [try XCTUnwrap(LLMModel.fixture(id: "gpt-4o-mini"))],
-            .google: [try XCTUnwrap(LLMModel.fixture(id: "gemini-2.0-flash"))],
+        llmService.fetchModelsResultsByProvider = try [
+            .openai: [XCTUnwrap(LLMModel.fixture(id: "gpt-4o-mini"))],
+            .google: [XCTUnwrap(LLMModel.fixture(id: "gemini-2.0-flash"))],
         ]
 
         let viewModel = AISettingsViewModel(
@@ -253,8 +253,8 @@ final class AISettingsViewModelTests: XCTestCase {
         let keychain = MockKeychainProvider()
         let llmService = MockLLMService()
         try keychain.store("sk-legacy-openai", for: .aiAPIKey)
-        llmService.fetchModelsResultsByProvider = [
-            .openai: [try XCTUnwrap(LLMModel.fixture(id: "gpt-4.1-mini"))],
+        llmService.fetchModelsResultsByProvider = try [
+            .openai: [XCTUnwrap(LLMModel.fixture(id: "gpt-4.1-mini"))],
         ]
 
         let viewModel = AISettingsViewModel(
@@ -281,6 +281,7 @@ final class AISettingsViewModelTests: XCTestCase {
 
 private final class MockKeychainProvider: KeychainProvider, @unchecked Sendable {
     private var values: [KeychainManager.Key: String] = [:]
+    private var registrationValues: [UUID: String] = [:]
     private(set) var retrieveAPIKeyCallCount = 0
     private(set) var retrieveAPIKeysCallCount = 0
     private(set) var existsAPIKeyCallCount = 0
@@ -334,6 +335,33 @@ private final class MockKeychainProvider: KeychainProvider, @unchecked Sendable 
         existsAPIKeyCallCount += 1
         let providerKey = KeychainManager.apiKeyKey(for: provider)
         return values[providerKey] != nil || values[.aiAPIKey] != nil
+    }
+
+    func storeAPIKey(_ value: String, for registrationID: UUID) throws {
+        registrationValues[registrationID] = value
+    }
+
+    func retrieveAPIKey(for registrationID: UUID) throws -> String? {
+        registrationValues[registrationID]
+    }
+
+    func retrieveAPIKeys(for registrationIDs: [UUID]) throws -> [UUID: String] {
+        registrationIDs.reduce(into: [UUID: String]()) { result, registrationID in
+            guard let value = registrationValues[registrationID]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !value.isEmpty
+            else {
+                return
+            }
+            result[registrationID] = value
+        }
+    }
+
+    func existsAPIKey(for registrationID: UUID) -> Bool {
+        registrationValues[registrationID] != nil
+    }
+
+    func deleteAPIKey(for registrationID: UUID) throws {
+        registrationValues.removeValue(forKey: registrationID)
     }
 }
 

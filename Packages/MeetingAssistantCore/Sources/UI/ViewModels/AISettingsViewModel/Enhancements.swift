@@ -404,12 +404,15 @@ public extension AISettingsViewModel {
         let providerKeysByProvider = try keychain.retrieveAPIKeys(
             for: Array(Set(registrations.map(\.provider)))
         )
+        let registrationKeysByID = try keychain.retrieveAPIKeys(
+            for: registrations.map(\.id)
+        )
         var hadFailure = false
 
         for registration in registrations {
             let provider = registration.provider
 
-            let registrationKey = (try? KeychainManager.retrieveAPIKey(for: registration.id))?
+            let registrationKey = registrationKeysByID[registration.id]?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             let apiKey = if let registrationKey,
                             !registrationKey.isEmpty
@@ -524,7 +527,7 @@ public extension AISettingsViewModel {
     ) throws {
         do {
             if let registrationID {
-                try KeychainManager.storeAPIKey(value, for: registrationID)
+                try keychain.storeAPIKey(value, for: registrationID)
             } else {
                 let providerKey = KeychainManager.apiKeyKey(for: provider)
                 try keychain.store(value, for: providerKey)
@@ -542,7 +545,7 @@ public extension AISettingsViewModel {
         provider: AIProvider
     ) -> String {
         if let registrationID,
-           let key = (try? KeychainManager.retrieveAPIKey(for: registrationID))?
+           let key = (try? keychain.retrieveAPIKey(for: registrationID))?
            .trimmingCharacters(in: .whitespacesAndNewlines),
            !key.isEmpty
         {

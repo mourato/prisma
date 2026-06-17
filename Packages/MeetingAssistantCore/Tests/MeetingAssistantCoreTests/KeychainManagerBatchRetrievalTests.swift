@@ -1,8 +1,36 @@
+@testable import MeetingAssistantCore
 import Security
 import XCTest
-@testable import MeetingAssistantCore
 
 final class KeychainManagerBatchRetrievalTests: XCTestCase {
+    func testRegistrationAPIKeyAccount_IsStableLowercaseKey() throws {
+        let registrationID = try XCTUnwrap(UUID(uuidString: "9E6F0DB4-7B48-4599-A7C5-47CB7C2F368A"))
+
+        XCTAssertEqual(
+            KeychainManager.registrationAPIKeyAccount(for: registrationID),
+            "ai_api_key_registration_9e6f0db4-7b48-4599-a7c5-47cb7c2f368a"
+        )
+    }
+
+    func testRegistrationAPIKeys_StoreRetrieveBatchAndDelete() throws {
+        let registrationID = UUID()
+        let apiKey = "sk-registration-\(registrationID.uuidString)"
+        try? KeychainManager.deleteAPIKey(for: registrationID)
+        defer { try? KeychainManager.deleteAPIKey(for: registrationID) }
+
+        try KeychainManager.storeAPIKey(apiKey, for: registrationID)
+
+        XCTAssertTrue(KeychainManager.existsAPIKey(for: registrationID))
+        XCTAssertEqual(try KeychainManager.retrieveAPIKey(for: registrationID), apiKey)
+        XCTAssertEqual(try KeychainManager.retrieveAPIKeys(for: [registrationID]), [registrationID: apiKey])
+
+        try KeychainManager.deleteAPIKey(for: registrationID)
+
+        XCTAssertFalse(KeychainManager.existsAPIKey(for: registrationID))
+        XCTAssertNil(try KeychainManager.retrieveAPIKey(for: registrationID))
+        XCTAssertEqual(try KeychainManager.retrieveAPIKeys(for: [registrationID]), [:])
+    }
+
     func testMapAPIKeyItems_MapsKnownProviderAccounts() {
         let items: [[String: Any]] = [
             [

@@ -12,6 +12,11 @@ public protocol KeychainProvider: Sendable {
     func retrieveAPIKey(for provider: AIProvider) throws -> String?
     func retrieveAPIKeys(for providers: [AIProvider]) throws -> [AIProvider: String]
     func existsAPIKey(for provider: AIProvider) -> Bool
+    func storeAPIKey(_ value: String, for registrationID: UUID) throws
+    func retrieveAPIKey(for registrationID: UUID) throws -> String?
+    func retrieveAPIKeys(for registrationIDs: [UUID]) throws -> [UUID: String]
+    func existsAPIKey(for registrationID: UUID) -> Bool
+    func deleteAPIKey(for registrationID: UUID) throws
     func storeTranscriptionAPIKey(_ value: String, for provider: TranscriptionProvider) throws
     func retrieveTranscriptionAPIKey(for provider: TranscriptionProvider) throws -> String?
     func existsTranscriptionAPIKey(for provider: TranscriptionProvider) -> Bool
@@ -32,6 +37,26 @@ public extension KeychainProvider {
         }
 
         return valuesByProvider
+    }
+
+    func storeAPIKey(_ value: String, for registrationID: UUID) throws {
+        try KeychainManager.storeAPIKey(value, for: registrationID)
+    }
+
+    func retrieveAPIKey(for registrationID: UUID) throws -> String? {
+        try KeychainManager.retrieveAPIKey(for: registrationID)
+    }
+
+    func retrieveAPIKeys(for registrationIDs: [UUID]) throws -> [UUID: String] {
+        try KeychainManager.retrieveAPIKeys(for: registrationIDs)
+    }
+
+    func existsAPIKey(for registrationID: UUID) -> Bool {
+        KeychainManager.existsAPIKey(for: registrationID)
+    }
+
+    func deleteAPIKey(for registrationID: UUID) throws {
+        try KeychainManager.deleteAPIKey(for: registrationID)
     }
 
     func storeTranscriptionAPIKey(_ value: String, for provider: TranscriptionProvider) throws {
@@ -81,6 +106,26 @@ public struct DefaultKeychainProvider: KeychainProvider {
         KeychainManager.existsAPIKey(for: provider)
     }
 
+    public func storeAPIKey(_ value: String, for registrationID: UUID) throws {
+        try KeychainManager.storeAPIKey(value, for: registrationID)
+    }
+
+    public func retrieveAPIKey(for registrationID: UUID) throws -> String? {
+        try KeychainManager.retrieveAPIKey(for: registrationID)
+    }
+
+    public func retrieveAPIKeys(for registrationIDs: [UUID]) throws -> [UUID: String] {
+        try KeychainManager.retrieveAPIKeys(for: registrationIDs)
+    }
+
+    public func existsAPIKey(for registrationID: UUID) -> Bool {
+        KeychainManager.existsAPIKey(for: registrationID)
+    }
+
+    public func deleteAPIKey(for registrationID: UUID) throws {
+        try KeychainManager.deleteAPIKey(for: registrationID)
+    }
+
     public func storeTranscriptionAPIKey(_ value: String, for provider: TranscriptionProvider) throws {
         try KeychainManager.storeTranscriptionAPIKey(value, for: provider)
     }
@@ -110,7 +155,7 @@ public enum KeychainManager {
     // MARK: - Cache
 
     private static let cacheLock = NSRecursiveLock()
-    private static nonisolated(unsafe) var _consolidatedCache: ConsolidatedAPIKeys?
+    private nonisolated(unsafe) static var _consolidatedCache: ConsolidatedAPIKeys?
 
     // MARK: - Keys
 
@@ -133,7 +178,27 @@ public enum KeychainManager {
         var version: Int = Self.currentVersion
         var providerKeys: [String: String] = [:]
         var transcriptionKeys: [String: String] = [:]
+        var registrationKeys: [String: String] = [:]
         var legacyUnifiedKey: String?
+
+        enum CodingKeys: String, CodingKey {
+            case version
+            case providerKeys
+            case transcriptionKeys
+            case registrationKeys
+            case legacyUnifiedKey
+        }
+
+        init() {}
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            version = try container.decodeIfPresent(Int.self, forKey: .version) ?? Self.currentVersion
+            providerKeys = try container.decodeIfPresent([String: String].self, forKey: .providerKeys) ?? [:]
+            transcriptionKeys = try container.decodeIfPresent([String: String].self, forKey: .transcriptionKeys) ?? [:]
+            registrationKeys = try container.decodeIfPresent([String: String].self, forKey: .registrationKeys) ?? [:]
+            legacyUnifiedKey = try container.decodeIfPresent(String.self, forKey: .legacyUnifiedKey)
+        }
     }
 
     // MARK: - Errors
@@ -265,7 +330,8 @@ public enum KeychainManager {
         var hasLegacyKey = false
         for serviceId in allServices {
             if let legacyValue = try retrieve(account: Key.aiAPIKey.rawValue, serviceIdentifier: serviceId),
-               !legacyValue.isEmpty {
+               !legacyValue.isEmpty
+            {
                 keys.legacyUnifiedKey = legacyValue
                 hasLegacyKey = true
                 break
@@ -293,19 +359,19 @@ public enum KeychainManager {
     private static func keyValue(in consolidated: ConsolidatedAPIKeys, for key: Key) -> String? {
         switch key {
         case .aiAPIKey:
-            return consolidated.legacyUnifiedKey
+            consolidated.legacyUnifiedKey
         case .aiAPIKeyOpenAI:
-            return consolidated.providerKeys[AIProvider.openai.rawValue]
+            consolidated.providerKeys[AIProvider.openai.rawValue]
         case .aiAPIKeyAnthropic:
-            return consolidated.providerKeys[AIProvider.anthropic.rawValue]
+            consolidated.providerKeys[AIProvider.anthropic.rawValue]
         case .aiAPIKeyGroq:
-            return consolidated.providerKeys[AIProvider.groq.rawValue]
+            consolidated.providerKeys[AIProvider.groq.rawValue]
         case .aiAPIKeyGoogle:
-            return consolidated.providerKeys[AIProvider.google.rawValue]
+            consolidated.providerKeys[AIProvider.google.rawValue]
         case .aiAPIKeyCustom:
-            return consolidated.providerKeys[AIProvider.custom.rawValue]
+            consolidated.providerKeys[AIProvider.custom.rawValue]
         case .transcriptionAPIKeyElevenLabs:
-            return consolidated.transcriptionKeys[TranscriptionProvider.elevenLabs.rawValue]
+            consolidated.transcriptionKeys[TranscriptionProvider.elevenLabs.rawValue]
         }
     }
 
@@ -488,22 +554,22 @@ public enum KeychainManager {
     public static func retrieveTranscriptionAPIKey(for provider: TranscriptionProvider) throws -> String? {
         switch provider {
         case .local:
-            return nil
+            nil
         case .groq:
-            return try retrieveAPIKey(for: .groq)
+            try retrieveAPIKey(for: .groq)
         case .elevenLabs:
-            return try retrieve(for: .transcriptionAPIKeyElevenLabs)
+            try retrieve(for: .transcriptionAPIKeyElevenLabs)
         }
     }
 
     public static func existsTranscriptionAPIKey(for provider: TranscriptionProvider) -> Bool {
         switch provider {
         case .local:
-            return true
+            true
         case .groq:
-            return existsAPIKey(for: .groq)
+            existsAPIKey(for: .groq)
         case .elevenLabs:
-            return exists(for: .transcriptionAPIKeyElevenLabs)
+            exists(for: .transcriptionAPIKeyElevenLabs)
         }
     }
 
@@ -523,45 +589,42 @@ public enum KeychainManager {
     }
 
     public static func storeAPIKey(_ value: String, for registrationID: UUID) throws {
-        guard let data = value.data(using: .utf8) else {
-            throw KeychainError.unableToConvertToData
-        }
-
         let account = registrationAPIKeyAccount(for: registrationID)
-        let query = baseQuery(account: account, serviceIdentifier: serviceIdentifier)
-
-        SecItemDelete(query as CFDictionary)
-        for legacyServiceIdentifier in legacyServiceIdentifiers {
-            let legacyQuery = baseQuery(account: account, serviceIdentifier: legacyServiceIdentifier)
-            SecItemDelete(legacyQuery as CFDictionary)
+        var consolidated = try loadConsolidated()
+        guard consolidated.registrationKeys[account] != value else {
+            for serviceId in [serviceIdentifier] + legacyServiceIdentifiers {
+                try? delete(account: account, serviceIdentifier: serviceId)
+            }
+            return
         }
 
-        var addQuery = query
-        addQuery[kSecValueData as String] = data
-        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        consolidated.registrationKeys[account] = value
+        try saveConsolidated(consolidated)
 
-        let status = SecItemAdd(addQuery as CFDictionary, nil)
-        guard status == errSecSuccess else {
-            throw KeychainError.unexpectedStatus(status)
+        for serviceId in [serviceIdentifier] + legacyServiceIdentifiers {
+            try? delete(account: account, serviceIdentifier: serviceId)
         }
     }
 
     public static func retrieveAPIKey(for registrationID: UUID) throws -> String? {
         let account = registrationAPIKeyAccount(for: registrationID)
 
-        if let value = try retrieve(account: account, serviceIdentifier: serviceIdentifier), !value.isEmpty {
+        let consolidated = try loadConsolidated()
+        if let value = consolidated.registrationKeys[account], !value.isEmpty {
             return value
         }
 
-        for legacyServiceIdentifier in legacyServiceIdentifiers {
-            guard let legacyValue = try retrieve(account: account, serviceIdentifier: legacyServiceIdentifier),
+        for serviceId in [serviceIdentifier] + legacyServiceIdentifiers {
+            guard let legacyValue = try retrieve(account: account, serviceIdentifier: serviceId),
                   !legacyValue.isEmpty
             else {
                 continue
             }
 
-            try storeAPIKey(legacyValue, for: registrationID)
-            try delete(account: account, serviceIdentifier: legacyServiceIdentifier)
+            var mutableConsolidated = consolidated
+            mutableConsolidated.registrationKeys[account] = legacyValue
+            try saveConsolidated(mutableConsolidated)
+            try? delete(account: account, serviceIdentifier: serviceId)
             return legacyValue
         }
 
@@ -569,10 +632,26 @@ public enum KeychainManager {
     }
 
     public static func retrieveAPIKeys(for registrationIDs: [UUID]) throws -> [UUID: String] {
+        let consolidated = try loadConsolidated()
+        var mutableConsolidated = consolidated
         var valuesByRegistrationID: [UUID: String] = [:]
+        var migratedAccounts: [(account: String, serviceIdentifier: String)] = []
 
         for registrationID in registrationIDs {
-            let normalizedAPIKey = try retrieveAPIKey(for: registrationID)?
+            let account = registrationAPIKeyAccount(for: registrationID)
+            let consolidatedValue = mutableConsolidated.registrationKeys[account]
+            let legacyValue: String?
+
+            if consolidatedValue == nil {
+                legacyValue = try legacyRegistrationAPIKey(for: account, migratedAccounts: &migratedAccounts)
+                if let legacyValue, !legacyValue.isEmpty {
+                    mutableConsolidated.registrationKeys[account] = legacyValue
+                }
+            } else {
+                legacyValue = nil
+            }
+
+            let normalizedAPIKey = (consolidatedValue ?? legacyValue)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             guard
                 let apiKey = normalizedAPIKey,
@@ -583,11 +662,28 @@ public enum KeychainManager {
             valuesByRegistrationID[registrationID] = apiKey
         }
 
+        if mutableConsolidated.registrationKeys != consolidated.registrationKeys {
+            try saveConsolidated(mutableConsolidated)
+            for migratedAccount in migratedAccounts {
+                try? delete(account: migratedAccount.account, serviceIdentifier: migratedAccount.serviceIdentifier)
+            }
+        }
+
         return valuesByRegistrationID
     }
 
     public static func existsAPIKey(for registrationID: UUID) -> Bool {
         let account = registrationAPIKeyAccount(for: registrationID)
+        do {
+            let consolidated = try loadConsolidated()
+            if consolidated.registrationKeys[account] != nil { return true }
+        } catch {
+            return exists(account: account, serviceIdentifier: serviceIdentifier)
+                || legacyServiceIdentifiers.contains {
+                    exists(account: account, serviceIdentifier: $0)
+                }
+        }
+
         if exists(account: account, serviceIdentifier: serviceIdentifier) {
             return true
         }
@@ -598,10 +694,33 @@ public enum KeychainManager {
 
     public static func deleteAPIKey(for registrationID: UUID) throws {
         let account = registrationAPIKeyAccount(for: registrationID)
+        var consolidated = try loadConsolidated()
+        if consolidated.registrationKeys.removeValue(forKey: account) != nil {
+            try saveConsolidated(consolidated)
+        }
+
         try delete(account: account, serviceIdentifier: serviceIdentifier)
         for legacyServiceIdentifier in legacyServiceIdentifiers {
             try delete(account: account, serviceIdentifier: legacyServiceIdentifier)
         }
+    }
+
+    private static func legacyRegistrationAPIKey(
+        for account: String,
+        migratedAccounts: inout [(account: String, serviceIdentifier: String)]
+    ) throws -> String? {
+        for serviceId in [serviceIdentifier] + legacyServiceIdentifiers {
+            guard let legacyValue = try retrieve(account: account, serviceIdentifier: serviceId),
+                  !legacyValue.isEmpty
+            else {
+                continue
+            }
+
+            migratedAccounts.append((account, serviceId))
+            return legacyValue
+        }
+
+        return nil
     }
 
     private static func retrieve(for key: Key, serviceIdentifier: String) throws -> String? {
