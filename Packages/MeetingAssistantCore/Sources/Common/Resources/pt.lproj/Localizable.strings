@@ -1018,6 +1018,8 @@
 "error.transcription.invalid_response" = "Resposta inválida do serviço";
 "error.transcription.invalid_url" = "URL inválida: %@";
 "error.transcription.failed" = "Falha na transcrição: %@";
+"error.transcription.remote_missing_api_key.groq" = "A chave de API da Groq está ausente. Salve uma chave de API da Groq nos Ajustes.";
+"error.transcription.remote_missing_api_key.elevenlabs" = "A chave de API da ElevenLabs está ausente. Salve uma chave de API da ElevenLabs nos Ajustes.";
 
 /* AI Prompts */
 "prompt.clean_transcription.title" = "Transcrição Limpa";

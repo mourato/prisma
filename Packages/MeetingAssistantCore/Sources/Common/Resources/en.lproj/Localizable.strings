@@ -1017,6 +1017,8 @@
 "error.transcription.invalid_response" = "Invalid service response";
 "error.transcription.invalid_url" = "Invalid URL: %@";
 "error.transcription.failed" = "Transcription failed: %@";
+"error.transcription.remote_missing_api_key.groq" = "Groq API key is missing. Save a Groq API key in Settings.";
+"error.transcription.remote_missing_api_key.elevenlabs" = "ElevenLabs API key is missing. Save an ElevenLabs API key in Settings.";
 
 /* AI Prompts */
 "prompt.clean_transcription.title" = "Clean Transcription";

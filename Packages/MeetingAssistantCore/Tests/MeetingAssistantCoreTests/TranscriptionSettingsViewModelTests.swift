@@ -80,6 +80,32 @@ extension TranscriptionSettingsViewModelTests {
         XCTAssertEqual(zoomMetadata?.duration ?? 0, 120, accuracy: 0.1)
     }
 
+    func testLoadTranscriptions_IncludesFailedEmptyHistoryItems() async {
+        let failedId = UUID()
+        storage.mockTranscriptions = [
+            Transcription(
+                id: failedId,
+                meeting: Meeting(
+                    id: failedId,
+                    app: .unknown,
+                    capturePurpose: .dictation,
+                    startTime: Date()
+                ),
+                segments: [],
+                text: "",
+                rawText: "",
+                lifecycleState: .failed,
+                postProcessingFailureReason: "Transcription failed"
+            ),
+        ]
+
+        await viewModel.loadTranscriptions()
+
+        XCTAssertEqual(viewModel.transcriptions.count, 1)
+        XCTAssertEqual(viewModel.transcriptions.first?.id, failedId)
+        XCTAssertEqual(viewModel.transcriptions.first?.lifecycleState, .failed)
+    }
+
     func testSelectTranscriptionLoadsFullData() async {
         // Given
         let mockId = UUID()
@@ -1063,8 +1089,13 @@ extension TranscriptionSettingsViewModelTests {
 class MockSavePanel: NSSavePanel, @unchecked Sendable {
     var mockRunModalResponse: NSApplication.ModalResponse = .cancel
     var mockURL: URL?
-    override var url: URL? { mockURL }
-    override func runModal() -> NSApplication.ModalResponse { mockRunModalResponse }
+    override var url: URL? {
+        mockURL
+    }
+
+    override func runModal() -> NSApplication.ModalResponse {
+        mockRunModalResponse
+    }
 }
 
 class MockSummaryExportHelper: SummaryExportHelperProtocol, @unchecked Sendable {
@@ -1085,6 +1116,6 @@ class MockSummaryExportHelper: SummaryExportHelperProtocol, @unchecked Sendable 
     }
 
     func defaultExportFilename(for transcription: Transcription) -> String {
-        return "mock_file"
+        "mock_file"
     }
 }

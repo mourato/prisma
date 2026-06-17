@@ -321,6 +321,17 @@ extension AppDelegate {
             }
             .store(in: &cancellables)
 
+        NotificationCenter.default.publisher(for: .meetingAssistantTranscriptionFailed)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                let message = notification.userInfo?[AppNotifications.UserInfoKey.transcriptionErrorMessage] as? String
+                self?.floatingIndicatorController.showError(
+                    message ?? "notification.transcription_failed".localized,
+                    autoHideAfter: 4.0
+                )
+            }
+            .store(in: &cancellables)
+
         refreshRecordingUIState()
     }
 

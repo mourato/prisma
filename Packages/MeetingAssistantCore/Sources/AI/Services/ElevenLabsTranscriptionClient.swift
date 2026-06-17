@@ -39,7 +39,7 @@ public final class ElevenLabsTranscriptionClient {
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         guard !apiKey.isEmpty else {
-            throw TranscriptionError.transcriptionFailed("ElevenLabs API key is missing")
+            throw TranscriptionError.transcriptionFailed("error.transcription.remote_missing_api_key.elevenlabs".localized)
         }
 
         return apiKey

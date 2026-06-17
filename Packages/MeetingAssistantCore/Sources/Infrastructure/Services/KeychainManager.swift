@@ -540,48 +540,35 @@ public enum KeychainManager {
             || allServices.contains { exists(account: Key.aiAPIKey.rawValue, serviceIdentifier: $0) }
     }
 
-    public static func storeTranscriptionAPIKey(_ value: String, for provider: TranscriptionProvider) throws {
-        switch provider {
-        case .local:
-            return
-        case .groq:
-            try store(value, for: .aiAPIKeyGroq)
-        case .elevenLabs:
-            try store(value, for: .transcriptionAPIKeyElevenLabs)
-        }
-    }
-
-    public static func retrieveTranscriptionAPIKey(for provider: TranscriptionProvider) throws -> String? {
+    public static func transcriptionAPIKeyKey(for provider: TranscriptionProvider) -> Key? {
         switch provider {
         case .local:
             nil
         case .groq:
-            try retrieveAPIKey(for: .groq)
+            .aiAPIKeyGroq
         case .elevenLabs:
-            try retrieve(for: .transcriptionAPIKeyElevenLabs)
+            .transcriptionAPIKeyElevenLabs
         }
+    }
+
+    public static func storeTranscriptionAPIKey(_ value: String, for provider: TranscriptionProvider) throws {
+        guard let key = transcriptionAPIKeyKey(for: provider) else { return }
+        try store(value, for: key)
+    }
+
+    public static func retrieveTranscriptionAPIKey(for provider: TranscriptionProvider) throws -> String? {
+        guard let key = transcriptionAPIKeyKey(for: provider) else { return nil }
+        return key == .aiAPIKeyGroq ? try retrieveAPIKey(for: .groq) : try retrieve(for: key)
     }
 
     public static func existsTranscriptionAPIKey(for provider: TranscriptionProvider) -> Bool {
-        switch provider {
-        case .local:
-            true
-        case .groq:
-            existsAPIKey(for: .groq)
-        case .elevenLabs:
-            exists(for: .transcriptionAPIKeyElevenLabs)
-        }
+        guard let key = transcriptionAPIKeyKey(for: provider) else { return true }
+        return key == .aiAPIKeyGroq ? existsAPIKey(for: .groq) : exists(for: key)
     }
 
     public static func deleteTranscriptionAPIKey(for provider: TranscriptionProvider) throws {
-        switch provider {
-        case .local:
-            return
-        case .groq:
-            try delete(for: .aiAPIKeyGroq)
-        case .elevenLabs:
-            try delete(for: .transcriptionAPIKeyElevenLabs)
-        }
+        guard let key = transcriptionAPIKeyKey(for: provider) else { return }
+        try delete(for: key)
     }
 
     public static func registrationAPIKeyAccount(for registrationID: UUID) -> String {

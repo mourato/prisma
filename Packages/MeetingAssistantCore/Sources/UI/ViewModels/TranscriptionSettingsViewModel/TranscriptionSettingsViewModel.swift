@@ -333,10 +333,9 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             )
 
             let allTranscriptions = try await storage.loadMetadata(matching: query)
-            // Filter out items with errors or verify integrity if needed.
-            // Assuming errors in capture manifest as 0 duration or specific metadata flags if we had them.
-            // For now, ensuring we don't show items that are clearly failed (e.g. 0 duration and no text)
-            transcriptions = allTranscriptions.filter { !($0.duration == 0 && $0.previewText.isEmpty) }
+            transcriptions = allTranscriptions.filter {
+                $0.lifecycleState == .failed || !($0.duration == 0 && $0.previewText.isEmpty)
+            }
             if !appFilterOptions.contains(where: { $0.id == appFilterId }) {
                 appFilterId = FilterConstants.allAppsId
             }

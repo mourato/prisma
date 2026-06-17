@@ -39,7 +39,7 @@ public final class GroqTranscriptionClient {
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         guard !apiKey.isEmpty else {
-            throw TranscriptionError.transcriptionFailed("Groq API key is missing")
+            throw TranscriptionError.transcriptionFailed("error.transcription.remote_missing_api_key.groq".localized)
         }
 
         return apiKey

@@ -409,7 +409,7 @@ extension RecordingManagerTests {
         let meetingID = UUID()
         manager.currentCapturePurpose = .meeting
         manager.currentMeeting = Meeting(id: meetingID, app: .zoom, capturePurpose: .meeting)
-        let richData = Data([0x7B, 0x5C, 0x72, 0x74, 0x66])
+        let richData = Data([0x7b, 0x5c, 0x72, 0x74, 0x66])
 
         manager.updateMeetingNotes(MeetingNotesContent(plainText: "Important note", richTextRTFData: richData))
         XCTAssertTrue(markdownMeetingFileExists(for: meetingID))
@@ -430,7 +430,7 @@ extension RecordingManagerTests {
     func testCalendarEventNotes_SaveAndRestore_ByEventIdentifier() throws {
         let manager = try XCTUnwrap(manager)
         let eventIdentifier = "event-\(UUID().uuidString)"
-        let richData = Data([0x7B, 0x5C, 0x72, 0x74, 0x66])
+        let richData = Data([0x7b, 0x5c, 0x72, 0x74, 0x66])
 
         manager.updateCalendarEventNotes(
             MeetingNotesContent(plainText: "Event note", richTextRTFData: richData),
@@ -1059,6 +1059,48 @@ extension RecordingManagerTests {
         }
     }
 
+    func testTranscribeRecording_WhenFullFileTranscriptionFails_PersistsFailedHistoryItem() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockStorage = try XCTUnwrap(mockStorage)
+        let mockTranscription = try XCTUnwrap(mockTranscription)
+        mockTranscription.shouldFailTranscription = true
+
+        let audioURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wav")
+        try writeTestAudioFile(at: audioURL)
+        defer { try? FileManager.default.removeItem(at: audioURL) }
+
+        let meetingID = UUID()
+        let meeting = Meeting(
+            id: meetingID,
+            app: .unknown,
+            capturePurpose: .dictation,
+            startTime: Date()
+        )
+        let session = RecordingManager.TranscriptionSessionSnapshot(
+            id: meetingID,
+            meeting: meeting,
+            recordingSource: .microphone,
+            kernelMode: .dictation,
+            postProcessingContext: nil,
+            postProcessingContextItems: [],
+            meetingNotesContent: .empty,
+            dictationSessionOutputLanguageOverride: nil,
+            dictationStartBundleIdentifier: nil,
+            dictationStartURL: nil
+        )
+
+        await manager.transcribeRecording(audioURL: audioURL, session: session)
+
+        let failed = try XCTUnwrap(mockStorage.savedTranscriptions.last)
+        XCTAssertEqual(failed.lifecycleState, .failed)
+        XCTAssertEqual(failed.meeting.id, meetingID)
+        XCTAssertEqual(failed.capturePurpose, .dictation)
+        XCTAssertEqual(failed.text, "")
+        XCTAssertEqual(failed.rawText, "")
+        XCTAssertEqual(failed.meeting.audioFilePath, audioURL.path)
+        XCTAssertTrue(failed.postProcessingFailureReason?.contains("Transcription failed") == true)
+    }
+
     func testMockStorageService_LoadTranscriptions() async throws {
         // Given
         let mockStorage = try XCTUnwrap(mockStorage)
@@ -1157,7 +1199,7 @@ extension RecordingManagerTests {
 
         buffer.frameLength = frameCount
         if let channelData = buffer.floatChannelData {
-            for frameIndex in 0 ..< Int(frameCount) {
+            for frameIndex in 0..<Int(frameCount) {
                 let sample = Float(sin(2 * .pi * Double(frameIndex) / 40.0) * 0.2)
                 channelData[0][frameIndex] = sample
             }

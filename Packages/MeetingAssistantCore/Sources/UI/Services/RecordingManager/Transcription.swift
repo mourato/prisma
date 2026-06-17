@@ -116,12 +116,24 @@ extension RecordingManager {
             }
         } catch {
             cancelEstimatedPostProcessingProgress(for: session.id)
+            await persistFailedTranscriptionAttempt(
+                audioURL: audioURL,
+                persistedAudioURL: persistedAudioURL(
+                    transcriptionURL: audioURL,
+                    cleanupAudioURL: cleanupAudioURL,
+                    session: session
+                ),
+                session: session,
+                audioDuration: audioDuration,
+                transcriptionIDOverride: transcriptionIDOverride,
+                error: error
+            )
             handleTranscriptionError(error, sessionID: session.id)
             if shouldDriveSharedTranscriptionState(for: session.id) {
-                meetingState = .failed(error.localizedDescription)
+                meetingState = .failed(transcriptionStatusError(from: error).localizedDescription)
             }
             if currentMeeting?.id == session.id {
-                currentMeeting?.state = .failed(error.localizedDescription)
+                currentMeeting?.state = .failed(transcriptionStatusError(from: error).localizedDescription)
             }
         }
 
@@ -221,6 +233,83 @@ extension RecordingManager {
             lifecycleState: entity.lifecycleState,
             postProcessingFailureReason: entity.postProcessingFailureReason
         )
+    }
+
+    func persistFailedTranscriptionAttempt(
+        audioURL: URL,
+        persistedAudioURL: URL,
+        session: TranscriptionSessionSnapshot,
+        audioDuration: Double?,
+        transcriptionIDOverride: UUID?,
+        error: Error
+    ) async {
+        let startedAt = session.meeting.startTime
+        var failedMeeting = session.meeting
+        failedMeeting.audioFilePath = persistedAudioURL.path
+        if failedMeeting.endTime == nil, let audioDuration {
+            failedMeeting.endTime = startedAt.addingTimeInterval(audioDuration)
+        }
+
+        let failedTranscription = Transcription(
+            id: transcriptionIDOverride ?? UUID(),
+            meeting: failedMeeting,
+            contextItems: session.postProcessingContextItems,
+            segments: [],
+            text: "",
+            rawText: "",
+            processedContent: nil,
+            canonicalSummary: nil,
+            qualityProfile: nil,
+            postProcessingPromptId: nil,
+            postProcessingPromptTitle: nil,
+            postProcessingRequestSystemPrompt: nil,
+            postProcessingRequestUserPrompt: nil,
+            language: Locale.current.language.languageCode?.identifier ?? "und",
+            createdAt: Date(),
+            modelName: AppSettingsStore.shared.resolvedTranscriptionSelection(
+                for: session.meeting.capturePurpose == .dictation ? .dictation : .meeting
+            ).selectedModel,
+            inputSource: resolveInputSourceLabel(
+                for: session.meeting,
+                recordingSource: session.recordingSource
+            ),
+            transcriptionDuration: 0,
+            postProcessingDuration: 0,
+            postProcessingModel: nil,
+            meetingType: session.meeting.type.rawValue,
+            lifecycleState: .failed,
+            meetingConversationState: nil,
+            postProcessingFailureReason: transcriptionStatusError(from: error).localizedDescription
+        )
+
+        do {
+            try await storage.saveTranscription(failedTranscription)
+            NotificationCenter.default.post(
+                name: .meetingAssistantTranscriptionSaved,
+                object: nil,
+                userInfo: [AppNotifications.UserInfoKey.transcriptionId: failedTranscription.id.uuidString]
+            )
+        } catch {
+            AppLogger.error(
+                "Failed to persist failed transcription attempt",
+                category: .recordingManager,
+                error: error,
+                extra: ["sessionID": session.id.uuidString]
+            )
+        }
+    }
+
+    private func persistedAudioURL(
+        transcriptionURL: URL,
+        cleanupAudioURL: URL?,
+        session: TranscriptionSessionSnapshot
+    ) -> URL {
+        guard cleanupAudioURL == transcriptionURL,
+              let originalPath = session.meeting.audioFilePath
+        else {
+            return transcriptionURL
+        }
+        return URL(fileURLWithPath: originalPath)
     }
 
     // MARK: - Health Check & Transcription
@@ -452,12 +541,18 @@ extension RecordingManager {
             sessionID: sessionID
         )
 
-        let statusError = self.transcriptionStatusError(from: error)
+        let statusError = transcriptionStatusError(from: error)
 
         if shouldDriveForegroundTranscriptionUI(for: sessionID) {
             transcriptionStatus.recordError(statusError)
             transcriptionStatus.completeTranscription(success: false)
         }
+
+        NotificationCenter.default.post(
+            name: .meetingAssistantTranscriptionFailed,
+            object: nil,
+            userInfo: [AppNotifications.UserInfoKey.transcriptionErrorMessage: statusError.localizedDescription]
+        )
 
         notificationService.sendNotification(
             title: "notification.transcription_failed".localized,
@@ -470,40 +565,40 @@ extension RecordingManager {
         case let error as TranscriptionError:
             switch error {
             case .serviceUnavailable:
-                return .serviceUnavailable
+                .serviceUnavailable
             case .warmupFailed:
-                return .modelLoadFailed(error.localizedDescription)
+                .modelLoadFailed(error.localizedDescription)
             case .invalidResponse:
-                return .transcriptionFailed(error.localizedDescription)
+                .transcriptionFailed(error.localizedDescription)
             case .invalidURL:
-                return .connectionFailed(error.localizedDescription)
-            case .transcriptionFailed(let message):
-                return .transcriptionFailed(message)
+                .connectionFailed(error.localizedDescription)
+            case let .transcriptionFailed(message):
+                .transcriptionFailed(message)
             }
         case let error as DomainTranscriptionError:
             switch error {
             case .serviceUnavailable:
-                return .serviceUnavailable
+                .serviceUnavailable
             case .invalidAudioFile:
-                return .transcriptionFailed("error.transcription.invalid_audio_file".localized)
-            case .transcriptionFailed(let message):
-                return .transcriptionFailed(message)
-            case .postProcessingFailed(let message):
-                return .transcriptionFailed(message)
+                .transcriptionFailed("error.transcription.invalid_audio_file".localized)
+            case let .transcriptionFailed(message):
+                .transcriptionFailed(message)
+            case let .postProcessingFailed(message):
+                .transcriptionFailed(message)
             }
         case let error as PostProcessingError:
-            return .transcriptionFailed(error.localizedDescription)
+            .transcriptionFailed(error.localizedDescription)
         case let error as RecordingManagerError:
             switch error {
             case .noOutputPath:
-                return .transcriptionFailed("error.transcription.no_output_path".localized)
+                .transcriptionFailed("error.transcription.no_output_path".localized)
             case .mergeFailed:
-                return .transcriptionFailed("error.transcription.merge_failed".localized)
+                .transcriptionFailed("error.transcription.merge_failed".localized)
             case .noInputFiles:
-                return .transcriptionFailed("error.transcription.no_input_files".localized)
+                .transcriptionFailed("error.transcription.no_input_files".localized)
             }
         default:
-            return .transcriptionFailed(error.localizedDescription)
+            .transcriptionFailed(error.localizedDescription)
         }
     }
 

@@ -97,6 +97,10 @@ extension AppDelegate {
             // Safety: if transcription is active, keep showing processing even if
             // the isProcessing flag didn't capture it due to timing.
             floatingIndicatorController.show(renderState: processingState)
+        } else if floatingIndicatorController.isVisible,
+                  case .error = floatingIndicatorController.renderState.mode
+        {
+            return
         } else {
             floatingIndicatorController.hide()
         }

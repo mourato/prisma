@@ -12,6 +12,21 @@ final class KeychainManagerBatchRetrievalTests: XCTestCase {
         )
     }
 
+    func testTranscriptionAPIKeyKey_UsesSharedGroqKey() {
+        XCTAssertEqual(KeychainManager.transcriptionAPIKeyKey(for: .groq), .aiAPIKeyGroq)
+    }
+
+    func testTranscriptionAPIKeyKey_UsesElevenLabsTranscriptionKey() {
+        XCTAssertEqual(
+            KeychainManager.transcriptionAPIKeyKey(for: .elevenLabs),
+            .transcriptionAPIKeyElevenLabs
+        )
+    }
+
+    func testTranscriptionAPIKeyKey_ReturnsNilForLocalProvider() {
+        XCTAssertNil(KeychainManager.transcriptionAPIKeyKey(for: .local))
+    }
+
     func testRegistrationAPIKeys_StoreRetrieveBatchAndDelete() throws {
         let registrationID = UUID()
         let apiKey = "sk-registration-\(registrationID.uuidString)"
