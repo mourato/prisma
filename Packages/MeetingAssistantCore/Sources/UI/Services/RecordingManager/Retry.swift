@@ -9,8 +9,11 @@ import MeetingAssistantCoreInfrastructure
 extension RecordingManager {
     /// Retry transcription for an existing entry.
     /// - Parameter transcription: Existing transcription to overwrite with new results.
-    /// - Parameter modelID: Optional model override. When nil, uses the currently configured model.
-    public func retryTranscription(for transcription: Transcription, modelID: String? = nil) async {
+    /// - Parameter selectionOverride: Optional provider/model override for this retry.
+    public func retryTranscription(
+        for transcription: Transcription,
+        selectionOverride: TranscriptionProviderSelection? = nil
+    ) async {
         guard !isTranscribing else {
             AppLogger.info("Already transcribing", category: .recordingManager)
             return
@@ -18,7 +21,11 @@ extension RecordingManager {
 
         guard let audioURL = resolveRetryAudioURL(for: transcription) else { return }
 
-        await runRetryTranscription(audioURL: audioURL, transcription: transcription, modelID: modelID)
+        await runRetryTranscription(
+            audioURL: audioURL,
+            transcription: transcription,
+            selectionOverride: selectionOverride
+        )
     }
 
     func resolveRetryAudioURL(for transcription: Transcription) -> URL? {
@@ -37,10 +44,19 @@ extension RecordingManager {
         return audioURL
     }
 
-    func runRetryTranscription(audioURL: URL, transcription: Transcription, modelID: String? = nil) async {
+    func runRetryTranscription(
+        audioURL: URL,
+        transcription: Transcription,
+        selectionOverride: TranscriptionProviderSelection? = nil
+    ) async {
+        let capturePurpose = transcription.meeting.capturePurpose
+        let shouldRemoveSilence = shouldRemoveSilenceBeforeRetryTranscription(
+            capturePurpose: capturePurpose,
+            selectionOverride: selectionOverride
+        )
         let preparedAudio = await prepareAudioForTranscription(
             audioURL: audioURL,
-            allowSilenceRemoval: true
+            allowSilenceRemoval: shouldRemoveSilence
         )
         defer {
             cleanupPreparedTranscriptionAudio(preparedAudio)
@@ -59,7 +75,7 @@ extension RecordingManager {
                 audioURL: preparedAudio.transcriptionURL,
                 transcription: transcription,
                 audioDuration: audioDuration,
-                modelID: modelID
+                selectionOverride: selectionOverride
             )
             try await storage.saveTranscription(updated)
             RecordingIndicatorProcessingStateStore.shared.update(
@@ -81,9 +97,12 @@ extension RecordingManager {
         audioURL: URL,
         transcription: Transcription,
         audioDuration: Double?,
-        modelID: String? = nil
+        selectionOverride: TranscriptionProviderSelection? = nil
     ) async throws -> Transcription {
-        try await performHealthCheck(capturePurpose: transcription.meeting.capturePurpose)
+        try await performHealthCheck(
+            capturePurpose: transcription.meeting.capturePurpose,
+            selectionOverride: selectionOverride
+        )
 
         let transcriptionStart = Date()
         let diarizationEnabledOverride = shouldEnableDiarization(for: transcription.meeting)
@@ -91,7 +110,7 @@ extension RecordingManager {
             audioURL: audioURL,
             diarizationEnabledOverride: diarizationEnabledOverride,
             capturePurpose: transcription.meeting.capturePurpose,
-            modelIDOverride: modelID
+            selectionOverride: selectionOverride
         )
         let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
         let settings = AppSettingsStore.shared
@@ -187,6 +206,20 @@ extension RecordingManager {
         with rules: [VocabularyReplacementRule]
     ) -> String {
         VocabularyReplacementRule.apply(rules: rules, to: text)
+    }
+
+    func shouldRemoveSilenceBeforeRetryTranscription(
+        capturePurpose: CapturePurpose,
+        selectionOverride: TranscriptionProviderSelection?
+    ) -> Bool {
+        guard let selectionOverride else { return true }
+        let executionMode: TranscriptionExecutionMode = capturePurpose == .dictation ? .dictation : .meeting
+        let configuredSelection = AppSettingsStore.shared.resolvedTranscriptionSelection(for: executionMode)
+        if configuredSelection == selectionOverride {
+            return true
+        }
+
+        return !selectionOverride.provider.usesRemoteInference
     }
 
     func applyVocabularyReplacements(

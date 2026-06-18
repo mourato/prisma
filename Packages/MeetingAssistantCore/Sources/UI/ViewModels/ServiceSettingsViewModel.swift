@@ -486,14 +486,7 @@ public final class ServiceSettingsViewModel: ObservableObject {
     }
 
     public func displayName(for provider: MeetingAssistantCoreInfrastructure.TranscriptionProvider) -> String {
-        switch provider {
-        case .local:
-            "settings.service.transcription_provider.option.local".localized
-        case .groq:
-            "settings.service.transcription_provider.option.groq".localized
-        case .elevenLabs:
-            "settings.service.transcription_provider.option.elevenlabs".localized
-        }
+        provider.displayName
     }
 
     private func availableModelIDs(for provider: MeetingAssistantCoreInfrastructure.TranscriptionProvider) -> [String] {

@@ -17,7 +17,7 @@ public struct TranscriptionCardView: View {
     let isExpanded: Bool
     let audioURL: URL?
     let availablePrompts: [PostProcessingPrompt]
-    let availableTranscriptionModels: [LocalTranscriptionModel]
+    let availableRetryTranscriptionOptions: [RetryTranscriptionOption]
     let isPostProcessing: Bool
     let postProcessingErrorMessage: String?
     let onToggleExpand: () -> Void
@@ -29,7 +29,7 @@ public struct TranscriptionCardView: View {
         isExpanded: Bool,
         audioURL: URL?,
         availablePrompts: [PostProcessingPrompt] = [],
-        availableTranscriptionModels: [LocalTranscriptionModel] = [],
+        availableRetryTranscriptionOptions: [RetryTranscriptionOption] = [],
         isPostProcessing: Bool = false,
         postProcessingErrorMessage: String? = nil,
         onToggleExpand: @escaping () -> Void,
@@ -40,7 +40,7 @@ public struct TranscriptionCardView: View {
         self.isExpanded = isExpanded
         self.audioURL = audioURL
         self.availablePrompts = availablePrompts
-        self.availableTranscriptionModels = availableTranscriptionModels
+        self.availableRetryTranscriptionOptions = availableRetryTranscriptionOptions
         self.isPostProcessing = isPostProcessing
         self.postProcessingErrorMessage = postProcessingErrorMessage
         self.onToggleExpand = onToggleExpand
@@ -67,7 +67,7 @@ public struct TranscriptionCardView: View {
         case updateMeetingTitle(String?)
         case updateCapturePurpose(CapturePurpose)
         case reprocess(prompt: PostProcessingPrompt)
-        case retryTranscription(modelID: String?)
+        case retryTranscription(selection: TranscriptionProviderSelection)
         case info
         case viewPrompt
         case delete
@@ -273,11 +273,11 @@ public struct TranscriptionCardView: View {
                         }
                         .disabled(filteredPrompts.isEmpty || isPostProcessing)
 
-                        if availableTranscriptionModels.count > 1 {
+                        if availableRetryTranscriptionOptions.count > 1 {
                             Menu {
-                                ForEach(availableTranscriptionModels, id: \.rawValue) { model in
-                                    Button(model.displayName) {
-                                        onAction(.retryTranscription(modelID: model.rawValue))
+                                ForEach(availableRetryTranscriptionOptions) { option in
+                                    Button(option.displayName) {
+                                        onAction(.retryTranscription(selection: option.selection))
                                     }
                                 }
                             } label: {
@@ -286,11 +286,13 @@ public struct TranscriptionCardView: View {
                             .disabled(audioURL == nil)
                         } else {
                             Button {
-                                onAction(.retryTranscription(modelID: nil))
+                                if let onlyOption = availableRetryTranscriptionOptions.first {
+                                    onAction(.retryTranscription(selection: onlyOption.selection))
+                                }
                             } label: {
                                 Label("transcription.actions.retry_transcription".localized, systemImage: "arrow.clockwise.circle")
                             }
-                            .disabled(audioURL == nil)
+                            .disabled(audioURL == nil || availableRetryTranscriptionOptions.isEmpty)
                         }
 
                         if canUpdateCapturePurpose {
@@ -655,7 +657,14 @@ private struct TranscriptionCardPreviewContainer: View {
             isExpanded: isExpanded,
             audioURL: nil,
             availablePrompts: PostProcessingPrompt.allPredefined,
-            availableTranscriptionModels: LocalTranscriptionModel.allCases,
+            availableRetryTranscriptionOptions: [
+                RetryTranscriptionOption(
+                    selection: TranscriptionProviderSelection(
+                        provider: .local,
+                        selectedModel: LocalTranscriptionModel.parakeetTdt06BV3.rawValue
+                    )
+                ),
+            ],
             onToggleExpand: { isExpanded.toggle() },
             onAction: { _ in }
         )
@@ -721,7 +730,20 @@ private extension Transcription {
         isExpanded: false,
         audioURL: nil,
         availablePrompts: PostProcessingPrompt.allPredefined,
-        availableTranscriptionModels: LocalTranscriptionModel.allCases,
+        availableRetryTranscriptionOptions: [
+            RetryTranscriptionOption(
+                selection: TranscriptionProviderSelection(
+                    provider: .local,
+                    selectedModel: LocalTranscriptionModel.parakeetTdt06BV3.rawValue
+                )
+            ),
+            RetryTranscriptionOption(
+                selection: TranscriptionProviderSelection(
+                    provider: .groq,
+                    selectedModel: TranscriptionProvider.groqPresetModelIDs[0]
+                )
+            ),
+        ],
         onToggleExpand: {},
         onAction: { _ in }
     )

@@ -1004,6 +1004,54 @@ extension RecordingManagerTests {
         XCTAssertFalse(FileManager.default.fileExists(atPath: compactedURL.path))
     }
 
+    func testRetryTranscription_RemoteDictationOverrideSkipsHealthCheckAndSilenceCompaction() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockTranscription = try XCTUnwrap(mockTranscription)
+        let mockCompactor = try XCTUnwrap(mockAudioSilenceCompactor)
+        let settings = AppSettingsStore.shared
+
+        let originalRemoveSilence = settings.removeSilenceBeforeProcessing
+        let originalSelection = settings.transcriptionDictationSelection
+        defer {
+            settings.removeSilenceBeforeProcessing = originalRemoveSilence
+            settings.transcriptionDictationSelection = originalSelection
+        }
+
+        settings.removeSilenceBeforeProcessing = true
+        settings.updateTranscriptionDictationSelection(
+            provider: .local,
+            model: LocalTranscriptionModel.parakeetTdt06BV3.rawValue
+        )
+        mockTranscription.shouldFailHealthCheck = true
+
+        let rawURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wav")
+        try writeTestAudioFile(at: rawURL)
+        defer { try? FileManager.default.removeItem(at: rawURL) }
+
+        let transcription = Transcription(
+            meeting: Meeting(app: .unknown, capturePurpose: .dictation, audioFilePath: rawURL.path),
+            text: "Existing",
+            rawText: "Existing",
+            processedContent: nil,
+            postProcessingPromptId: nil,
+            postProcessingPromptTitle: nil,
+            language: "en",
+            modelName: "test-model"
+        )
+
+        await manager.retryTranscription(
+            for: transcription,
+            selectionOverride: TranscriptionProviderSelection(
+                provider: .groq,
+                selectedModel: TranscriptionProvider.groqPresetModelIDs[0]
+            )
+        )
+
+        XCTAssertEqual(mockTranscription.healthCheckCallCount, 0)
+        XCTAssertEqual(mockCompactor.compactCallCount, 0)
+        XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, rawURL)
+    }
+
     func testApplyPostProcessing_UsesDictationPromptForImportedDictationAudio() async throws {
         let manager = try XCTUnwrap(manager)
         let mockPostProcessing = try XCTUnwrap(mockPostProcessing)

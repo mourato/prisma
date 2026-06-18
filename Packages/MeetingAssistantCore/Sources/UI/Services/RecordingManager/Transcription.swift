@@ -316,12 +316,16 @@ extension RecordingManager {
 
     func performHealthCheck(
         capturePurpose: CapturePurpose = .meeting,
+        selectionOverride: TranscriptionProviderSelection? = nil,
         sessionID: UUID? = nil
     ) async throws {
         updateVisibleTranscriptionProgress(phase: .preparing, sessionID: sessionID)
 
-        if capturePurpose == .dictation,
-           AppSettingsStore.shared.shouldUseRemoteTranscription(for: .dictation)
+        let executionMode: TranscriptionExecutionMode = capturePurpose == .dictation ? .dictation : .meeting
+        let shouldUseRemoteSelection = selectionOverride?.provider.usesRemoteInference
+            ?? AppSettingsStore.shared.shouldUseRemoteTranscription(for: executionMode)
+
+        if shouldUseRemoteSelection
         {
             transcriptionStatus.updateServiceState(.connected)
             return
@@ -338,13 +342,13 @@ extension RecordingManager {
         diarizationEnabledOverride: Bool? = nil,
         capturePurpose: CapturePurpose = .meeting,
         sessionID: UUID? = nil,
-        modelIDOverride: String? = nil
+        selectionOverride: TranscriptionProviderSelection? = nil
     ) async throws -> TranscriptionResponse {
-        if let modelIDOverride, let client = transcriptionClient as? TranscriptionClient {
-            client.modelIDOverride = modelIDOverride
+        if let selectionOverride, let client = transcriptionClient as? TranscriptionClient {
+            client.selectionOverride = selectionOverride
         }
         defer {
-            (transcriptionClient as? TranscriptionClient)?.modelIDOverride = nil
+            (transcriptionClient as? TranscriptionClient)?.selectionOverride = nil
         }
 
         updateVisibleTranscriptionProgress(

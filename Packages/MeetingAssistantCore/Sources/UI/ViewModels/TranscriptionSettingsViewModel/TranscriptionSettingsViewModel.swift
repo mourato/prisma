@@ -95,6 +95,8 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     let meetingNotesRichTextStore: any MeetingNotesRichTextStoreProtocol
     let meetingNotesMarkdownStore: any MeetingNotesMarkdownDocumentStoreProtocol
     let settings: AppSettingsStore
+    let keychain: KeychainProvider
+    let isLocalModelReady: @MainActor (LocalTranscriptionModel) -> Bool
     let savePanelProvider: @MainActor () -> NSSavePanel
     let summaryExportHelper: SummaryExportHelperProtocol
     let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "TranscriptionSettingsViewModel")
@@ -119,6 +121,10 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         meetingNotesRichTextStore: any MeetingNotesRichTextStoreProtocol = MeetingNotesRichTextStore(),
         meetingNotesMarkdownStore: any MeetingNotesMarkdownDocumentStoreProtocol = MeetingNotesMarkdownDocumentStore.shared,
         settings: AppSettingsStore = .shared,
+        keychain: KeychainProvider = DefaultKeychainProvider(),
+        isLocalModelReady: @escaping @MainActor (LocalTranscriptionModel) -> Bool = {
+            FluidAIModelManager.shared.isASRModelInstalled(localModelID: $0.rawValue)
+        },
         savePanelProvider: @escaping @MainActor () -> NSSavePanel = { NSSavePanel() },
         summaryExportHelper: SummaryExportHelperProtocol = SummaryExportHelper()
     ) {
@@ -129,6 +135,8 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         self.meetingNotesRichTextStore = meetingNotesRichTextStore
         self.meetingNotesMarkdownStore = meetingNotesMarkdownStore
         self.settings = settings
+        self.keychain = keychain
+        self.isLocalModelReady = isLocalModelReady
         self.savePanelProvider = savePanelProvider
         self.summaryExportHelper = summaryExportHelper
     }

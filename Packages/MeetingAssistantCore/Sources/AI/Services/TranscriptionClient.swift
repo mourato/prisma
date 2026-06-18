@@ -18,10 +18,10 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
     private let groqTranscriptionClient: GroqTranscriptionClient
     private let elevenLabsTranscriptionClient: ElevenLabsTranscriptionClient
 
-    /// Transient override for the transcription model ID.
-    /// When set, the next `transcribe` call uses this model instead of resolving from settings.
+    /// Transient override for the transcription provider/model selection.
+    /// When set, the next `transcribe` call uses this selection instead of resolving from settings.
     /// Automatically cleared after being consumed.
-    public var modelIDOverride: String?
+    public var selectionOverride: TranscriptionProviderSelection?
 
     public enum CachedReadinessState: String, Sendable {
         case unknown
@@ -226,9 +226,8 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         executionMode: TranscriptionExecutionMode,
         diarizationEnabledOverride: Bool?
     ) async throws -> TranscriptionResponse {
-        let selection = modelIDOverride.map { TranscriptionProviderSelection(provider: .local, selectedModel: $0) }
-            ?? settingsStore.resolvedTranscriptionSelection(for: executionMode)
-        modelIDOverride = nil
+        let selection = selectionOverride ?? settingsStore.resolvedTranscriptionSelection(for: executionMode)
+        selectionOverride = nil
         let inputLanguageCode = settingsStore.resolvedTranscriptionInputLanguageCode(for: executionMode)
         let backend = resolvedBackend(for: selection)
         let implementationLabel = switch backend {

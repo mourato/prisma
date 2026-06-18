@@ -11,6 +11,8 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
     var cancellables: Set<AnyCancellable>!
     var mockSavePanel: MockSavePanel!
     var mockSummaryExportHelper: MockSummaryExportHelper!
+    var mockKeychain: TestTranscriptionKeychainProvider!
+    var readyLocalModels: Set<LocalTranscriptionModel>!
 
     override func setUp() async throws {
         storage = MockStorageService()
@@ -18,10 +20,16 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         meetingQAService = MockMeetingQAService()
         mockSavePanel = MockSavePanel()
         mockSummaryExportHelper = MockSummaryExportHelper()
+        mockKeychain = TestTranscriptionKeychainProvider()
+        readyLocalModels = []
         viewModel = TranscriptionSettingsViewModel(
             storage: storage,
             meetingRepository: meetingRepository,
             meetingQAService: meetingQAService,
+            keychain: mockKeychain,
+            isLocalModelReady: { [weak self] model in
+                self?.readyLocalModels.contains(model) == true
+            },
             savePanelProvider: { [weak self] in self?.mockSavePanel ?? NSSavePanel() },
             summaryExportHelper: mockSummaryExportHelper
         )
@@ -34,10 +42,33 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         meetingQAService = nil
         mockSavePanel = nil
         mockSummaryExportHelper = nil
+        mockKeychain = nil
+        readyLocalModels = nil
         viewModel = nil
         cancellables = nil
     }
 
+}
+
+final class TestTranscriptionKeychainProvider: KeychainProvider, @unchecked Sendable {
+    var readyProviders = Set<TranscriptionProvider>()
+
+    func store(_: String, for _: KeychainManager.Key) throws {}
+    func retrieve(for _: KeychainManager.Key) throws -> String? { nil }
+    func delete(for _: KeychainManager.Key) throws {}
+    func exists(for _: KeychainManager.Key) -> Bool { false }
+    func retrieveAPIKey(for _: AIProvider) throws -> String? { nil }
+    func retrieveAPIKeys(for _: [AIProvider]) throws -> [AIProvider: String] { [:] }
+    func existsAPIKey(for _: AIProvider) -> Bool { false }
+    func storeAPIKey(_: String, for _: UUID) throws {}
+    func retrieveAPIKey(for _: UUID) throws -> String? { nil }
+    func retrieveAPIKeys(for _: [UUID]) throws -> [UUID: String] { [:] }
+    func existsAPIKey(for _: UUID) -> Bool { false }
+    func deleteAPIKey(for _: UUID) throws {}
+    func storeTranscriptionAPIKey(_: String, for provider: TranscriptionProvider) throws { readyProviders.insert(provider) }
+    func retrieveTranscriptionAPIKey(for _: TranscriptionProvider) throws -> String? { nil }
+    func existsTranscriptionAPIKey(for provider: TranscriptionProvider) -> Bool { readyProviders.contains(provider) }
+    func deleteTranscriptionAPIKey(for provider: TranscriptionProvider) throws { readyProviders.remove(provider) }
 }
 
 extension TranscriptionSettingsViewModelTests {
@@ -257,6 +288,45 @@ extension TranscriptionSettingsViewModelTests {
 
         XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
         XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, meetingMetadata.id)
+    }
+
+    func testAvailableRetryTranscriptionOptions_MeetingIncludesOnlyInstalledLocalModels() {
+        let metadata = makeMetadata(
+            appName: "Zoom",
+            appRawValue: MeetingApp.zoom.rawValue,
+            previewText: "Meeting text",
+            capturePurpose: .meeting
+        )
+        let installedModel = LocalTranscriptionModel.cohereTranscribe032026CoreML6Bit
+        readyLocalModels = [installedModel]
+
+        let options = viewModel.availableRetryTranscriptionOptions(for: metadata)
+
+        XCTAssertEqual(options.map(\.selection.provider), [.local])
+        XCTAssertEqual(options.map(\.selection.selectedModel), [installedModel.rawValue])
+    }
+
+    func testAvailableRetryTranscriptionOptions_DictationIncludesInstalledLocalAndReadyRemoteProviders() {
+        let metadata = makeMetadata(
+            appName: "Prisma",
+            appRawValue: MeetingApp.unknown.rawValue,
+            previewText: "Dictation text",
+            capturePurpose: .dictation
+        )
+        let installedModel = LocalTranscriptionModel.parakeetTdt06BV3
+        readyLocalModels = [installedModel]
+        mockKeychain.readyProviders = [.groq]
+
+        let options = viewModel.availableRetryTranscriptionOptions(for: metadata)
+
+        XCTAssertEqual(options.first?.selection.provider, .local)
+        XCTAssertEqual(options.first?.selection.selectedModel, installedModel.rawValue)
+        XCTAssertEqual(
+            Array(options.dropFirst().map(\.selection)),
+            TranscriptionProvider.groqPresetModelIDs.map {
+                TranscriptionProviderSelection(provider: .groq, selectedModel: $0)
+            }
+        )
     }
 
     func testUpdateMeetingTitle_PersistsTrimmedTitleAndRefreshesSelection() async throws {

@@ -248,6 +248,44 @@ public extension TranscriptionSettingsViewModel {
         return AppSettingsStore.shared.meetingAvailablePrompts
     }
 
+    func availableRetryTranscriptionOptions(for metadata: TranscriptionMetadata) -> [RetryTranscriptionOption] {
+        let localSelections = LocalTranscriptionModel.allCases
+            .filter(isLocalModelReady)
+            .map { model in
+                RetryTranscriptionOption(
+                    selection: TranscriptionProviderSelection(provider: .local, selectedModel: model.rawValue)
+                )
+            }
+
+        guard metadata.capturePurpose == .dictation else {
+            return localSelections
+        }
+
+        var options = localSelections
+
+        if keychain.existsTranscriptionAPIKey(for: .groq) {
+            options.append(
+                contentsOf: TranscriptionProvider.groqPresetModelIDs.map { modelID in
+                    RetryTranscriptionOption(
+                        selection: TranscriptionProviderSelection(provider: .groq, selectedModel: modelID)
+                    )
+                }
+            )
+        }
+
+        if keychain.existsTranscriptionAPIKey(for: .elevenLabs) {
+            options.append(
+                contentsOf: TranscriptionProvider.elevenLabsPresetModelIDs.map { modelID in
+                    RetryTranscriptionOption(
+                        selection: TranscriptionProviderSelection(provider: .elevenLabs, selectedModel: modelID)
+                    )
+                }
+            )
+        }
+
+        return options
+    }
+
     func applyPostProcessing(prompt: PostProcessingPrompt, to transcription: Transcription) async {
         guard !isProcessingAI else { return }
 
@@ -441,7 +479,10 @@ public extension TranscriptionSettingsViewModel {
         }
     }
 
-    func retryTranscription(for metadata: TranscriptionMetadata, modelID: String? = nil) async {
+    func retryTranscription(
+        for metadata: TranscriptionMetadata,
+        selectionOverride: TranscriptionProviderSelection
+    ) async {
         guard !recordingManager.isTranscribing else {
             return
         }
@@ -462,7 +503,7 @@ public extension TranscriptionSettingsViewModel {
                 return
             }
 
-            await recordingManager.retryTranscription(for: transcription, modelID: modelID)
+            await recordingManager.retryTranscription(for: transcription, selectionOverride: selectionOverride)
             await loadTranscriptions()
             if selectedId == metadata.id {
                 await loadFullTranscription(id: metadata.id)
