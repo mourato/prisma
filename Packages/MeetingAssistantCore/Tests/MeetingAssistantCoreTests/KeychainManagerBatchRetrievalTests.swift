@@ -3,6 +3,11 @@ import Security
 import XCTest
 
 final class KeychainManagerBatchRetrievalTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        KeychainManager.invalidateCache()
+    }
+
     func testRegistrationAPIKeyAccount_IsStableLowercaseKey() throws {
         let registrationID = try XCTUnwrap(UUID(uuidString: "9E6F0DB4-7B48-4599-A7C5-47CB7C2F368A"))
 

@@ -10,6 +10,7 @@ final class MeetingQAServiceTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
+        try AppSettingsTestIsolationLock.acquire()
         let settings = AppSettingsStore.shared
         originalMeetingQnAEnabled = settings.meetingQnAEnabled
         originalAIConfiguration = settings.aiConfiguration
@@ -33,6 +34,7 @@ final class MeetingQAServiceTests: XCTestCase {
         settings.aiConfiguration = originalAIConfiguration
         settings.enhancementsAISelection = originalEnhancementsAISelection
         MockMeetingQANetworkURLProtocol.requestHandler = nil
+        AppSettingsTestIsolationLock.release()
         try await super.tearDown()
     }
 

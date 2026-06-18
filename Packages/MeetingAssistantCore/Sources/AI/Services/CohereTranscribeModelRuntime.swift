@@ -1,5 +1,6 @@
 @preconcurrency import CoreML
 @preconcurrency import FluidAudio
+import CryptoKit
 import Foundation
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreInfrastructure
@@ -540,29 +541,31 @@ enum CohereTranscribeModelRuntime {
 
     private static func modelArtifactFingerprint(for artifactURL: URL) throws -> String {
         let fileManager = FileManager.default
-        let resourceKeys: [URLResourceKey] = [.isDirectoryKey, .contentModificationDateKey, .fileSizeKey]
+        let resourceKeys: Set<URLResourceKey> = [.isDirectoryKey]
         var records = [artifactURL.lastPathComponent]
 
-        let values = try artifactURL.resourceValues(forKeys: Set(resourceKeys))
+        let values = try artifactURL.resourceValues(forKeys: resourceKeys)
         if values.isDirectory == true {
             guard let enumerator = fileManager.enumerator(
                 at: artifactURL,
-                includingPropertiesForKeys: resourceKeys,
+                includingPropertiesForKeys: [.isDirectoryKey],
                 options: [.skipsHiddenFiles]
             ) else {
                 return stableFingerprint(for: records)
             }
 
             for case let candidateURL as URL in enumerator {
-                let candidateValues = try candidateURL.resourceValues(forKeys: Set(resourceKeys))
+                let candidateValues = try candidateURL.resourceValues(forKeys: resourceKeys)
+                if candidateValues.isDirectory == true { continue }
                 let relativePath = candidateURL.path.replacingOccurrences(of: artifactURL.path + "/", with: "")
-                let modificationTime = Int64(candidateValues.contentModificationDate?.timeIntervalSince1970 ?? 0)
-                let fileSize = candidateValues.isDirectory == true ? 0 : (candidateValues.fileSize ?? 0)
-                records.append("\(relativePath)|\(modificationTime)|\(fileSize)")
+                let contentHash = SHA256.hash(data: try Data(contentsOf: candidateURL))
+                let contentHex = contentHash.compactMap { String(format: "%02x", $0) }.joined()
+                records.append("\(relativePath)|\(contentHex)")
             }
         } else {
-            let modificationTime = Int64(values.contentModificationDate?.timeIntervalSince1970 ?? 0)
-            records.append("\(artifactURL.lastPathComponent)|\(modificationTime)|\(values.fileSize ?? 0)")
+            let contentHash = SHA256.hash(data: try Data(contentsOf: artifactURL))
+            let contentHex = contentHash.compactMap { String(format: "%02x", $0) }.joined()
+            records.append("\(artifactURL.lastPathComponent)|\(contentHex)")
         }
 
         return stableFingerprint(for: records.sorted())

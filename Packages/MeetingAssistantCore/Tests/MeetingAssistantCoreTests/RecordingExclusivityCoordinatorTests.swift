@@ -2,6 +2,12 @@
 import XCTest
 
 final class RecordingExclusivityCoordinatorTests: XCTestCase {
+    override func setUp() async throws {
+        try await super.setUp()
+        await RecordingExclusivityCoordinator.shared.endAssistant()
+        await RecordingExclusivityCoordinator.shared.endRecording()
+    }
+
     override func tearDown() async throws {
         await RecordingExclusivityCoordinator.shared.endAssistant()
         await RecordingExclusivityCoordinator.shared.endRecording()

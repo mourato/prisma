@@ -4,9 +4,16 @@ import XCTest
 
 @MainActor
 final class MeetingQuestionDictationServiceTests: XCTestCase {
+    override func setUp() async throws {
+        try await super.setUp()
+        await RecordingExclusivityCoordinator.shared.endAssistant()
+        await RecordingExclusivityCoordinator.shared.endRecording()
+    }
+
     override func tearDown() async throws {
         await RecordingExclusivityCoordinator.shared.endAssistant()
         await RecordingExclusivityCoordinator.shared.endRecording()
+        try await super.tearDown()
     }
 
     func testToggleDictationStartsAndStopsWithTranscribedText() async {

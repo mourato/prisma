@@ -11,6 +11,8 @@ final class AssistantIndicatorActionWiringTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
+        await RecordingExclusivityCoordinator.shared.endAssistant()
+        await RecordingExclusivityCoordinator.shared.endRecording()
         settings = .shared
         originalIndicatorEnabled = settings.recordingIndicatorEnabled
         originalIndicatorStyle = settings.recordingIndicatorStyle
@@ -65,6 +67,7 @@ final class AssistantIndicatorActionWiringTests: XCTestCase {
             settings: settings
         )
 
+        settings.isAssistantIntegrationsEnabled = true
         await service.startRecording(flow: .integrationDispatch)
         XCTAssertTrue(service.isRecording)
 

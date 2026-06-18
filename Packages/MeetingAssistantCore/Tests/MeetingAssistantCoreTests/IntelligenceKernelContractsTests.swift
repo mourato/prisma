@@ -4,6 +4,16 @@ import XCTest
 
 @MainActor
 final class IntelligenceKernelContractsTests: XCTestCase {
+    override func setUp() async throws {
+        try await super.setUp()
+        try AppSettingsTestIsolationLock.acquire()
+    }
+
+    override func tearDown() async throws {
+        AppSettingsTestIsolationLock.release()
+        try await super.tearDown()
+    }
+
     func testAppSettingsReportsMeetingModeEnabledByDefault() {
         let settings = AppSettingsStore.shared
 

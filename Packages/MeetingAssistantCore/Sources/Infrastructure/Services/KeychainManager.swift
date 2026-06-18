@@ -157,6 +157,12 @@ public enum KeychainManager {
     private static let cacheLock = NSRecursiveLock()
     private nonisolated(unsafe) static var _consolidatedCache: ConsolidatedAPIKeys?
 
+    public static func invalidateCache() {
+        cacheLock.withLock {
+            _consolidatedCache = nil
+        }
+    }
+
     // MARK: - Keys
 
     /// Known keys for Keychain storage.
