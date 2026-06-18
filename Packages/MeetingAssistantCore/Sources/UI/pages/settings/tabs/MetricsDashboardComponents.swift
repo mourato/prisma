@@ -88,7 +88,16 @@ struct MetricsDashboardActivitySection: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        DSGroup("metrics.activity.title".localized, icon: "calendar.badge.clock") {
+        DSGroup("metrics.activity.title".localized, icon: "calendar.badge.clock", headerAccessory: {
+            SettingsContextMenuButton(accessibilityLabel: "metrics.activity.filter.title".localized) {
+                Toggle(isOn: $viewModel.showDictations) {
+                    Text("metrics.activity.filter.dictations".localized)
+                }
+                Toggle(isOn: $viewModel.showMeetings) {
+                    Text("metrics.activity.filter.meetings".localized)
+                }
+            }
+        }, content: {
             VStack(alignment: .leading, spacing: 8) {
                 Text("metrics.activity.subtitle".localized)
                     .font(.caption)
@@ -147,7 +156,7 @@ struct MetricsDashboardActivitySection: View {
                     heatmapLegend
                 }
             }
-        }
+        })
     }
 
     private var activityCalendar: Calendar {

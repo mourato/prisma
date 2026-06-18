@@ -27,6 +27,20 @@ public final class MetricsDashboardViewModel: ObservableObject {
         }
     }
 
+    @Published public var showDictations: Bool = true {
+        didSet {
+            guard oldValue != showDictations else { return }
+            recompute()
+        }
+    }
+
+    @Published public var showMeetings: Bool = true {
+        didSet {
+            guard oldValue != showMeetings else { return }
+            recompute()
+        }
+    }
+
     @Published public private(set) var isLoading = true
     @Published public private(set) var errorMessage: String?
 
@@ -227,7 +241,13 @@ public final class MetricsDashboardViewModel: ObservableObject {
     }
 
     private func recompute() {
-        let filtered = allMetadata.filter { dateFilter.contains($0.startTime) }
+        let filtered = allMetadata.filter { metadata in
+            guard dateFilter.contains(metadata.startTime) else { return false }
+            switch metadata.capturePurpose {
+            case .dictation: return showDictations
+            case .meeting: return showMeetings
+            }
+        }
         summary = MetricsAggregator.computeSummary(
             metadata: filtered,
             baselineTypingWordsPerMinute: Self.DEFAULT_BASELINE_WPM

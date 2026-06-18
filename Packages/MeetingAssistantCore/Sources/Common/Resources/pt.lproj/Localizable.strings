@@ -52,6 +52,9 @@
 "metrics.activity.legend.none" = "Nenhuma palavra";
 "metrics.activity.legend.most" = "Dia mais ativo";
 "metrics.activity.tooltip.words_on_date" = "%1$@ palavras em %2$@";
+"metrics.activity.filter.title" = "Filtrar fonte";
+"metrics.activity.filter.dictations" = "Transcrições de Ditado";
+"metrics.activity.filter.meetings" = "Transcrições de Reunião";
 "metrics.calendar.upcoming.title" = "Próximos eventos";
 "metrics.calendar.upcoming.subtitle" = "Próximas 24 horas do seu calendário no macOS.";
 "metrics.calendar.loading.title" = "Carregando próximos eventos";

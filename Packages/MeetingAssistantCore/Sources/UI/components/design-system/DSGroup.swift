@@ -68,6 +68,8 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
 
+                    Spacer(minLength: 0)
+
                     headerAccessory
                 }
                 .padding(.leading, 4)

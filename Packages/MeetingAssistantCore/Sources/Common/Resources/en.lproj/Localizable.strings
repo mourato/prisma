@@ -51,6 +51,9 @@
 "metrics.activity.legend.none" = "No words";
 "metrics.activity.legend.most" = "Busiest day";
 "metrics.activity.tooltip.words_on_date" = "%1$@ words on %2$@";
+"metrics.activity.filter.title" = "Filter source";
+"metrics.activity.filter.dictations" = "Dictation Transcriptions";
+"metrics.activity.filter.meetings" = "Meeting Transcriptions";
 "metrics.calendar.upcoming.title" = "Upcoming Events";
 "metrics.calendar.upcoming.subtitle" = "Next 24 hours from your macOS calendar.";
 "metrics.calendar.loading.title" = "Loading upcoming events";
