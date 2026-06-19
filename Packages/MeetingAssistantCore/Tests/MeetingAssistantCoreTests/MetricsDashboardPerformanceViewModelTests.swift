@@ -23,8 +23,8 @@ final class MetricsDashboardPerformanceViewModelTests: XCTestCase {
         let viewModel = MetricsDashboardPerformanceViewModel(storage: storage)
         await viewModel.load()
 
-        XCTAssertEqual(viewModel.providerOptions.map { $0.id }, ["groq", "local"])
-        XCTAssertEqual(viewModel.history.map { $0.id }, [newer.id, older.id])
+        XCTAssertEqual(viewModel.providerOptions.map(\.id), ["groq", "local"])
+        XCTAssertEqual(viewModel.history.map(\.id), [newer.id, older.id])
         XCTAssertEqual(viewModel.analysis.summary.totalAttempts, 2)
     }
 
@@ -44,7 +44,7 @@ final class MetricsDashboardPerformanceViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.providerOptions.count, 2)
     }
 
-    func testLoad_StatusAndSearchFiltersRefreshResults() async {
+    func testLoad_StatusFilterRefreshesResults() async {
         let storage = MockStorageService()
         storage.savedModelPerformanceAttempts = [
             makeAttempt(providerID: "local", providerName: "Local", modelID: "whisper-a", status: .succeeded),
@@ -55,12 +55,31 @@ final class MetricsDashboardPerformanceViewModelTests: XCTestCase {
         await viewModel.load()
 
         viewModel.statusFilter = ModelPerformanceStatusFilter.failed
-        viewModel.modelSearchText = "whisper-b"
         await viewModel.load()
 
         XCTAssertEqual(viewModel.analysis.summary.totalAttempts, 1)
         XCTAssertEqual(viewModel.history.first?.status, .failed)
         XCTAssertEqual(viewModel.history.first?.modelIdentity.modelID, "whisper-b")
+    }
+
+    func testHistory_ReturnsOnlyTenMostRecentAttempts() async {
+        let storage = MockStorageService()
+        let baseDate = Date(timeIntervalSince1970: 1_700_000_000)
+        storage.savedModelPerformanceAttempts = (0..<12).map { index in
+            makeAttempt(
+                providerID: "local",
+                providerName: "Local",
+                modelID: "whisper-\(index)",
+                startedAt: baseDate.addingTimeInterval(Double(index))
+            )
+        }
+
+        let viewModel = MetricsDashboardPerformanceViewModel(storage: storage)
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.history.count, 10)
+        XCTAssertEqual(viewModel.history.first?.modelIdentity.modelID, "whisper-11")
+        XCTAssertEqual(viewModel.history.last?.modelIdentity.modelID, "whisper-2")
     }
 
     private func makeAttempt(

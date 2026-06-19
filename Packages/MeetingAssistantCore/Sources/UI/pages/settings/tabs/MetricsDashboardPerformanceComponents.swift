@@ -89,10 +89,6 @@ struct MetricsDashboardPerformanceWorkspace: View {
                     }
                 }
 
-                SettingsSearchField(
-                    text: $viewModel.modelSearchText,
-                    placeholder: "metrics.performance.filters.search".localized
-                )
             }
         }
     }

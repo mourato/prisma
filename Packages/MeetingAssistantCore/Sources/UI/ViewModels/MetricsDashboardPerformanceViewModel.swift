@@ -61,13 +61,6 @@ final class MetricsDashboardPerformanceViewModel: ObservableObject {
         }
     }
 
-    @Published var modelSearchText = "" {
-        didSet {
-            guard oldValue != modelSearchText else { return }
-            reload()
-        }
-    }
-
     @Published var providerID: String? {
         didSet {
             guard oldValue != providerID else { return }
@@ -142,7 +135,7 @@ final class MetricsDashboardPerformanceViewModel: ObservableObject {
     }
 
     var history: [ModelPerformanceAttempt] {
-        analysis.history
+        Array(analysis.history.prefix(10))
     }
 
     func load() async {
@@ -188,7 +181,7 @@ final class MetricsDashboardPerformanceViewModel: ObservableObject {
             dateFilter: dateFilter,
             providerID: nil,
             statusFilter: statusFilter,
-            modelSearchText: modelSearchText,
+            modelSearchText: "",
             limit: nil
         )
     }
