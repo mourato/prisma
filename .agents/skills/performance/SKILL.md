@@ -64,3 +64,18 @@ make profile-report
 - Use `swiftui-performance-audit` for SwiftUI rendering/update/layout/animation runtime issues.
 - Use `audio-realtime` for capture/processing callback pressure and low-latency audio constraints.
 - Use this `performance` skill for app-wide/system-level optimization that is not primarily SwiftUI-rendering bound.
+
+## 2026-06-19 Progression Drill
+
+### New Evidence
+
+- `ebdc397d` introduced model performance attempt tracking and metrics.
+- `667752e9` removed provider/model search and kept the performance history surface compact.
+- Recent product direction: performance comparison should use latency, error rate, and normalized speed/throughput; history should preserve immutable attempts but show only the 10 newest rows in the dashboard.
+
+### Skill Deepening Focus
+
+1. Treat model-performance work as analytics over immutable attempts, not mutable transcription snapshots.
+2. Separate raw latency from normalized throughput: transcription should account for audio duration; post-processing should account for text/bytes handled.
+3. Keep dashboard UX compact by default: summary, filters, leaderboard, and newest 10 attempts before adding search-heavy controls.
+4. Add regression tests for ranking order, error-rate impact, newest-first history, and UI-facing caps whenever performance aggregation changes.

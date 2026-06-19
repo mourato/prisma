@@ -100,3 +100,18 @@ Artifacts:
 2. Define schema-safe fallback behavior when conversation state is missing/partial.
 3. Require contract-test updates whenever kernel-facing persistence fields change.
 4. Keep post-processing prompts mode-aware while preserving canonical contract output.
+
+## 2026-06-19 Progression Drill
+
+### New Evidence
+
+- `13193664` refactored transcription provider selection and retry logic around `TranscriptionProviderSelection`.
+- Recent retry work established that history retry options must be segmented by `capturePurpose` and must hide providers/models that are not fully configured.
+- Product decision: meeting retries remain local-only until the meeting configuration model explicitly supports remote providers.
+
+### Skill Deepening Focus
+
+1. Use provider-selection domain values across UI, recording, and transcription clients; avoid raw model strings for retry or mode-aware flows.
+2. Keep meeting and dictation retry surfaces aligned with their real configuration models, not with a global provider list.
+3. Filter history actions by readiness before display: installed local models, valid remote API keys, and capture-purpose compatibility.
+4. Add contract tests when provider-selection overrides cross AI/Data/UI boundaries or can affect post-processing metrics.

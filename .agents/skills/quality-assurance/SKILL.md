@@ -190,3 +190,18 @@ brew install swiftlint swiftformat
 - `Makefile`
 - `scripts/lint.sh`
 - `scripts/run-tests.sh`
+
+## 2026-06-19 Progression Drill
+
+### New Evidence
+
+- Retry-transcription work validated the changed path with focused filters for `TranscriptionSettingsViewModelTests` and `RecordingManagerTests` while `make build-test` exposed unrelated baseline failures.
+- Model-performance history work used focused Core Data, aggregator, view-model, retry, and use-case tests plus `make build-agent` when full-suite runs hit unrelated harness noise.
+- Recent lint runs still reported repo-wide pre-existing issues, so changed-path proof must be explicit when the full lane is not green.
+
+### Skill Deepening Focus
+
+1. For behavior changes, name the exact focused tests that prove the changed path before summarizing broader gate status.
+2. When full gates fail, classify failures as changed-path, adjacent, or baseline; list concrete failing test names.
+3. Prefer single-test filters for retry/provider/readiness behavior before running broad package suites.
+4. For persistence or analytics migrations, pair focused repository/migration tests with at least one narrow build gate such as `make build-agent`.

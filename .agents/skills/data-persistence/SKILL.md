@@ -85,3 +85,18 @@ For rename/migration work, verify all invariants:
 2. Validate round-trip mapping integrity: CoreData -> Domain -> UI -> persistence.
 3. Document recovery behavior for partially populated legacy records.
 4. Enforce idempotent write semantics for conversation state updates.
+
+## 2026-06-19 Progression Drill
+
+### New Evidence
+
+- `ebdc397d` added `ModelPerformanceAttemptMO` plus a Core Data migration/backfill path.
+- Recent model-performance history work required preserving every retry/reprocess attempt instead of overwriting the latest transcription record.
+- A migration test initially reused an already-backfilled checkpoint, which hid the intended backfill scenario until the test used an isolated checkpoint key.
+
+### Skill Deepening Focus
+
+1. Model analytics history as append-only attempt records; avoid updating old attempts except for explicit repair migrations.
+2. Migration tests must cover fresh backfill, no-op re-run, and isolated checkpoint keys.
+3. Repository APIs should expose newest-first attempt history separately from aggregate ranking queries.
+4. Backfill logic must preserve legacy transcription snapshots without deleting or collapsing retry/reprocess evidence.
