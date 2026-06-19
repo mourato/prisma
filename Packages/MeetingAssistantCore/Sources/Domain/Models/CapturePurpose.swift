@@ -1,8 +1,18 @@
 import Foundation
+import MeetingAssistantCoreCommon
 
 public enum CapturePurpose: String, CaseIterable, Codable, Sendable {
     case dictation
     case meeting
+
+    public var displayName: String {
+        switch self {
+        case .dictation:
+            "metrics.performance.filter.dictation".localized
+        case .meeting:
+            "metrics.performance.filter.meeting".localized
+        }
+    }
 
     public static func defaultValue(for app: MeetingApp) -> CapturePurpose {
         switch app {

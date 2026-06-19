@@ -1,109 +1,136 @@
 import Foundation
 
 public enum ModelPerformanceAggregator {
+    public static func computeAnalysis(
+        attempts: [ModelPerformanceAttempt],
+        stage: ModelPerformanceStage
+    ) -> ModelPerformanceAnalysis {
+        let stageAttempts = attempts
+            .filter { $0.stage == stage }
+            .sorted { $0.startedAt > $1.startedAt }
+        let successfulAttempts = stageAttempts.filter { $0.status == .succeeded }
+        let grouped = Dictionary(grouping: stageAttempts, by: \.modelIdentity.aggregateKey)
 
-    public static func computeAnalysis(transcriptions: [Transcription]) -> ModelPerformanceAnalysis {
-        let totalTranscripts = transcriptions.count
-        let totalWithData = transcriptions.count(where: { $0.transcriptionDuration > 0 })
-        let totalAudioDuration = transcriptions.reduce(0) { $0 + $1.meeting.duration }
-        let totalProcessed = transcriptions.count(where: { $0.isPostProcessed && $0.postProcessingDuration > 0 })
+        var leaderboard = grouped.values.map { items in
+            makeEntry(items: items, stage: stage)
+        }
 
-        let transcriptionStats = processStats(
-            for: transcriptions,
-            modelNameKeyPath: \.modelName,
-            durationKeyPath: \.transcriptionDuration,
-            audioDurationKeyPath: \.meeting.duration
-        )
-
-        let enhancementStats = processStats(
-            for: transcriptions,
-            modelNameKeyPath: \.postProcessingModel,
-            durationKeyPath: \.postProcessingDuration,
-            audioDurationKeyPath: \.meeting.duration
-        )
-
-        return ModelPerformanceAnalysis(
-            totalTranscripts: totalTranscripts,
-            totalWithData: totalWithData,
-            totalAudioDuration: totalAudioDuration,
-            totalProcessed: totalProcessed,
-            transcriptionModels: transcriptionStats,
-            enhancementModels: enhancementStats
-        )
-    }
-
-    static func processStats(
-        for transcriptions: [Transcription],
-        modelNameKeyPath: KeyPath<Transcription, String>,
-        durationKeyPath: KeyPath<Transcription, Double>,
-        audioDurationKeyPath: KeyPath<Transcription, TimeInterval>? = nil
-    ) -> [ModelPerformanceStat] {
-        computeStats(
-            for: transcriptions,
-            extractModelName: { $0[keyPath: modelNameKeyPath] },
-            extractDuration: durationKeyPath,
-            extractAudioDuration: audioDurationKeyPath
-        )
-    }
-
-    static func processStats(
-        for transcriptions: [Transcription],
-        modelNameKeyPath: KeyPath<Transcription, String?>,
-        durationKeyPath: KeyPath<Transcription, Double>,
-        audioDurationKeyPath: KeyPath<Transcription, TimeInterval>? = nil
-    ) -> [ModelPerformanceStat] {
-        computeStats(
-            for: transcriptions,
-            extractModelName: { $0[keyPath: modelNameKeyPath] ?? "Unknown" },
-            extractDuration: durationKeyPath,
-            extractAudioDuration: audioDurationKeyPath
-        )
-    }
-
-    private static func computeStats(
-        for transcriptions: [Transcription],
-        extractModelName: (Transcription) -> String,
-        extractDuration: KeyPath<Transcription, Double>,
-        extractAudioDuration: KeyPath<Transcription, TimeInterval>?
-    ) -> [ModelPerformanceStat] {
-        let relevant = transcriptions.filter { $0[keyPath: extractDuration] > 0 }
-        let grouped = Dictionary(grouping: relevant) { extractModelName($0) }
-
-        return grouped.map { modelName, items in
-            let fileCount = items.count
-            let totalProcessingTime = items.reduce(0) { $0 + $1[keyPath: extractDuration] }
-            let avgProcessingTime = totalProcessingTime / Double(fileCount)
-
-            let totalAudioDuration: TimeInterval
-            if let extractAudioDuration {
-                totalAudioDuration = items.reduce(0) { $0 + $1[keyPath: extractAudioDuration] }
-            } else {
-                totalAudioDuration = items.reduce(0) { $0 + $1.meeting.duration }
+        leaderboard.sort { lhs, rhs in
+            if lhs.successRate != rhs.successRate {
+                return lhs.successRate > rhs.successRate
             }
-            let avgAudioDuration = totalAudioDuration / Double(fileCount)
-
-            var speedFactor = 0.0
-            if let extractAudioDuration {
-                let ratios = items.compactMap { item -> Double? in
-                    let audio = item[keyPath: extractAudioDuration]
-                    let proc = item[keyPath: extractDuration]
-                    guard proc > 0, audio > 0 else { return nil }
-                    return audio / proc
-                }
-                if !ratios.isEmpty {
-                    speedFactor = ratios.reduce(0, +) / Double(ratios.count)
-                }
+            if lhs.normalizedThroughput != rhs.normalizedThroughput {
+                return lhs.normalizedThroughput > rhs.normalizedThroughput
             }
+            return lhs.medianWallClockSeconds < rhs.medianWallClockSeconds
+        }
 
-            return ModelPerformanceStat(
-                name: modelName,
-                fileCount: fileCount,
-                totalProcessingTime: totalProcessingTime,
-                avgProcessingTime: avgProcessingTime,
-                avgAudioDuration: avgAudioDuration,
-                speedFactor: speedFactor
+        if let bestIndex = leaderboard.firstIndex(where: { $0.attemptCount >= 3 }) {
+            let best = leaderboard[bestIndex]
+            leaderboard[bestIndex] = ModelPerformanceLeaderboardEntry(
+                identity: best.identity,
+                attemptCount: best.attemptCount,
+                successfulAttempts: best.successfulAttempts,
+                failedAttempts: best.failedAttempts,
+                successRate: best.successRate,
+                medianWallClockSeconds: best.medianWallClockSeconds,
+                averageWallClockSeconds: best.averageWallClockSeconds,
+                normalizedThroughput: best.normalizedThroughput,
+                secondaryThroughput: best.secondaryThroughput,
+                isBestBalance: true
             )
         }
-        .sorted { $0.speedFactor > $1.speedFactor }
+
+        let summary = ModelPerformanceSummary(
+            stage: stage,
+            totalAttempts: stageAttempts.count,
+            successfulAttempts: successfulAttempts.count,
+            failedAttempts: stageAttempts.count - successfulAttempts.count,
+            distinctModels: grouped.count,
+            fastestModelDisplayName: leaderboard.first?.identity.modelDisplayName,
+            fastestModelThroughput: leaderboard.first?.normalizedThroughput ?? 0
+        )
+
+        let providerIDs = Array(Set(stageAttempts.map(\.modelIdentity.providerID))).sorted()
+
+        return ModelPerformanceAnalysis(
+            stage: stage,
+            summary: summary,
+            leaderboard: leaderboard,
+            history: stageAttempts,
+            availableProviderIDs: providerIDs
+        )
+    }
+
+    private static func makeEntry(
+        items: [ModelPerformanceAttempt],
+        stage: ModelPerformanceStage
+    ) -> ModelPerformanceLeaderboardEntry {
+        let ordered = items.sorted { $0.startedAt < $1.startedAt }
+        let successful = ordered.filter { $0.status == .succeeded }
+        let attemptCount = ordered.count
+        let successCount = successful.count
+        let failureCount = attemptCount - successCount
+        let successRate = attemptCount == 0 ? 0 : Double(successCount) / Double(attemptCount)
+        let medianWallClock = median(of: successful.map(\.wallClockSeconds))
+        let averageWallClock = average(of: successful.map(\.wallClockSeconds))
+
+        let throughputSamples = successful.compactMap { attempt -> Double? in
+            guard attempt.wallClockSeconds > 0 else { return nil }
+            switch stage {
+            case .transcription:
+                guard attempt.audioSeconds > 0 else { return nil }
+                return attempt.audioSeconds / attempt.wallClockSeconds
+            case .postProcessing:
+                guard attempt.inputUTF8Bytes > 0 else { return nil }
+                return Double(attempt.inputUTF8Bytes) / attempt.wallClockSeconds
+            }
+        }
+
+        let secondarySamples = successful.compactMap { attempt -> Double? in
+            guard attempt.wallClockSeconds > 0 else { return nil }
+            switch stage {
+            case .transcription:
+                guard attempt.audioSeconds > 0 else { return nil }
+                return (attempt.audioSeconds / 60.0) / (attempt.wallClockSeconds / 60.0)
+            case .postProcessing:
+                guard attempt.inputCharacterCount > 0 else { return nil }
+                return Double(attempt.inputCharacterCount) / attempt.wallClockSeconds
+            }
+        }
+
+        return ModelPerformanceLeaderboardEntry(
+            identity: ordered.first?.modelIdentity ?? .init(
+                providerID: "unknown",
+                providerDisplayName: "Unknown",
+                modelID: "unknown",
+                modelDisplayName: "Unknown",
+                runtimeKind: .unknown
+            ),
+            attemptCount: attemptCount,
+            successfulAttempts: successCount,
+            failedAttempts: failureCount,
+            successRate: successRate,
+            medianWallClockSeconds: medianWallClock,
+            averageWallClockSeconds: averageWallClock,
+            normalizedThroughput: average(of: throughputSamples),
+            secondaryThroughput: average(of: secondarySamples),
+            isBestBalance: false
+        )
+    }
+
+    private static func average(of values: [Double]) -> Double {
+        guard !values.isEmpty else { return 0 }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
+    private static func median(of values: [Double]) -> Double {
+        guard !values.isEmpty else { return 0 }
+        let sorted = values.sorted()
+        let midpoint = sorted.count / 2
+        if sorted.count.isMultiple(of: 2) {
+            return (sorted[midpoint - 1] + sorted[midpoint]) / 2
+        }
+        return sorted[midpoint]
     }
 }

@@ -49,6 +49,9 @@ extension RecordingManager {
             let transcriptionStart = Date()
             let meetingEntity = makeMeetingEntity(meeting: session.meeting, audioDuration: audioDuration)
             let config = makeUseCaseConfig(session: session, settings: settings)
+            let transcriptionIdentity = resolvedTranscriptionPerformanceIdentity(
+                capturePurpose: session.meeting.capturePurpose
+            )
             let diarizationEnabledOverride = shouldEnableDiarization(
                 for: session.meeting,
                 capturePurposeOverride: session.meeting.capturePurpose
@@ -62,6 +65,7 @@ extension RecordingManager {
                 audioURL: audioURL,
                 transcriptionID: transcriptionIDOverride,
                 meeting: meetingEntity,
+                transcriptionIdentity: transcriptionIdentity,
                 inputSource: resolveInputSourceLabel(for: session.meeting, recordingSource: session.recordingSource),
                 contextItems: config.postProcessingContextItems,
                 vocabularyReplacementRules: settings.vocabularyReplacementRules,
@@ -69,7 +73,7 @@ extension RecordingManager {
                 applyPostProcessing: config.applyPostProcessing,
                 postProcessingPrompt: config.postProcessingPrompt,
                 defaultPostProcessingPrompt: config.defaultPostProcessingPrompt,
-                postProcessingModel: config.postProcessingModel,
+                postProcessingIdentity: config.postProcessingIdentity,
                 autoDetectMeetingType: config.autoDetectMeetingType,
                 availablePrompts: config.availablePrompts,
                 postProcessingContext: config.postProcessingContext,
@@ -250,6 +254,10 @@ extension RecordingManager {
             failedMeeting.endTime = startedAt.addingTimeInterval(audioDuration)
         }
 
+        let transcriptionIdentity = resolvedTranscriptionPerformanceIdentity(
+            capturePurpose: session.meeting.capturePurpose
+        )
+        let failureDate = Date()
         let failedTranscription = Transcription(
             id: transcriptionIDOverride ?? UUID(),
             meeting: failedMeeting,
@@ -284,6 +292,23 @@ extension RecordingManager {
 
         do {
             try await storage.saveTranscription(failedTranscription)
+            let failedAttempt = ModelPerformanceAttempt(
+                transcriptionID: failedTranscription.id,
+                stage: .transcription,
+                attemptKind: .initial,
+                capturePurpose: failedTranscription.capturePurpose,
+                modelIdentity: transcriptionIdentity,
+                status: .failed,
+                startedAt: startedAt,
+                completedAt: failureDate,
+                wallClockSeconds: max(0, failureDate.timeIntervalSince(startedAt)),
+                audioSeconds: max(0, audioDuration ?? failedMeeting.duration),
+                inputUTF8Bytes: 0,
+                inputCharacterCount: 0,
+                outputCharacterCount: 0,
+                failureReason: transcriptionStatusError(from: error).localizedDescription
+            )
+            try? await storage.saveModelPerformanceAttempt(failedAttempt)
             NotificationCenter.default.post(
                 name: .meetingAssistantTranscriptionSaved,
                 object: nil,
@@ -395,6 +420,15 @@ extension RecordingManager {
             audioURL: audioURL,
             onProgress: onProgress
         )
+    }
+
+    func resolvedTranscriptionPerformanceIdentity(
+        capturePurpose: CapturePurpose,
+        selectionOverride: TranscriptionProviderSelection? = nil
+    ) -> ModelPerformanceModelIdentity {
+        let executionMode: TranscriptionExecutionMode = capturePurpose == .dictation ? .dictation : .meeting
+        let selection = selectionOverride ?? AppSettingsStore.shared.resolvedTranscriptionSelection(for: executionMode)
+        return selection.provider.modelPerformanceIdentity(modelID: selection.selectedModel)
     }
 
     func handleUseCasePhaseChange(_ phase: TranscriptionPhase, meeting: Meeting, sessionID: UUID) {

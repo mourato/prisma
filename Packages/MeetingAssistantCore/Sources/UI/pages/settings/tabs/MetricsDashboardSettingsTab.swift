@@ -6,6 +6,7 @@ import SwiftUI
 public enum MetricsDashboardRoute: Hashable {
     case moreInsights
     case performance
+    case performanceRecording(UUID)
     case eventDetail(MeetingCalendarEventSnapshot)
 }
 
@@ -33,7 +34,9 @@ public struct MetricsDashboardSettingsTab: View {
             case .some(.moreInsights):
                 MetricsDashboardMoreInsightsPage(viewModel: viewModel)
             case .some(.performance):
-                MetricsDashboardPerformancePage(viewModel: viewModel)
+                MetricsDashboardPerformancePage { navigationState.open(.performanceRecording($0)) }
+            case let .some(.performanceRecording(recordingID)):
+                MetricsDashboardPerformanceRecordingPage(recordingID: recordingID)
             case let .some(.eventDetail(event)):
                 MetricsDashboardEventDetailPage(event: event, viewModel: viewModel)
             }

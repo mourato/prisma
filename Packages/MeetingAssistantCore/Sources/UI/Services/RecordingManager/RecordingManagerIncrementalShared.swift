@@ -241,11 +241,17 @@ extension RecordingManager {
         response: DomainTranscriptionResponse,
         checkpointID: UUID,
         session: TranscriptionSessionSnapshot,
-        audioDuration: Double?
+        audioDuration: Double?,
+        transcriptionDuration: Double
     ) async throws -> Transcription {
         let settings = AppSettingsStore.shared
         let meetingEntity = makeMeetingEntity(meeting: session.meeting, audioDuration: audioDuration)
         let config = makeUseCaseConfig(session: session, settings: settings)
+        let transcriptionIdentity = resolvedTranscriptionPerformanceIdentity(
+            capturePurpose: session.meeting.capturePurpose
+        )
+        let transcriptionCompletedAt = Date()
+        let transcriptionStartedAt = transcriptionCompletedAt.addingTimeInterval(-max(0, transcriptionDuration))
 
         if shouldDriveSharedTranscriptionState(for: session.id) {
             meetingState = .processing(.generatingOutput)
@@ -255,19 +261,22 @@ extension RecordingManager {
             response: response,
             transcriptionID: checkpointID,
             meeting: meetingEntity,
+            transcriptionIdentity: transcriptionIdentity,
             inputSource: resolveInputSourceLabel(for: session.meeting, recordingSource: session.recordingSource),
             contextItems: config.postProcessingContextItems,
             vocabularyReplacementRules: settings.vocabularyReplacementRules,
             applyPostProcessing: config.applyPostProcessing,
             postProcessingPrompt: config.postProcessingPrompt,
             defaultPostProcessingPrompt: config.defaultPostProcessingPrompt,
-            postProcessingModel: config.postProcessingModel,
+            postProcessingIdentity: config.postProcessingIdentity,
             autoDetectMeetingType: config.autoDetectMeetingType,
             availablePrompts: config.availablePrompts,
             postProcessingContext: config.postProcessingContext,
             kernelMode: config.kernelMode,
             dictationStructuredPostProcessingEnabled: config.dictationStructuredPostProcessingEnabled,
-            transcriptionDuration: audioDuration ?? response.durationSeconds,
+            transcriptionDuration: transcriptionDuration,
+            transcriptionStartedAt: transcriptionStartedAt,
+            transcriptionCompletedAt: transcriptionCompletedAt,
             onPhaseChange: { [weak self] phase in
                 Task { @MainActor [weak self] in
                     self?.handleUseCasePhaseChange(phase, meeting: session.meeting, sessionID: session.id)

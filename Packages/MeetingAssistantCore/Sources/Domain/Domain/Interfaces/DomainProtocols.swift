@@ -228,6 +228,9 @@ public protocol TranscriptionStorageRepository: Sendable {
     /// Salva transcrição
     func saveTranscription(_ transcription: TranscriptionEntity) async throws
 
+    /// Salva tentativa imutável de performance de modelo
+    func saveModelPerformanceAttempt(_ attempt: ModelPerformanceAttempt) async throws
+
     /// Busca transcrição por ID
     func fetchTranscription(by id: UUID) async throws -> TranscriptionEntity?
 
@@ -239,6 +242,9 @@ public protocol TranscriptionStorageRepository: Sendable {
 
     /// Lista metadados de todas as transcrições (carregamento leve)
     func fetchAllMetadata() async throws -> [DomainTranscriptionMetadata]
+
+    /// Lista tentativas de performance dos modelos (carregamento leve)
+    func fetchModelPerformanceAttempts(matching query: ModelPerformanceAttemptQuery) async throws -> [ModelPerformanceAttempt]
 
     /// Remove transcrição
     func deleteTranscription(by id: UUID) async throws

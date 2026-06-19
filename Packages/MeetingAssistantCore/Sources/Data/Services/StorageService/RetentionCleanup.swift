@@ -77,10 +77,26 @@ public extension FileSystemStorageService {
         await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
             checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
         )
+        await coreDataStack.backfillModelPerformanceAttemptsIfNeeded()
 
         let entity = Self.convertToEntity(transcription)
         try await coreDataTranscriptionRepository.saveTranscription(entity)
         AppLogger.info("Saved transcription (Core Data)", category: .databaseManager, extra: ["id": transcription.id.uuidString])
+    }
+
+    func saveModelPerformanceAttempt(_ attempt: ModelPerformanceAttempt) async throws {
+        await coreDataStack.sanitizeMockTranscriptionArtifactsIfNeeded()
+        await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
+            checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
+        )
+        await coreDataStack.backfillModelPerformanceAttemptsIfNeeded()
+
+        try await coreDataTranscriptionRepository.saveModelPerformanceAttempt(attempt)
+        AppLogger.info(
+            "Saved model performance attempt",
+            category: .databaseManager,
+            extra: ["attemptID": attempt.id.uuidString, "transcriptionID": attempt.transcriptionID.uuidString]
+        )
     }
 
     func loadTranscriptions() async throws -> [Transcription] {
@@ -88,6 +104,7 @@ public extension FileSystemStorageService {
         await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
             checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
         )
+        await coreDataStack.backfillModelPerformanceAttemptsIfNeeded()
 
         let entities = try await coreDataTranscriptionRepository.fetchAllTranscriptions()
         let models = entities.map(Self.convertToModel)
@@ -111,6 +128,7 @@ public extension FileSystemStorageService {
         await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
             checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
         )
+        await coreDataStack.backfillModelPerformanceAttemptsIfNeeded()
 
         return try await coreDataStack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest()
@@ -123,11 +141,22 @@ public extension FileSystemStorageService {
         }
     }
 
+    func loadModelPerformanceAttempts(matching query: ModelPerformanceAttemptQuery) async throws -> [ModelPerformanceAttempt] {
+        await coreDataStack.sanitizeMockTranscriptionArtifactsIfNeeded()
+        await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
+            checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
+        )
+        await coreDataStack.backfillModelPerformanceAttemptsIfNeeded()
+
+        return try await coreDataTranscriptionRepository.fetchModelPerformanceAttempts(matching: query)
+    }
+
     func loadTranscription(by id: UUID) async throws -> Transcription? {
         await coreDataStack.sanitizeMockTranscriptionArtifactsIfNeeded()
         await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
             checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
         )
+        await coreDataStack.backfillModelPerformanceAttemptsIfNeeded()
 
         guard let entity = try await coreDataTranscriptionRepository.fetchTranscription(by: id) else {
             return nil

@@ -70,6 +70,7 @@ extension RecordingManager {
             snapshot: RecordingIndicatorProcessingSnapshot(step: .preparingAudio, progressPercent: 0)
         )
 
+        let retryStartedAt = Date()
         do {
             let updated = try await performRetryTranscription(
                 audioURL: preparedAudio.transcriptionURL,
@@ -78,6 +79,12 @@ extension RecordingManager {
                 selectionOverride: selectionOverride
             )
             try await storage.saveTranscription(updated)
+            await persistRetryPerformanceAttempts(
+                updatedTranscription: updated,
+                selectionOverride: selectionOverride,
+                startedAt: retryStartedAt,
+                completedAt: Date()
+            )
             RecordingIndicatorProcessingStateStore.shared.update(
                 snapshot: RecordingIndicatorProcessingSnapshot(step: .finalizingResult, progressPercent: 100)
             )
@@ -85,6 +92,14 @@ extension RecordingManager {
             notifySuccess(for: updated)
             scheduleStatusReset()
         } catch {
+            await persistFailedRetryPerformanceAttempt(
+                transcription: transcription,
+                selectionOverride: selectionOverride,
+                startedAt: retryStartedAt,
+                completedAt: Date(),
+                audioDuration: audioDuration,
+                error: error
+            )
             cancelEstimatedPostProcessingProgress()
             handleTranscriptionError(error)
         }
@@ -235,6 +250,90 @@ extension RecordingManager {
                 endTime: segment.endTime
             )
         }
+    }
+
+    private func persistRetryPerformanceAttempts(
+        updatedTranscription: Transcription,
+        selectionOverride: TranscriptionProviderSelection?,
+        startedAt: Date,
+        completedAt: Date
+    ) async {
+        let transcriptionIdentity = resolvedTranscriptionPerformanceIdentity(
+            capturePurpose: updatedTranscription.capturePurpose,
+            selectionOverride: selectionOverride
+        )
+        let transcriptionAttempt = ModelPerformanceAttempt(
+            transcriptionID: updatedTranscription.id,
+            stage: .transcription,
+            attemptKind: .retry,
+            capturePurpose: updatedTranscription.capturePurpose,
+            modelIdentity: transcriptionIdentity,
+            status: .succeeded,
+            startedAt: startedAt,
+            completedAt: completedAt,
+            wallClockSeconds: updatedTranscription.transcriptionDuration,
+            audioSeconds: max(0, updatedTranscription.meeting.duration),
+            inputUTF8Bytes: 0,
+            inputCharacterCount: 0,
+            outputCharacterCount: updatedTranscription.rawText.count,
+            failureReason: nil
+        )
+        try? await storage.saveModelPerformanceAttempt(transcriptionAttempt)
+
+        guard updatedTranscription.postProcessingDuration > 0 || updatedTranscription.postProcessingModel != nil else {
+            return
+        }
+
+        let mode: IntelligenceKernelMode = updatedTranscription.capturePurpose == .dictation ? .dictation : .meeting
+        let postProcessingIdentity = AppSettingsStore.shared.resolvedEnhancementsPerformanceIdentity(for: mode)
+        let postProcessingAttempt = ModelPerformanceAttempt(
+            transcriptionID: updatedTranscription.id,
+            stage: .postProcessing,
+            attemptKind: .retry,
+            capturePurpose: updatedTranscription.capturePurpose,
+            modelIdentity: postProcessingIdentity,
+            status: updatedTranscription.processedContent == nil ? .failed : .succeeded,
+            startedAt: completedAt.addingTimeInterval(-max(0, updatedTranscription.postProcessingDuration)),
+            completedAt: completedAt,
+            wallClockSeconds: updatedTranscription.postProcessingDuration,
+            audioSeconds: 0,
+            inputUTF8Bytes: updatedTranscription.rawText.lengthOfBytes(using: .utf8),
+            inputCharacterCount: updatedTranscription.rawText.count,
+            outputCharacterCount: updatedTranscription.processedContent?.count ?? 0,
+            failureReason: updatedTranscription.postProcessingFailureReason
+        )
+        try? await storage.saveModelPerformanceAttempt(postProcessingAttempt)
+    }
+
+    private func persistFailedRetryPerformanceAttempt(
+        transcription: Transcription,
+        selectionOverride: TranscriptionProviderSelection?,
+        startedAt: Date,
+        completedAt: Date,
+        audioDuration: Double?,
+        error: Error
+    ) async {
+        let identity = resolvedTranscriptionPerformanceIdentity(
+            capturePurpose: transcription.capturePurpose,
+            selectionOverride: selectionOverride
+        )
+        let attempt = ModelPerformanceAttempt(
+            transcriptionID: transcription.id,
+            stage: .transcription,
+            attemptKind: .retry,
+            capturePurpose: transcription.capturePurpose,
+            modelIdentity: identity,
+            status: .failed,
+            startedAt: startedAt,
+            completedAt: completedAt,
+            wallClockSeconds: max(0, completedAt.timeIntervalSince(startedAt)),
+            audioSeconds: max(0, audioDuration ?? transcription.meeting.duration),
+            inputUTF8Bytes: 0,
+            inputCharacterCount: 0,
+            outputCharacterCount: 0,
+            failureReason: error.localizedDescription
+        )
+        try? await storage.saveModelPerformanceAttempt(attempt)
     }
 
     // MARK: - Post Processing Input

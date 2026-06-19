@@ -14,6 +14,7 @@ extension RecordingManager {
         let postProcessingPrompt: DomainPostProcessingPrompt?
         let defaultPostProcessingPrompt: DomainPostProcessingPrompt?
         let postProcessingModel: String?
+        let postProcessingIdentity: ModelPerformanceModelIdentity?
         let autoDetectMeetingType: Bool
         let availablePrompts: [DomainPostProcessingPrompt]
         let postProcessingContext: String?
@@ -77,6 +78,7 @@ extension RecordingManager {
                 postProcessingPrompt: nil,
                 defaultPostProcessingPrompt: nil,
                 postProcessingModel: nil,
+                postProcessingIdentity: nil,
                 autoDetectMeetingType: false,
                 availablePrompts: [],
                 postProcessingContext: nil,
@@ -126,6 +128,7 @@ extension RecordingManager {
             postProcessingPrompt: prompt,
             defaultPostProcessingPrompt: autoDetectMeetingType ? defaultMeetingPrompt : nil,
             postProcessingModel: settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel,
+            postProcessingIdentity: settings.resolvedEnhancementsPerformanceIdentity(for: kernelMode),
             autoDetectMeetingType: autoDetectMeetingType,
             availablePrompts: availablePrompts,
             postProcessingContext: session.postProcessingContext,

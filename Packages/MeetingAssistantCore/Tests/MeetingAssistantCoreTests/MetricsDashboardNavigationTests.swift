@@ -37,4 +37,14 @@ final class MetricsDashboardNavigationTests: XCTestCase {
 
         XCTAssertEqual(navigationState.currentRoute, .eventDetail(event))
     }
+
+    func testOpenPerformanceRecordingRoute() throws {
+        var navigationState = SettingsSubpageNavigationState<MetricsDashboardRoute>()
+        let recordingID = try XCTUnwrap(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+
+        navigationState.open(.performanceRecording(recordingID))
+
+        XCTAssertEqual(navigationState.currentRoute, .performanceRecording(recordingID))
+        XCTAssertTrue(navigationState.canGoBack)
+    }
 }

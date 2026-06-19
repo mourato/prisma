@@ -292,10 +292,12 @@ public extension TranscriptionSettingsViewModel {
         let transcriptionID = transcription.id
         markPostProcessingStarted(for: transcriptionID)
         let startTime = Date()
+        let mode: IntelligenceKernelMode = transcription.capturePurpose == .dictation ? .dictation : .meeting
+        let postProcessingIdentity = AppSettingsStore.shared.resolvedEnhancementsPerformanceIdentity(for: mode)
+        let postProcessingInput = postProcessingInput(for: transcription)
         defer { markPostProcessingFinished(for: transcriptionID) }
 
         do {
-            let postProcessingInput = postProcessingInput(for: transcription)
             let processedText = try await PostProcessingService.shared.processTranscription(
                 postProcessingInput,
                 with: prompt
@@ -330,6 +332,24 @@ public extension TranscriptionSettingsViewModel {
             )
 
             try await storage.saveTranscription(updatedTranscription)
+            let completedAt = Date()
+            let attempt = ModelPerformanceAttempt(
+                transcriptionID: transcription.id,
+                stage: .postProcessing,
+                attemptKind: .reprocess,
+                capturePurpose: transcription.capturePurpose,
+                modelIdentity: postProcessingIdentity,
+                status: .succeeded,
+                startedAt: startTime,
+                completedAt: completedAt,
+                wallClockSeconds: duration,
+                audioSeconds: 0,
+                inputUTF8Bytes: postProcessingInput.lengthOfBytes(using: .utf8),
+                inputCharacterCount: postProcessingInput.count,
+                outputCharacterCount: processedText.count,
+                failureReason: nil
+            )
+            try? await storage.saveModelPerformanceAttempt(attempt)
 
             // Update local state
             selectedTranscription = updatedTranscription
@@ -340,11 +360,47 @@ public extension TranscriptionSettingsViewModel {
 
         } catch let error as PostProcessingError {
             logger.error("Failed to apply post-processing: \(error.localizedDescription)")
+            let completedAt = Date()
+            let attempt = ModelPerformanceAttempt(
+                transcriptionID: transcription.id,
+                stage: .postProcessing,
+                attemptKind: .reprocess,
+                capturePurpose: transcription.capturePurpose,
+                modelIdentity: postProcessingIdentity,
+                status: .failed,
+                startedAt: startTime,
+                completedAt: completedAt,
+                wallClockSeconds: max(0, completedAt.timeIntervalSince(startTime)),
+                audioSeconds: 0,
+                inputUTF8Bytes: postProcessingInput.lengthOfBytes(using: .utf8),
+                inputCharacterCount: postProcessingInput.count,
+                outputCharacterCount: 0,
+                failureReason: error.localizedDescription
+            )
+            try? await storage.saveModelPerformanceAttempt(attempt)
             let message = error.localizedDescription
             postProcessingErrorByTranscriptionID[transcriptionID] = message
             operationErrorMessage = message
         } catch {
             logger.error("Failed to apply post-processing: \(error.localizedDescription)")
+            let completedAt = Date()
+            let attempt = ModelPerformanceAttempt(
+                transcriptionID: transcription.id,
+                stage: .postProcessing,
+                attemptKind: .reprocess,
+                capturePurpose: transcription.capturePurpose,
+                modelIdentity: postProcessingIdentity,
+                status: .failed,
+                startedAt: startTime,
+                completedAt: completedAt,
+                wallClockSeconds: max(0, completedAt.timeIntervalSince(startTime)),
+                audioSeconds: 0,
+                inputUTF8Bytes: postProcessingInput.lengthOfBytes(using: .utf8),
+                inputCharacterCount: postProcessingInput.count,
+                outputCharacterCount: 0,
+                failureReason: error.localizedDescription
+            )
+            try? await storage.saveModelPerformanceAttempt(attempt)
             let message = "transcription.post_processing.error".localized
             postProcessingErrorByTranscriptionID[transcriptionID] = message
             operationErrorMessage = message

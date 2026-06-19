@@ -13,6 +13,7 @@ public final class CoreDataStack: Sendable {
     enum MigrationKeys {
         static let didSanitizeNonMeetingPresentationDataV1 = "storage.migrations.non_meeting_presentation_data_sanitized.v1"
         static let didRemoveMockTranscriptionArtifactsV1 = "storage.migrations.mock_transcription_artifacts_removed.v1"
+        static let didBackfillModelPerformanceAttemptsV1 = "storage.migrations.model_performance_attempts_backfilled.v1"
     }
 
     private let persistentContainer: NSPersistentContainer

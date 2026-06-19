@@ -11,6 +11,7 @@ actor IncrementalDictationTranscriptionCoordinator {
     struct FinalizedResult {
         let response: DomainTranscriptionResponse
         let checkpointID: UUID
+        let wallClockDuration: Double
     }
 
     struct Callbacks {
@@ -84,7 +85,11 @@ actor IncrementalDictationTranscriptionCoordinator {
         try await core.finishAccumulation()
         let response = try await core.buildFinalizedResponse()
 
-        return await FinalizedResult(response: response, checkpointID: core.checkpointID)
+        return await FinalizedResult(
+            response: response,
+            checkpointID: core.checkpointID,
+            wallClockDuration: core.wallClockElapsedSeconds
+        )
     }
 
     func cancelAndDiscard() async {

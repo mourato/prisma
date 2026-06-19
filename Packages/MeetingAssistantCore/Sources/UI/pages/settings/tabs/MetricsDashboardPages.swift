@@ -126,7 +126,7 @@ struct MetricsDashboardEventDetailPage: View {
                         content: $notesDraft,
                         documentId: "calendar-event-notes-\(event.eventIdentifier)"
                     )
-                        .frame(minHeight: 280)
+                    .frame(minHeight: 280)
                 }
             }
         }
@@ -255,27 +255,16 @@ private struct MetricsDashboardPerformanceLinkSection: View {
 }
 
 struct MetricsDashboardPerformancePage: View {
-    @ObservedObject var viewModel: MetricsDashboardViewModel
-
-    @State private var analysis = ModelPerformanceAnalysis.empty
-    @State private var selectedFilter: PerformanceFilter = .all
-    @State private var isLoading = true
-    @State private var errorMessage: String?
-    @State private var performanceLoadTask: Task<Void, Never>?
-
-    private let storage: StorageService
+    @StateObject private var viewModel: MetricsDashboardPerformanceViewModel
+    let openRecording: (UUID) -> Void
 
     init(
-        viewModel: MetricsDashboardViewModel,
-        storage: StorageService = FileSystemStorageService.shared
+        storage: StorageService = FileSystemStorageService.shared,
+        openRecording: @escaping (UUID) -> Void = { _ in }
     ) {
-        self.viewModel = viewModel
-        self.storage = storage
+        _viewModel = StateObject(wrappedValue: MetricsDashboardPerformanceViewModel(storage: storage))
+        self.openRecording = openRecording
     }
-
-    private let columns: [GridItem] = [
-        GridItem(.adaptive(minimum: 260), spacing: 16),
-    ]
 
     var body: some View {
         SettingsScrollableContent {
@@ -284,148 +273,192 @@ struct MetricsDashboardPerformancePage: View {
                 description: "metrics.performance.subtitle".localized
             )
 
+            if let errorMessage = viewModel.errorMessage {
+                SettingsStateBlock(kind: .warning, title: "common.error".localized, message: errorMessage) {
+                    Task {
+                        await viewModel.load()
+                    }
+                }
+            }
+
+            if viewModel.isLoading, viewModel.analysis.summary.totalAttempts == 0 {
+                ProgressView()
+                    .tint(AppDesignSystem.Colors.accent)
+                    .frame(maxWidth: .infinity, minHeight: 200)
+            } else {
+                MetricsDashboardPerformanceWorkspace(
+                    viewModel: viewModel,
+                    openRecording: openRecording
+                )
+            }
+        }
+        .task {
+            await viewModel.load()
+        }
+    }
+}
+
+struct MetricsDashboardPerformanceRecordingPage: View {
+    let recordingID: UUID
+
+    @State private var transcription: Transcription?
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+
+    private let storage: StorageService
+
+    init(
+        recordingID: UUID,
+        storage: StorageService = FileSystemStorageService.shared
+    ) {
+        self.recordingID = recordingID
+        self.storage = storage
+    }
+
+    var body: some View {
+        SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: transcription?.meeting.preferredTitle ?? "metrics.performance.recording.title".localized,
+                description: "metrics.performance.recording.subtitle".localized
+            )
+
             if let errorMessage {
                 SettingsStateBlock(kind: .warning, title: "common.error".localized, message: errorMessage) {
-                    Task { await loadPerformanceData() }
+                    Task {
+                        await loadRecording()
+                    }
                 }
             }
 
             if isLoading {
                 ProgressView()
                     .tint(AppDesignSystem.Colors.accent)
-                    .frame(maxWidth: .infinity, minHeight: 200)
-            } else if analysis.totalTranscripts == 0 {
-                MAEmptyStateView(
-                    iconName: "gauge.open.with.lines.needle.33percent",
-                    title: "metrics.performance.empty.title".localized,
-                    message: "metrics.performance.empty.subtitle".localized
-                )
+                    .frame(maxWidth: .infinity, minHeight: 180)
+            } else if let transcription {
+                recordingSnapshotSection(transcription)
+                transcriptPreviewSection(transcription)
             } else {
-                summarySection
-                filterSection
-                if !analysis.transcriptionModels.isEmpty {
-                    transcriptionPerformanceSection
-                }
-                if !analysis.enhancementModels.isEmpty {
-                    enhancementPerformanceSection
-                }
+                MAEmptyStateView(
+                    iconName: "doc.text.magnifyingglass",
+                    title: "metrics.performance.recording.empty.title".localized,
+                    message: "metrics.performance.recording.empty.subtitle".localized
+                )
             }
         }
-        .task {
-            await loadPerformanceData()
+        .task(id: recordingID) {
+            await loadRecording()
         }
     }
 
-    private var summarySection: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
-                PerformanceStatCard(
-                    icon: "doc.text.fill",
-                    value: "\(analysis.totalTranscripts)",
-                    label: "metrics.performance.summary.total".localized,
-                    tint: .indigo
-                )
-                PerformanceStatCard(
-                    icon: "waveform.path.ecg",
-                    value: "\(analysis.totalWithData)",
-                    label: "metrics.performance.summary.analyzable".localized,
-                    tint: .teal
-                )
-                PerformanceStatCard(
-                    icon: "sparkles",
-                    value: "\(analysis.totalProcessed)",
-                    label: "metrics.performance.summary.processed".localized,
-                    tint: .mint
-                )
-            }
-
-            VStack(spacing: 8) {
-                HStack(spacing: 12) {
-                    PerformanceStatCard(
-                        icon: "doc.text.fill",
-                        value: "\(analysis.totalTranscripts)",
-                        label: "metrics.performance.summary.total".localized,
-                        tint: .indigo
+    private func recordingSnapshotSection(_ transcription: Transcription) -> some View {
+        DSGroup("metrics.performance.recording.snapshot".localized, icon: "doc.text") {
+            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 12) {
+                GridRow {
+                    recordingMetric(
+                        title: "metrics.performance.recording.capture".localized,
+                        value: transcription.capturePurpose.displayName
                     )
-                    PerformanceStatCard(
-                        icon: "waveform.path.ecg",
-                        value: "\(analysis.totalWithData)",
-                        label: "metrics.performance.summary.analyzable".localized,
-                        tint: .teal
+                    recordingMetric(
+                        title: "metrics.performance.recording.source".localized,
+                        value: transcription.meeting.appName
                     )
                 }
-                HStack(spacing: 12) {
-                    PerformanceStatCard(
-                        icon: "sparkles",
-                        value: "\(analysis.totalProcessed)",
-                        label: "metrics.performance.summary.processed".localized,
-                        tint: .mint
+
+                GridRow {
+                    recordingMetric(
+                        title: "metrics.performance.recording.transcription_model".localized,
+                        value: transcription.modelName
+                    )
+                    recordingMetric(
+                        title: "metrics.performance.recording.transcription_time".localized,
+                        value: formatDuration(transcription.transcriptionDuration)
+                    )
+                }
+
+                GridRow {
+                    recordingMetric(
+                        title: "metrics.performance.recording.post_processing_model".localized,
+                        value: transcription.postProcessingModel ?? "metrics.performance.summary.none".localized
+                    )
+                    recordingMetric(
+                        title: "metrics.performance.recording.post_processing_time".localized,
+                        value: formatDuration(transcription.postProcessingDuration)
+                    )
+                }
+
+                GridRow {
+                    recordingMetric(
+                        title: "metrics.performance.recording.recorded_at".localized,
+                        value: formattedDate(transcription.createdAt)
+                    )
+                    recordingMetric(
+                        title: "metrics.performance.recording.input_source".localized,
+                        value: transcription.inputSource ?? "metrics.performance.summary.none".localized
                     )
                 }
             }
-        }
-    }
 
-    private var filterSection: some View {
-        DSGroup("metrics.performance.filter.title".localized, icon: "line.3.horizontal.decrease.circle") {
-            Picker("", selection: $selectedFilter) {
-                ForEach(PerformanceFilter.allCases, id: \.self) { filter in
-                    Text(filter.displayName).tag(filter)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .onChange(of: selectedFilter) { _, _ in
-                Task { await loadPerformanceData() }
+            if let failureReason = transcription.postProcessingFailureReason?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !failureReason.isEmpty
+            {
+                Divider()
+                Text(failureReason)
+                    .font(.caption)
+                    .foregroundStyle(.red)
             }
         }
     }
 
-    private var transcriptionPerformanceSection: some View {
-        DSGroup("metrics.performance.transcription_models".localized, icon: "waveform") {
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(analysis.transcriptionModels) { modelStat in
-                    TranscriptionModelCard(modelStat: modelStat)
-                }
-            }
+    private func transcriptPreviewSection(_ transcription: Transcription) -> some View {
+        DSGroup("metrics.performance.recording.preview".localized, icon: "text.alignleft") {
+            Text(transcription.processedContent ?? transcription.text)
+                .font(.body)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private var enhancementPerformanceSection: some View {
-        DSGroup("metrics.performance.enhancement_models".localized, icon: "sparkles") {
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(analysis.enhancementModels) { modelStat in
-                    EnhancementModelCard(modelStat: modelStat)
-                }
-            }
+    private func recordingMetric(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private func loadPerformanceData() async {
-        performanceLoadTask?.cancel()
-        let task = Task {
-            isLoading = true
-            errorMessage = nil
-            defer { isLoading = false }
+    private func loadRecording() async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
 
-            do {
-                try Task.checkCancellation()
-                let allTranscriptions = try await storage.loadTranscriptions()
-                try Task.checkCancellation()
-                let filtered: [Transcription] = switch selectedFilter {
-                case .all: allTranscriptions
-                case .dictation: allTranscriptions.filter { $0.capturePurpose == .dictation }
-                case .meeting: allTranscriptions.filter { $0.capturePurpose == .meeting }
-                }
-                analysis = ModelPerformanceAggregator.computeAnalysis(transcriptions: filtered)
-            } catch is CancellationError {
-                return
-            } catch {
-                errorMessage = "metrics.error.load".localized
-            }
+        do {
+            transcription = try await storage.loadTranscription(by: recordingID)
+        } catch {
+            transcription = nil
+            errorMessage = "metrics.error.load".localized
         }
-        performanceLoadTask = task
-        await task.value
+    }
+
+    private func formatDuration(_ seconds: Double) -> String {
+        guard seconds > 0 else { return "metrics.performance.summary.none".localized }
+        if seconds < 60 {
+            return String(format: "%.1fs", seconds)
+        }
+
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = seconds >= 3_600 ? [.hour, .minute, .second] : [.minute, .second]
+        formatter.unitsStyle = .abbreviated
+        return formatter.string(from: seconds) ?? String(format: "%.0fs", seconds)
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }
 

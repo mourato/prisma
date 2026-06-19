@@ -89,6 +89,9 @@ public protocol StorageService: Sendable {
     /// Save a transcription to persistent storage.
     func saveTranscription(_ transcription: Transcription) async throws
 
+    /// Save an immutable model-performance attempt linked to a transcription.
+    func saveModelPerformanceAttempt(_ attempt: ModelPerformanceAttempt) async throws
+
     /// Load all transcriptions from storage.
     func loadTranscriptions() async throws -> [Transcription]
 
@@ -97,6 +100,9 @@ public protocol StorageService: Sendable {
 
     /// Load lightweight metadata with server-side filters.
     func loadMetadata(matching query: TranscriptionMetadataQuery) async throws -> [TranscriptionMetadata]
+
+    /// Load lightweight model-performance attempts with server-side filters.
+    func loadModelPerformanceAttempts(matching query: ModelPerformanceAttemptQuery) async throws -> [ModelPerformanceAttempt]
 
     /// Load a specific transcription by its ID.
     func loadTranscription(by id: UUID) async throws -> Transcription?
@@ -123,6 +129,7 @@ public final class FileSystemStorageService: StorageService {
         static let recordingsDirectory = "recordingsDirectory"
         static let didMigrateLegacyJSONTranscriptionsToCoreDataV1 = "storage.migrations.legacy_json_transcriptions_to_coredata.v1"
         static let didSanitizeNonMeetingPresentationDataV1 = "storage.migrations.non_meeting_presentation_data_sanitized.v1"
+        static let didBackfillModelPerformanceAttemptsV1 = "storage.migrations.model_performance_attempts_backfilled.v1"
     }
 
     static func wordCount(for text: String) -> Int {

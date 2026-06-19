@@ -248,6 +248,88 @@ final class CoreDataRepositoryTests: XCTestCase {
         XCTAssertEqual(fetched?.postProcessingRequestUserPrompt, "User prompt payload")
     }
 
+    func testFetchModelPerformanceAttempts_BackfillsSyntheticAttemptsFromLegacySnapshot() async throws {
+        let checkpointKey = "coredata.tests.model_performance_backfill.\(UUID().uuidString)"
+        UserDefaults.standard.removeObject(forKey: checkpointKey)
+
+        let meeting = MeetingEntity(app: .unknown, capturePurpose: .dictation)
+        try await meetingRepo.saveMeeting(meeting)
+
+        var config = TranscriptionEntity.Configuration(
+            text: "Processed text",
+            rawText: "Raw text"
+        )
+        config.modelName = "legacy-transcriber"
+        config.transcriptionDuration = 42
+        config.processedContent = "Processed text"
+        config.postProcessingDuration = 5
+        config.postProcessingModel = "legacy-cleaner"
+        let transcription = TranscriptionEntity(meeting: meeting, config: config)
+
+        try await transcriptionRepo.saveTranscription(transcription)
+        await stack.backfillModelPerformanceAttemptsIfNeeded(checkpointKey: checkpointKey)
+
+        let transcriptionAttempts = try await transcriptionRepo.fetchModelPerformanceAttempts(
+            matching: ModelPerformanceAttemptQuery(stage: .transcription)
+        )
+        let postProcessingAttempts = try await transcriptionRepo.fetchModelPerformanceAttempts(
+            matching: ModelPerformanceAttemptQuery(stage: .postProcessing)
+        )
+
+        XCTAssertEqual(transcriptionAttempts.count, 1)
+        XCTAssertEqual(postProcessingAttempts.count, 1)
+        XCTAssertEqual(transcriptionAttempts.first?.modelIdentity.providerID, "unknown")
+        XCTAssertEqual(transcriptionAttempts.first?.modelIdentity.runtimeKind, .unknown)
+        XCTAssertEqual(postProcessingAttempts.first?.modelIdentity.providerID, "unknown")
+        XCTAssertEqual(postProcessingAttempts.first?.modelIdentity.runtimeKind, .unknown)
+    }
+
+    func testFetchModelPerformanceAttempts_ReturnsNewestAttemptsFirstAndHonorsLimit() async throws {
+        let meeting = MeetingEntity(app: .unknown, capturePurpose: .dictation)
+        try await meetingRepo.saveMeeting(meeting)
+
+        var config = TranscriptionEntity.Configuration(
+            text: "Raw text",
+            rawText: "Raw text"
+        )
+        config.modelName = "test-model"
+        let transcription = TranscriptionEntity(meeting: meeting, config: config)
+        try await transcriptionRepo.saveTranscription(transcription)
+
+        let baseDate = Date(timeIntervalSince1970: 1_700_000_000)
+        try await transcriptionRepo.saveModelPerformanceAttempt(
+            makeAttempt(
+                transcriptionID: transcription.id,
+                providerID: "local",
+                modelID: "model-a",
+                startedAt: baseDate
+            )
+        )
+        try await transcriptionRepo.saveModelPerformanceAttempt(
+            makeAttempt(
+                transcriptionID: transcription.id,
+                providerID: "local",
+                modelID: "model-a",
+                startedAt: baseDate.addingTimeInterval(10)
+            )
+        )
+        try await transcriptionRepo.saveModelPerformanceAttempt(
+            makeAttempt(
+                transcriptionID: transcription.id,
+                providerID: "local",
+                modelID: "model-a",
+                startedAt: baseDate.addingTimeInterval(20)
+            )
+        )
+
+        let attempts = try await transcriptionRepo.fetchModelPerformanceAttempts(
+            matching: ModelPerformanceAttemptQuery(stage: .transcription, limit: 2)
+        )
+
+        XCTAssertEqual(attempts.count, 2)
+        XCTAssertEqual(attempts.map(\.startedAt), [baseDate.addingTimeInterval(20), baseDate.addingTimeInterval(10)])
+    }
+
     func testSaveTranscription_NonMeetingMetadataDoesNotExposeTitleOrCalendarFallback() async throws {
         let meeting = MeetingEntity(
             id: UUID(),
@@ -322,5 +404,34 @@ final class CoreDataRepositoryTests: XCTestCase {
         } catch let error as CanonicalSummaryValidationError {
             XCTAssertEqual(error, .unsupportedSchemaVersion(0))
         }
+    }
+
+    private func makeAttempt(
+        transcriptionID: UUID,
+        providerID: String,
+        modelID: String,
+        startedAt: Date
+    ) -> ModelPerformanceAttempt {
+        ModelPerformanceAttempt(
+            transcriptionID: transcriptionID,
+            stage: .transcription,
+            attemptKind: .retry,
+            capturePurpose: .dictation,
+            modelIdentity: ModelPerformanceModelIdentity(
+                providerID: providerID,
+                providerDisplayName: providerID,
+                modelID: modelID,
+                modelDisplayName: modelID,
+                runtimeKind: .local
+            ),
+            status: .succeeded,
+            startedAt: startedAt,
+            completedAt: startedAt.addingTimeInterval(5),
+            wallClockSeconds: 5,
+            audioSeconds: 60,
+            inputUTF8Bytes: 0,
+            inputCharacterCount: 0,
+            outputCharacterCount: 100
+        )
     }
 }

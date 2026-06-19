@@ -108,7 +108,8 @@ extension RecordingManager {
             response: result.response,
             checkpointID: result.checkpointID,
             session: session,
-            audioDuration: audioDuration
+            audioDuration: audioDuration,
+            transcriptionDuration: result.wallClockDuration
         )
         teardownIncrementalDictationSession()
         return transcription

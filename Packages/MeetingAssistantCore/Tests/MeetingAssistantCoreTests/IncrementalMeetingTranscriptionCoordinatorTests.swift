@@ -40,9 +40,9 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
         )
 
         try await coordinator.start()
-        await coordinator.append(
+        try await coordinator.append(
             bufferBox: RecordingManager.SendableIncrementalAudioBufferBox(
-                buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
+                buffer: makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
             )
         )
 
@@ -63,6 +63,7 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
         XCTAssertEqual(result.checkpointID, checkpointID)
         XCTAssertEqual(result.response.segments.map(\.speaker), ["Speaker 1"])
         XCTAssertEqual(result.response.text, "meeting partial")
+        XCTAssertGreaterThan(result.wallClockDuration, 0)
         XCTAssertFalse(processedDurationRecorder.values.isEmpty)
     }
 
@@ -84,9 +85,9 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
         )
 
         try await coordinator.start()
-        await coordinator.append(
+        try await coordinator.append(
             bufferBox: RecordingManager.SendableIncrementalAudioBufferBox(
-                buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
+                buffer: makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
             )
         )
 
@@ -181,9 +182,9 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
         )
 
         try await coordinator.start()
-        await coordinator.append(
+        try await coordinator.append(
             bufferBox: RecordingManager.SendableIncrementalAudioBufferBox(
-                buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
+                buffer: makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
             )
         )
 

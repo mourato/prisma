@@ -17,6 +17,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     private func sanitizePersistentHistoryIfNeeded() async {
         await stack.sanitizeMockTranscriptionArtifactsIfNeeded()
         await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+        await stack.backfillModelPerformanceAttemptsIfNeeded()
     }
 
     public func saveTranscription(_ transcription: TranscriptionEntity) async throws {
@@ -34,6 +35,32 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
             } else {
                 _ = TranscriptionMO.create(from: sanitizedTranscription, meeting: meetingMO, in: context)
             }
+            try context.save()
+        }
+    }
+
+    public func saveModelPerformanceAttempt(_ attempt: ModelPerformanceAttempt) async throws {
+        await sanitizePersistentHistoryIfNeeded()
+        try await stack.performBackgroundTask { context in
+            let transcriptionRequest = TranscriptionMO.fetchRequest(forTranscriptionId: attempt.transcriptionID)
+            guard let transcription = try context.fetch(transcriptionRequest).first else {
+                throw NSError(
+                    domain: "CoreDataTranscriptionStorageRepository",
+                    code: 404,
+                    userInfo: [NSLocalizedDescriptionKey: "Missing transcription for model performance attempt"]
+                )
+            }
+
+            let request = ModelPerformanceAttemptMO.fetchRequest()
+            request.predicate = NSPredicate(format: "id == %@", attempt.id as CVarArg)
+            request.fetchLimit = 1
+
+            if let existing = try context.fetch(request).first {
+                existing.update(from: attempt, transcription: transcription)
+            } else {
+                _ = ModelPerformanceAttemptMO.create(from: attempt, transcription: transcription, in: context)
+            }
+
             try context.save()
         }
     }
@@ -102,6 +129,26 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
         }
     }
 
+    public func fetchModelPerformanceAttempts(matching query: ModelPerformanceAttemptQuery) async throws -> [ModelPerformanceAttempt] {
+        await sanitizePersistentHistoryIfNeeded()
+        return try await stack.performBackgroundTask { context in
+            let request = ModelPerformanceAttemptMO.fetchRequest()
+            request.fetchBatchSize = 100
+            request.relationshipKeyPathsForPrefetching = ["transcription", "transcription.meeting"]
+            request.predicate = Self.attemptPredicate(for: query)
+            request.sortDescriptors = [
+                NSSortDescriptor(key: "startedAt", ascending: false),
+                NSSortDescriptor(key: "completedAt", ascending: false),
+            ]
+
+            if let limit = query.limit {
+                request.fetchLimit = max(limit, 0)
+            }
+
+            return try context.fetch(request).map { $0.toDomain() }
+        }
+    }
+
     public func deleteTranscription(by id: UUID) async throws {
         try await stack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest(forTranscriptionId: id)
@@ -160,6 +207,59 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
         config.meetingType = transcription.meetingType
         config.lifecycleState = transcription.lifecycleState
         config.meetingConversationState = transcription.meetingConversationState
+        config.postProcessingFailureReason = transcription.postProcessingFailureReason
         return TranscriptionEntity(meeting: sanitizedMeeting, config: config)
+    }
+
+    private static func attemptPredicate(for query: ModelPerformanceAttemptQuery) -> NSPredicate {
+        var predicates: [NSPredicate] = [
+            NSPredicate(format: "stageRawValue == %@", query.stage.rawValue),
+        ]
+
+        switch query.captureFilter {
+        case .all:
+            break
+        case .dictation:
+            predicates.append(NSPredicate(format: "capturePurposeRawValue == %@", CapturePurpose.dictation.rawValue))
+        case .meeting:
+            predicates.append(NSPredicate(format: "capturePurposeRawValue == %@", CapturePurpose.meeting.rawValue))
+        }
+
+        if let providerID = query.providerID?.trimmingCharacters(in: .whitespacesAndNewlines), !providerID.isEmpty {
+            predicates.append(NSPredicate(format: "providerID == %@", providerID))
+        }
+
+        switch query.statusFilter {
+        case .all:
+            break
+        case .succeeded:
+            predicates.append(NSPredicate(format: "statusRawValue == %@", ModelPerformanceAttemptStatus.succeeded.rawValue))
+        case .failed:
+            predicates.append(NSPredicate(format: "statusRawValue == %@", ModelPerformanceAttemptStatus.failed.rawValue))
+        }
+
+        let range = query.dateFilter.dateRange
+        if query.dateFilter != .allEntries {
+            predicates.append(
+                NSPredicate(
+                    format: "startedAt >= %@ AND startedAt < %@",
+                    range.start as NSDate,
+                    range.end as NSDate
+                )
+            )
+        }
+
+        let trimmedSearch = query.modelSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedSearch.isEmpty {
+            predicates.append(
+                NSCompoundPredicate(orPredicateWithSubpredicates: [
+                    NSPredicate(format: "modelDisplayName CONTAINS[cd] %@", trimmedSearch),
+                    NSPredicate(format: "modelID CONTAINS[cd] %@", trimmedSearch),
+                    NSPredicate(format: "providerDisplayName CONTAINS[cd] %@", trimmedSearch),
+                ])
+            )
+        }
+
+        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
 }

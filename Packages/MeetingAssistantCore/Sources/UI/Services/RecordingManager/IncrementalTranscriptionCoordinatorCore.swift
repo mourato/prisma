@@ -63,6 +63,10 @@ actor IncrementalTranscriptionCoordinatorCore {
         accumulatedSegments
     }
 
+    var wallClockElapsedSeconds: Double {
+        max(0, Date().timeIntervalSince(createdAt))
+    }
+
     func start() async throws {
         try await persistCheckpoint(lifecycleState: .partial)
     }

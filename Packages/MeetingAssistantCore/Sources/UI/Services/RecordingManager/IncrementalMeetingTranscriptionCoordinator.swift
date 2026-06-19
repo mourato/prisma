@@ -11,6 +11,7 @@ actor IncrementalMeetingTranscriptionCoordinator {
     struct FinalizedResult {
         let response: DomainTranscriptionResponse
         let checkpointID: UUID
+        let wallClockDuration: Double
     }
 
     struct Callbacks {
@@ -109,7 +110,11 @@ actor IncrementalMeetingTranscriptionCoordinator {
 
         let response = try await core.buildFinalizedResponse(segmentsOverride: finalizedSegments)
 
-        return await FinalizedResult(response: response, checkpointID: core.checkpointID)
+        return await FinalizedResult(
+            response: response,
+            checkpointID: core.checkpointID,
+            wallClockDuration: core.wallClockElapsedSeconds
+        )
     }
 
     func cancelAndDiscard() async {

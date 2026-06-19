@@ -8,6 +8,24 @@ public final class TranscribeAudioUseCase: Sendable {
     public typealias PhaseChangeHandler = @Sendable (TranscriptionPhase) -> Void
     public typealias TranscriptionProgressHandler = @Sendable (Double) -> Void
 
+    private struct ModelPerformanceAttemptPersistenceInput {
+        let transcriptionID: UUID
+        let transcriptionText: String
+        let transcriptionIdentity: ModelPerformanceModelIdentity
+        let transcriptionStartedAt: Date
+        let transcriptionCompletedAt: Date
+        let transcriptionDuration: Double
+        let audioSeconds: Double
+        let capturePurpose: CapturePurpose
+        let shouldAttemptPostProcessing: Bool
+        let postProcessingInput: String
+        let postProcessingResult: PostProcessingResult
+        let postProcessingIdentity: ModelPerformanceModelIdentity?
+        let postProcessingStartedAt: Date
+        let postProcessingCompletedAt: Date
+        let postProcessingDuration: Double
+    }
+
     private let transcriptionRepository: TranscriptionRepository
     private let transcriptionStorageRepository: TranscriptionStorageRepository
     private let postProcessingRepository: PostProcessingRepository?
@@ -38,6 +56,13 @@ public final class TranscribeAudioUseCase: Sendable {
         audioURL: URL,
         transcriptionID: UUID? = nil,
         meeting: MeetingEntity,
+        transcriptionIdentity: ModelPerformanceModelIdentity = .init(
+            providerID: "unknown",
+            providerDisplayName: "Unknown",
+            modelID: "unknown",
+            modelDisplayName: "Unknown",
+            runtimeKind: .unknown
+        ),
         inputSource: String? = nil,
         contextItems: [TranscriptionContextItem] = [],
         vocabularyReplacementRules: [VocabularyReplacementRule] = [],
@@ -45,7 +70,7 @@ public final class TranscribeAudioUseCase: Sendable {
         applyPostProcessing: Bool = false,
         postProcessingPrompt: DomainPostProcessingPrompt? = nil,
         defaultPostProcessingPrompt: DomainPostProcessingPrompt? = nil,
-        postProcessingModel: String? = nil,
+        postProcessingIdentity: ModelPerformanceModelIdentity? = nil,
         autoDetectMeetingType: Bool = false,
         availablePrompts: [DomainPostProcessingPrompt] = [],
         postProcessingContext: String? = nil,
@@ -89,25 +114,29 @@ public final class TranscribeAudioUseCase: Sendable {
             } catch {
                 throw DomainTranscriptionError.transcriptionFailed(error.localizedDescription)
             }
-            let transcriptionDuration = Date().timeIntervalSince(transcriptionStartTime)
+            let transcriptionCompletedAt = Date()
+            let transcriptionDuration = transcriptionCompletedAt.timeIntervalSince(transcriptionStartTime)
 
             return try await finalizePreparedResponse(
                 response: response,
                 transcriptionID: transcriptionID,
                 meeting: meeting,
+                transcriptionIdentity: transcriptionIdentity,
                 inputSource: inputSource,
                 contextItems: contextItems,
                 vocabularyReplacementRules: vocabularyReplacementRules,
                 applyPostProcessing: applyPostProcessing,
                 postProcessingPrompt: postProcessingPrompt,
                 defaultPostProcessingPrompt: defaultPostProcessingPrompt,
-                postProcessingModel: postProcessingModel,
+                postProcessingIdentity: postProcessingIdentity,
                 autoDetectMeetingType: autoDetectMeetingType,
                 availablePrompts: availablePrompts,
                 postProcessingContext: postProcessingContext,
                 kernelMode: kernelMode,
                 dictationStructuredPostProcessingEnabled: dictationStructuredPostProcessingEnabled,
                 transcriptionDuration: transcriptionDuration,
+                transcriptionStartedAt: transcriptionStartTime,
+                transcriptionCompletedAt: transcriptionCompletedAt,
                 onPhaseChange: onPhaseChange
             )
         } catch {
@@ -120,19 +149,28 @@ public final class TranscribeAudioUseCase: Sendable {
         response: DomainTranscriptionResponse,
         transcriptionID: UUID?,
         meeting: MeetingEntity,
+        transcriptionIdentity: ModelPerformanceModelIdentity = .init(
+            providerID: "unknown",
+            providerDisplayName: "Unknown",
+            modelID: "unknown",
+            modelDisplayName: "Unknown",
+            runtimeKind: .unknown
+        ),
         inputSource: String? = nil,
         contextItems: [TranscriptionContextItem] = [],
         vocabularyReplacementRules: [VocabularyReplacementRule] = [],
         applyPostProcessing: Bool = false,
         postProcessingPrompt: DomainPostProcessingPrompt? = nil,
         defaultPostProcessingPrompt: DomainPostProcessingPrompt? = nil,
-        postProcessingModel: String? = nil,
+        postProcessingIdentity: ModelPerformanceModelIdentity? = nil,
         autoDetectMeetingType: Bool = false,
         availablePrompts: [DomainPostProcessingPrompt] = [],
         postProcessingContext: String? = nil,
         kernelMode: IntelligenceKernelMode = .meeting,
         dictationStructuredPostProcessingEnabled: Bool = false,
         transcriptionDuration: Double,
+        transcriptionStartedAt: Date = Date(),
+        transcriptionCompletedAt: Date = Date(),
         onPhaseChange: PhaseChangeHandler? = nil
     ) async throws -> TranscriptionEntity {
         do {
@@ -167,8 +205,9 @@ public final class TranscribeAudioUseCase: Sendable {
                 dictationStructuredPostProcessingEnabled: dictationStructuredPostProcessingEnabled,
                 postProcessingContext: resolvedPostProcessingContext
             )
+            let shouldAttemptPostProcessing = postProcessingConfig.shouldRunPostProcessing(postProcessingRepository: postProcessingRepository)
 
-            if postProcessingConfig.shouldRunPostProcessing(postProcessingRepository: postProcessingRepository) {
+            if shouldAttemptPostProcessing {
                 onPhaseChange?(.postProcessing)
             }
 
@@ -180,6 +219,7 @@ public final class TranscribeAudioUseCase: Sendable {
                 qualityProfile: qualityProfile
             )
             let postProcessingDuration = Date().timeIntervalSince(postProcessingStartTime)
+            let postProcessingCompletedAt = Date()
             let resolvedMeeting = meetingWithResolvedTitle(meeting, postProcessingResult: postProcessingResult)
 
             let transcription = TranscriptionEntity(
@@ -200,7 +240,7 @@ public final class TranscribeAudioUseCase: Sendable {
                         inputSource: inputSource,
                         transcriptionDuration: transcriptionDuration,
                         postProcessingDuration: postProcessingDuration,
-                        postProcessingModel: postProcessingModel,
+                        postProcessingModel: postProcessingIdentity?.modelID,
                         requestSystemPrompt: postProcessingResult.requestSystemPrompt,
                         requestUserPrompt: postProcessingResult.requestUserPrompt,
                         postProcessingFailureReason: postProcessingResult.failureReason
@@ -209,6 +249,25 @@ public final class TranscribeAudioUseCase: Sendable {
             )
 
             try await transcriptionStorageRepository.saveTranscription(transcription)
+            await persistModelPerformanceAttempts(
+                using: ModelPerformanceAttemptPersistenceInput(
+                    transcriptionID: transcription.id,
+                    transcriptionText: replacedTranscriptionText,
+                    transcriptionIdentity: transcriptionIdentity,
+                    transcriptionStartedAt: transcriptionStartedAt,
+                    transcriptionCompletedAt: transcriptionCompletedAt,
+                    transcriptionDuration: transcriptionDuration,
+                    audioSeconds: max(0, meeting.duration),
+                    capturePurpose: meeting.capturePurpose,
+                    shouldAttemptPostProcessing: shouldAttemptPostProcessing,
+                    postProcessingInput: postProcessingInput,
+                    postProcessingResult: postProcessingResult,
+                    postProcessingIdentity: postProcessingIdentity,
+                    postProcessingStartedAt: postProcessingStartTime,
+                    postProcessingCompletedAt: postProcessingCompletedAt,
+                    postProcessingDuration: postProcessingDuration
+                )
+            )
             onPhaseChange?(.completed)
             return transcription
         } catch {
@@ -353,6 +412,65 @@ public final class TranscribeAudioUseCase: Sendable {
         config.postProcessingRequestUserPrompt = input.requestUserPrompt
         config.postProcessingFailureReason = input.postProcessingFailureReason
         return config
+    }
+
+    private func persistModelPerformanceAttempts(
+        using input: ModelPerformanceAttemptPersistenceInput
+    ) async {
+        let transcriptionAttempt = ModelPerformanceAttempt(
+            transcriptionID: input.transcriptionID,
+            stage: .transcription,
+            attemptKind: .initial,
+            capturePurpose: input.capturePurpose,
+            modelIdentity: input.transcriptionIdentity,
+            status: .succeeded,
+            startedAt: input.transcriptionStartedAt,
+            completedAt: input.transcriptionCompletedAt,
+            wallClockSeconds: input.transcriptionDuration,
+            audioSeconds: input.audioSeconds,
+            inputUTF8Bytes: 0,
+            inputCharacterCount: 0,
+            outputCharacterCount: input.transcriptionText.count,
+            failureReason: nil
+        )
+
+        do {
+            try await transcriptionStorageRepository.saveModelPerformanceAttempt(transcriptionAttempt)
+        } catch {
+            AppLogger.error("Failed to persist transcription performance attempt", category: .databaseManager, error: error)
+        }
+
+        guard input.shouldAttemptPostProcessing else { return }
+
+        let resolvedIdentity = input.postProcessingIdentity ?? ModelPerformanceModelIdentity(
+            providerID: "unknown",
+            providerDisplayName: "Unknown",
+            modelID: "unknown",
+            modelDisplayName: "Unknown",
+            runtimeKind: .unknown
+        )
+        let postProcessingAttempt = ModelPerformanceAttempt(
+            transcriptionID: input.transcriptionID,
+            stage: .postProcessing,
+            attemptKind: .initial,
+            capturePurpose: input.capturePurpose,
+            modelIdentity: resolvedIdentity,
+            status: input.postProcessingResult.processedContent == nil ? .failed : .succeeded,
+            startedAt: input.postProcessingStartedAt,
+            completedAt: input.postProcessingCompletedAt,
+            wallClockSeconds: input.postProcessingDuration,
+            audioSeconds: 0,
+            inputUTF8Bytes: input.postProcessingInput.lengthOfBytes(using: .utf8),
+            inputCharacterCount: input.postProcessingInput.count,
+            outputCharacterCount: input.postProcessingResult.processedContent?.count ?? 0,
+            failureReason: input.postProcessingResult.failureReason
+        )
+
+        do {
+            try await transcriptionStorageRepository.saveModelPerformanceAttempt(postProcessingAttempt)
+        } catch {
+            AppLogger.error("Failed to persist post-processing performance attempt", category: .databaseManager, error: error)
+        }
     }
 
     private func mergedPostProcessingInput(

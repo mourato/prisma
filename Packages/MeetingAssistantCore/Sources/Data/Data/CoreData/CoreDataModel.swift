@@ -9,7 +9,7 @@ import Foundation
 /// Configuração programática do modelo CoreData
 public enum CoreDataModel {
     /// Versão atual do modelo
-    public static let currentVersion = "1.4"
+    public static let currentVersion = "1.5"
 
     /// Cria o modelo CoreData programaticamente
     // swiftlint:disable function_body_length
@@ -125,6 +125,133 @@ public enum CoreDataModel {
             segmentEndTimeAttribute,
         ]
 
+        // Entidade ModelPerformanceAttempt
+        let attemptEntity = NSEntityDescription()
+        attemptEntity.name = "ModelPerformanceAttemptMO"
+        attemptEntity.managedObjectClassName = NSStringFromClass(ModelPerformanceAttemptMO.self)
+
+        let attemptIdAttribute = NSAttributeDescription()
+        attemptIdAttribute.name = "id"
+        attemptIdAttribute.attributeType = .UUIDAttributeType
+        attemptIdAttribute.isOptional = false
+
+        let attemptTranscriptionIdAttribute = NSAttributeDescription()
+        attemptTranscriptionIdAttribute.name = "transcriptionID"
+        attemptTranscriptionIdAttribute.attributeType = .UUIDAttributeType
+        attemptTranscriptionIdAttribute.isOptional = false
+
+        let attemptStageAttribute = NSAttributeDescription()
+        attemptStageAttribute.name = "stageRawValue"
+        attemptStageAttribute.attributeType = .stringAttributeType
+        attemptStageAttribute.isOptional = false
+
+        let attemptKindAttribute = NSAttributeDescription()
+        attemptKindAttribute.name = "attemptKindRawValue"
+        attemptKindAttribute.attributeType = .stringAttributeType
+        attemptKindAttribute.isOptional = false
+
+        let attemptCapturePurposeAttribute = NSAttributeDescription()
+        attemptCapturePurposeAttribute.name = "capturePurposeRawValue"
+        attemptCapturePurposeAttribute.attributeType = .stringAttributeType
+        attemptCapturePurposeAttribute.isOptional = false
+
+        let attemptProviderIdAttribute = NSAttributeDescription()
+        attemptProviderIdAttribute.name = "providerID"
+        attemptProviderIdAttribute.attributeType = .stringAttributeType
+        attemptProviderIdAttribute.isOptional = false
+
+        let attemptProviderDisplayNameAttribute = NSAttributeDescription()
+        attemptProviderDisplayNameAttribute.name = "providerDisplayName"
+        attemptProviderDisplayNameAttribute.attributeType = .stringAttributeType
+        attemptProviderDisplayNameAttribute.isOptional = false
+
+        let attemptModelIdAttribute = NSAttributeDescription()
+        attemptModelIdAttribute.name = "modelID"
+        attemptModelIdAttribute.attributeType = .stringAttributeType
+        attemptModelIdAttribute.isOptional = false
+
+        let attemptModelDisplayNameAttribute = NSAttributeDescription()
+        attemptModelDisplayNameAttribute.name = "modelDisplayName"
+        attemptModelDisplayNameAttribute.attributeType = .stringAttributeType
+        attemptModelDisplayNameAttribute.isOptional = false
+
+        let attemptRuntimeKindAttribute = NSAttributeDescription()
+        attemptRuntimeKindAttribute.name = "runtimeKindRawValue"
+        attemptRuntimeKindAttribute.attributeType = .stringAttributeType
+        attemptRuntimeKindAttribute.isOptional = false
+
+        let attemptStatusAttribute = NSAttributeDescription()
+        attemptStatusAttribute.name = "statusRawValue"
+        attemptStatusAttribute.attributeType = .stringAttributeType
+        attemptStatusAttribute.isOptional = false
+
+        let attemptStartedAtAttribute = NSAttributeDescription()
+        attemptStartedAtAttribute.name = "startedAt"
+        attemptStartedAtAttribute.attributeType = .dateAttributeType
+        attemptStartedAtAttribute.isOptional = false
+
+        let attemptCompletedAtAttribute = NSAttributeDescription()
+        attemptCompletedAtAttribute.name = "completedAt"
+        attemptCompletedAtAttribute.attributeType = .dateAttributeType
+        attemptCompletedAtAttribute.isOptional = false
+
+        let attemptWallClockAttribute = NSAttributeDescription()
+        attemptWallClockAttribute.name = "wallClockSeconds"
+        attemptWallClockAttribute.attributeType = .doubleAttributeType
+        attemptWallClockAttribute.isOptional = false
+        attemptWallClockAttribute.defaultValue = 0.0
+
+        let attemptAudioSecondsAttribute = NSAttributeDescription()
+        attemptAudioSecondsAttribute.name = "audioSeconds"
+        attemptAudioSecondsAttribute.attributeType = .doubleAttributeType
+        attemptAudioSecondsAttribute.isOptional = false
+        attemptAudioSecondsAttribute.defaultValue = 0.0
+
+        let attemptInputUTF8BytesAttribute = NSAttributeDescription()
+        attemptInputUTF8BytesAttribute.name = "inputUTF8Bytes"
+        attemptInputUTF8BytesAttribute.attributeType = .integer64AttributeType
+        attemptInputUTF8BytesAttribute.isOptional = false
+        attemptInputUTF8BytesAttribute.defaultValue = 0
+
+        let attemptInputCharacterCountAttribute = NSAttributeDescription()
+        attemptInputCharacterCountAttribute.name = "inputCharacterCount"
+        attemptInputCharacterCountAttribute.attributeType = .integer64AttributeType
+        attemptInputCharacterCountAttribute.isOptional = false
+        attemptInputCharacterCountAttribute.defaultValue = 0
+
+        let attemptOutputCharacterCountAttribute = NSAttributeDescription()
+        attemptOutputCharacterCountAttribute.name = "outputCharacterCount"
+        attemptOutputCharacterCountAttribute.attributeType = .integer64AttributeType
+        attemptOutputCharacterCountAttribute.isOptional = false
+        attemptOutputCharacterCountAttribute.defaultValue = 0
+
+        let attemptFailureReasonAttribute = NSAttributeDescription()
+        attemptFailureReasonAttribute.name = "failureReason"
+        attemptFailureReasonAttribute.attributeType = .stringAttributeType
+        attemptFailureReasonAttribute.isOptional = true
+
+        attemptEntity.properties = [
+            attemptIdAttribute,
+            attemptTranscriptionIdAttribute,
+            attemptStageAttribute,
+            attemptKindAttribute,
+            attemptCapturePurposeAttribute,
+            attemptProviderIdAttribute,
+            attemptProviderDisplayNameAttribute,
+            attemptModelIdAttribute,
+            attemptModelDisplayNameAttribute,
+            attemptRuntimeKindAttribute,
+            attemptStatusAttribute,
+            attemptStartedAtAttribute,
+            attemptCompletedAtAttribute,
+            attemptWallClockAttribute,
+            attemptAudioSecondsAttribute,
+            attemptInputUTF8BytesAttribute,
+            attemptInputCharacterCountAttribute,
+            attemptOutputCharacterCountAttribute,
+            attemptFailureReasonAttribute,
+        ]
+
         // Entidade Transcription
         let transcriptionEntity = NSEntityDescription()
         transcriptionEntity.name = "TranscriptionMO"
@@ -210,6 +337,11 @@ public enum CoreDataModel {
         postProcessingModelAttribute.name = "postProcessingModel"
         postProcessingModelAttribute.attributeType = .stringAttributeType
         postProcessingModelAttribute.isOptional = true
+
+        let postProcessingFailureReasonAttribute = NSAttributeDescription()
+        postProcessingFailureReasonAttribute.name = "postProcessingFailureReason"
+        postProcessingFailureReasonAttribute.attributeType = .stringAttributeType
+        postProcessingFailureReasonAttribute.isOptional = true
 
         let meetingTypeAttribute = NSAttributeDescription()
         meetingTypeAttribute.name = "meetingType"
@@ -304,6 +436,7 @@ public enum CoreDataModel {
             transcriptionDurationAttribute,
             postProcessingDurationAttribute,
             postProcessingModelAttribute,
+            postProcessingFailureReasonAttribute,
             meetingTypeAttribute,
             lifecycleStateAttribute,
             meetingConversationStateDataAttribute,
@@ -359,13 +492,37 @@ public enum CoreDataModel {
 
         segmentToTranscriptionRelationship.inverseRelationship = transcriptionToSegmentsRelationship
 
+        // Attempt -> Transcription (many-to-one)
+        let attemptToTranscriptionRelationship = NSRelationshipDescription()
+        attemptToTranscriptionRelationship.name = "transcription"
+        attemptToTranscriptionRelationship.destinationEntity = transcriptionEntity
+        attemptToTranscriptionRelationship.isOptional = false
+        attemptToTranscriptionRelationship.deleteRule = .nullifyDeleteRule
+        attemptToTranscriptionRelationship.maxCount = 1
+
+        // Transcription -> Attempts (one-to-many)
+        let transcriptionToAttemptsRelationship = NSRelationshipDescription()
+        transcriptionToAttemptsRelationship.name = "performanceAttempts"
+        transcriptionToAttemptsRelationship.destinationEntity = attemptEntity
+        transcriptionToAttemptsRelationship.inverseRelationship = attemptToTranscriptionRelationship
+        transcriptionToAttemptsRelationship.isOptional = true
+        transcriptionToAttemptsRelationship.deleteRule = .cascadeDeleteRule
+        transcriptionToAttemptsRelationship.maxCount = 0
+
+        attemptToTranscriptionRelationship.inverseRelationship = transcriptionToAttemptsRelationship
+
         // Adicionar relacionamentos às entidades
         meetingEntity.properties.append(meetingToTranscriptionsRelationship)
-        transcriptionEntity.properties.append(contentsOf: [transcriptionToMeetingRelationship, transcriptionToSegmentsRelationship])
+        transcriptionEntity.properties.append(contentsOf: [
+            transcriptionToMeetingRelationship,
+            transcriptionToSegmentsRelationship,
+            transcriptionToAttemptsRelationship,
+        ])
         segmentEntity.properties.append(segmentToTranscriptionRelationship)
+        attemptEntity.properties.append(attemptToTranscriptionRelationship)
 
         // Adicionar entidades ao modelo
-        model.entities = [meetingEntity, transcriptionEntity, segmentEntity]
+        model.entities = [meetingEntity, transcriptionEntity, segmentEntity, attemptEntity]
 
         return model
     }

@@ -28,6 +28,7 @@ public final class TranscriptionMO: NSManagedObject {
     @NSManaged public var transcriptionDuration: Double
     @NSManaged public var postProcessingDuration: Double
     @NSManaged public var postProcessingModel: String?
+    @NSManaged public var postProcessingFailureReason: String?
     @NSManaged public var meetingType: String?
     @NSManaged public var lifecycleStateRawValue: String
     @NSManaged public var meetingConversationStateData: Data?
@@ -45,6 +46,7 @@ public final class TranscriptionMO: NSManagedObject {
     // Relacionamentos
     @NSManaged public var meeting: MeetingMO
     @NSManaged public var segments: Set<TranscriptionSegmentMO>
+    @NSManaged public var performanceAttempts: Set<ModelPerformanceAttemptMO>
 }
 
 // MARK: - Fetch Requests
@@ -163,6 +165,7 @@ extension TranscriptionMO {
         config.transcriptionDuration = transcriptionDuration
         config.postProcessingDuration = postProcessingDuration
         config.postProcessingModel = postProcessingModel
+        config.postProcessingFailureReason = postProcessingFailureReason
         config.meetingType = meetingType
         config.lifecycleState = lifecycleState
         config.meetingConversationState = decodeMeetingConversationState()
@@ -189,6 +192,7 @@ extension TranscriptionMO {
         transcriptionDuration = entity.transcriptionDuration
         postProcessingDuration = entity.postProcessingDuration
         postProcessingModel = entity.postProcessingModel
+        postProcessingFailureReason = entity.postProcessingFailureReason
         meetingType = entity.meetingType
         lifecycleStateRawValue = entity.lifecycleState.rawValue
         meetingConversationStateData = encodeMeetingConversationState(entity.meetingConversationState)
@@ -227,6 +231,7 @@ extension TranscriptionMO {
         transcriptionMO.transcriptionDuration = entity.transcriptionDuration
         transcriptionMO.postProcessingDuration = entity.postProcessingDuration
         transcriptionMO.postProcessingModel = entity.postProcessingModel
+        transcriptionMO.postProcessingFailureReason = entity.postProcessingFailureReason
         transcriptionMO.meetingType = entity.meetingType
         transcriptionMO.lifecycleStateRawValue = entity.lifecycleState.rawValue
         transcriptionMO.meetingConversationStateData = transcriptionMO.encodeMeetingConversationState(entity.meetingConversationState)

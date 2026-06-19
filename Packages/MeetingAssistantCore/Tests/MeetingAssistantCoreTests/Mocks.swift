@@ -344,6 +344,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
     var cleanupTemporaryFilesCalled = false
     var saveTranscriptionCalled = false
     var savedTranscriptions: [Transcription] = []
+    var savedModelPerformanceAttempts: [ModelPerformanceAttempt] = []
 
     // Call tracking properties
     var createRecordingURLParams: [(meeting: Meeting, type: RecordingType)] = []
@@ -373,6 +374,10 @@ class MockStorageService: StorageService, @unchecked Sendable {
         } else {
             mockTranscriptions.append(transcription)
         }
+    }
+
+    func saveModelPerformanceAttempt(_ attempt: ModelPerformanceAttempt) async throws {
+        savedModelPerformanceAttempts.append(attempt)
     }
 
     func loadTranscriptions() async throws -> [Transcription] {
@@ -414,12 +419,58 @@ class MockStorageService: StorageService, @unchecked Sendable {
                 let preview = metadata.previewText.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
                 let appName = metadata.appName.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
                 let meetingTitle = metadata.supportsMeetingConversation
-                    ? (metadata.meetingTitle?
-                        .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current) ?? "")
+                    ? (
+                        metadata.meetingTitle?
+                            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current) ?? ""
+                    )
                     : ""
                 return preview.contains(queryText) || appName.contains(queryText) || meetingTitle.contains(queryText)
             }
             .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    func loadModelPerformanceAttempts(matching query: ModelPerformanceAttemptQuery) async throws -> [ModelPerformanceAttempt] {
+        let attempts = savedModelPerformanceAttempts
+            .filter { $0.stage == query.stage }
+            .filter { attempt in
+                switch query.captureFilter {
+                case .all:
+                    true
+                case .dictation:
+                    attempt.capturePurpose == .dictation
+                case .meeting:
+                    attempt.capturePurpose == .meeting
+                }
+            }
+            .filter { query.dateFilter.contains($0.startedAt) }
+            .filter { attempt in
+                guard let providerID = query.providerID else { return true }
+                return attempt.modelIdentity.providerID == providerID
+            }
+            .filter { attempt in
+                switch query.statusFilter {
+                case .all:
+                    true
+                case .succeeded:
+                    attempt.status == .succeeded
+                case .failed:
+                    attempt.status == .failed
+                }
+            }
+            .filter { attempt in
+                let trimmed = query.modelSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return true }
+                return attempt.modelIdentity.modelDisplayName.localizedCaseInsensitiveContains(trimmed)
+                    || attempt.modelIdentity.modelID.localizedCaseInsensitiveContains(trimmed)
+                    || attempt.modelIdentity.providerDisplayName.localizedCaseInsensitiveContains(trimmed)
+            }
+            .sorted { $0.startedAt > $1.startedAt }
+
+        if let limit = query.limit {
+            return Array(attempts.prefix(max(limit, 0)))
+        }
+
+        return attempts
     }
 
     private func allMetadata() -> [TranscriptionMetadata] {

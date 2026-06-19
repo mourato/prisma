@@ -24,9 +24,9 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
         )
 
         try await coordinator.start()
-        await coordinator.append(
+        try await coordinator.append(
             bufferBox: RecordingManager.SendableIncrementalAudioBufferBox(
-                buffer: try makeBuffer(segments: [.tone(13.0, amplitude: 0.25)])
+                buffer: makeBuffer(segments: [.tone(13.0, amplitude: 0.25)])
             )
         )
 
@@ -40,6 +40,7 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
         XCTAssertEqual(result.response.text, "partial partial")
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .finalizing)
         XCTAssertEqual(transcriptionClient.transcribeCallCount, 2)
+        XCTAssertGreaterThan(result.wallClockDuration, 0)
     }
 
     func testFinish_WhenTranscriptionFails_PersistsFailedCheckpoint() async throws {
@@ -60,9 +61,9 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
         )
 
         try await coordinator.start()
-        await coordinator.append(
+        try await coordinator.append(
             bufferBox: RecordingManager.SendableIncrementalAudioBufferBox(
-                buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
+                buffer: makeBuffer(segments: [.tone(1.0, amplitude: 0.25)])
             )
         )
 
