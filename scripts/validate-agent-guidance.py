@@ -13,6 +13,9 @@ MARKDOWN_FILES = [
     *sorted((ROOT / ".agents" / "docs").glob("*.md")),
     *sorted((ROOT / ".agents" / "skills").glob("*/SKILL.md")),
 ]
+SKILLS_ROOT = ROOT / ".agents" / "skills"
+SKILLS_INDEX = ROOT / ".agents" / "SKILLS_INDEX.md"
+SKILLS_TAXONOMY = SKILLS_ROOT / "SKILLS_TAXONOMY.md"
 
 MAKE_TARGET_RE = re.compile(r"^([A-Za-z0-9_.-]+):", re.MULTILINE)
 MARKDOWN_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
@@ -21,6 +24,7 @@ INLINE_PATH_RE = re.compile(
 )
 INLINE_MAKE_RE = re.compile(r"`make\s+([A-Za-z0-9_.-]+)`")
 FENCED_CODE_BLOCK_RE = re.compile(r"```[^\n]*\n(.*?)```", re.DOTALL)
+TOP_LEVEL_HEADING_RE = re.compile(r"^##\s+(.+)$", re.MULTILINE)
 KNOWN_PATH_SUFFIXES = (
     ".md",
     ".sh",
@@ -31,6 +35,16 @@ KNOWN_PATH_SUFFIXES = (
     ".strings",
     "/",
 )
+REQUIRED_SKILL_SECTIONS = ("Role", "When to Use")
+SCOPE_SECTION_NAMES = ("Scope Boundary", "Scope Boundaries")
+ALLOWED_SKILL_CHILDREN = {"SKILL.md", "references", "scripts", "assets"}
+PLACEHOLDER_PATTERNS = {
+    "AppName.xcodeproj": "generic Xcode placeholder",
+    "npm test": "non-Prisma test command placeholder",
+    "Chrome DevTools": "web-specific debugging guidance",
+    "console.log": "web-specific logging guidance",
+    "VS Code": "editor-specific generic guidance",
+}
 
 
 def parse_make_targets(makefile_path: Path) -> set[str]:
@@ -124,14 +138,103 @@ def validate_path_references(markdown_file: Path, text: str) -> list[str]:
     return errors
 
 
+def parse_indexed_skills(index_path: Path) -> set[str]:
+    text = index_path.read_text(encoding="utf-8")
+    return set(re.findall(r"`([^`]+)`\s+\|\s+`?\.agents/skills/", text))
+
+
+def parse_taxonomy_skills(taxonomy_path: Path) -> set[str]:
+    text = taxonomy_path.read_text(encoding="utf-8")
+    return set(
+        match.group(1)
+        for match in re.finditer(r"^\|\s*([a-z0-9-]+)\s*\|", text, re.MULTILINE)
+        if match.group(1) != "---"
+    )
+
+
+def validate_skill_catalog() -> list[str]:
+    errors: list[str] = []
+    skill_dirs = sorted(
+        path.name
+        for path in SKILLS_ROOT.iterdir()
+        if path.is_dir() and (path / "SKILL.md").exists()
+    )
+    indexed = parse_indexed_skills(SKILLS_INDEX)
+    taxonomy = parse_taxonomy_skills(SKILLS_TAXONOMY)
+
+    for skill in skill_dirs:
+        if skill not in indexed:
+            errors.append(f"Skill '{skill}' exists in .agents/skills but is missing from .agents/SKILLS_INDEX.md")
+        if skill not in taxonomy:
+            errors.append(f"Skill '{skill}' exists in .agents/skills but is missing from .agents/skills/SKILLS_TAXONOMY.md")
+
+    for skill in sorted(indexed - set(skill_dirs)):
+        errors.append(f"Skill '{skill}' is indexed in .agents/SKILLS_INDEX.md but has no matching directory")
+    for skill in sorted(taxonomy - set(skill_dirs)):
+        errors.append(f"Skill '{skill}' is listed in .agents/skills/SKILLS_TAXONOMY.md but has no matching directory")
+
+    return errors
+
+
+def validate_skill_structure(skill_file: Path, text: str) -> list[str]:
+    errors: list[str] = []
+    rel = skill_file.relative_to(ROOT)
+    headings = TOP_LEVEL_HEADING_RE.findall(text)
+    heading_set = set(headings)
+
+    for section in REQUIRED_SKILL_SECTIONS:
+        if section not in heading_set:
+            errors.append(f"Missing required section '{section}' in {rel}")
+
+    if not any(scope in heading_set for scope in SCOPE_SECTION_NAMES):
+        errors.append(f"Missing required scope section in {rel}")
+
+    duplicates = sorted({heading for heading in headings if headings.count(heading) > 1})
+    for heading in duplicates:
+        errors.append(f"Duplicate section heading '{heading}' in {rel}")
+
+    return errors
+
+
+def validate_skill_directory(skill_dir: Path) -> list[str]:
+    errors: list[str] = []
+    rel = skill_dir.relative_to(ROOT)
+
+    for child in sorted(skill_dir.iterdir(), key=lambda path: path.name):
+        if child.name.startswith("."):
+            errors.append(f"Hidden file or directory '{child.name}' is not allowed in {rel}")
+            continue
+        if child.name not in ALLOWED_SKILL_CHILDREN:
+            errors.append(f"Unexpected file or directory '{child.name}' in {rel}")
+
+    return errors
+
+
+def validate_placeholders(markdown_file: Path, text: str) -> list[str]:
+    errors: list[str] = []
+    rel = markdown_file.relative_to(ROOT)
+    for needle, reason in PLACEHOLDER_PATTERNS.items():
+        if needle in text:
+            errors.append(f"Disallowed placeholder '{needle}' ({reason}) in {rel}")
+    return errors
+
+
 def main() -> int:
     known_targets = parse_make_targets(ROOT / "Makefile")
     errors: list[str] = []
+    errors.extend(validate_skill_catalog())
 
     for markdown_file in MARKDOWN_FILES:
         text = markdown_file.read_text(encoding="utf-8")
         errors.extend(validate_make_references(markdown_file, text, known_targets))
         errors.extend(validate_path_references(markdown_file, text))
+        if markdown_file.parent.parent == SKILLS_ROOT:
+            errors.extend(validate_skill_structure(markdown_file, text))
+            errors.extend(validate_placeholders(markdown_file, text))
+
+    for skill_dir in sorted(path for path in SKILLS_ROOT.iterdir() if path.is_dir()):
+        if (skill_dir / "SKILL.md").exists():
+            errors.extend(validate_skill_directory(skill_dir))
 
     if errors:
         for error in sorted(set(errors)):

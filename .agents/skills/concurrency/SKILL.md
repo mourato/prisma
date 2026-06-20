@@ -12,6 +12,16 @@ This skill is a lightweight bridge for concurrency-related requests.
 - For concrete fixes, compiler diagnostics, actor isolation errors, or Sendable remediation, use **`../swift-concurrency-expert/SKILL.md`**.
 - For broad conceptual guidance only, use the canonical references under `../macos-development/references/`.
 
+## Scope Boundary
+
+- Use this skill for conceptual concurrency guidance only.
+- Use `../swift-concurrency-expert/SKILL.md` for concrete compiler diagnostics, actor-isolation fixes, and `Sendable` remediation.
+- Use `../macos-development/SKILL.md` when the question is broader macOS architecture rather than concurrency-specific.
+
+## When to Use
+
+Use this skill when the request is about async/await, actors, task cancellation, or thread-safety patterns without asking for compiler-level remediation.
+
 ## Routing
 
 - **Compiler errors / migration / strict concurrency failures** → `swift-concurrency-expert`.

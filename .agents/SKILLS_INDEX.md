@@ -20,6 +20,7 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 | `git-advanced-workflows` | `.agents/skills/git-advanced-workflows/` | Rebase, cherry-pick, run git bisect, use reflog, recover complex git history |
 | `git-workflow` | `.agents/skills/git-workflow/` | Standard Git flow: create branch, commit changes, prepare PR, merge safely |
 | `git-worktree` | `.agents/skills/git-worktree/` | Use git worktree, migrate away from worktrees, handle legacy worktree setup |
+| `grill-me` | `.agents/skills/grill-me/` | Stress-test a plan or design by interrogating assumptions and tradeoffs one question at a time |
 | `intelligence-kernel` | `.agents/skills/intelligence-kernel/` | Canonical summary schema, intelligence kernel modes, trust flags, summary benchmark gates |
 | `keychain-security` | `.agents/skills/keychain-security/` | Store secret in Keychain, retrieve API keys securely, delete credential, harden KeychainManager usage |
 | `localization` | `.agents/skills/localization/` | Localize UI text, update Localizable.strings, improve accessible copy, remove orphaned locale keys |
@@ -107,6 +108,7 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 - Repository standards: `project-standards`
 - Skill development: `skill-development`
 - External skill discovery: `skills-discovery`
+- Adversarial plan review: `grill-me`
 
 ### Engineering Workflow Ownership
 

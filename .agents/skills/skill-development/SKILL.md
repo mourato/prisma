@@ -9,6 +9,12 @@ description: This skill should be used when the user asks to "create a skill", "
 
 Use this skill to design, refactor, and validate Agent Skills with clear trigger conditions, minimal overlap, and progressive disclosure.
 
+## Scope Boundary
+
+- Use this skill to author or refactor local skills in this repository.
+- Use `../skills-discovery/SKILL.md` when the task is to find or install an external skill.
+- Use `../project-standards/SKILL.md` when the task is broader repository policy rather than the structure of a specific skill.
+
 ## When to Use
 
 Use this skill when the task requires any of the following:
@@ -17,8 +23,6 @@ Use this skill when the task requires any of the following:
 - Refactor an existing skill with unclear scope or trigger ambiguity
 - Split oversized `SKILL.md` files into `references/`, `scripts/`, or `assets/`
 - Standardize frontmatter descriptions and cross-skill routing
-
-If the request is to find or install external skills, use `../skills-discovery/SKILL.md`.
 
 ## Required Workflow
 

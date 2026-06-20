@@ -258,6 +258,17 @@ When inspecting code outside this repository, use this source order:
 
 ---
 
+### Plan Stress Testing
+
+**Primary:** `grill-me`
+- Interrogate assumptions
+- Walk decision trees one branch at a time
+- Pressure-test plans before implementation
+
+**Example:** "Grill this migration plan" → `grill-me`
+
+---
+
 ### Skill Discovery and Authoring
 
 **External skill search or installation:** `skills-discovery`

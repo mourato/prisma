@@ -24,6 +24,10 @@ Use this skill when work involves:
 - correlation between logs, telemetry, and metrics
 - recording concise failure signatures in task or PR notes
 
+## When to Use
+
+Use this skill when the task is about logging, telemetry, diagnostic payloads, redaction, or stable failure signatures in Prisma.
+
 ## Diagnostic Standards
 
 ### Logging

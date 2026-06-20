@@ -26,6 +26,10 @@ For this repository (macOS app), consult this skill whenever the task includes:
   - `../swiftui-performance-audit/SKILL.md` for runtime render/update performance
   - `../macos-development/SKILL.md` for platform integration and lifecycle
 
+## When to Use
+
+Use this skill when the task changes UI behavior, visual hierarchy, motion direction, interface quality, or user experience on Apple platforms.
+
 ## Mandatory Consultation Rule (macOS/iOS)
 
 When the stack is macOS and/or iOS and the task touches interface or user experience, load this skill before implementation.
@@ -55,6 +59,9 @@ Use this sequence:
 - Use motion to guide attention and communicate state changes.
 - Keep reduced-motion behavior available for motion-heavy transitions.
 - For macOS surfaces, use AppKit bridging only when SwiftUI behavior is insufficient.
+- Keep one canonical primary window per workflow surface. Introduce auxiliary windows only when detached context materially improves the flow.
+- Prefer in-window navigation, split view, sheet, or popover before creating another primary workflow surface.
+- Preserve predictable keyboard ownership and window targeting whenever a flow can appear in more than one surface.
 
 ## Routing
 

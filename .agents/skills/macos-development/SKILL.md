@@ -19,6 +19,10 @@ Use this skill as the canonical implementation reference for macOS Swift/SwiftUI
   - `swiftui-performance-audit` for SwiftUI runtime bottlenecks
   - `swiftui-animation` for advanced animation systems
 
+## When to Use
+
+Use this skill when the task is about implementing a macOS feature, integrating SwiftUI with AppKit, fixing app lifecycle issues, or applying platform-specific patterns in this repository.
+
 ## Core Standards
 
 ### Memory and Lifecycle

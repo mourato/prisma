@@ -25,6 +25,10 @@ Use this skill when the task is about writing or refactoring test code, especial
 
 Do not use this skill to choose lane policy or merge gates.
 
+## When to Use
+
+Use this skill when the user asks to write XCTest code, refactor test doubles, add async tests, or improve the structure of test files in this repository.
+
 ## Test Structure Standards
 
 ### File and Type Layout

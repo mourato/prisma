@@ -24,6 +24,10 @@ Use this skill when the task involves:
 - non-color affordances and warnings
 - floating panels, overlays, menu bar UI, and other non-standard surfaces
 
+## When to Use
+
+Use this skill when the user asks for accessibility review or fixes involving VoiceOver, keyboard navigation, focus recovery, reduced motion, or accessibility-sensitive overlays and panels.
+
 ## Audit Checklist
 
 ### VoiceOver

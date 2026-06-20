@@ -9,6 +9,12 @@ description: This skill should be used when the user asks to "change meeting pos
 
 Operational guidance for the reusable intelligence kernel, canonical summary contract, and summary-quality regression gates.
 
+## Scope Boundary
+
+- Use this skill for intelligence-kernel contracts, mode routing, trust flags, and benchmark gates.
+- Use `../data-persistence/SKILL.md` when the main concern is storage or migration rather than kernel behavior.
+- Use `../quality-assurance/SKILL.md` when the main concern is command selection and verification policy.
+
 ## When to Use
 
 Use this skill for:

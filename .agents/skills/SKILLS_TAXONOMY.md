@@ -18,6 +18,7 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 | git-advanced-workflows | Git/Collaboration | Canonical (advanced) | Rebase, cherry-pick, bisect, and reflog recovery | git-workflow | Keep |
 | git-workflow | Git/Collaboration | Canonical (standard) | Branch, commit, PR, and merge flow | task-lifecycle | Keep |
 | git-worktree | Git/Collaboration | Legacy | Optional legacy worktree operations | git-workflow | Keep as optional legacy |
+| grill-me | Meta-skills | Canonical | Adversarial plan review and design stress testing | skill-development, code-review | Keep |
 | intelligence-kernel | Runtime/Performance | Canonical | Canonical summary schema, trust flags, and summary benchmark gates | quality-assurance, data-persistence | Keep |
 | keychain-security | Security/Data | Canonical (credentials) | Keychain credential persistence and APIs | security, networking | Keep; credential owner |
 | localization | Security/Data | Canonical | Localization, locale-file hygiene, and accessible copy | accessibility-audit, swiftui-patterns | Keep; not a full accessibility owner |
@@ -51,4 +52,4 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 4. Quality/Engineering Flow: `quality-assurance`, `testing-xctest`, `code-review`, `code-quality`, `task-lifecycle`, `project-standards`, `documentation`
 5. Security/Data: `security`, `keychain-security`, `networking`, `data-persistence`, `error-handling`, `localization`
 6. Git/Collaboration: `git-workflow`, `git-advanced-workflows`, `git-worktree`
-7. Meta-skills: `skill-development`, `skills-discovery`
+7. Meta-skills: `skill-development`, `skills-discovery`, `grill-me`
