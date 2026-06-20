@@ -96,6 +96,7 @@ If conflict remains unresolved, ask for clarification before implementing behavi
 These are inviolable rules that apply to every task:
 
 - ⛔ **Always reuse/extend/create:** Before coding, scan for existing services/use cases/helpers. Use decision order: **Reuse** → **Extend** → **Create**.
+- ⛔ **Do not over-engineer:** Prefer the simplest implementation that satisfies the current requirement. Do not introduce new abstractions, protocols, layers, or configuration surfaces without concrete near-term reuse, measurable complexity reduction, or a documented architectural need.
 - ⛔ **Always classify risk first:** Before implementation, classify task as Low/Medium/High risk. Never skip this step.
 - ⛔ **Clarify material ambiguity, state minor assumptions:** If ambiguity impacts behavior, safety, architecture, or acceptance criteria, ask concise clarification questions before coding. For minor gaps, proceed only with explicit assumptions documented in the response/PR notes.
 - ⛔ **Never commit knowingly broken code:** Split commits by intent (feature, refactor, tests, cleanup). Use Conventional Commits.
@@ -233,6 +234,7 @@ Before responding or committing code, verify:
 
 - "I assumed this was okay..." → Violates clarification hard constraint
 - "I'll just copy this logic..." → Violates reuse/extend/create hard constraint
+- "I'll add a new abstraction now in case we need it later" → Likely over-engineering unless current evidence justifies it
 - "I'll always run full build/test for every tiny edit" → Ignores scoped-validation workflow and slows feedback loops
 - "This is Low risk, so I'll skip testing" → Violates hard gates
 - "I know this breaks something, but..." → Violates "never commit broken code"
