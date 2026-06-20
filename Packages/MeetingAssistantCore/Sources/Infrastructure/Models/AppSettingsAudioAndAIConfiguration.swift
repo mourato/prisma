@@ -294,6 +294,12 @@ public struct EnhancementsProviderRegistration: Codable, Identifiable, Equatable
     }
 }
 
+public extension AIProvider {
+    public var usesRegistrationScopedEnhancementsCredential: Bool {
+        self == .custom
+    }
+}
+
 public enum LocalTranscriptionModel: String, CaseIterable, Codable, Sendable {
     case parakeetTdt06BV3 = "parakeet-tdt-0.6b-v3-coreml"
     case cohereTranscribe032026CoreML6Bit = "cohere-transcribe-03-2026-coreml-6bit"

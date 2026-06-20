@@ -364,6 +364,30 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertFalse(settings.canAddEnhancementsProviderRegistration(.openai))
     }
 
+    func testMigrateEnhancementsProviderRegistrationAPIKeysIfNeeded_BackfillsBuiltInGroqProviderKey() throws {
+        let keychain = DefaultKeychainProvider()
+        let registration = EnhancementsProviderRegistration(
+            id: UUID(),
+            provider: .groq,
+            displayName: "Groq"
+        )
+        settings.enhancementsProviderRegistrations = [registration]
+
+        try? KeychainManager.deleteAPIKey(for: registration.id)
+        try? keychain.delete(for: KeychainManager.apiKeyKey(for: .groq))
+        defer {
+            try? KeychainManager.deleteAPIKey(for: registration.id)
+            try? keychain.delete(for: KeychainManager.apiKeyKey(for: .groq))
+        }
+
+        try KeychainManager.storeAPIKey("sk-groq-registration", for: registration.id)
+
+        settings.migrateEnhancementsProviderRegistrationAPIKeysIfNeeded()
+
+        XCTAssertEqual(try KeychainManager.retrieveAPIKey(for: .groq), "sk-groq-registration")
+        XCTAssertNil(try KeychainManager.retrieveAPIKey(for: registration.id))
+    }
+
     func testAddEnhancementsProviderRegistration_AllowsMultipleCustomEntries() {
         let firstCustom = settings.addEnhancementsProviderRegistration(
             provider: .custom,

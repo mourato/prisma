@@ -147,24 +147,36 @@ public extension AppSettingsStore {
             .id
 
         for registration in enhancementsProviderRegistrations {
-            if KeychainManager.existsAPIKey(for: registration.id) {
+            if registration.provider.usesRegistrationScopedEnhancementsCredential {
+                if KeychainManager.existsAPIKey(for: registration.id) {
+                    continue
+                }
+
+                if registration.id != firstCustomRegistrationID {
+                    continue
+                }
+
+                guard let legacyProviderKey = try? KeychainManager.retrieveAPIKey(for: registration.provider) else {
+                    continue
+                }
+
+                let apiKey = legacyProviderKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !apiKey.isEmpty else { continue }
+
+                try? KeychainManager.storeAPIKey(apiKey, for: registration.id)
                 continue
             }
 
-            if registration.provider == .custom,
-               registration.id != firstCustomRegistrationID
-            {
-                continue
+            let registrationKey = (try? KeychainManager.retrieveAPIKey(for: registration.id))?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard !registrationKey.isEmpty else { continue }
+
+            if !KeychainManager.existsAPIKey(for: registration.provider) {
+                let providerKey = KeychainManager.apiKeyKey(for: registration.provider)
+                try? KeychainManager.store(registrationKey, for: providerKey)
             }
 
-            guard let legacyProviderKey = try? KeychainManager.retrieveAPIKey(for: registration.provider) else {
-                continue
-            }
-
-            let apiKey = legacyProviderKey.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !apiKey.isEmpty else { continue }
-
-            try? KeychainManager.storeAPIKey(apiKey, for: registration.id)
+            try? KeychainManager.deleteAPIKey(for: registration.id)
         }
     }
 

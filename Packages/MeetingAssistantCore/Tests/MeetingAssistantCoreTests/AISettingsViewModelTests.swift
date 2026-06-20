@@ -210,6 +210,49 @@ final class AISettingsViewModelTests: XCTestCase {
         XCTAssertEqual(llmService.lastConnectionTestAPIKey, "sk-enhancements")
     }
 
+    func testSaveEnhancementsAPIKey_BuiltInRegistrationPersistsProviderKey() throws {
+        let keychain = MockKeychainProvider()
+        let registration = try XCTUnwrap(settings.addEnhancementsProviderRegistration(provider: .groq))
+        let viewModel = AISettingsViewModel(
+            settings: settings,
+            keychain: keychain,
+            llmService: MockLLMService(),
+            credentialBootstrapPolicy: .deferredUserAction
+        )
+
+        XCTAssertTrue(
+            viewModel.saveEnhancementsAPIKey(
+                "sk-groq-shared",
+                registrationID: registration.id,
+                provider: .groq
+            )
+        )
+
+        XCTAssertEqual(try keychain.retrieveAPIKey(for: .groq), "sk-groq-shared")
+        XCTAssertNil(try keychain.retrieveAPIKey(for: registration.id))
+        XCTAssertTrue(viewModel.hasSavedEnhancementsAPIKey(for: registration.id, provider: .groq))
+    }
+
+    func testRemoveEnhancementsAPIKey_BuiltInRegistrationRemovesProviderKey() throws {
+        let keychain = MockKeychainProvider()
+        let registration = try XCTUnwrap(settings.addEnhancementsProviderRegistration(provider: .groq))
+        try keychain.store("sk-groq-shared", for: KeychainManager.apiKeyKey(for: .groq))
+        try keychain.storeAPIKey("sk-stale-registration", for: registration.id)
+
+        let viewModel = AISettingsViewModel(
+            settings: settings,
+            keychain: keychain,
+            llmService: MockLLMService(),
+            credentialBootstrapPolicy: .deferredUserAction
+        )
+
+        viewModel.removeEnhancementsAPIKey(registrationID: registration.id, provider: .groq)
+
+        XCTAssertNil(try keychain.retrieveAPIKey(for: .groq))
+        XCTAssertNil(try keychain.retrieveAPIKey(for: registration.id))
+        XCTAssertFalse(viewModel.hasSavedEnhancementsAPIKey(for: registration.id, provider: .groq))
+    }
+
     func testRefreshEnhancementsProviderModels_UsesOnlyProvidersWithSavedKey() async throws {
         let keychain = MockKeychainProvider()
         let llmService = MockLLMService()

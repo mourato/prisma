@@ -54,7 +54,8 @@ public extension AISettingsViewModel {
     }
 
     func hasSavedEnhancementsAPIKey(for registrationID: UUID?, provider: AIProvider) -> Bool {
-        if let registrationID,
+        if provider.usesRegistrationScopedEnhancementsCredential,
+           let registrationID,
            KeychainManager.existsAPIKey(for: registrationID)
         {
             return true
@@ -173,11 +174,16 @@ public extension AISettingsViewModel {
         enhancementsActionError = nil
 
         do {
-            if let registrationID {
+            if provider.usesRegistrationScopedEnhancementsCredential,
+               let registrationID
+            {
                 try KeychainManager.deleteAPIKey(for: registrationID)
             } else {
                 let providerKey = KeychainManager.apiKeyKey(for: provider)
                 try keychain.delete(for: providerKey)
+                if let registrationID {
+                    try? keychain.deleteAPIKey(for: registrationID)
+                }
             }
 
             clearTransientEnhancementsAPIKey()
@@ -526,11 +532,16 @@ public extension AISettingsViewModel {
         provider: AIProvider
     ) throws {
         do {
-            if let registrationID {
+            if provider.usesRegistrationScopedEnhancementsCredential,
+               let registrationID
+            {
                 try keychain.storeAPIKey(value, for: registrationID)
             } else {
                 let providerKey = KeychainManager.apiKeyKey(for: provider)
                 try keychain.store(value, for: providerKey)
+                if let registrationID {
+                    try? keychain.deleteAPIKey(for: registrationID)
+                }
             }
             // swiftformat:disable:next redundantSelf
             logger.info("Enhancements API key persisted for \(provider.displayName)")
@@ -544,7 +555,8 @@ public extension AISettingsViewModel {
         registrationID: UUID?,
         provider: AIProvider
     ) -> String {
-        if let registrationID,
+        if provider.usesRegistrationScopedEnhancementsCredential,
+           let registrationID,
            let key = (try? keychain.retrieveAPIKey(for: registrationID))?
            .trimmingCharacters(in: .whitespacesAndNewlines),
            !key.isEmpty
