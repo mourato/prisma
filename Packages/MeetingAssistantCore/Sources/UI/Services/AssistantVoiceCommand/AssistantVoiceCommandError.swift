@@ -1,3 +1,5 @@
+import Foundation
+
 public enum AssistantVoiceCommandError: LocalizedError {
     case microphonePermissionRequired
     case accessibilityPermissionRequired

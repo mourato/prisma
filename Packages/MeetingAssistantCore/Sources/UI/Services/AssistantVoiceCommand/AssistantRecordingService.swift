@@ -1,4 +1,6 @@
+import Foundation
 import MeetingAssistantCoreAudio
+import MeetingAssistantCoreDomain
 
 @MainActor
 public protocol AssistantRecordingService: AnyObject {

@@ -12,16 +12,14 @@ public final class AssistantVoiceCommandService: ObservableObject {
     @Published public private(set) var isProcessing = false
 
     private let audioRecorder: any AssistantRecordingService
-    private let transcriptionClient: TranscriptionClient
-    private let postProcessingService: PostProcessingService
+    private let transcriptionPhase: AssistantTranscriptionPhase
+    private let aiPhase: AssistantAIPhase
     private let recordingManager: RecordingManager
     private let indicator: FloatingRecordingIndicatorController
     private let screenBorder: AssistantScreenBorderController
     private let settings: AppSettingsStore
     private let normalizationPhase: AssistantNormalizationPhase
-    private let raycastIntegrationService: any AssistantDeepLinkDispatching
-    private let scriptRunner: AssistantBashScriptRunner
-    private let textSelectionService: AssistantTextSelectionService
+    private let dispatchPhase: AssistantDispatchPhase
 
     private var currentRecordingURL: URL?
     private var currentExecutionFlow: AssistantExecutionFlow = .assistantMode
@@ -35,21 +33,29 @@ public final class AssistantVoiceCommandService: ObservableObject {
         screenBorder: AssistantScreenBorderController = AssistantScreenBorderController(),
         settings: AppSettingsStore = .shared,
         normalizationPhase: AssistantNormalizationPhase = AssistantNormalizationPhase(),
+        transcriptionPhase: AssistantTranscriptionPhase? = nil,
+        aiPhase: AssistantAIPhase? = nil,
+        dispatchPhase: AssistantDispatchPhase? = nil,
         raycastIntegrationService: any AssistantDeepLinkDispatching = AssistantRaycastIntegrationService(),
         scriptRunner: AssistantBashScriptRunner = AssistantBashScriptRunner(),
         textSelectionService: AssistantTextSelectionService = AssistantTextSelectionService()
     ) {
         self.audioRecorder = audioRecorder
-        self.transcriptionClient = transcriptionClient
-        self.postProcessingService = postProcessingService
+        self.transcriptionPhase = transcriptionPhase ?? AssistantTranscriptionPhase(transcriptionClient: transcriptionClient)
+        self.aiPhase = aiPhase ?? AssistantAIPhase(
+            postProcessingService: postProcessingService,
+            scriptRunner: scriptRunner
+        )
         self.recordingManager = recordingManager
         self.indicator = indicator
         self.screenBorder = screenBorder
         self.settings = settings
         self.normalizationPhase = normalizationPhase
-        self.raycastIntegrationService = raycastIntegrationService
-        self.scriptRunner = scriptRunner
-        self.textSelectionService = textSelectionService
+        self.dispatchPhase = dispatchPhase ?? AssistantDispatchPhase(
+            raycastIntegrationService: raycastIntegrationService,
+            textSelectionService: textSelectionService,
+            normalizationPhase: normalizationPhase
+        )
     }
 
     public func startRecording(flow: AssistantExecutionFlow = .assistantMode) async {
@@ -145,7 +151,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         }
 
         do {
-            let (command, executionFlow, selectedIntegration) = try await performTranscriptionPhase(recordingURL: recordingURL)
+            let (command, executionFlow, selectedIntegration) = try await performTranscription(recordingURL: recordingURL)
             let (sourceText, selectedTextResult) = try await captureSourceText(executionFlow: executionFlow, command: command)
             let processedCommand = try await processWithAI(
                 sourceText: sourceText,
@@ -182,7 +188,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
     // MARK: - Phase Helpers
 
-    private func performTranscriptionPhase(recordingURL: URL?) async throws -> (
+    private func performTranscription(recordingURL: URL?) async throws -> (
         command: String,
         executionFlow: AssistantExecutionFlow,
         selectedIntegration: AssistantIntegrationConfig?
@@ -192,61 +198,13 @@ public final class AssistantVoiceCommandService: ObservableObject {
             throw AssistantVoiceCommandError.failedToStopRecording
         }
 
-        let transcription = try await transcriptionClient.transcribe(
-            audioURL: recordingURL,
-            onProgress: nil,
-            executionMode: .assistant,
-            diarizationEnabledOverride: false
+        return try await transcriptionPhase.performTranscription(
+            recordingURL: recordingURL,
+            vocabularyReplacementRules: settings.vocabularyReplacementRules,
+            executionFlow: currentExecutionFlow,
+            isAssistantIntegrationsEnabled: settings.isAssistantIntegrationsEnabled,
+            assistantSelectedIntegration: settings.assistantSelectedIntegration
         )
-        let command = normalizedAssistantTranscription(
-            transcription.text,
-            vocabularyReplacementRules: settings.vocabularyReplacementRules
-        )
-
-        logPayloadIfNeeded("Assistant transcription payload", [
-            "rawLength": transcription.text.count,
-            "trimmedLength": command.count,
-            "preview": AssistantPayloadLogging.payloadPreview(command),
-        ])
-
-        guard !command.isEmpty else {
-            throw AssistantVoiceCommandError.emptyCommand
-        }
-
-        let executionFlow = currentExecutionFlow
-        let selectedIntegration = resolveSelectedIntegration(for: executionFlow)
-
-        AppLogger.info(
-            "Assistant command processed",
-            category: .assistant,
-            extra: [
-                "integration": selectedIntegration?.name ?? "assistantMode",
-                "executionFlow": executionFlow == .integrationDispatch ? "integrationDispatch" : "assistantMode",
-                "commandLength": command.count,
-            ]
-        )
-
-        return (command, executionFlow, selectedIntegration)
-    }
-
-    func normalizedAssistantTranscription(
-        _ text: String,
-        vocabularyReplacementRules: [VocabularyReplacementRule]
-    ) -> String {
-        VocabularyReplacementRule
-            .apply(rules: vocabularyReplacementRules, to: text)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private func resolveSelectedIntegration(for executionFlow: AssistantExecutionFlow) -> AssistantIntegrationConfig? {
-        guard executionFlow == .integrationDispatch,
-              settings.isAssistantIntegrationsEnabled,
-              let integration = settings.assistantSelectedIntegration,
-              integration.isEnabled
-        else {
-            return nil
-        }
-        return integration
     }
 
     private func captureSourceText(
@@ -257,20 +215,10 @@ public final class AssistantVoiceCommandService: ObservableObject {
         selectedTextResult: (text: String, snapshot: AssistantTextSelectionService.PasteboardSnapshot)?
     ) {
         indicator.updateProcessingSnapshot(.init(step: .capturingContext))
-        if executionFlow == .integrationDispatch {
-            logPayloadIfNeeded("Assistant integration source payload", [
-                "length": command.count,
-                "preview": AssistantPayloadLogging.payloadPreview(command),
-            ])
-            return (command, nil)
-        }
-
-        let selectedTextCapture = try await textSelectionService.captureSelectedText()
-        logPayloadIfNeeded("Assistant selected text payload", [
-            "length": selectedTextCapture.text.count,
-            "preview": AssistantPayloadLogging.payloadPreview(selectedTextCapture.text),
-        ])
-        return (selectedTextCapture.text, selectedTextCapture)
+        return try await dispatchPhase.captureSourceText(
+            executionFlow: executionFlow,
+            command: command
+        )
     }
 
     private func processWithAI(
@@ -280,48 +228,12 @@ public final class AssistantVoiceCommandService: ObservableObject {
         selectedIntegration: AssistantIntegrationConfig?
     ) async throws -> String {
         indicator.updateProcessingSnapshot(.init(step: .interpretingCommand))
-        guard let beforeAICommand = try await applyScriptIfNeeded(
-            stage: .beforeAI,
-            input: command,
-            integration: selectedIntegration
-        ) else {
-            indicator.hide()
-            throw AssistantVoiceCommandError.processingFailed
-        }
-
-        let integrationPrompt = PostProcessingPrompt(
-            title: "assistant.raycast.prompt_title".localized,
-            promptText: assistantPromptInstructions(
-                baseInstructions: normalizedPromptInstructions(from: selectedIntegration),
-                voiceCommand: beforeAICommand,
-                executionFlow: executionFlow
-            )
+        return try await aiPhase.processWithAI(
+            sourceText: sourceText,
+            command: command,
+            executionFlow: executionFlow,
+            selectedIntegration: selectedIntegration
         )
-
-        let processedCommand = try await postProcessingService.processTranscription(
-            sourceText,
-            with: integrationPrompt,
-            mode: .assistant,
-            systemPromptOverride: executionFlow == .integrationDispatch
-                ? AIPromptTemplates.assistantSystemPrompt
-                : nil
-        )
-
-        logPayloadIfNeeded("Assistant post-processing payload", [
-            "length": processedCommand.count,
-            "preview": AssistantPayloadLogging.payloadPreview(processedCommand),
-        ])
-
-        guard let commandForDispatch = try await applyScriptIfNeeded(
-            stage: .afterAI,
-            input: processedCommand,
-            integration: selectedIntegration
-        ) else {
-            indicator.hide()
-            throw AssistantVoiceCommandError.processingFailed
-        }
-
-        return commandForDispatch
     }
 
     private func applyNormalization(
@@ -347,50 +259,14 @@ public final class AssistantVoiceCommandService: ObservableObject {
         selectedTextResult: (text: String, snapshot: AssistantTextSelectionService.PasteboardSnapshot)?
     ) async throws {
         indicator.updateProcessingSnapshot(.init(step: .dispatchingResult))
-        logPayloadIfNeeded("Assistant dispatch payload", [
-            "length": finalCommand.count,
-            "preview": AssistantPayloadLogging.payloadPreview(finalCommand),
-            "integrationId": selectedIntegration?.id.uuidString ?? "assistantMode",
-        ])
-
-        if executionFlow == .integrationDispatch {
-            guard let selectedIntegration else {
-                throw AssistantVoiceCommandError.integrationDisabled
-            }
-
-            let dispatchResult = try dispatchToRaycast(
-                with: finalCommand,
-                rawText: command,
-                selectedIntegration: selectedIntegration
-            )
-            AppLogger.info(
-                "Assistant integration dispatch completed",
-                category: .assistant,
-                extra: [
-                    "integrationId": selectedIntegration.id.uuidString,
-                    "integrationName": selectedIntegration.name,
-                    "result": dispatchResult == .openedWithClipboardFallback ? "clipboardFallback" : "deepLink",
-                    "processedLength": processedCommand.count,
-                    "dispatchedLength": finalCommand.count,
-                ]
-            )
-        } else {
-            guard let selectedTextResult else {
-                throw AssistantVoiceCommandError.noSelectionFound
-            }
-            try await textSelectionService.replaceSelectedText(
-                with: finalCommand,
-                restoring: selectedTextResult.snapshot
-            )
-            AppLogger.info(
-                "Assistant mode command applied to active app",
-                category: .assistant,
-                extra: [
-                    "processedLength": processedCommand.count,
-                    "appliedLength": finalCommand.count,
-                ]
-            )
-        }
+        try await dispatchPhase.executeDispatch(
+            executionFlow: executionFlow,
+            finalCommand: finalCommand,
+            command: command,
+            processedCommand: processedCommand,
+            selectedIntegration: selectedIntegration,
+            selectedTextResult: selectedTextResult
+        )
     }
 
     private func logPayloadIfNeeded(_ message: String, _ extras: [String: Any]) {
@@ -424,109 +300,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
         try? FileManager.default.removeItem(at: url)
     }
 
-    private func dispatchToRaycast(
-        with command: String,
-        rawText: String,
-        selectedIntegration: AssistantIntegrationConfig
-    ) throws -> AssistantIntegrationDispatchResult {
-        let resolvedDeepLink = resolveDeepLinkShortcodes(
-            in: selectedIntegration.deepLink,
-            finalText: command,
-            rawText: rawText
-        )
-
-        if AssistantPayloadLogging.shouldLogPayloadDetails {
-            AppLogger.debug(
-                "Assistant dispatch target",
-                category: .assistant,
-                extra: [
-                    "deepLink": selectedIntegration.deepLink,
-                    "resolvedDeepLink": resolvedDeepLink,
-                    "commandPreview": AssistantPayloadLogging.payloadPreview(command),
-                ]
-            )
-        }
-
-        do {
-            return try raycastIntegrationService.dispatch(
-                command: command,
-                baseDeepLink: resolvedDeepLink
-            )
-        } catch AssistantIntegrationDispatchError.invalidDeepLink {
-            throw AssistantVoiceCommandError.raycastDeeplinkInvalid
-        } catch AssistantIntegrationDispatchError.openFailed {
-            throw AssistantVoiceCommandError.raycastOpenFailed
-        }
-    }
-
-    private func resolveDeepLinkShortcodes(
-        in template: String,
-        finalText: String,
-        rawText: String
-    ) -> String {
-        let replacements: [(String, String)] = [
-            (AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded, normalizationPhase.urlEncoded(finalText)),
-            (AssistantIntegrationDeepLinkShortcode.rawTextURLEncoded, normalizationPhase.urlEncoded(rawText)),
-            (AssistantIntegrationDeepLinkShortcode.finalText, finalText),
-            (AssistantIntegrationDeepLinkShortcode.rawText, rawText),
-        ]
-
-        return replacements.reduce(template) { partialResult, replacement in
-            partialResult.replacingOccurrences(of: replacement.0, with: replacement.1)
-        }
-    }
-
-    private func applyScriptIfNeeded(
-        stage: AssistantIntegrationScriptConfig.Stage,
-        input: String,
-        integration: AssistantIntegrationConfig?
-    ) async throws -> String? {
-        guard let integration,
-              integration.isEnabled,
-              let scriptConfig = integration.advancedScript,
-              scriptConfig.stage == stage
-        else {
-            return input
-        }
-
-        let output = try await scriptRunner.run(
-            script: scriptConfig.script,
-            input: input,
-            timeoutSeconds: 15
-        )
-
-        if AssistantPayloadLogging.shouldLogPayloadDetails {
-            AppLogger.debug(
-                "Assistant script stage output",
-                category: .assistant,
-                extra: [
-                    "stage": stage.rawValue,
-                    "inputLength": input.count,
-                    "outputLength": output?.count ?? 0,
-                    "outputPreview": AssistantPayloadLogging.payloadPreview(output ?? ""),
-                ]
-            )
-        }
-
-        if output == nil {
-            AppLogger.info(
-                "Assistant script returned empty output; skipping remaining processing",
-                category: .assistant,
-                extra: ["stage": stage.rawValue, "integration": integration.name]
-            )
-        }
-
-        return output
-    }
-
-    private func normalizedPromptInstructions(from integration: AssistantIntegrationConfig?) -> String? {
-        let normalized = integration?.promptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let normalized, !normalized.isEmpty else {
-            return nil
-        }
-        return normalized
-    }
-
     private func recordingIndicatorRenderState(mode: FloatingRecordingIndicatorMode) -> RecordingIndicatorRenderState {
         switch currentExecutionFlow {
         case .assistantMode:
@@ -538,47 +311,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 assistantIntegrationID: settings.assistantSelectedIntegrationId
             )
         }
-    }
-
-    private func assistantPromptInstructions(
-        baseInstructions: String?,
-        voiceCommand: String,
-        executionFlow: AssistantExecutionFlow
-    ) -> String {
-        let normalizedVoiceCommand = voiceCommand.trimmingCharacters(in: .whitespacesAndNewlines)
-        if executionFlow == .integrationDispatch {
-            let immutableInstructions = """
-            You are preparing text that will be sent to another AI assistant through a deep link.
-            Rewrite or clean the command while preserving the user's intent and language.
-            Never answer the command.
-            Return only the final command text.
-            """
-            guard let baseInstructions,
-                  !baseInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            else {
-                return [
-                    immutableInstructions,
-                    "User command:\n\(normalizedVoiceCommand)",
-                ].joined(separator: "\n\n")
-            }
-
-            return [
-                immutableInstructions,
-                "Additional user instructions:\n\(baseInstructions)",
-                "User command:\n\(normalizedVoiceCommand)",
-            ].joined(separator: "\n\n")
-        }
-
-        guard let baseInstructions,
-              !baseInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        else {
-            return normalizedVoiceCommand
-        }
-
-        return [
-            baseInstructions,
-            "Comando do usuário:\n\(normalizedVoiceCommand)",
-        ].joined(separator: "\n\n")
     }
 
     private func showError(_ error: AssistantVoiceCommandError) {

@@ -5,9 +5,9 @@ import XCTest
 @MainActor
 final class AssistantVoiceCommandServiceVocabularyTests: XCTestCase {
     func testNormalizedAssistantTranscription_AppliesVocabularyRulesBeforeTrimming() {
-        let service = AssistantVoiceCommandService()
+        let phase = AssistantTranscriptionPhase(transcriptionClient: .shared)
 
-        let result = service.normalizedAssistantTranscription(
+        let result = phase.normalizedAssistantTranscription(
             "  open ay eye summarize this for reycast  ",
             vocabularyReplacementRules: [
                 VocabularyReplacementRule(find: "open ay eye", replace: "OpenAI"),
@@ -19,9 +19,9 @@ final class AssistantVoiceCommandServiceVocabularyTests: XCTestCase {
     }
 
     func testNormalizedAssistantTranscription_ReturnsTrimmedOriginalWhenNoRuleMatches() {
-        let service = AssistantVoiceCommandService()
+        let phase = AssistantTranscriptionPhase(transcriptionClient: .shared)
 
-        let result = service.normalizedAssistantTranscription(
+        let result = phase.normalizedAssistantTranscription(
             "  ask for status update  ",
             vocabularyReplacementRules: [
                 VocabularyReplacementRule(find: "open ay eye", replace: "OpenAI"),
