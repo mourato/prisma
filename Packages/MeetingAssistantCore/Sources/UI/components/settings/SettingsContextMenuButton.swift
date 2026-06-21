@@ -3,15 +3,18 @@ import SwiftUI
 public struct SettingsContextMenuButton<MenuContent: View>: View {
     private let accessibilityLabel: String
     private let accessibilityHint: String?
+    private let symbolColor: Color
     private let menuContent: () -> MenuContent
 
     public init(
         accessibilityLabel: String,
         accessibilityHint: String? = nil,
+        symbolColor: Color = .secondary,
         @ViewBuilder menuContent: @escaping () -> MenuContent
     ) {
         self.accessibilityLabel = accessibilityLabel
         self.accessibilityHint = accessibilityHint
+        self.symbolColor = symbolColor
         self.menuContent = menuContent
     }
 
@@ -20,7 +23,7 @@ public struct SettingsContextMenuButton<MenuContent: View>: View {
             menuContent()
         } label: {
             Image(systemName: "ellipsis.circle")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(symbolColor)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()

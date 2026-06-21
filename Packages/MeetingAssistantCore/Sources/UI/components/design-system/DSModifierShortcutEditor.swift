@@ -134,7 +134,7 @@ public struct DSModifierShortcutEditor: View {
         .frame(minHeight: 38)
         .background(
             RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                .fill(AppDesignSystem.Colors.controlBackground)
+                .fill(AppDesignSystem.Colors.textBackground)
         )
         .overlay(
             RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
@@ -371,6 +371,10 @@ private struct ShortcutChipRow: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(chipBackground)
+                        .overlay(
+                            Capsule()
+                                .stroke(AppDesignSystem.Colors.separator, lineWidth: 1)
+                        )
                         .foregroundStyle(chipForeground)
                         .clipShape(Capsule())
                 }
@@ -381,7 +385,7 @@ private struct ShortcutChipRow: View {
     private var chipBackground: Color {
         switch colorStyle {
         case .neutral:
-            AppDesignSystem.Colors.secondaryFill
+            AppDesignSystem.Colors.controlBackground
         case .success:
             AppDesignSystem.Colors.success.opacity(0.2)
         case .error:

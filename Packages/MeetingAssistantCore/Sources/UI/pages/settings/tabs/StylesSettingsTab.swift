@@ -79,11 +79,11 @@ public struct StylesSettingsTab: View {
                     viewModel.openEditStyle(style)
                 },
                 content: {
-                    styleRowContent(style)
+                    styleRowContent(style, isSelected: selectedStyleID == style.id)
                 }
             )
 
-            styleActionsMenu(for: style)
+            styleActionsMenu(for: style, isSelected: selectedStyleID == style.id)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -109,27 +109,33 @@ public struct StylesSettingsTab: View {
         .accessibilityHint("settings.styles.actions".localized)
     }
 
-    private func styleRowContent(_ style: DictationStyle) -> some View {
+    private func styleRowContent(_ style: DictationStyle, isSelected: Bool) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(styleDisplayName(style))
                     .font(.headline)
                     .fontWeight(.semibold)
+                    .foregroundStyle(AppDesignSystem.Colors.primaryTextStyle(isSelected: isSelected))
 
                 Text(styleTargetCountText(for: style))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             styleTargetIcons(for: style)
 
-            styleSummary(for: style)
+            styleSummary(for: style, isSelected: isSelected)
         }
     }
 
-    private func styleActionsMenu(for style: DictationStyle) -> some View {
-        SettingsContextMenuButton(accessibilityLabel: "settings.styles.actions".localized) {
+    private func styleActionsMenu(for style: DictationStyle, isSelected: Bool) -> some View {
+        SettingsContextMenuButton(
+            accessibilityLabel: "settings.styles.actions".localized,
+            symbolColor: isSelected
+                ? AppDesignSystem.Colors.selectedContentSecondaryForeground
+                : .secondary
+        ) {
             Button {
                 selectedStyleID = style.id
                 viewModel.openEditStyle(style)
@@ -146,7 +152,7 @@ public struct StylesSettingsTab: View {
         }
     }
 
-    private func styleSummary(for style: DictationStyle) -> some View {
+    private func styleSummary(for style: DictationStyle, isSelected: Bool) -> some View {
         HStack(spacing: 8) {
             if style.forceMarkdownOutput {
                 Text("settings.styles.summary.markdown".localized)
@@ -158,7 +164,7 @@ public struct StylesSettingsTab: View {
                         Capsule()
                             .fill(AppDesignSystem.Colors.subtleFill2)
                     )
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
             }
 
             if style.outputLanguage != .original {
@@ -176,7 +182,7 @@ public struct StylesSettingsTab: View {
                     Capsule()
                         .fill(AppDesignSystem.Colors.subtleFill2)
                 )
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
         }
     }
 

@@ -69,7 +69,9 @@ public struct VocabularySettingsTab: View {
     }
 
     private func row(for rule: VocabularyReplacementRule) -> some View {
-        HStack(spacing: 12) {
+        let isSelected = selectedRuleID == rule.id
+
+        return HStack(spacing: 12) {
             SettingsRowClickSurface(
                 onSingleClick: {
                     selectRule(rule)
@@ -83,21 +85,27 @@ public struct VocabularySettingsTab: View {
                             Text(rule.find)
                                 .font(.subheadline)
                                 .fontWeight(.medium)
+                                .foregroundStyle(AppDesignSystem.Colors.primaryTextStyle(isSelected: isSelected))
                             Text(rule.replace.isEmpty ? "settings.vocabulary.empty_replace".localized : rule.replace)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
                         }
 
                         Spacer()
 
                         Image(systemName: "arrow.right")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
                     }
                 }
             )
 
-            SettingsContextMenuButton(accessibilityLabel: "settings.vocabulary.actions".localized) {
+            SettingsContextMenuButton(
+                accessibilityLabel: "settings.vocabulary.actions".localized,
+                symbolColor: isSelected
+                    ? AppDesignSystem.Colors.selectedContentSecondaryForeground
+                    : .secondary
+            ) {
                 Button {
                     editRule(rule)
                 } label: {
@@ -113,7 +121,7 @@ public struct VocabularySettingsTab: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(rowBackground(isSelected: selectedRuleID == rule.id))
+        .background(rowBackground(isSelected: isSelected))
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         .contextMenu {
             Button {

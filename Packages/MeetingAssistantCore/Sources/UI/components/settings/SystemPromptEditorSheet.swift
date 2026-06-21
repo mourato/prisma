@@ -66,13 +66,8 @@ struct SystemPromptEditorSheet: View {
             Button("settings.post_processing.restore_default".localized) {
                 onRestoreDefault()
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(AppDesignSystem.Colors.accent)
-            .font(.system(size: 11, weight: .medium))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(AppDesignSystem.Colors.selectionFill)
-            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.chipCornerRadius))
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
         .padding()
         .background(AppDesignSystem.Colors.settingsGlassBackground)

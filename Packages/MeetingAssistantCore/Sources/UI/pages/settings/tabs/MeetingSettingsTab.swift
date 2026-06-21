@@ -446,7 +446,9 @@ public struct MeetingSettingsTab: View {
     }
 
     private func webTargetRow(_ target: WebMeetingTarget) -> some View {
-        HStack(spacing: 12) {
+        let isSelected = selectedWebTargetID == target.id
+
+        return HStack(spacing: 12) {
             SettingsRowClickSurface(
                 onSingleClick: {
                     selectedWebTargetID = target.id
@@ -466,19 +468,25 @@ public struct MeetingSettingsTab: View {
                         Text(target.displayName)
                             .font(.subheadline)
                             .fontWeight(.medium)
+                            .foregroundStyle(AppDesignSystem.Colors.primaryTextStyle(isSelected: isSelected))
                         Text(target.urlPatterns.joined(separator: ", "))
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
                         Text(browserNames(from: target.browserBundleIdentifiers))
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
                     }
 
                     Spacer()
                 }
             }
 
-            SettingsContextMenuButton(accessibilityLabel: "settings.rules_per_app.actions".localized) {
+            SettingsContextMenuButton(
+                accessibilityLabel: "settings.rules_per_app.actions".localized,
+                symbolColor: isSelected
+                    ? AppDesignSystem.Colors.selectedContentSecondaryForeground
+                    : .secondary
+            ) {
                 Button {
                     selectedWebTargetID = target.id
                     webTargetsViewModel.editTarget(target)
@@ -496,7 +504,7 @@ public struct MeetingSettingsTab: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(selectionBackground(isSelected: selectedWebTargetID == target.id))
+        .background(selectionBackground(isSelected: isSelected))
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         .contextMenu {
             Button {

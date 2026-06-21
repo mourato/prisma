@@ -263,13 +263,9 @@ public struct AIProviderIntegrationCard: View {
                         Text("settings.ai.get_api_key".localized)
                             .font(.system(size: 11, weight: .medium))
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(AppDesignSystem.Colors.selectionFill)
-                    .foregroundStyle(AppDesignSystem.Colors.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.chipCornerRadius))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
 
             Spacer()

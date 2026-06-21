@@ -465,12 +465,12 @@ private extension AudioSettingsTab {
                 Text(title)
                     .font(.body)
                     .fontWeight(isSelected ? .semibold : .regular)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(AppDesignSystem.Colors.primaryTextStyle(isSelected: isSelected))
 
                 if let description {
                     Text(description)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

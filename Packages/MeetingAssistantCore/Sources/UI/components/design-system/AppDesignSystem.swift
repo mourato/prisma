@@ -226,6 +226,26 @@ public enum AppDesignSystem {
             Color(nsColor: .selectedContentBackgroundColor)
         }
 
+        public static var selectedContentForeground: Color {
+            Color(nsColor: .alternateSelectedControlTextColor)
+        }
+
+        public static var selectedContentSecondaryForeground: Color {
+            selectedContentForeground.opacity(0.82)
+        }
+
+        public static func primaryTextStyle(isSelected: Bool = false) -> AnyShapeStyle {
+            isSelected
+                ? AnyShapeStyle(selectedContentForeground)
+                : AnyShapeStyle(.primary)
+        }
+
+        public static func secondaryTextStyle(isSelected: Bool = false) -> AnyShapeStyle {
+            isSelected
+                ? AnyShapeStyle(selectedContentSecondaryForeground)
+                : AnyShapeStyle(.secondary)
+        }
+
         public static var topFadeLeading: Color {
             windowBackground
         }

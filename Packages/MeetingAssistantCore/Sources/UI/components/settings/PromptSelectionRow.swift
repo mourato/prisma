@@ -111,11 +111,12 @@ public struct PromptSelectionRow<MenuContent: View>: View {
             Text(title)
                 .font(.body)
                 .fontWeight(isSelected ? .bold : .medium)
+                .foregroundStyle(AppDesignSystem.Colors.primaryTextStyle(isSelected: isSelected))
 
             if let description {
                 Text(description)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
                     .lineLimit(1)
             }
         }
@@ -126,7 +127,10 @@ public struct PromptSelectionRow<MenuContent: View>: View {
         if showMenu {
             SettingsContextMenuButton(
                 accessibilityLabel: menuAccessibilityLabel,
-                accessibilityHint: menuAccessibilityHint
+                accessibilityHint: menuAccessibilityHint,
+                symbolColor: isSelected
+                    ? AppDesignSystem.Colors.selectedContentSecondaryForeground
+                    : .secondary
             ) {
                 menuContent()
             }

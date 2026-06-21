@@ -505,7 +505,7 @@ private struct UpcomingCalendarEventRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(AppDesignSystem.Colors.settingsInlineBackground(intensity: .subtle))
+        .background(AppDesignSystem.Colors.settingsInlineBackground(intensity: .regular))
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         .contentShape(Rectangle())
         .onTapGesture {

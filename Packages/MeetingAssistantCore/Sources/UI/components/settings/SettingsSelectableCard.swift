@@ -44,12 +44,12 @@ public struct SettingsSelectableCard: View {
                     Text(title)
                         .font(.body)
                         .fontWeight(isSelected ? .semibold : .medium)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(AppDesignSystem.Colors.primaryTextStyle(isSelected: isSelected))
 
                     if let description {
                         Text(description)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
