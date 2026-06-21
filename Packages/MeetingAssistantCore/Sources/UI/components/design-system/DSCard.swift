@@ -7,6 +7,9 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct DSCard<Content: View>: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorScheme) private var colorScheme
+
     public enum Style {
         case standard
         case settings
@@ -39,7 +42,7 @@ public struct DSCard<Content: View>: View {
         .padding(padding)
         .background(
             RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(backgroundColor)
+                .fill(backgroundStyle)
                 .overlay {
                     if showsStroke {
                         RoundedRectangle(cornerRadius: cornerRadius)
@@ -59,12 +62,21 @@ public struct DSCard<Content: View>: View {
         }
     }
 
-    private var backgroundColor: Color {
+    private var backgroundStyle: AnyShapeStyle {
         switch style {
         case .standard:
-            AppDesignSystem.Colors.cardBackground
+            AnyShapeStyle(AppDesignSystem.Colors.cardBackground)
         case .settings:
-            AppDesignSystem.Colors.settingsCardBackground(intensity: settingsSurfaceIntensity)
+            switch colorScheme {
+            case .light, .dark:
+                if reduceTransparency {
+                    AnyShapeStyle(AppDesignSystem.Colors.settingsCardBackground(intensity: settingsSurfaceIntensity))
+                } else {
+                    AnyShapeStyle(.regularMaterial)
+                }
+            @unknown default:
+                AnyShapeStyle(AppDesignSystem.Colors.settingsCardBackground(intensity: settingsSurfaceIntensity))
+            }
         }
     }
 

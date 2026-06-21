@@ -345,11 +345,8 @@ private extension SettingsView {
                 .frame(width: 26, height: 24)
                 .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
-        .buttonStyle(.plain)
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(AppDesignSystem.Colors.subtleFill)
-        )
+        .buttonStyle(.bordered)
+        .controlSize(.small)
         .help(sidebarToggleHelpText)
         .accessibilityLabel(sidebarToggleHelpText)
     }
@@ -366,12 +363,9 @@ private extension SettingsView {
                 .frame(width: 26, height: 24)
                 .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
         .foregroundStyle(isEnabled ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.secondary.opacity(0.75)))
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(AppDesignSystem.Colors.subtleFill)
-        )
         .opacity(isEnabled ? 1 : 0.65)
         .help(helpKey.localized)
         .accessibilityLabel(helpKey.localized)
@@ -559,13 +553,7 @@ private struct SettingsToolbarBackgroundModifier: ViewModifier {
     let usesToolbarChrome: Bool
 
     func body(content: Content) -> some View {
-        if usesToolbarChrome {
-            content
-        } else {
-            content
-                .toolbarBackground(AppDesignSystem.Colors.settingsCanvasBackground, for: .windowToolbar)
-                .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
-        }
+        content
     }
 }
 

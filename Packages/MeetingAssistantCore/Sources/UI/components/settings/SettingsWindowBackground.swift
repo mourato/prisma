@@ -2,111 +2,61 @@ import AppKit
 import SwiftUI
 
 public struct SettingsWindowBackground: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     public init() {}
 
     public var body: some View {
-        ZStack {
-            if AppDesignSystem.Accessibility.reduceTransparency {
-                AppDesignSystem.Colors.settingsCanvasBackground
-            } else {
-                SettingsWindowVisualEffectBackground(material: .underWindowBackground)
+        nativeWindowBackground
+            .ignoresSafeArea()
+    }
 
+    @ViewBuilder
+    private var nativeWindowBackground: some View {
+        switch colorScheme {
+        case .light, .dark:
+            if AppDesignSystem.Accessibility.reduceTransparency {
+                AppDesignSystem.Colors.windowBackground
+            } else {
                 Rectangle()
-                    .fill(AppDesignSystem.Colors.settingsGlassBackground)
+                    .fill(.windowBackground)
+                    .background(.windowBackground)
             }
+        @unknown default:
+            AppDesignSystem.Colors.windowBackground
         }
-        .ignoresSafeArea()
     }
 }
 
 public struct SettingsTitleBarMaterialBackground: View {
-    private enum Layout {
-        static let fadeStart: CGFloat = 0.9
-    }
-
-    private let usesBottomFade: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     public init(usesBottomFade: Bool = true) {
-        self.usesBottomFade = usesBottomFade
+        _ = usesBottomFade
     }
 
     public var body: some View {
-        ZStack {
-            if AppDesignSystem.Accessibility.reduceTransparency {
-                AppDesignSystem.Colors.settingsTitleBarTint
-            } else {
-                SettingsWindowVisualEffectBackground(
-                    material: .titlebar,
-                    blendingMode: .withinWindow
-                )
-
+        nativeTitleBarBackground
+            .overlay(alignment: .bottom) {
                 Rectangle()
-                    .fill(AppDesignSystem.Colors.settingsTitleBarTint)
-                    .opacity(0.04)
+                    .fill(AppDesignSystem.Colors.separator)
+                    .frame(height: 1)
             }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
 
-            LinearGradient(
-                colors: [
-                    AppDesignSystem.Colors.settingsTitleBarHighlight,
-                    .clear,
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-
-            LinearGradient(
-                colors: [
-                    .clear,
-                    AppDesignSystem.Colors.settingsTitleBarShadow,
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        }
-        .overlay(alignment: .bottom) {
+    @ViewBuilder
+    private var nativeTitleBarBackground: some View {
+        switch colorScheme {
+        case .light, .dark:
             Rectangle()
-                .fill(AppDesignSystem.Colors.settingsTitleBarDivider)
-                .frame(height: 1)
+                .fill(.bar)
+                .background(.bar)
+        @unknown default:
+            Rectangle()
+                .fill(AppDesignSystem.Colors.windowBackground)
         }
-        .mask {
-            if usesBottomFade {
-                LinearGradient(
-                    stops: [
-                        .init(color: .white, location: 0),
-                        .init(color: .white, location: Layout.fadeStart),
-                        .init(color: .clear, location: 1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            } else {
-                Color.white
-            }
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-}
-
-private struct SettingsWindowVisualEffectBackground: NSViewRepresentable {
-    let material: NSVisualEffectView.Material
-    var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        configure(view)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        configure(nsView)
-    }
-
-    private func configure(_ view: NSVisualEffectView) {
-        view.material = material
-        view.blendingMode = blendingMode
-        view.state = .followsWindowActiveState
-        view.isEmphasized = false
     }
 }
 

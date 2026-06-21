@@ -144,6 +144,8 @@ struct MeetingNotesRichTextEditor: View {
 }
 
 private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
+    @Environment(\.colorScheme) private var colorScheme
+
     @Binding var content: MeetingNotesContent
     let controller: MeetingNotesRichTextController
     let fontFamilyKey: String
@@ -176,9 +178,7 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         textView.isRichText = true
         textView.importsGraphics = false
         textView.drawsBackground = true
-        textView.backgroundColor = .textBackgroundColor
-        textView.textColor = .labelColor
-        textView.insertionPointColor = .labelColor
+        applyNativeAppearance(to: textView)
         textView.usesFindBar = false
         textView.textContainerInset = NSSize(width: 0, height: 8)
         textView.textContainer?.lineFragmentPadding = 0
@@ -213,6 +213,12 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? NSTextView else { return }
+        switch colorScheme {
+        case .light, .dark:
+            applyNativeAppearance(to: textView)
+        @unknown default:
+            applyNativeAppearance(to: textView)
+        }
         context.coordinator.performSwiftUIViewUpdate {
             context.coordinator.connect(textView: textView)
             let didApplyExternalContent = context.coordinator.applyExternalContent(content, to: textView)
@@ -227,6 +233,12 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator {
         Coordinator(content: $content, controller: controller)
+    }
+
+    private func applyNativeAppearance(to textView: NSTextView) {
+        textView.backgroundColor = .textBackgroundColor
+        textView.textColor = .labelColor
+        textView.insertionPointColor = .labelColor
     }
 
     @MainActor
