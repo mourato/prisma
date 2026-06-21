@@ -169,33 +169,27 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     public var filteredTranscriptions: [TranscriptionMetadata] {
-        let selectedAppScope = selectedAppFilterScope()
-        return transcriptions.filter { transcription in
-            let matchesSource = self.matchesSourceFilter(transcription)
-            let matchesDate = self.dateFilter.contains(transcription.createdAt)
-            let matchesApp = self.matchesAppFilter(transcription, scope: selectedAppScope)
-            let matchesText = self.matchesSearchFilter(transcription)
-            return matchesSource && matchesDate && matchesApp && matchesText
-        }
+        TranscriptionHistoryFilterEngine.filteredTranscriptions(
+            from: transcriptions,
+            sourceFilter: sourceFilter,
+            dateFilter: dateFilter,
+            searchText: searchText,
+            appFilterId: appFilterId,
+            allAppsId: FilterConstants.allAppsId,
+            rawAppPrefix: FilterConstants.rawAppPrefix,
+            bundleAppPrefix: FilterConstants.bundleAppPrefix,
+            nameAppPrefix: FilterConstants.nameAppPrefix
+        )
     }
 
     public var appFilterOptions: [AppFilterOption] {
-        let optionsById = transcriptions.reduce(into: [String: AppFilterOption]()) { result, transcription in
-            guard let option = appFilterOption(for: transcription) else { return }
-            result[option.id] = option
-        }
-
-        let allAppsOption = AppFilterOption(
-            id: FilterConstants.allAppsId,
-            scope: .all,
-            displayName: "settings.transcriptions.filter_app_all".localized
+        TranscriptionHistoryFilterEngine.appFilterOptions(
+            from: transcriptions,
+            allAppsId: FilterConstants.allAppsId,
+            rawAppPrefix: FilterConstants.rawAppPrefix,
+            bundleAppPrefix: FilterConstants.bundleAppPrefix,
+            nameAppPrefix: FilterConstants.nameAppPrefix
         )
-
-        let sortedAppOptions = optionsById.values.sorted {
-            $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
-        }
-
-        return [allAppsOption] + sortedAppOptions
     }
 
     /// Transcriptions grouped by date (start of day) for section headers.
@@ -208,125 +202,6 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     /// Sorted list of dates for the group headers.
     public var sortedGroupDates: [Date] {
         groupedTranscriptions.keys.sorted(by: >)
-    }
-
-    private func matchesSourceFilter(_ transcription: TranscriptionMetadata) -> Bool {
-        switch sourceFilter {
-        case .all:
-            true
-        case .dictations:
-            transcription.capturePurpose == .dictation
-        case .meetings:
-            transcription.capturePurpose == .meeting
-        }
-    }
-
-    private func matchesAppFilter(_ transcription: TranscriptionMetadata, scope: AppFilterOption.Scope) -> Bool {
-        switch scope {
-        case .all:
-            return true
-        case let .appRawValue(appRawValue):
-            return transcription.appRawValue == appRawValue
-        case let .appBundleIdentifier(bundleIdentifier):
-            let transcriptionBundleIdentifier = transcription.appBundleIdentifier?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .lowercased()
-            return transcriptionBundleIdentifier == bundleIdentifier
-        case let .appDisplayName(displayName):
-            return normalizedFilterValue(appDisplayName(for: transcription)) == displayName
-        }
-    }
-
-    private func selectedAppFilterScope() -> AppFilterOption.Scope {
-        guard appFilterId != FilterConstants.allAppsId else { return .all }
-
-        if appFilterId.hasPrefix(FilterConstants.rawAppPrefix) {
-            let rawValue = String(appFilterId.dropFirst(FilterConstants.rawAppPrefix.count))
-            return rawValue.isEmpty ? .all : .appRawValue(rawValue)
-        }
-
-        if appFilterId.hasPrefix(FilterConstants.bundleAppPrefix) {
-            let bundleIdentifier = String(appFilterId.dropFirst(FilterConstants.bundleAppPrefix.count))
-            return bundleIdentifier.isEmpty ? .all : .appBundleIdentifier(bundleIdentifier)
-        }
-
-        if appFilterId.hasPrefix(FilterConstants.nameAppPrefix) {
-            let displayName = String(appFilterId.dropFirst(FilterConstants.nameAppPrefix.count))
-            return displayName.isEmpty ? .all : .appDisplayName(displayName)
-        }
-
-        return .all
-    }
-
-    private func matchesSearchFilter(_ transcription: TranscriptionMetadata) -> Bool {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return true }
-
-        let normalizedQuery = query.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-        let previewText = transcription.previewText.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-        let appName = transcription.appName.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-        let meetingTitle = if transcription.supportsMeetingConversation {
-            transcription.meetingTitle?
-                .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current) ?? ""
-        } else {
-            ""
-        }
-
-        return previewText.contains(normalizedQuery)
-            || appName.contains(normalizedQuery)
-            || meetingTitle.contains(normalizedQuery)
-    }
-
-    private func appDisplayName(for transcription: TranscriptionMetadata) -> String {
-        let trimmedName = transcription.appName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedName.isEmpty {
-            return trimmedName
-        }
-
-        if let knownApp = MeetingApp(rawValue: transcription.appRawValue) {
-            return knownApp.displayName
-        }
-
-        let trimmedRawValue = transcription.appRawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedRawValue.isEmpty ? MeetingApp.unknown.displayName : trimmedRawValue
-    }
-
-    private func appFilterOption(for transcription: TranscriptionMetadata) -> AppFilterOption? {
-        let rawValue = transcription.appRawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        let displayName = appDisplayName(for: transcription)
-
-        if !rawValue.isEmpty, rawValue != MeetingApp.unknown.rawValue {
-            return AppFilterOption(
-                id: "\(FilterConstants.rawAppPrefix)\(rawValue)",
-                scope: .appRawValue(rawValue),
-                displayName: displayName
-            )
-        }
-
-        let bundleIdentifier = transcription.appBundleIdentifier?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-        if let bundleIdentifier, !bundleIdentifier.isEmpty {
-            return AppFilterOption(
-                id: "\(FilterConstants.bundleAppPrefix)\(bundleIdentifier)",
-                scope: .appBundleIdentifier(bundleIdentifier),
-                displayName: displayName
-            )
-        }
-
-        let normalizedDisplayName = normalizedFilterValue(displayName)
-        guard !normalizedDisplayName.isEmpty else { return nil }
-        return AppFilterOption(
-            id: "\(FilterConstants.nameAppPrefix)\(normalizedDisplayName)",
-            scope: .appDisplayName(normalizedDisplayName),
-            displayName: displayName
-        )
-    }
-
-    private func normalizedFilterValue(_ value: String) -> String {
-        value
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
     }
 
     public func loadTranscriptions() async {

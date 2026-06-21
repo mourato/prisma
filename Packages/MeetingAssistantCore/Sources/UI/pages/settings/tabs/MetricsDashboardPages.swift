@@ -7,7 +7,6 @@ import SwiftUI
 
 struct MetricsDashboardIndexPage: View {
     @ObservedObject var viewModel: MetricsDashboardViewModel
-    @ObservedObject private var settings = AppSettingsStore.shared
     let openMoreInsights: () -> Void
     let openPerformance: () -> Void
     let openEventDetail: (MeetingCalendarEventSnapshot) -> Void
@@ -30,7 +29,7 @@ struct MetricsDashboardIndexPage: View {
             MetricsDashboardActivitySection(viewModel: viewModel)
             MetricsDashboardMoreInsightsLinkSection(openMoreInsights: openMoreInsights)
             MetricsDashboardPerformanceLinkSection(openPerformance: openPerformance)
-            if settings.isMeetingTranscriptionEnabled {
+            if viewModel.isMeetingTranscriptionEnabled {
                 MetricsDashboardUpcomingEventsSection(
                     viewModel: viewModel,
                     onOpenEventDetail: openEventDetail

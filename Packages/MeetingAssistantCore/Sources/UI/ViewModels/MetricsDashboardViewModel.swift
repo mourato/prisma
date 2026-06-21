@@ -20,6 +20,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
     @Published public private(set) var activeLinkedCalendarEventID: String?
     @Published public private(set) var isRecording = false
     @Published public private(set) var isLoadingCalendar = false
+    @Published public private(set) var isMeetingTranscriptionEnabled: Bool
 
     @Published public var dateFilter: DateFilter = .allEntries {
         didSet {
@@ -67,6 +68,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
         self.calendarEventService = calendarEventService
         self.recordingManager = recordingManager
         self.settingsStore = settingsStore
+        isMeetingTranscriptionEnabled = settingsStore.isMeetingTranscriptionEnabled
         calendarPermissionState = calendarEventService.authorizationState()
         activeLinkedCalendarEventID = recordingManager.currentMeeting?.linkedCalendarEvent?.eventIdentifier
         isRecording = recordingManager.isRecording
@@ -222,6 +224,13 @@ public final class MetricsDashboardViewModel: ObservableObject {
     }
 
     private func bindRecordingState() {
+        settingsStore.$isMeetingTranscriptionEnabled
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isEnabled in
+                self?.isMeetingTranscriptionEnabled = isEnabled
+            }
+            .store(in: &cancellables)
+
         recordingManager.currentMeetingPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] meeting in
