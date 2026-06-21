@@ -6,35 +6,6 @@ import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 
-public enum AssistantExecutionFlow: Sendable {
-    case assistantMode
-    case integrationDispatch
-}
-
-@MainActor
-public protocol AssistantRecordingService: AnyObject {
-    var isRecording: Bool { get }
-    func startRecording(to outputURL: URL, source: RecordingSource, retryCount: Int) async throws
-    func stopRecording() async -> URL?
-    func hasPermission() async -> Bool
-    func requestPermission() async
-}
-
-extension AudioRecorder: AssistantRecordingService {}
-
-public extension AssistantRecordingService {
-    func startRecording(to outputURL: URL, source: RecordingSource) async throws {
-        try await startRecording(to: outputURL, source: source, retryCount: 0)
-    }
-}
-
-public enum AssistantIntegrationDeepLinkShortcode {
-    public static let finalText = "{{assistant_text}}"
-    public static let finalTextURLEncoded = "{{assistant_text_urlencoded}}"
-    public static let rawText = "{{assistant_raw_text}}"
-    public static let rawTextURLEncoded = "{{assistant_raw_text_urlencoded}}"
-}
-
 @MainActor
 public final class AssistantVoiceCommandService: ObservableObject {
     @Published public private(set) var isRecording = false
@@ -47,6 +18,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
     private let indicator: FloatingRecordingIndicatorController
     private let screenBorder: AssistantScreenBorderController
     private let settings: AppSettingsStore
+    private let normalizationPhase: AssistantNormalizationPhase
     private let raycastIntegrationService: any AssistantDeepLinkDispatching
     private let scriptRunner: AssistantBashScriptRunner
     private let textSelectionService: AssistantTextSelectionService
@@ -62,6 +34,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         indicator: FloatingRecordingIndicatorController = FloatingRecordingIndicatorController(),
         screenBorder: AssistantScreenBorderController = AssistantScreenBorderController(),
         settings: AppSettingsStore = .shared,
+        normalizationPhase: AssistantNormalizationPhase = AssistantNormalizationPhase(),
         raycastIntegrationService: any AssistantDeepLinkDispatching = AssistantRaycastIntegrationService(),
         scriptRunner: AssistantBashScriptRunner = AssistantBashScriptRunner(),
         textSelectionService: AssistantTextSelectionService = AssistantTextSelectionService()
@@ -73,6 +46,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         self.indicator = indicator
         self.screenBorder = screenBorder
         self.settings = settings
+        self.normalizationPhase = normalizationPhase
         self.raycastIntegrationService = raycastIntegrationService
         self.scriptRunner = scriptRunner
         self.textSelectionService = textSelectionService
@@ -179,7 +153,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 executionFlow: executionFlow,
                 selectedIntegration: selectedIntegration
             )
-            let finalCommand = applyNormalization(
+            let finalCommand = normalizationPhase.applyNormalization(
                 processedCommand: processedCommand,
                 command: command,
                 executionFlow: executionFlow,
@@ -356,16 +330,12 @@ public final class AssistantVoiceCommandService: ObservableObject {
         executionFlow: AssistantExecutionFlow,
         sourceText: String
     ) -> String {
-        let processedCommandForDispatch: String = if executionFlow == .integrationDispatch {
-            (try? requireNonEmptyCommand(processedCommand, fallback: nil)) ?? processedCommand
-        } else {
-            normalizedCommand(processedCommand, fallback: command)
-        }
-
-        let commandToDispatch = normalizedCommand(processedCommand, fallback: processedCommandForDispatch)
-        return executionFlow == .integrationDispatch
-            ? commandToDispatch
-            : normalizedCommand(commandToDispatch, fallback: sourceText)
+        normalizationPhase.applyNormalization(
+            processedCommand: processedCommand,
+            command: command,
+            executionFlow: executionFlow,
+            sourceText: sourceText
+        )
     }
 
     private func executeDispatch(
@@ -495,8 +465,8 @@ public final class AssistantVoiceCommandService: ObservableObject {
         rawText: String
     ) -> String {
         let replacements: [(String, String)] = [
-            (AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded, urlEncoded(finalText)),
-            (AssistantIntegrationDeepLinkShortcode.rawTextURLEncoded, urlEncoded(rawText)),
+            (AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded, normalizationPhase.urlEncoded(finalText)),
+            (AssistantIntegrationDeepLinkShortcode.rawTextURLEncoded, normalizationPhase.urlEncoded(rawText)),
             (AssistantIntegrationDeepLinkShortcode.finalText, finalText),
             (AssistantIntegrationDeepLinkShortcode.rawText, rawText),
         ]
@@ -504,12 +474,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
         return replacements.reduce(template) { partialResult, replacement in
             partialResult.replacingOccurrences(of: replacement.0, with: replacement.1)
         }
-    }
-
-    private func urlEncoded(_ value: String) -> String {
-        var allowed = CharacterSet.urlQueryAllowed
-        allowed.remove(charactersIn: "&=+?#")
-        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
     }
 
     private func applyScriptIfNeeded(
@@ -561,15 +525,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
             return nil
         }
         return normalized
-    }
-
-    private func normalizedCommand(_ command: String, fallback: String) -> String {
-        let normalized = command.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !normalized.isEmpty {
-            return normalized
-        }
-
-        return fallback.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func recordingIndicatorRenderState(mode: FloatingRecordingIndicatorMode) -> RecordingIndicatorRenderState {
@@ -626,68 +581,8 @@ public final class AssistantVoiceCommandService: ObservableObject {
         ].joined(separator: "\n\n")
     }
 
-    private func requireNonEmptyCommand(_ command: String, fallback: String?) throws -> String {
-        let normalized = command.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !normalized.isEmpty {
-            return normalized
-        }
-
-        if let fallback {
-            let normalizedFallback = fallback.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !normalizedFallback.isEmpty {
-                return normalizedFallback
-            }
-        }
-
-        throw AssistantVoiceCommandError.processingFailed
-    }
-
     private func showError(_ error: AssistantVoiceCommandError) {
         indicator.showError(error.localizedDescription)
     }
 
-}
-
-public enum AssistantVoiceCommandError: LocalizedError {
-    case microphonePermissionRequired
-    case accessibilityPermissionRequired
-    case noSelectionFound
-    case emptyCommand
-    case failedToStartRecording
-    case failedToStopRecording
-    case recordingInProgress
-    case processingFailed
-    case integrationDisabled
-    case raycastIntegrationDisabled
-    case raycastDeeplinkInvalid
-    case raycastOpenFailed
-
-    public var errorDescription: String? {
-        switch self {
-        case .microphonePermissionRequired:
-            "assistant.error.microphone_permission".localized
-        case .accessibilityPermissionRequired:
-            "assistant.error.accessibility_permission".localized
-        case .noSelectionFound:
-            "assistant.error.no_selection".localized
-        case .emptyCommand:
-            "assistant.error.empty_command".localized
-        case .failedToStartRecording:
-            "assistant.error.start_failed".localized
-        case .failedToStopRecording:
-            "assistant.error.stop_failed".localized
-        case .recordingInProgress:
-            "assistant.error.recording_in_progress".localized
-        case .processingFailed:
-            "assistant.error.processing_failed".localized
-        case .integrationDisabled:
-            "assistant.error.integration_disabled".localized
-        case .raycastIntegrationDisabled:
-            "assistant.error.raycast_integration_disabled".localized
-        case .raycastDeeplinkInvalid:
-            "assistant.error.raycast_deeplink_invalid".localized
-        case .raycastOpenFailed:
-            "assistant.error.raycast_open_failed".localized
-        }
-    }
 }
