@@ -249,41 +249,14 @@ public extension TranscriptionSettingsViewModel {
     }
 
     func availableRetryTranscriptionOptions(for metadata: TranscriptionMetadata) -> [RetryTranscriptionOption] {
-        let localSelections = LocalTranscriptionModel.allCases
-            .filter(isLocalModelReady)
-            .map { model in
-                RetryTranscriptionOption(
-                    selection: TranscriptionProviderSelection(provider: .local, selectedModel: model.rawValue)
-                )
-            }
-
-        guard metadata.capturePurpose == .dictation else {
-            return localSelections
-        }
-
-        var options = localSelections
-
-        if keychain.existsTranscriptionAPIKey(for: .groq) {
-            options.append(
-                contentsOf: TranscriptionProvider.groqPresetModelIDs.map { modelID in
-                    RetryTranscriptionOption(
-                        selection: TranscriptionProviderSelection(provider: .groq, selectedModel: modelID)
-                    )
-                }
-            )
-        }
-
-        if keychain.existsTranscriptionAPIKey(for: .elevenLabs) {
-            options.append(
-                contentsOf: TranscriptionProvider.elevenLabsPresetModelIDs.map { modelID in
-                    RetryTranscriptionOption(
-                        selection: TranscriptionProviderSelection(provider: .elevenLabs, selectedModel: modelID)
-                    )
-                }
-            )
-        }
-
-        return options
+        RetryTranscriptionSelectionMatrix.eligibleSelections(
+            for: metadata.capturePurpose,
+            transcriptionAPIKeyExists: { [keychain] provider in
+                keychain.existsTranscriptionAPIKey(for: provider)
+            },
+            isLocalModelReady: isLocalModelReady
+        )
+        .map(RetryTranscriptionOption.init)
     }
 
     func applyPostProcessing(prompt: PostProcessingPrompt, to transcription: Transcription) async {

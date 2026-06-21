@@ -101,6 +101,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     let captureContextResolver: any CaptureContextResolving
     let audioKernelProvider: AudioKernelProvider
     let apiKeyExists: (AIProvider) -> Bool
+    let transcriptionAPIKeyExists: (TranscriptionProvider) -> Bool
+    let isLocalRetryModelReady: (LocalTranscriptionModel) -> Bool
     var browserProviders: [String: BrowserActiveTabURLProviding] = BrowserProviderRegistry.defaultProviders()
 
     var cancellables = Set<AnyCancellable>()
@@ -201,6 +203,12 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             meetingNotesMarkdownStore: MeetingNotesMarkdownDocumentStore.shared,
             apiKeyExists: { provider in
                 KeychainManager.existsAPIKey(for: provider)
+            },
+            transcriptionAPIKeyExists: { provider in
+                KeychainManager.existsTranscriptionAPIKey(for: provider)
+            },
+            isLocalRetryModelReady: { model in
+                FluidAIModelManager.shared.isASRModelInstalled(localModelID: model.rawValue)
             }
         )
     }
@@ -255,6 +263,12 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         meetingNotesMarkdownStore: any MeetingNotesMarkdownDocumentStoreProtocol = MeetingNotesMarkdownDocumentStore.shared,
         apiKeyExists: @escaping (AIProvider) -> Bool = { provider in
             KeychainManager.existsAPIKey(for: provider)
+        },
+        transcriptionAPIKeyExists: @escaping (TranscriptionProvider) -> Bool = { provider in
+            KeychainManager.existsTranscriptionAPIKey(for: provider)
+        },
+        isLocalRetryModelReady: @escaping (LocalTranscriptionModel) -> Bool = { model in
+            FluidAIModelManager.shared.isASRModelInstalled(localModelID: model.rawValue)
         }
     ) {
         self.micRecorder = micRecorder
@@ -277,6 +291,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.meetingNotesRichTextStore = meetingNotesRichTextStore
         self.meetingNotesMarkdownStore = meetingNotesMarkdownStore
         self.apiKeyExists = apiKeyExists
+        self.transcriptionAPIKeyExists = transcriptionAPIKeyExists
+        self.isLocalRetryModelReady = isLocalRetryModelReady
         microphoneInputSelectionResolver = MicrophoneInputSelectionResolver(deviceManager: audioDeviceManager)
 
         // Initialize UseCase with Adapters

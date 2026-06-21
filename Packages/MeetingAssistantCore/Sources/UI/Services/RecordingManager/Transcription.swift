@@ -342,13 +342,16 @@ extension RecordingManager {
     func performHealthCheck(
         capturePurpose: CapturePurpose = .meeting,
         selectionOverride: TranscriptionProviderSelection? = nil,
+        effectiveSelection: TranscriptionProviderSelection? = nil,
         sessionID: UUID? = nil
     ) async throws {
         updateVisibleTranscriptionProgress(phase: .preparing, sessionID: sessionID)
 
         let executionMode: TranscriptionExecutionMode = capturePurpose == .dictation ? .dictation : .meeting
-        let shouldUseRemoteSelection = selectionOverride?.provider.usesRemoteInference
-            ?? AppSettingsStore.shared.shouldUseRemoteTranscription(for: executionMode)
+        let resolvedSelection = effectiveSelection
+            ?? selectionOverride
+            ?? AppSettingsStore.shared.resolvedTranscriptionSelection(for: executionMode)
+        let shouldUseRemoteSelection = resolvedSelection.provider.usesRemoteInference
 
         if shouldUseRemoteSelection
         {

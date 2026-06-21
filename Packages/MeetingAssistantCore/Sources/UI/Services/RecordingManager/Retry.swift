@@ -50,9 +50,23 @@ extension RecordingManager {
         selectionOverride: TranscriptionProviderSelection? = nil
     ) async {
         let capturePurpose = transcription.meeting.capturePurpose
-        let shouldRemoveSilence = shouldRemoveSilenceBeforeRetryTranscription(
+        let configuredSelection = configuredRetrySelection(for: capturePurpose)
+        let effectiveSelection = RetryTranscriptionSelectionMatrix.effectiveSelection(
+            requestedOverride: selectionOverride,
             capturePurpose: capturePurpose,
-            selectionOverride: selectionOverride
+            configuredSelection: configuredSelection,
+            transcriptionAPIKeyExists: transcriptionAPIKeyExists,
+            isLocalModelReady: isLocalRetryModelReady
+        )
+        let effectiveSelectionOverride = RetryTranscriptionSelectionMatrix.selectionOverrideIfNeeded(
+            requestedOverride: selectionOverride,
+            capturePurpose: capturePurpose,
+            configuredSelection: configuredSelection,
+            transcriptionAPIKeyExists: transcriptionAPIKeyExists,
+            isLocalModelReady: isLocalRetryModelReady
+        )
+        let shouldRemoveSilence = shouldRemoveSilenceBeforeRetryTranscription(
+            effectiveSelection: effectiveSelection
         )
         let preparedAudio = await prepareAudioForTranscription(
             audioURL: audioURL,
@@ -76,12 +90,13 @@ extension RecordingManager {
                 audioURL: preparedAudio.transcriptionURL,
                 transcription: transcription,
                 audioDuration: audioDuration,
-                selectionOverride: selectionOverride
+                selectionOverride: effectiveSelectionOverride,
+                effectiveSelection: effectiveSelection
             )
             try await storage.saveTranscription(updated)
             await persistRetryPerformanceAttempts(
                 updatedTranscription: updated,
-                selectionOverride: selectionOverride,
+                effectiveSelection: effectiveSelection,
                 startedAt: retryStartedAt,
                 completedAt: Date()
             )
@@ -94,7 +109,7 @@ extension RecordingManager {
         } catch {
             await persistFailedRetryPerformanceAttempt(
                 transcription: transcription,
-                selectionOverride: selectionOverride,
+                effectiveSelection: effectiveSelection,
                 startedAt: retryStartedAt,
                 completedAt: Date(),
                 audioDuration: audioDuration,
@@ -112,11 +127,12 @@ extension RecordingManager {
         audioURL: URL,
         transcription: Transcription,
         audioDuration: Double?,
-        selectionOverride: TranscriptionProviderSelection? = nil
+        selectionOverride: TranscriptionProviderSelection? = nil,
+        effectiveSelection: TranscriptionProviderSelection
     ) async throws -> Transcription {
         try await performHealthCheck(
             capturePurpose: transcription.meeting.capturePurpose,
-            selectionOverride: selectionOverride
+            effectiveSelection: effectiveSelection
         )
 
         let transcriptionStart = Date()
@@ -224,17 +240,9 @@ extension RecordingManager {
     }
 
     func shouldRemoveSilenceBeforeRetryTranscription(
-        capturePurpose: CapturePurpose,
-        selectionOverride: TranscriptionProviderSelection?
+        effectiveSelection: TranscriptionProviderSelection
     ) -> Bool {
-        guard let selectionOverride else { return true }
-        let executionMode: TranscriptionExecutionMode = capturePurpose == .dictation ? .dictation : .meeting
-        let configuredSelection = AppSettingsStore.shared.resolvedTranscriptionSelection(for: executionMode)
-        if configuredSelection == selectionOverride {
-            return true
-        }
-
-        return !selectionOverride.provider.usesRemoteInference
+        !effectiveSelection.provider.usesRemoteInference
     }
 
     func applyVocabularyReplacements(
@@ -254,13 +262,12 @@ extension RecordingManager {
 
     private func persistRetryPerformanceAttempts(
         updatedTranscription: Transcription,
-        selectionOverride: TranscriptionProviderSelection?,
+        effectiveSelection: TranscriptionProviderSelection,
         startedAt: Date,
         completedAt: Date
     ) async {
-        let transcriptionIdentity = resolvedTranscriptionPerformanceIdentity(
-            capturePurpose: updatedTranscription.capturePurpose,
-            selectionOverride: selectionOverride
+        let transcriptionIdentity = effectiveSelection.provider.modelPerformanceIdentity(
+            modelID: effectiveSelection.selectedModel
         )
         let transcriptionAttempt = ModelPerformanceAttempt(
             transcriptionID: updatedTranscription.id,
@@ -307,15 +314,14 @@ extension RecordingManager {
 
     private func persistFailedRetryPerformanceAttempt(
         transcription: Transcription,
-        selectionOverride: TranscriptionProviderSelection?,
+        effectiveSelection: TranscriptionProviderSelection,
         startedAt: Date,
         completedAt: Date,
         audioDuration: Double?,
         error: Error
     ) async {
-        let identity = resolvedTranscriptionPerformanceIdentity(
-            capturePurpose: transcription.capturePurpose,
-            selectionOverride: selectionOverride
+        let identity = effectiveSelection.provider.modelPerformanceIdentity(
+            modelID: effectiveSelection.selectedModel
         )
         let attempt = ModelPerformanceAttempt(
             transcriptionID: transcription.id,
@@ -334,6 +340,11 @@ extension RecordingManager {
             failureReason: error.localizedDescription
         )
         try? await storage.saveModelPerformanceAttempt(attempt)
+    }
+
+    private func configuredRetrySelection(for capturePurpose: CapturePurpose) -> TranscriptionProviderSelection {
+        let executionMode: TranscriptionExecutionMode = capturePurpose == .dictation ? .dictation : .meeting
+        return AppSettingsStore.shared.resolvedTranscriptionSelection(for: executionMode)
     }
 
     // MARK: - Post Processing Input

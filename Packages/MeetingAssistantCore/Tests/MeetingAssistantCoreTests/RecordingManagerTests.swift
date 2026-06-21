@@ -22,6 +22,7 @@ final class RecordingManagerTests: XCTestCase {
     var userDefaults: UserDefaults?
     var suiteName: String?
     var markdownRootDirectoryURL: URL?
+    var readyRetryProviders: Set<TranscriptionProvider> = []
 
     override func setUp() async throws {
         try await super.setUp()
@@ -74,7 +75,11 @@ final class RecordingManagerTests: XCTestCase {
             captureContextResolver: captureContextResolver,
             meetingNotesRichTextStore: richTextStore,
             meetingNotesMarkdownStore: markdownStore,
-            apiKeyExists: { _ in true }
+            apiKeyExists: { _ in true },
+            transcriptionAPIKeyExists: { [weak self] provider in
+                self?.readyRetryProviders.contains(provider) == true
+            },
+            isLocalRetryModelReady: { _ in true }
         )
     }
 
@@ -106,6 +111,7 @@ final class RecordingManagerTests: XCTestCase {
         userDefaults = nil
         suiteName = nil
         markdownRootDirectoryURL = nil
+        readyRetryProviders = []
         try await super.tearDown()
     }
 
@@ -1022,6 +1028,7 @@ extension RecordingManagerTests {
             provider: .local,
             model: LocalTranscriptionModel.parakeetTdt06BV3.rawValue
         )
+        readyRetryProviders = [.groq]
         mockTranscription.shouldFailHealthCheck = true
 
         let rawURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wav")
@@ -1050,6 +1057,48 @@ extension RecordingManagerTests {
         XCTAssertEqual(mockTranscription.healthCheckCallCount, 0)
         XCTAssertEqual(mockCompactor.compactCallCount, 0)
         XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, rawURL)
+    }
+
+    func testRetryTranscription_RemoteMeetingOverrideFallsBackToConfiguredLocalSelection() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockTranscription = try XCTUnwrap(mockTranscription)
+        let mockCompactor = try XCTUnwrap(mockAudioSilenceCompactor)
+        let settings = AppSettingsStore.shared
+        let originalRemoveSilence = settings.removeSilenceBeforeProcessing
+        defer {
+            settings.removeSilenceBeforeProcessing = originalRemoveSilence
+        }
+
+        settings.removeSilenceBeforeProcessing = true
+        readyRetryProviders = [.groq]
+
+        let rawURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wav")
+        try writeTestAudioFile(at: rawURL)
+        defer { try? FileManager.default.removeItem(at: rawURL) }
+
+        let transcription = Transcription(
+            meeting: Meeting(app: .zoom, capturePurpose: .meeting, audioFilePath: rawURL.path),
+            text: "Existing",
+            rawText: "Existing",
+            processedContent: nil,
+            postProcessingPromptId: nil,
+            postProcessingPromptTitle: nil,
+            language: "en",
+            modelName: "test-model"
+        )
+
+        await manager.retryTranscription(
+            for: transcription,
+            selectionOverride: TranscriptionProviderSelection(
+                provider: .groq,
+                selectedModel: TranscriptionProvider.groqPresetModelIDs[0]
+            )
+        )
+
+        let compactedURL = try XCTUnwrap(mockCompactor.lastOutputURL)
+        XCTAssertEqual(mockTranscription.healthCheckCallCount, 1)
+        XCTAssertEqual(mockCompactor.compactCallCount, 1)
+        XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, compactedURL)
     }
 
     func testApplyPostProcessing_UsesDictationPromptForImportedDictationAudio() async throws {
