@@ -1,7 +1,5 @@
 # AGENTS.md - Prisma Development Guide
 
-**Document Status:** v2.10 | Updated: Apr 15, 2026 | Maintained by: Team
-
 ---
 
 ## Identity & Purpose
@@ -53,7 +51,7 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 - **Distribution**: Use `make dmg` as the single DMG entrypoint; it auto-detects the configured local self-signed identity in keychain
 - **Skill routing**: See [Skill Routing Guide](./.agents/docs/skill-routing.md)
 - **Code style source of truth**: `.swiftlint.yml` defines enforceable style budgets/rules. Keep lint-mapped writing guidance in `.agents/skills/swift-conventions/SKILL.md` and update that skill in the same PR whenever `.swiftlint.yml` changes.
-- **Guidance validation**: When changing `AGENTS.md`, `.agents/`, or referenced command docs, run `make guidance-check` to validate local links and `make` targets.
+- **Guidance validation**: When changing `AGENTS.md`, `.agents/`, or referenced command docs, run `make guidance-check` to validate local links and `make` targets (catches broken cross-references and Makefile target names that no longer exist).
 
 ---
 
@@ -66,6 +64,8 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 5. **Helpfulness** — clear guidance, actionable advice
 
 If a tradeoff is required, choose **correctness and robustness** over short-term convenience.
+
+**Precedence vs. Hard Constraints:** Hard Constraints (below) are absolute and always win over Core Values when the two appear to conflict — they encode non-negotiable safety/legal/data floors (e.g. never hardcode secrets) that no performance or completeness gain can justify crossing. Core Values resolve trade-offs *within* the space that Hard Constraints leave open (e.g. choosing a more performant approach between two options that both satisfy every Hard Constraint).
 
 ## Maintainability
 
@@ -81,11 +81,13 @@ Additional maintainability limits:
 
 ## Policy Precedence
 
-When guidance conflicts, apply this order:
+When guidance conflicts **across documents**, apply this order:
 
 1. `AGENTS.md` (this file)
 2. Relevant skill instructions in `.agents/skills/*`
 3. Reference docs and inline comments/examples
+
+For conflicts **within this file** between a Hard Constraint and a Core Value, see "Precedence vs. Hard Constraints" above — Hard Constraints win.
 
 If conflict remains unresolved, ask for clarification before implementing behavior changes.
 
@@ -95,11 +97,11 @@ If conflict remains unresolved, ask for clarification before implementing behavi
 
 These are inviolable rules that apply to every task:
 
-- ⛔ **Always reuse/extend/create:** Before coding, scan for existing services/use cases/helpers. Use decision order: **Reuse** → **Extend** → **Create**.
+- ⛔ **Always reuse/extend/create:** Before coding, scan for existing services/use cases/helpers. Use decision order: **Reuse** → **Extend** → **Create**. Never copy-paste implementations across the codebase.
 - ⛔ **Do not over-engineer:** Prefer the simplest implementation that satisfies the current requirement. Do not introduce new abstractions, protocols, layers, or configuration surfaces without concrete near-term reuse, measurable complexity reduction, or a documented architectural need.
-- ⛔ **Always classify risk first:** Before implementation, classify task as Low/Medium/High risk. Never skip this step.
+- ⛔ **Always classify risk first:** Before implementation, classify task as Low/Medium/High risk using the [Risk Matrix](#risk-matrix-classify-first). Never skip this step.
 - ⛔ **Clarify material ambiguity, state minor assumptions:** If ambiguity impacts behavior, safety, architecture, or acceptance criteria, ask concise clarification questions before coding. For minor gaps, proceed only with explicit assumptions documented in the response/PR notes.
-- ⛔ **Never commit knowingly broken code:** Split commits by intent (feature, refactor, tests, cleanup). Use Conventional Commits.
+- ⛔ **Never commit knowingly broken code:** Split commits by intent (feature, refactor, tests, cleanup). Use Conventional Commits — `<type>(<optional-scope>): <summary>`, e.g. `feat(audio): add buffer resampling`, `fix(ui): correct overlay z-order`, `refactor(domain): extract retry policy`. Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`.
 - ⛔ **Always localize UI text:** User-facing strings must use `"key".localized`. Never hardcode. Remove orphaned keys from `Localizable.strings` when text is deleted.
 - ⛔ **Never hardcode secrets:** API keys, tokens, credentials always use Keychain. Never store in source/tests/scripts.
 - ⛔ **Do not stack redundant UI copy or helpers:** In the same viewport, avoid repeating the same title/description across section headers, cards, and popovers. Prefer one visible explanation plus one optional helper surface when the extra context is materially different.
@@ -113,15 +115,15 @@ These are inviolable rules that apply to every task:
 
 ### Risk Matrix (Classify First)
 
-Before implementation, classify your task:
+Before implementation, classify your task using these thresholds. They are the **only** source of truth for risk level and for full-gate escalation — the lanes below don't redefine these numbers.
 
-| Risk       | Characteristics                                                                                                 | Lane |
-| ---------- | --------------------------------------------------------------------------------------------------------------- | ---- |
-| **Low**    | Docs/comments only, localization updates, non-functional refactors (single file/module)                         | Fast |
-| **Medium** | Feature or bugfix in one subsystem, public API changes in one package, UI state logic                           | Full |
-| **High**   | Audio pipeline, concurrency/actor isolation, persistence, security, cross-module architecture, >300 lines added | Full |
+| Risk       | Characteristics                                                                                                                            | Lane |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| **Low**    | Docs/comments only, localization updates, non-functional refactors (single file/module)                                                      | Fast |
+| **Medium** | Feature or bugfix in one subsystem, public API changes in one package, UI state logic — and **none** of the High triggers below apply        | Full |
+| **High**   | Audio pipeline, concurrency/actor isolation, persistence, security, cross-module architecture, build/release infra changed, **or** ≥300 lines added, **or** >8 source files touched | Full |
 
-**Rule:** When uncertain, choose higher risk.
+**Rule:** When uncertain, choose higher risk. Any High trigger overrides a Medium classification, even if the change otherwise looks like ordinary feature work.
 
 ### Execution Lanes
 
@@ -136,20 +138,19 @@ Before implementation, classify your task:
   - `./scripts/run-tests.sh --file <TestFile>` or `--test <testName>` when you need explicit manual targeting
   - `make build-agent` for fast compile confidence
   - `make preview-check` when changing SwiftUI views
-  - `make arch-check` when changing architecture/import boundaries
-- **Merge gate:**
-  - `make scope-check`
+  - `make arch-check` when changing architecture/import boundaries (verifies module import rules aren't violated, e.g. `Domain` importing `Infrastructure`)
+- **Merge gate:** `make scope-check`
 
 **Full Lane (Medium/High Risk):**
 
 - Use a new feature branch; keep commits atomic
 - Scan reusable blocks upfront
 - Small slices, frequent scoped verification (targeted tests + narrow build first)
-- Run `make build-test` at key milestones (before push/merge, after large rebases, or when escalation triggers fire)
+- Run `make build-test` at key milestones (before push/merge, after large rebases, or when an escalation trigger fires mid-task)
 - **Before push/merge (hard gates, no exceptions):**
   - `make build-test`
   - `make lint` (mandatory for all Full-lane changes)
-- **Code review:** Full semáforo review (🔴/🟡/🟢). Fix all Critical + Medium findings before merge.
+- **Code review:** Full semáforo review — every finding tagged 🔴 Critical (breaks a Hard Constraint, safety/data-integrity risk, or blocks merge), 🟡 Medium (should fix before merge but not a hard blocker on its own), or 🟢 Minor (style/nit, fix opportunistically). Fix all 🔴 and 🟡 findings before merge; 🟢 findings may be deferred to a follow-up issue.
 
 ### Scoped Validation Intelligence (Mandatory During Iteration)
 
@@ -158,37 +159,28 @@ Use this decision order to keep feedback fast without sacrificing safety:
 1. **Targeted tests first** — run only affected tests when mapping is clear.
 2. **Narrow build second** — use `make build-agent`/`make build` to validate compilation.
 3. **Scope checks when relevant** — `make preview-check`, `make arch-check`, or focused subsystem checks.
-4. **Full gate when required** — run `make build-test` on merge gate and whenever escalation criteria apply.
+4. **Full gate when required** — run `make build-test` whenever any Risk Matrix High trigger applies, even mid-task in an otherwise Fast or Medium flow.
 
-`make scope-check` is the canonical command for steps 1-4 above during iteration.
+`make scope-check` is the canonical command for steps 1-3 above during iteration.
 
-**Escalate to immediate full gate (`make build-test`) if any trigger applies:**
-
-- Build/release/test infrastructure changed (`Makefile`, `scripts/`, `.github/workflows`, `Package.swift`, project config)
-- Cross-module or public API changes
-- Audio, persistence, concurrency/actor isolation, security-sensitive paths
-- Large delta (`>300` lines added) or high file churn (`>8` source files touched)
-- No trustworthy targeted test mapping
-- Flaky or non-deterministic failures detected in scoped checks
+**`make preflight` (optional, not a lane gate):** comprehensive validation (build + test + lint + summary benchmark), recommended before release. It does not replace the lane merge gates above (Fast = `make scope-check`, Full = `make build-test` + `make lint`).
 
 ### Definition of Done & Evidence
 
 For every task, leave auditable evidence in the PR description, issue comment, or agent output.
 
-| Lane     | Required quality gates                                                                            | Required evidence                                                                                                                                |
-| -------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Fast** | Iteration scoped checks + `make scope-check`                                                      | Risk level, reusable-block decision (reuse/extend/create), scoped commands executed, escalation rationale (if any), test result summary          |
-| **Full** | Iteration scoped checks + `make build-test` + `make lint`                                         | Risk level, reusable-block decision, semáforo review outcome, scoped commands executed, escalation rationale (if any), test/build result summary |
-
-**Note on `make preflight`:** This is not a lane-specific merge gate. It is an optional comprehensive validation (build + test + lint + summary benchmark) and is recommended before release. Lane merge gates remain Fast = `make scope-check`, Full = `make build-test` + `make lint`.
+| Lane     | Required quality gates                                     | Required evidence                                                                                                                        |
+| -------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Fast** | Iteration scoped checks + `make scope-check`                 | Risk level, reusable-block decision (reuse/extend/create), scoped commands executed, escalation rationale (if any), test result summary  |
+| **Full** | Iteration scoped checks + `make build-test` + `make lint`     | Risk level, reusable-block decision, semáforo review outcome, scoped commands executed, escalation rationale (if any), test/build result summary |
 
 ### PR & Merge Policy
 
-- Prefer pull requests for all non-trivial changes.
-- If a direct merge is used (for example urgent fix), record rationale and follow up with review notes.
-- Keep commits atomic and labeled with Conventional Commits.
+- **Default path:** open a pull request on GitHub via `gh` CLI for all non-trivial changes; merge there (squash-merge unless the repo's GitHub settings specify otherwise). The local branch workflow below is only for the exception case — a direct local merge for an urgent fix when opening a PR isn't practical.
+- If a direct local merge is used, record the rationale in the commit message or a follow-up issue, and still get review notes after the fact.
+- Keep commits atomic and labeled with Conventional Commits (format defined in Hard Constraints above).
 
-**Branch Workflow:**
+**Branch Workflow (exception path — direct local merge only):**
 
 ```bash
 git checkout main && git pull --ff-only
@@ -206,41 +198,6 @@ If requirements are ambiguous, incomplete, or have meaningful trade-offs:
 - Agents are explicitly authorized to ask to prevent wrong assumptions
 - For minor gaps, proceed only with explicit assumptions documented in the response/PR notes
 
-### Reusable Blocks First (Decision Order)
-
-Before implementing new behavior:
-
-1. **Reuse** — Does existing block fit? Use it.
-2. **Extend** — Is existing block adjacent? Extend it safely.
-3. **Create** — Is this genuinely new? Create a focused new block.
-
-Never copy-paste implementations across the codebase.
-
----
-
-## Red Flags & Self-Check
-
-Before responding or committing code, verify:
-
-- **Reusable blocks:** Did I scan for existing solutions?
-- **Risk classified:** Did I classify task as Low/Medium/High?
-- **Assumptions checked:** Did I ask clarification or assume silently?
-- **Hard constraints:** Am I violating any hard constraint above?
-- **Code review:** Did I plan for appropriate review depth (lightweight vs. full semáforo)?
-- **Verification strategy:** Did I run scoped checks during iteration and lane gates at merge (`make scope-check` for Fast, `make build-test` for Full)?
-- **Evidence captured:** Did I record commands/results and assumptions where applicable?
-
-**Signals of deviation:**
-
-- "I assumed this was okay..." → Violates clarification hard constraint
-- "I'll just copy this logic..." → Violates reuse/extend/create hard constraint
-- "I'll add a new abstraction now in case we need it later" → Likely over-engineering unless current evidence justifies it
-- "I'll always run full build/test for every tiny edit" → Ignores scoped-validation workflow and slows feedback loops
-- "This is Low risk, so I'll skip testing" → Violates hard gates
-- "I know this breaks something, but..." → Violates "never commit broken code"
-
-When deviations occur, document in GitHub issue with label `known-limitation` or `needs-review`.
-
 ---
 
 ## Security Considerations
@@ -254,9 +211,9 @@ When deviations occur, document in GitHub issue with label `known-limitation` or
 
 ---
 
-## Information Routing Policy (No Root `docs/`)
+## Information Routing Policy
 
-The repository no longer uses a root `docs/` folder for persistent guidance.
+There is no persistent guidance folder at the **repository root** (no root-level `docs/`). Guidance lives in `.agents/`, where `.agents/docs/` is the correct, permitted location for reference docs like build/test or skill-routing guides.
 
 When new information appears, route it using this decision order:
 
@@ -266,8 +223,8 @@ When new information appears, route it using this decision order:
 
 Rules:
 
-- Do not create new markdown guidance files under root `docs/`.
-- Keep policy/process knowledge in `AGENTS.md` or skills.
+- Do not create a new `docs/` folder at the repository root.
+- New reference docs belong in `.agents/docs/`; new policy/process knowledge belongs in `AGENTS.md` or `.agents/skills/`.
 - Keep backlog/limitations in GitHub issues (use labels like `known-limitation` and `needs-review`).
 - If a script needs an output file, prefer `/tmp` or `.agents/` paths.
 
@@ -284,77 +241,43 @@ Rules:
 
 ## Additional References
 
-### Key Documentation
-
 | Resource                                                     | Purpose                                           |
-| ------------------------------------------------------------ | ------------------------------------------------- |
+| ------------------------------------------------------------ | -------------------------------------------------- |
 | [Build and Test Reference](./.agents/docs/build-and-test.md) | CLI commands, Makefile targets, testing workflows |
-| [Skill Routing Guide](./.agents/docs/skill-routing.md)       | When to use which skill; problem-specific routing |
-| [Skills Index](./.agents/SKILLS_INDEX.md)                    | Complete skill registry with triggers             |
+| [Skill Routing Guide](./.agents/docs/skill-routing.md)        | When to use which skill; problem-specific routing |
+| [Skills Index](./.agents/SKILLS_INDEX.md)                     | Complete skill registry, owners, and triggers     |
 
-### Canonical Skill Owners
-
-| Skill | Scope |
-| ----- | ----- |
-| `.agents/skills/architecture/` | Module boundaries, Clean Architecture, dependency injection |
-| `.agents/skills/code-quality/` | Readability, maintainability, duplication reduction |
-| `.agents/skills/concurrency/` | Async/await, actors, and thread-safety concepts |
-| `.agents/skills/data-persistence/` | Storage strategy, repositories, and migrations |
-| `.agents/skills/error-handling/` | Error modeling, propagation, and recovery |
-| `.agents/skills/networking/` | URLSession, request/response modeling, resiliency |
-| `.agents/skills/performance/` | CPU, memory, startup, and energy optimization |
-| `.agents/skills/security/` | Sensitive data controls and validation |
-| `.agents/skills/swift-conventions/` | Swift style, naming, type safety, and module conventions |
-| `.agents/skills/testing-xctest/` | XCTest structure, async tests, doubles, and deterministic assertions |
-
-### Skills (Conditional, Load When Relevant)
-
-See [Skills Index](./.agents/SKILLS_INDEX.md) for full registry. Common entry points:
-
-- **UI/UX work** → `native-app-designer` (primary) then `swiftui-patterns` / `swiftui-animation` / `swiftui-performance-audit`
-- **macOS platform** → `macos-development`
-- **Swift 6.2 concurrency** → `swift-concurrency-expert` (compiler errors) or `concurrency` (concepts)
-- **Performance issues** → `swiftui-performance-audit` (UI) or `performance` (system-level) or `audio-realtime` (audio)
-- **Build/test workflows** → `build-macos-apps` or consult [Build and Test Reference](./.agents/docs/build-and-test.md)
-- **Code quality** → `code-quality` or `code-review` (for semáforo reviews)
+For skill ownership and conditional/topic-specific skills (UI/UX, concurrency, performance, build workflows, etc.), the [Skills Index](./.agents/SKILLS_INDEX.md) is the single source of truth — consult it rather than duplicating its contents here.
 
 ---
 
-## Deviation & Resolution SOP
+## When Things Deviate
 
-If a task or agent deviates from hard constraints, follow these steps:
+If a task or agent deviates from a hard constraint, or an exception is genuinely unavoidable:
 
-1. **Identify the violation** — Which hard constraint was breached?
-2. **Minimal test case** — Create smallest reproducible example
-3. **Update guidance** — Refine AGENTS.md or relevant skill to prevent recurrence
-4. **Add example** — To relevant skill or `.agents/docs/` file, showing correct behavior
-5. **Mark for review** — Update document version, create GitHub issue if systemic
-6. **Communicate** — Link GitHub issue, escalate if needed
+1. **Identify the violation** — which hard constraint was breached, and why.
+2. **Stop and capture a minimal example** — smallest reproducible case, or the exact decision that needed an exception.
+3. **File a GitHub issue** — label `known-limitation` or `needs-review`; for exceptions, also state scope, impact, rollback plan, and an expiry/reevaluation date.
+4. **Fix the source** — update `AGENTS.md` or the relevant skill so the same deviation is harder to repeat next time; add a concrete before/after example to the skill or `.agents/docs/`.
+5. **Get sign-off before merging** — exceptions to hard constraints require explicit reviewer approval before merge, not after.
 
-### Exception Process (Hard Constraints)
+**Self-check before responding or committing**, in one pass:
 
-Hard constraints do not allow silent exceptions. If a temporary exception is unavoidable:
+- Did I scan for reusable blocks (reuse → extend → create)?
+- Did I classify risk (Low/Medium/High) using the Risk Matrix?
+- Did I ask about material ambiguity, or document minor assumptions explicitly?
+- Am I about to violate any Hard Constraint?
+- Did I run the right scoped checks during iteration, and the right lane gate at merge?
+- Have I recorded commands/results and assumptions as evidence?
 
-1. Document scope, impact, and rollback plan in a GitHub issue.
-2. Label issue `needs-review` and assign an owner.
-3. Add expiry/reevaluation date.
-4. Merge only after explicit reviewer approval.
+**Common deviation signals** — if you catch yourself thinking any of these, stop:
 
-**Example:**
-
-```
-Issue: Agent ignored hard constraint (copied code without evaluating reuse/extend/create)
-
-Root cause: Constraint explanation was vague
-
-Fix: Updated AGENTS.md hard constraint with clearer wording
-
-Added example: Before/after showing how to evaluate reusable blocks
-
-Document status updated with clarified hard-constraint wording
-
-Create issue #123 label:known-limitation describing pattern to avoid
-```
+- "I assumed this was okay..." → clarify, don't assume silently on material ambiguity.
+- "I'll just copy this logic..." → run reuse/extend/create first.
+- "I'll add a new abstraction now in case we need it later" → likely over-engineering without current evidence.
+- "I'll run the full build/test for every tiny edit" → ignores scoped validation; slows the loop unnecessarily.
+- "This is Low risk, so I'll skip testing" → Low risk still requires the Fast Lane's scoped checks.
+- "I know this breaks something, but..." → never commit knowingly broken code.
 
 ---
 
@@ -362,8 +285,8 @@ Create issue #123 label:known-limitation describing pattern to avoid
 
 This document evolves as the team discovers edge cases and patterns.
 
-- **Report ambiguities** → Create issue with label `agents-guidance-unclear`
-- **Suggest improvements** → Open PR to `.agents/skills/` or `AGENTS.md`
-- **Track limitations** → Label issues `known-limitation` with context and workarounds
-- **3-month review cycle** → Document reviewed every 90 days or on major model/tool changes
-- **Ownership update trigger** → When Makefile targets, scripts, or module boundaries change, update `AGENTS.md` and relevant skills in the same PR
+- **Report ambiguities** → issue labeled `agents-guidance-unclear`
+- **Suggest improvements** → PR to `.agents/skills/` or `AGENTS.md`
+- **Track limitations** → issues labeled `known-limitation`, with context and workarounds
+- **Review cadence** → reviewed every 90 days or on major model/tool changes
+- **Ownership update trigger** → when Makefile targets, scripts, or module boundaries change, update `AGENTS.md` and affected skills in the same PR
