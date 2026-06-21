@@ -274,6 +274,7 @@
 "settings.enhancements.provider_models.summary.no_model" = "%@ • Nenhum modelo selecionado";
 "settings.enhancements.provider_models.card.accessibility_hint" = "Expande a configuração do provedor.";
 "settings.enhancements.provider_models.status.ready" = "Configuração pronta";
+"settings.enhancements.provider_models.status.registered" = "Provedor registrado";
 "settings.enhancements.provider_models.status.not_ready" = "Configuração incompleta";
 "settings.enhancements.provider_models.status.not_ready_missing_key" = "Configuração incompleta • Falta chave de API";
 "settings.enhancements.provider_models.status.not_ready_missing_model" = "Configuração incompleta • Falta modelo";

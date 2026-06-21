@@ -273,6 +273,7 @@
 "settings.enhancements.provider_models.summary.no_model" = "%@ • No model selected";
 "settings.enhancements.provider_models.card.accessibility_hint" = "Expands provider configuration.";
 "settings.enhancements.provider_models.status.ready" = "Configuration ready";
+"settings.enhancements.provider_models.status.registered" = "Provider registered";
 "settings.enhancements.provider_models.status.not_ready" = "Configuration incomplete";
 "settings.enhancements.provider_models.status.not_ready_missing_key" = "Configuration incomplete • Missing API key";
 "settings.enhancements.provider_models.status.not_ready_missing_model" = "Configuration incomplete • Missing model";

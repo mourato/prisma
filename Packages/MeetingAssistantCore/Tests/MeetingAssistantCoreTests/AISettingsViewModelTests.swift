@@ -292,6 +292,34 @@ final class AISettingsViewModelTests: XCTestCase {
         )
     }
 
+    func testRefreshEnhancementsProviderModels_BuiltInRegistrationIgnoresStaleRegistrationKey() async throws {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+        let registration = try XCTUnwrap(settings.addEnhancementsProviderRegistration(provider: .groq))
+        try keychain.store("sk-groq-provider", for: KeychainManager.apiKeyKey(for: .groq))
+        try keychain.storeAPIKey("sk-stale-registration", for: registration.id)
+        llmService.fetchModelsResultsByProvider = try [
+            .groq: [XCTUnwrap(LLMModel.fixture(id: "llama-3.3-70b-versatile"))],
+        ]
+
+        let viewModel = AISettingsViewModel(
+            settings: settings,
+            keychain: keychain,
+            llmService: llmService,
+            credentialBootstrapPolicy: .deferredUserAction
+        )
+
+        let task = viewModel.refreshEnhancementsProviderModelsManually()
+        await task.value
+
+        XCTAssertEqual(llmService.lastFetchedAPIKey, "sk-groq-provider")
+        XCTAssertTrue(
+            viewModel.enhancementsProviderModels.contains(
+                where: { $0.provider == .groq && $0.registrationID == registration.id }
+            )
+        )
+    }
+
     func testRefreshEnhancementsProviderModels_MigratesLegacyKeyBeforeBatch() async throws {
         let keychain = MockKeychainProvider()
         let llmService = MockLLMService()

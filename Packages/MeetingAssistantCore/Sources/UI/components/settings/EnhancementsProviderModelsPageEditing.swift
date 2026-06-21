@@ -90,7 +90,9 @@ extension EnhancementsProviderModelsPage {
         draftErrorMessage = nil
     }
 
-    func registrationReadinessIssue(for registration: EnhancementsProviderRegistration) -> EnhancementsInferenceReadinessIssue? {
+    func registrationReadinessIssue(
+        for registration: EnhancementsProviderRegistration
+    ) -> EnhancementsInferenceReadinessIssue? {
         guard isValidHTTPURLString(registration.resolvedBaseURL) else {
             return .invalidBaseURL
         }
@@ -102,6 +104,10 @@ extension EnhancementsProviderModelsPage {
             return .missingAPIKey
         }
 
+        guard isRegistrationSelectedForActiveUse(registration) else {
+            return nil
+        }
+
         let selectedModel = postProcessingViewModel.settings
             .enhancementsSelectedModel(for: registration.id)
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -110,6 +116,11 @@ extension EnhancementsProviderModelsPage {
         }
 
         return nil
+    }
+
+    func isRegistrationSelectedForActiveUse(_ registration: EnhancementsProviderRegistration) -> Bool {
+        isRegistrationSelected(registration.id, in: .meeting)
+            || isRegistrationSelected(registration.id, in: .dictation)
     }
 
     func isValidHTTPURLString(_ value: String) -> Bool {

@@ -270,6 +270,23 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertNil(issue)
     }
 
+    func testIsEnhancementsRegistrationSelected_ReturnsFalseForInactiveRegistration() throws {
+        let registration = try XCTUnwrap(settings.addEnhancementsProviderRegistration(provider: .groq))
+        settings.enhancementsAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "")
+        settings.enhancementsDictationAISelection = EnhancementsAISelection(provider: .google, selectedModel: "")
+
+        XCTAssertFalse(settings.isEnhancementsRegistrationSelected(registration, for: .meeting))
+        XCTAssertFalse(settings.isEnhancementsRegistrationSelected(registration, for: .dictation))
+    }
+
+    func testIsEnhancementsRegistrationSelected_ReturnsTrueForExplicitRegistrationSelection() throws {
+        let registration = try XCTUnwrap(settings.addEnhancementsProviderRegistration(provider: .groq))
+        settings.updateEnhancementsSelection(registrationID: registration.id, model: "   ", for: .meeting)
+
+        XCTAssertTrue(settings.isEnhancementsRegistrationSelected(registration, for: .meeting))
+        XCTAssertFalse(settings.isEnhancementsRegistrationSelected(registration, for: .dictation))
+    }
+
     func testBackfillEnhancementsSelectionModels_FillsMeetingSelectionFromLegacyConfiguration() {
         settings.updateAIConfiguration(
             provider: .openai,

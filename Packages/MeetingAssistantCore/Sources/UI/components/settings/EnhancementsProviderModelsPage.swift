@@ -192,6 +192,7 @@ extension EnhancementsProviderModelsPage {
     func registrationRow(_ registration: EnhancementsProviderRegistration) -> some View {
         let readinessIssue = registrationReadinessIssue(for: registration)
         let isReady = readinessIssue == nil
+        let isSelectedForActiveUse = isRegistrationSelectedForActiveUse(registration)
 
         return Button {
             beginEditRegistration(registration)
@@ -224,9 +225,15 @@ extension EnhancementsProviderModelsPage {
                         Circle()
                             .fill(isReady ? AppDesignSystem.Colors.success : AppDesignSystem.Colors.warning)
                             .frame(width: 7, height: 7)
-                        Text(providerStatusText(isReady: isReady, issue: readinessIssue))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        Text(
+                            providerStatusText(
+                                isReady: isReady,
+                                issue: readinessIssue,
+                                isSelectedForActiveUse: isSelectedForActiveUse
+                            )
+                        )
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                     }
                 }
 
@@ -337,8 +344,15 @@ extension EnhancementsProviderModelsPage {
         return selection.provider == option.provider && selection.selectedModel == option.modelID
     }
 
-    func providerStatusText(isReady: Bool, issue: EnhancementsInferenceReadinessIssue?) -> String {
+    func providerStatusText(
+        isReady: Bool,
+        issue: EnhancementsInferenceReadinessIssue?,
+        isSelectedForActiveUse: Bool
+    ) -> String {
         guard !isReady else {
+            if !isSelectedForActiveUse {
+                return "settings.enhancements.provider_models.status.registered".localized
+            }
             return "settings.enhancements.provider_models.status.ready".localized
         }
 
@@ -383,7 +397,10 @@ extension EnhancementsProviderModelsPage {
     }
 
     func isRegistrationSelected(_ registrationID: UUID, in mode: IntelligenceKernelMode) -> Bool {
-        postProcessingViewModel.settings.enhancementsSelection(for: mode).registrationID == registrationID
+        guard let registration = postProcessingViewModel.settings.enhancementsRegistration(for: registrationID) else {
+            return false
+        }
+        return postProcessingViewModel.settings.isEnhancementsRegistrationSelected(registration, for: mode)
     }
 
 }

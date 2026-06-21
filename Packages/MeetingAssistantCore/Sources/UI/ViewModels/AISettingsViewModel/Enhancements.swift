@@ -215,10 +215,22 @@ public extension AISettingsViewModel {
 
         do {
             try persistEnhancementsAPIKey(normalized, registrationID: registrationID, provider: provider)
-            isEnhancementsProviderKeySaved = hasSavedEnhancementsAPIKey(
+            let saved = hasSavedEnhancementsAPIKey(
                 for: registrationID,
                 provider: provider
             )
+            guard saved else {
+                enhancementsActionError = "settings.ai.save_failed".localized
+                let registrationDescription = registrationID?.uuidString ?? "none"
+                let message = "Enhancements API key save verification failed for provider "
+                    + "\(provider.rawValue), registration \(registrationDescription)"
+                logger.error(
+                    "\(message)"
+                )
+                return false
+            }
+
+            isEnhancementsProviderKeySaved = true
             enhancementsActionError = nil
             return true
         } catch {
@@ -410,8 +422,11 @@ public extension AISettingsViewModel {
         let providerKeysByProvider = try keychain.retrieveAPIKeys(
             for: Array(Set(registrations.map(\.provider)))
         )
+        let registrationScopedIDs = registrations
+            .filter(\.provider.usesRegistrationScopedEnhancementsCredential)
+            .map(\.id)
         let registrationKeysByID = try keychain.retrieveAPIKeys(
-            for: registrations.map(\.id)
+            for: registrationScopedIDs
         )
         var hadFailure = false
 
@@ -420,9 +435,7 @@ public extension AISettingsViewModel {
 
             let registrationKey = registrationKeysByID[registration.id]?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            let apiKey = if let registrationKey,
-                            !registrationKey.isEmpty
-            {
+            let apiKey = if provider.usesRegistrationScopedEnhancementsCredential {
                 registrationKey
             } else {
                 providerKeysByProvider[provider]
@@ -544,9 +557,21 @@ public extension AISettingsViewModel {
                 }
             }
             // swiftformat:disable:next redundantSelf
-            logger.info("Enhancements API key persisted for \(provider.displayName)")
+            let registrationDescription = registrationID?.uuidString ?? "none"
+            let message = "Enhancements API key persisted for provider "
+                + "\(provider.rawValue), registration \(registrationDescription), "
+                + "registrationScoped \(provider.usesRegistrationScopedEnhancementsCredential)"
+            logger.info(
+                "\(message)"
+            )
         } catch {
-            logger.error("Failed to persist enhancements API key: \(error.localizedDescription)")
+            let registrationDescription = registrationID?.uuidString ?? "none"
+            let message = "Failed to persist enhancements API key for provider "
+                + "\(provider.rawValue), registration \(registrationDescription): "
+                + error.localizedDescription
+            logger.error(
+                "\(message)"
+            )
             throw error
         }
     }

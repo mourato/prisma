@@ -266,11 +266,26 @@ public enum KeychainManager {
 
     private static func saveConsolidated(_ keys: ConsolidatedAPIKeys) throws {
         let data = try JSONEncoder().encode(keys)
-        try storeConsolidatedBlob(data)
-
         cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        try storeConsolidatedBlob(data)
         _consolidatedCache = keys
-        cacheLock.unlock()
+    }
+
+    @discardableResult
+    private static func mutateConsolidated(
+        _ mutation: (inout ConsolidatedAPIKeys) throws -> Bool
+    ) throws -> Bool {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        var consolidated = try loadConsolidated()
+        let shouldSave = try mutation(&consolidated)
+        guard shouldSave else { return false }
+
+        try saveConsolidated(consolidated)
+        return true
     }
 
     private static func retrieveConsolidatedBlob() throws -> ConsolidatedAPIKeys? {
@@ -305,6 +320,7 @@ public enum KeychainManager {
         let updateStatus = SecItemUpdate(query as CFDictionary, updateAttributes as CFDictionary)
         switch updateStatus {
         case errSecSuccess:
+            AppLogger.debug("Updated consolidated API keys blob", category: .security)
             return
         case errSecItemNotFound:
             var addQuery = query
@@ -313,17 +329,35 @@ public enum KeychainManager {
 
             let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
             if addStatus == errSecDuplicateItem {
+                AppLogger.warning(
+                    "Consolidated API keys add hit duplicate item; retrying update",
+                    category: .security
+                )
                 let retryStatus = SecItemUpdate(query as CFDictionary, updateAttributes as CFDictionary)
                 guard retryStatus == errSecSuccess else {
+                    AppLogger.error(
+                        "Failed to retry consolidated API keys update: \(retryStatus)",
+                        category: .security
+                    )
                     throw KeychainError.unexpectedStatus(retryStatus)
                 }
+                AppLogger.debug("Updated consolidated API keys blob after duplicate add", category: .security)
                 return
             }
 
             guard addStatus == errSecSuccess else {
+                AppLogger.error(
+                    "Failed to add consolidated API keys blob: \(addStatus)",
+                    category: .security
+                )
                 throw KeychainError.unexpectedStatus(addStatus)
             }
+            AppLogger.debug("Added consolidated API keys blob", category: .security)
         default:
+            AppLogger.error(
+                "Failed to update consolidated API keys blob: \(updateStatus)",
+                category: .security
+            )
             throw KeychainError.unexpectedStatus(updateStatus)
         }
     }
@@ -426,10 +460,11 @@ public enum KeychainManager {
     ///   - key: The key to store the value under.
     /// - Throws: `KeychainError` if storage fails.
     static func store(_ value: String, for key: Key) throws {
-        var consolidated = try loadConsolidated()
-        guard keyValue(in: consolidated, for: key) != value else { return }
-        setValue(value, in: &consolidated, for: key)
-        try saveConsolidated(consolidated)
+        try mutateConsolidated { consolidated in
+            guard keyValue(in: consolidated, for: key) != value else { return false }
+            setValue(value, in: &consolidated, for: key)
+            return true
+        }
     }
 
     /// Retrieve a string from the Keychain.
@@ -449,9 +484,10 @@ public enum KeychainManager {
                   !legacyValue.isEmpty
             else { continue }
 
-            var mutableConsolidated = consolidated
-            setValue(legacyValue, in: &mutableConsolidated, for: key)
-            try saveConsolidated(mutableConsolidated)
+            try mutateConsolidated { mutableConsolidated in
+                setValue(legacyValue, in: &mutableConsolidated, for: key)
+                return true
+            }
             try delete(account: key.rawValue, serviceIdentifier: serviceId)
             return legacyValue
         }
@@ -463,10 +499,11 @@ public enum KeychainManager {
     /// - Parameter key: The key to delete.
     /// - Throws: `KeychainError` if deletion fails.
     static func delete(for key: Key) throws {
-        var consolidated = try loadConsolidated()
-        guard keyValue(in: consolidated, for: key) != nil else { return }
-        setValue(nil, in: &consolidated, for: key)
-        try saveConsolidated(consolidated)
+        try mutateConsolidated { consolidated in
+            guard keyValue(in: consolidated, for: key) != nil else { return false }
+            setValue(nil, in: &consolidated, for: key)
+            return true
+        }
     }
 
     /// Check if a value exists in the Keychain.
@@ -513,10 +550,11 @@ public enum KeychainManager {
         // delete the old individual entry so the fallback in retrieve(for:)
         // won't re-migrate it on subsequent calls for other providers.
         if let legacyValue = try retrieve(for: .aiAPIKey), !legacyValue.isEmpty {
-            var consolidated = try loadConsolidated()
-            setValue(legacyValue, in: &consolidated, for: providerKey)
-            setValue(nil, in: &consolidated, for: .aiAPIKey)
-            try saveConsolidated(consolidated)
+            try mutateConsolidated { consolidated in
+                setValue(legacyValue, in: &consolidated, for: providerKey)
+                setValue(nil, in: &consolidated, for: .aiAPIKey)
+                return true
+            }
 
             let allServices = [serviceIdentifier] + legacyServiceIdentifiers
             for serviceId in allServices {
@@ -601,16 +639,11 @@ public enum KeychainManager {
 
     public static func storeAPIKey(_ value: String, for registrationID: UUID) throws {
         let account = registrationAPIKeyAccount(for: registrationID)
-        var consolidated = try loadConsolidated()
-        guard consolidated.registrationKeys[account] != value else {
-            for serviceId in [serviceIdentifier] + legacyServiceIdentifiers {
-                try? delete(account: account, serviceIdentifier: serviceId)
-            }
-            return
+        try mutateConsolidated { consolidated in
+            guard consolidated.registrationKeys[account] != value else { return false }
+            consolidated.registrationKeys[account] = value
+            return true
         }
-
-        consolidated.registrationKeys[account] = value
-        try saveConsolidated(consolidated)
 
         for serviceId in [serviceIdentifier] + legacyServiceIdentifiers {
             try? delete(account: account, serviceIdentifier: serviceId)
@@ -632,9 +665,10 @@ public enum KeychainManager {
                 continue
             }
 
-            var mutableConsolidated = consolidated
-            mutableConsolidated.registrationKeys[account] = legacyValue
-            try saveConsolidated(mutableConsolidated)
+            try mutateConsolidated { mutableConsolidated in
+                mutableConsolidated.registrationKeys[account] = legacyValue
+                return true
+            }
             try? delete(account: account, serviceIdentifier: serviceId)
             return legacyValue
         }
@@ -674,7 +708,13 @@ public enum KeychainManager {
         }
 
         if mutableConsolidated.registrationKeys != consolidated.registrationKeys {
-            try saveConsolidated(mutableConsolidated)
+            try mutateConsolidated { consolidated in
+                for migratedAccount in migratedAccounts {
+                    consolidated.registrationKeys[migratedAccount.account] =
+                        mutableConsolidated.registrationKeys[migratedAccount.account]
+                }
+                return true
+            }
             for migratedAccount in migratedAccounts {
                 try? delete(account: migratedAccount.account, serviceIdentifier: migratedAccount.serviceIdentifier)
             }
@@ -705,9 +745,8 @@ public enum KeychainManager {
 
     public static func deleteAPIKey(for registrationID: UUID) throws {
         let account = registrationAPIKeyAccount(for: registrationID)
-        var consolidated = try loadConsolidated()
-        if consolidated.registrationKeys.removeValue(forKey: account) != nil {
-            try saveConsolidated(consolidated)
+        try mutateConsolidated { consolidated in
+            consolidated.registrationKeys.removeValue(forKey: account) != nil
         }
 
         try delete(account: account, serviceIdentifier: serviceIdentifier)

@@ -352,6 +352,19 @@ public extension AppSettingsStore {
         return enhancementsSelectedModel(for: registration.provider)
     }
 
+    func isEnhancementsRegistrationSelected(
+        _ registration: EnhancementsProviderRegistration,
+        for mode: IntelligenceKernelMode
+    ) -> Bool {
+        let selection = enhancementsSelection(for: mode)
+        if let selectedRegistrationID = selection.registrationID {
+            return selectedRegistrationID == registration.id
+        }
+
+        guard selection.provider == registration.provider else { return false }
+        return enhancementsRegistration(for: registration.provider)?.id == registration.id
+    }
+
     /// Resolves the runtime configuration for Enhancements (post-processing + Q&A).
     var resolvedEnhancementsAIConfiguration: AIConfiguration {
         resolvedEnhancementsAIConfiguration(for: .meeting)

@@ -20,6 +20,37 @@ final class KeychainManagerBatchRetrievalTests: XCTestCase {
         XCTAssertEqual(try keychain.retrieveAPIKey(for: .groq), "sk-groq-updated")
     }
 
+    func testConcurrentProviderAndRegistrationWritesPreserveBothValues() throws {
+        let keychain = DefaultKeychainProvider()
+        let key = KeychainManager.apiKeyKey(for: .groq)
+        let registrationID = UUID()
+        try? keychain.delete(for: key)
+        try? KeychainManager.deleteAPIKey(for: registrationID)
+        defer {
+            try? keychain.delete(for: key)
+            try? KeychainManager.deleteAPIKey(for: registrationID)
+        }
+
+        let errors = ThreadSafeErrorCollector()
+        DispatchQueue.concurrentPerform(iterations: 2) { index in
+            do {
+                if index == 0 {
+                    try DefaultKeychainProvider().store("sk-groq-provider", for: .aiAPIKeyGroq)
+                } else {
+                    try KeychainManager.storeAPIKey("sk-registration", for: registrationID)
+                }
+            } catch {
+                errors.append(error)
+            }
+        }
+        if let error = errors.first {
+            throw error
+        }
+
+        XCTAssertEqual(try keychain.retrieveAPIKey(for: .groq), "sk-groq-provider")
+        XCTAssertEqual(try KeychainManager.retrieveAPIKey(for: registrationID), "sk-registration")
+    }
+
     func testRegistrationAPIKeyAccount_IsStableLowercaseKey() throws {
         let registrationID = try XCTUnwrap(UUID(uuidString: "9E6F0DB4-7B48-4599-A7C5-47CB7C2F368A"))
 
@@ -110,5 +141,22 @@ final class KeychainManagerBatchRetrievalTests: XCTestCase {
 
         let mapped = try KeychainManager.retrieveAPIKeysMap(allowedProviders: [.openai, .google])
         XCTAssertTrue(mapped.isEmpty)
+    }
+}
+
+private final class ThreadSafeErrorCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private var errors: [Error] = []
+
+    var first: Error? {
+        lock.withLock {
+            errors.first
+        }
+    }
+
+    func append(_ error: Error) {
+        lock.withLock {
+            errors.append(error)
+        }
     }
 }
