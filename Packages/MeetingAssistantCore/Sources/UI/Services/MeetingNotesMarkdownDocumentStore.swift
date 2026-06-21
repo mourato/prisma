@@ -79,7 +79,6 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
     public static let shared = MeetingNotesMarkdownDocumentStore()
 
     private enum Keys {
-        static let markdownReadEnabled = "storage.meeting_notes.markdown.read_enabled.v1"
         static let markdownBackfillCheckpoint = "storage.migrations.meeting_notes_markdown_backfill.v1"
         static let includeRawEventIdentifier = "storage.meeting_notes.markdown.include_raw_event_identifier.v1"
     }
@@ -269,6 +268,7 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
         }
 
         if !hasFailures {
+            clearLegacyPlainTextKeys()
             userDefaults.set(true, forKey: Keys.markdownBackfillCheckpoint)
             AppLogger.info(
                 "Meeting notes markdown backfill completed",
@@ -282,26 +282,31 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
         for key: MeetingNotesDocumentKey,
         legacyContent: MeetingNotesContent
     ) -> MeetingNotesContent {
-        guard userDefaults.bool(forKey: Keys.markdownReadEnabled) else {
-            return legacyContent
-        }
-
         do {
             guard let document = try readDocument(for: key) else {
-                return legacyContent
+                if shouldUseLegacyFallback(for: legacyContent) {
+                    writeContent(legacyContent, for: key, overwriteExisting: false)
+                    return legacyContent
+                }
+                return .empty
             }
-            return content(from: document)
+            return content(from: document, richTextRTFData: legacyContent.richTextRTFData)
         } catch {
             AppLogger.error(
                 "Failed to parse meeting notes markdown document; using legacy fallback",
                 category: .storage,
                 error: error
             )
-            if hasPersistedContent(legacyContent) {
+            if shouldUseLegacyFallback(for: legacyContent) {
                 writeContent(legacyContent, for: key, overwriteExisting: true)
+                return legacyContent
             }
-            return legacyContent
+            return .empty
         }
+    }
+
+    private func shouldUseLegacyFallback(for legacyContent: MeetingNotesContent) -> Bool {
+        !userDefaults.bool(forKey: Keys.markdownBackfillCheckpoint) && hasPersistedContent(legacyContent)
     }
 
     private func saveContent(_ content: MeetingNotesContent, for key: MeetingNotesDocumentKey) {
@@ -437,8 +442,8 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
         return false
     }
 
-    private func content(from document: MeetingNotesMarkdownDocument) -> MeetingNotesContent {
-        MeetingNotesContent(plainText: document.markdownBody)
+    private func content(from document: MeetingNotesMarkdownDocument, richTextRTFData: Data? = nil) -> MeetingNotesContent {
+        MeetingNotesContent(plainText: document.markdownBody, richTextRTFData: richTextRTFData)
     }
 
     private func makeDocument(
@@ -494,15 +499,6 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
         return MeetingNotesMarkdownSanitizer
             .sanitizeForMarkdownRendering(content.plainText)
             .trimmingCharacters(in: Self.controlCharactersToTrim)
-    }
-
-    private func rtfData(from attributedText: NSAttributedString) -> Data? {
-        guard attributedText.length > 0 else { return nil }
-        let range = NSRange(location: 0, length: attributedText.length)
-        return try? attributedText.data(
-            from: range,
-            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
-        )
     }
 
     private func readDocument(for key: MeetingNotesDocumentKey) throws -> MeetingNotesMarkdownDocument? {
@@ -719,6 +715,12 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
     fileprivate nonisolated static func sha256Hex(_ value: String) -> String {
         let digest = SHA256.hash(data: Data(value.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func clearLegacyPlainTextKeys() {
+        for key in userDefaults.dictionaryRepresentation().keys where key.hasPrefix(LegacyKeys.meetingPrefix) || key.hasPrefix(LegacyKeys.eventPrefix) {
+            userDefaults.removeObject(forKey: key)
+        }
     }
 
 }

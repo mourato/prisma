@@ -8,7 +8,6 @@ import XCTest
 @MainActor
 final class MeetingNotesMarkdownDocumentStoreTests: XCTestCase {
     private enum Flags {
-        static let readEnabled = "storage.meeting_notes.markdown.read_enabled.v1"
         static let backfillCheckpoint = "storage.migrations.meeting_notes_markdown_backfill.v1"
         static let includeRawEventIdentifier = "storage.meeting_notes.markdown.include_raw_event_identifier.v1"
     }
@@ -102,21 +101,21 @@ final class MeetingNotesMarkdownDocumentStoreTests: XCTestCase {
         XCTAssertTrue(fallbackContent.contains("Plain fallback"))
     }
 
-    func testLoadMeetingNotesContent_ReadFlagOff_ReturnsLegacyEvenWhenMarkdownExists() {
+    func testLoadMeetingNotesContent_UsesLegacyFallbackBeforeBackfillCheckpoint() throws {
         let meetingID = UUID()
-        store.saveMeetingNotesContent(MeetingNotesContent(plainText: "Markdown source"), for: meetingID)
-
         let loaded = store.loadMeetingNotesContent(
             for: meetingID,
             legacyContent: MeetingNotesContent(plainText: "Legacy source")
         )
 
         XCTAssertEqual(loaded.plainText, "Legacy source")
+        let healed = try XCTUnwrap(readFile(at: meetingURL(for: meetingID)))
+        XCTAssertTrue(healed.contains("Legacy source"))
     }
 
-    func testLoadMeetingNotesContent_ReadFlagOn_PrefersMarkdownAndFallsBackWithAutoHealWhenCorrupted() throws {
+    func testLoadMeetingNotesContent_PrefersMarkdownAndStopsUsingLegacyFallbackAfterBackfillCheckpoint() throws {
         let meetingID = UUID()
-        userDefaults.set(true, forKey: Flags.readEnabled)
+        userDefaults.set(true, forKey: Flags.backfillCheckpoint)
         store.saveMeetingNotesContent(MeetingNotesContent(plainText: "Markdown source"), for: meetingID)
 
         let preferred = store.loadMeetingNotesContent(
@@ -131,13 +130,10 @@ final class MeetingNotesMarkdownDocumentStoreTests: XCTestCase {
             for: meetingID,
             legacyContent: MeetingNotesContent(plainText: "Legacy fallback")
         )
-        XCTAssertEqual(fallback.plainText, "Legacy fallback")
-
-        let healedFileContent = try XCTUnwrap(try readFile(at: meetingFileURL))
-        XCTAssertTrue(healedFileContent.contains("Legacy fallback"))
+        XCTAssertEqual(fallback, .empty)
     }
 
-    func testRunBackfillIfNeeded_CreatesDocumentsAndIsIdempotent() async throws {
+    func testRunBackfillIfNeeded_CreatesDocumentsClearsLegacyPlainTextAndIsIdempotent() async throws {
         let transcriptionID = UUID()
         let meetingID = UUID()
         let eventIdentifier = "event-\(UUID().uuidString)"
@@ -164,6 +160,8 @@ final class MeetingNotesMarkdownDocumentStoreTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: meetingFileURL.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: eventFileURL.path))
         XCTAssertTrue(userDefaults.bool(forKey: Flags.backfillCheckpoint))
+        XCTAssertNil(userDefaults.string(forKey: "meetingNotes.\(meetingID.uuidString)"))
+        XCTAssertNil(userDefaults.string(forKey: "meetingNotes.event.\(eventIdentifier)"))
 
         let firstTranscriptionSnapshot = try XCTUnwrap(try readFile(at: transcriptionFileURL))
         userDefaults.set("Changed legacy value", forKey: "meetingNotes.\(meetingID.uuidString)")

@@ -214,19 +214,16 @@ extension RecordingManager {
 
     private func saveMeetingNotesContent(_ content: MeetingNotesContent, for meetingID: UUID) {
         if normalizedNotesValue(content.plainText).isEmpty {
-            UserDefaults.standard.removeObject(forKey: meetingNotesKey(for: meetingID))
             meetingNotesRichTextStore.saveMeetingNotesRTFData(nil, for: meetingID)
             meetingNotesMarkdownStore.deleteMeetingNotesContent(for: meetingID)
             return
         }
 
-        UserDefaults.standard.set(content.plainText, forKey: meetingNotesKey(for: meetingID))
         meetingNotesRichTextStore.saveMeetingNotesRTFData(content.richTextRTFData, for: meetingID)
         meetingNotesMarkdownStore.saveMeetingNotesContent(content, for: meetingID)
     }
 
     private func removeMeetingNotesContent(for meetingID: UUID) {
-        UserDefaults.standard.removeObject(forKey: meetingNotesKey(for: meetingID))
         meetingNotesRichTextStore.saveMeetingNotesRTFData(nil, for: meetingID)
         meetingNotesMarkdownStore.deleteMeetingNotesContent(for: meetingID)
     }
@@ -237,15 +234,12 @@ extension RecordingManager {
 
     private func saveCalendarEventNotesContent(_ content: MeetingNotesContent, for eventIdentifier: String) {
         guard let normalizedIdentifier = normalizedCalendarEventIdentifier(eventIdentifier) else { return }
-        let key = calendarEventNotesKey(for: normalizedIdentifier)
         if normalizedNotesValue(content.plainText).isEmpty {
-            UserDefaults.standard.removeObject(forKey: key)
             meetingNotesRichTextStore.saveCalendarEventNotesRTFData(nil, for: normalizedIdentifier)
             meetingNotesMarkdownStore.deleteCalendarEventNotesContent(for: normalizedIdentifier)
             return
         }
 
-        UserDefaults.standard.set(content.plainText, forKey: key)
         meetingNotesRichTextStore.saveCalendarEventNotesRTFData(content.richTextRTFData, for: normalizedIdentifier)
         meetingNotesMarkdownStore.saveCalendarEventNotesContent(content, for: normalizedIdentifier)
     }

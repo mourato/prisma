@@ -276,6 +276,8 @@ final class MeetingNotesPersistenceTests: XCTestCase {
 
         XCTAssertEqual(richTextStore.meetingNotesRTFData(for: transcription.meeting.id), richData)
         XCTAssertEqual(richTextStore.calendarEventNotesRTFData(for: eventIdentifier), richData)
+        XCTAssertNil(userDefaults.string(forKey: "meetingNotes.\(transcription.meeting.id.uuidString)"))
+        XCTAssertNil(userDefaults.string(forKey: "meetingNotes.event.\(eventIdentifier)"))
     }
 
     func testUpdateMeetingNotes_WithoutLinkedEvent_DoesNotWriteCalendarEventStore() async throws {

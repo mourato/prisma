@@ -5,8 +5,6 @@ import MeetingAssistantCoreDomain
 // MARK: - Initialization Helpers
 
 extension AppSettingsStore {
-    private static let meetingNotesMarkdownReadEnabledKey = "storage.meeting_notes.markdown.read_enabled.v1"
-
     /// Holds temporarily loaded values during initialization to avoid multiple UserDefaults reads.
     struct InitializationContext {
         var loadedAIConfiguration: AIConfiguration
@@ -687,9 +685,6 @@ extension AppSettingsStore {
         migrateLegacyWebTargetBrowsersToDictationAppRulesIfNeeded()
         backfillEnhancementsSelectionModelsIfNeeded()
         migrateEnhancementsProviderRegistrationAPIKeysIfNeeded()
-        if UserDefaults.standard.object(forKey: Self.meetingNotesMarkdownReadEnabledKey) == nil {
-            UserDefaults.standard.set(true, forKey: Self.meetingNotesMarkdownReadEnabledKey)
-        }
         applyLanguage(selectedLanguage)
     }
 
