@@ -94,13 +94,9 @@ struct SettingsSidebarView: View {
         HStack(spacing: 8) {
             Image(systemName: section.icon)
                 .symbolRenderingMode(.monochrome)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white)
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(.secondary)
                 .frame(width: 20, height: 20)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(section.sidebarIconBackgroundColor)
-                )
 
             Text(section.title)
                 .font(.system(size: AppDesignSystem.Layout.sidebarLabelFontSize, weight: .regular))
@@ -113,13 +109,9 @@ struct SettingsSidebarView: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: result.section.icon)
                 .symbolRenderingMode(.monochrome)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white)
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(.secondary)
                 .frame(width: 18, height: 18)
-                .background(
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(result.section.sidebarIconBackgroundColor)
-                )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(result.title)

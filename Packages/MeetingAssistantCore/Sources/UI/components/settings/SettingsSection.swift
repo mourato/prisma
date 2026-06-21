@@ -1,10 +1,4 @@
-import MeetingAssistantCoreAI
-import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
-import MeetingAssistantCoreData
-import MeetingAssistantCoreDomain
-import MeetingAssistantCoreInfrastructure
-import SwiftUI
 
 // MARK: - Settings Section Enum
 
@@ -78,20 +72,4 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    public var sidebarIconBackgroundColor: Color {
-        switch self {
-        case .metrics: .accentColor
-        case .dictation: .accentColor
-        case .assistant: .accentColor
-        case .integrations: .accentColor
-        case .meetings: .accentColor
-        case .transcriptions: .accentColor
-        case .general: .accentColor
-        case .models: .accentColor
-        case .vocabulary: .accentColor
-        case .enhancements: .accentColor
-        case .audio: .accentColor
-        case .permissions: .accentColor
-        }
-    }
 }

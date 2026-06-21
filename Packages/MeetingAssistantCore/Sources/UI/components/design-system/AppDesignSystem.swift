@@ -1,10 +1,4 @@
 import AppKit
-import MeetingAssistantCoreAI
-import MeetingAssistantCoreAudio
-import MeetingAssistantCoreCommon
-import MeetingAssistantCoreData
-import MeetingAssistantCoreDomain
-import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 /// Project-wide design system (tokens + shared components).
@@ -363,15 +357,6 @@ public enum AppDesignSystem {
         public static let smallPadding: CGFloat = 4
         public static let compactInset: CGFloat = spacing6
 
-        public static let sidebarContainerCornerRadius: CGFloat = 18
-        public static let sidebarItemCornerRadius: CGFloat = 8
-        public static let sidebarItemHeight: CGFloat = 36
-        public static let sidebarHorizontalPadding: CGFloat = 8
-        public static let sidebarVerticalPadding: CGFloat = 10
-        public static let sidebarTopInset: CGFloat = 36
-        public static let sidebarSectionSpacing: CGFloat = 6
-        public static let sidebarItemContentSpacing: CGFloat = 8
         public static let sidebarLabelFontSize: CGFloat = 12
-        public static let sidebarSymbolFontSize: CGFloat = 14
     }
 }

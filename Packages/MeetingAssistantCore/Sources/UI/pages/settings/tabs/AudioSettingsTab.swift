@@ -8,21 +8,12 @@ import SwiftUI
 
 // MARK: - Audio Settings Tab
 
-private enum AudioInputMode: CaseIterable, Identifiable {
+private enum AudioInputMode: CaseIterable, Identifiable, Hashable {
     case systemDefault
     case customDevice
 
     var id: Self {
         self
-    }
-
-    var iconSystemName: String {
-        switch self {
-        case .systemDefault:
-            "desktopcomputer"
-        case .customDevice:
-            "mic.fill"
-        }
     }
 
     var titleKey: String {
@@ -257,32 +248,34 @@ private extension AudioSettingsTab {
         viewModel.useSystemDefaultInput ? .systemDefault : .customDevice
     }
 
-    var audioInputModePicker: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
-                audioInputModeCards
-            }
-
-            VStack(spacing: 12) {
-                audioInputModeCards
-            }
-        }
-    }
-
-    var audioInputModeCards: some View {
-        ForEach(AudioInputMode.allCases) { mode in
-            SettingsSelectableCard(
-                iconSystemName: mode.iconSystemName,
-                title: mode.titleKey.localized,
-                description: mode.descriptionKey.localized,
-                isSelected: audioInputMode == mode
-            ) {
+    var audioInputModeBinding: Binding<AudioInputMode> {
+        Binding(
+            get: { audioInputMode },
+            set: { mode in
                 viewModel.useSystemDefaultInput = mode == .systemDefault
                 if mode == .customDevice {
                     selectedCustomPowerSource = viewModel.currentPowerSourceState
                 }
             }
-            .frame(maxWidth: .infinity)
+        )
+    }
+
+    var audioInputModePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("", selection: audioInputModeBinding) {
+                ForEach(AudioInputMode.allCases) { mode in
+                    Text(mode.titleKey.localized)
+                        .tag(mode)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 360, alignment: .leading)
+
+            Text(audioInputMode.descriptionKey.localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -348,39 +341,42 @@ private extension AudioSettingsTab {
         }
     }
 
-    var customPowerSourcePicker: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
-                customPowerSourceCards
+    var selectedCustomPowerSourceBinding: Binding<String> {
+        Binding(
+            get: { selectedCustomPowerSource.rawValue },
+            set: { rawValue in
+                guard let powerSource = PowerSourceState(rawValue: rawValue) else { return }
+                selectedCustomPowerSource = powerSource
             }
+        )
+    }
 
-            VStack(spacing: 12) {
-                customPowerSourceCards
+    var customPowerSourcePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("", selection: selectedCustomPowerSourceBinding) {
+                Text("settings.general.microphone_when_charging".localized)
+                    .tag(PowerSourceState.charging.rawValue)
+
+                Text("settings.general.microphone_on_battery".localized)
+                    .tag(PowerSourceState.battery.rawValue)
             }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 360, alignment: .leading)
+
+            Text(customPowerSourceDescriptionKey.localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    var customPowerSourceCards: some View {
-        Group {
-            SettingsSelectableCard(
-                iconSystemName: "powerplug.fill",
-                title: "settings.general.microphone_when_charging".localized,
-                description: "settings.general.microphone_when_charging_desc".localized,
-                isSelected: selectedCustomPowerSource == .charging
-            ) {
-                selectedCustomPowerSource = .charging
-            }
-            .frame(maxWidth: .infinity)
-
-            SettingsSelectableCard(
-                iconSystemName: "battery.75",
-                title: "settings.general.microphone_on_battery".localized,
-                description: "settings.general.microphone_on_battery_desc".localized,
-                isSelected: selectedCustomPowerSource == .battery
-            ) {
-                selectedCustomPowerSource = .battery
-            }
-            .frame(maxWidth: .infinity)
+    var customPowerSourceDescriptionKey: String {
+        switch selectedCustomPowerSource {
+        case .charging:
+            "settings.general.microphone_when_charging_desc"
+        case .battery:
+            "settings.general.microphone_on_battery_desc"
         }
     }
 
