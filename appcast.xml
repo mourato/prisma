@@ -3,13 +3,13 @@
     <channel>
         <title>Prisma</title>
         <item>
-            <title>0.3.4</title>
-            <pubDate>Thu, 05 Mar 2026 15:49:52 +0000</pubDate>
-            <sparkle:version>26</sparkle:version>
-            <sparkle:shortVersionString>0.3.4</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <title>0.6.24</title>
+            <pubDate>Thu, 25 Jun 2026 19:49:45 +0000</pubDate>
+            <sparkle:version>77</sparkle:version>
+            <sparkle:shortVersionString>0.6.24</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <enclosure url="https://github.com/mourato/prisma/releases/download/v0.3.4/Prisma.zip" length="14543527" type="application/octet-stream" sparkle:edSignature="EEYrsCE5+TNQupl1EjSNOPPHH5rK/JEYtaYHj3QanmuP+dqZq4zgC/qb7YS7KWEEfuUSKYWkvWniRuU67JDXBQ=="/>
+            <enclosure url="https://github.com/mourato/prisma/releases/download/v0.6.24/Prisma.zip" length="21561593" type="application/octet-stream" sparkle:edSignature="0+rzJXZSjdLKJNZ3n3pNOC1VgmF9a6MI4ykTjpVi3x7eXMvfj9o+u+2mYpri3ipY/RwoEhO25OyMWWlLLgxfBQ=="/>
         </item>
     </channel>
 </rss>
