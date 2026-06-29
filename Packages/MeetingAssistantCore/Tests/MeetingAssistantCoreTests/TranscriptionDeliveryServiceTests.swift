@@ -1,5 +1,5 @@
-import XCTest
 @testable import MeetingAssistantCore
+import XCTest
 
 final class MockPasteboardService: PasteboardServiceProtocol {
     var storedString: String?
@@ -41,6 +41,14 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
     override func setUp() async throws {
         mockPasteboard = MockPasteboardService()
         originalCursorProvider = TranscriptionDeliveryService.cursorTextContextProvider
+        TranscriptionDeliveryService.cursorTextContextProvider = MockCursorTextContextProvider(
+            context: CursorTextContext(
+                previousCharacter: nil,
+                nextCharacter: nil,
+                isEmptyDocument: false,
+                support: .unsupported
+            )
+        )
     }
 
     override func tearDown() async throws {

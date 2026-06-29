@@ -156,10 +156,14 @@ public enum KeychainManager {
 
     private static let cacheLock = NSRecursiveLock()
     private nonisolated(unsafe) static var _consolidatedCache: ConsolidatedAPIKeys?
+    private nonisolated(unsafe) static var testingConsolidatedStore: ConsolidatedAPIKeys?
 
     public static func invalidateCache() {
         cacheLock.withLock {
             _consolidatedCache = nil
+            if AppIdentity.isRunningTests {
+                testingConsolidatedStore = nil
+            }
         }
     }
 
@@ -240,6 +244,13 @@ public enum KeychainManager {
             return cache
         }
 
+        if AppIdentity.isRunningTests {
+            let store = testingConsolidatedStore ?? ConsolidatedAPIKeys()
+            testingConsolidatedStore = store
+            _consolidatedCache = store
+            return store
+        }
+
         do {
             if let existing = try retrieveConsolidatedBlob() {
                 if existing.version != ConsolidatedAPIKeys.currentVersion {
@@ -265,10 +276,16 @@ public enum KeychainManager {
     }
 
     private static func saveConsolidated(_ keys: ConsolidatedAPIKeys) throws {
-        let data = try JSONEncoder().encode(keys)
         cacheLock.lock()
         defer { cacheLock.unlock() }
 
+        if AppIdentity.isRunningTests {
+            testingConsolidatedStore = keys
+            _consolidatedCache = keys
+            return
+        }
+
+        let data = try JSONEncoder().encode(keys)
         try storeConsolidatedBlob(data)
         _consolidatedCache = keys
     }
@@ -749,6 +766,10 @@ public enum KeychainManager {
             consolidated.registrationKeys.removeValue(forKey: account) != nil
         }
 
+        if AppIdentity.isRunningTests {
+            return
+        }
+
         try delete(account: account, serviceIdentifier: serviceIdentifier)
         for legacyServiceIdentifier in legacyServiceIdentifiers {
             try delete(account: account, serviceIdentifier: legacyServiceIdentifier)
@@ -837,8 +858,11 @@ public enum KeychainManager {
         ]
     }
 
+}
+
+public extension KeychainManager {
     @available(*, deprecated, message: "Use retrieveAPIKeys(for:) or retrieveAPIKeysMap(allowedProviders:) instead")
-    public static func mapAPIKeyItems(
+    static func mapAPIKeyItems(
         _ items: [[String: Any]],
         allowedProviders: [AIProvider]
     ) -> [AIProvider: String] {
@@ -866,7 +890,7 @@ public enum KeychainManager {
 
     /// Reads API keys from consolidated storage for the given providers.
     /// This is the consolidated-aware replacement for `mapAPIKeyItems(allowedProviders:)`.
-    public static func retrieveAPIKeysMap(allowedProviders: [AIProvider]) throws -> [AIProvider: String] {
+    static func retrieveAPIKeysMap(allowedProviders: [AIProvider]) throws -> [AIProvider: String] {
         let consolidated = try loadConsolidated()
         var valuesByProvider: [AIProvider: String] = [:]
 

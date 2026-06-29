@@ -103,11 +103,11 @@ final class DomainLayerTests: XCTestCase {
     func testTranscribeAudioSuccess() async throws {
         // Given
         guard let mockTranscriptionRepo,
-              let mockTranscriptionStorageRepo,
               let mockPostProcessingRepo
         else {
             return XCTFail("Mocks not initialized")
         }
+        let mockTranscriptionStorageRepo = makeMacroMockTranscriptionStorageRepository()
 
         let useCase = TranscribeAudioUseCase(
             transcriptionRepository: mockTranscriptionRepo,

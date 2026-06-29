@@ -174,13 +174,20 @@ ma_agent_extract_test_counts() {
         return 1
     fi
 
-    result_line="$(grep -E "Executed [0-9]+ tests?, with [0-9]+ failures?" "${log_path}" | tail -n 1 || true)"
+    result_line="$(
+        grep -A2 -E "Test Suite 'Selected tests' (passed|failed)" "${log_path}" 2>/dev/null \
+            | grep -E "Executed [0-9]+ tests?(, with [0-9]+ tests? skipped)? and [0-9]+ failures?|Executed [0-9]+ tests?, with [0-9]+ failures?" \
+            | tail -n 1 || true
+    )"
+    if [ -z "${result_line}" ]; then
+        result_line="$(grep -E "Executed [0-9]+ tests?(, with [0-9]+ tests? skipped)? and [0-9]+ failures?|Executed [0-9]+ tests?, with [0-9]+ failures?" "${log_path}" | tail -n 1 || true)"
+    fi
     if [ -z "${result_line}" ]; then
         return 1
     fi
 
     total="$(echo "${result_line}" | sed -E 's/.*Executed ([0-9]+) tests?.*/\1/')"
-    failed="$(echo "${result_line}" | sed -E 's/.*with ([0-9]+) failures?.*/\1/')"
+    failed="$(echo "${result_line}" | sed -E 's/.*(with|and) ([0-9]+) failures?.*/\2/')"
 
     if ! [[ "${total}" =~ ^[0-9]+$ ]] || ! [[ "${failed}" =~ ^[0-9]+$ ]]; then
         return 1
