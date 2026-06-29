@@ -445,7 +445,7 @@ extension AppSettingsStore {
     static func loadContextAwarenessSettings(from context: InitializationContext) -> ContextAwarenessSettingsValues {
         ContextAwarenessSettingsValues(
             contextAwarenessEnabled: context.loadedContextAwarenessEnabled,
-            contextAwarenessExplicitActionOnly: loadBoolDefaultIfUnset(forKey: Keys.contextAwarenessExplicitActionOnly, defaultValue: true),
+            contextAwarenessExplicitActionOnly: true,
             contextAwarenessIncludeClipboard: UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeClipboard),
             contextAwarenessIncludeWindowOCR: UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeWindowOCR),
             contextAwarenessIncludeAccessibilityText: loadBoolDefaultIfUnset(forKey: Keys.contextAwarenessIncludeAccessibilityText, defaultValue: true),

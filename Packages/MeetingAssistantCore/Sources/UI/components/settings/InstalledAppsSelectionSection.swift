@@ -7,6 +7,8 @@ public struct InstalledAppsSelectionSection: View {
     private let descriptionKey: String
     private let emptyKey: String
     private let addButtonKey: String
+    private let removeButtonKey: String
+    private let protectedBadgeKey: String?
     private let icon: String
     @ObservedObject private var viewModel: InstalledAppsSelectionViewModel
 
@@ -15,6 +17,8 @@ public struct InstalledAppsSelectionSection: View {
         descriptionKey: String,
         emptyKey: String,
         addButtonKey: String,
+        removeButtonKey: String = "settings.markdown_targets.remove",
+        protectedBadgeKey: String? = nil,
         icon: String,
         viewModel: InstalledAppsSelectionViewModel
     ) {
@@ -22,40 +26,55 @@ public struct InstalledAppsSelectionSection: View {
         self.descriptionKey = descriptionKey
         self.emptyKey = emptyKey
         self.addButtonKey = addButtonKey
+        self.removeButtonKey = removeButtonKey
+        self.protectedBadgeKey = protectedBadgeKey
         self.icon = icon
         self.viewModel = viewModel
     }
 
     public var body: some View {
-        DSGroup(titleKey.localized, icon: icon, headerAccessory: {
-            if !descriptionKey.localized.isEmpty {
-                DSInfoPopoverButton(
-                    title: titleKey.localized,
-                    message: descriptionKey.localized
+        DSGroup(
+            titleKey.localized,
+            icon: icon,
+            headerAccessory: {
+                if !descriptionKey.localized.isEmpty {
+                    DSInfoPopoverButton(
+                        title: titleKey.localized,
+                        message: descriptionKey.localized
+                    )
+                }
+            },
+            content: {
+                InstalledAppsSelectionList(
+                    emptyKey: emptyKey,
+                    addButtonKey: addButtonKey,
+                    removeButtonKey: removeButtonKey,
+                    protectedBadgeKey: protectedBadgeKey,
+                    viewModel: viewModel
                 )
             }
-        }) {
-            InstalledAppsSelectionList(
-                emptyKey: emptyKey,
-                addButtonKey: addButtonKey,
-                viewModel: viewModel
-            )
-        }
+        )
     }
 }
 
 public struct InstalledAppsSelectionList: View {
     private let emptyKey: String
     private let addButtonKey: String
+    private let removeButtonKey: String
+    private let protectedBadgeKey: String?
     @ObservedObject private var viewModel: InstalledAppsSelectionViewModel
 
     public init(
         emptyKey: String,
         addButtonKey: String,
+        removeButtonKey: String = "settings.markdown_targets.remove",
+        protectedBadgeKey: String? = nil,
         viewModel: InstalledAppsSelectionViewModel
     ) {
         self.emptyKey = emptyKey
         self.addButtonKey = addButtonKey
+        self.removeButtonKey = removeButtonKey
+        self.protectedBadgeKey = protectedBadgeKey
         self.viewModel = viewModel
     }
 
@@ -116,15 +135,19 @@ public struct InstalledAppsSelectionList: View {
 
             Spacer()
 
-            Button(role: .destructive) {
-                viewModel.removeApp(bundleIdentifier: app.bundleIdentifier)
-            } label: {
-                Image(systemName: "minus.circle")
-                    .accessibilityLabel("settings.markdown_targets.remove".localized)
+            if app.isRemovable {
+                Button(role: .destructive) {
+                    viewModel.removeApp(bundleIdentifier: app.bundleIdentifier)
+                } label: {
+                    Image(systemName: "minus.circle")
+                        .accessibilityLabel(removeButtonKey.localized)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(AppDesignSystem.Colors.error)
+                .controlSize(.regular)
+            } else if let protectedBadgeKey {
+                DSBadge(protectedBadgeKey.localized, kind: .neutral)
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(AppDesignSystem.Colors.error)
-            .controlSize(.regular)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

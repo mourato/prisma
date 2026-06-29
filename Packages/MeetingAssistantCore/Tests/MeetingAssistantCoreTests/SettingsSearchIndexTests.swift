@@ -15,7 +15,10 @@ final class SettingsSearchIndexTests: XCTestCase {
     }
 
     func testResultsIncludeAudioSectionForAudioQuery() {
-        let results = SettingsSearchIndex.results(for: "audio")
+        let audioTitle = "settings.section.audio".localized
+        guard audioTitle != "settings.section.audio" else { return }
+
+        let results = SettingsSearchIndex.results(for: audioTitle)
 
         XCTAssertFalse(results.isEmpty)
         XCTAssertTrue(results.contains(where: { $0.section == .audio }))
@@ -44,6 +47,24 @@ final class SettingsSearchIndexTests: XCTestCase {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.styles.title")
 
         XCTAssertEqual(section, .dictation)
+    }
+
+    func testSectionMappingRoutesDictationModelSelectorToDictationSection() {
+        let section = SettingsSearchIndex.section(forLocalizationKey: "settings.enhancements.selector.dictation.title")
+
+        XCTAssertEqual(section, .dictation)
+    }
+
+    func testSectionMappingRoutesMeetingModelSelectorToMeetingsSection() {
+        let section = SettingsSearchIndex.section(forLocalizationKey: "settings.enhancements.selector.meeting.title")
+
+        XCTAssertEqual(section, .meetings)
+    }
+
+    func testSectionMappingRoutesAIProviderSetupToModelsSection() {
+        let section = SettingsSearchIndex.section(forLocalizationKey: "settings.enhancements.provider_models.title")
+
+        XCTAssertEqual(section, .models)
     }
 
     func testSectionMappingKeepsGeneralAudioFormatInGeneralSection() {

@@ -27,8 +27,8 @@ extension RecordingManager {
     func cancelPostStartCaptureTasks() {
         postStartContextCaptureTask?.cancel()
         postStartContextCaptureTask = nil
-        deferredContextOCRTask?.cancel()
-        deferredContextOCRTask = nil
+        postStartWindowOCRCaptureTask?.cancel()
+        postStartWindowOCRCaptureTask = nil
     }
 
     func startContextCaptureAfterRecordingStart(meetingID: UUID) {
@@ -61,9 +61,9 @@ extension RecordingManager {
                 value: Date().timeIntervalSince(contextCaptureStartAt) * 1_000,
                 unit: "ms"
             )
-
-            scheduleDeferredWindowOCRCaptureIfNeeded(meetingID: meetingID)
         }
+
+        startWindowOCRCaptureAfterRecordingStartIfNeeded(meetingID: meetingID)
     }
 
     private func capturePostProcessingContextWithTimeout(
@@ -87,17 +87,16 @@ extension RecordingManager {
         )
     }
 
-    private func scheduleDeferredWindowOCRCaptureIfNeeded(meetingID: UUID) {
-        deferredContextOCRTask?.cancel()
+    private func startWindowOCRCaptureAfterRecordingStartIfNeeded(meetingID: UUID) {
+        postStartWindowOCRCaptureTask?.cancel()
 
         let settings = AppSettingsStore.shared
         guard settings.contextAwarenessEnabled, settings.contextAwarenessIncludeWindowOCR else {
-            deferredContextOCRTask = nil
+            postStartWindowOCRCaptureTask = nil
             return
         }
 
-        deferredContextOCRTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: Constants.deferredWindowOCRCaptureDelay)
+        postStartWindowOCRCaptureTask = Task { @MainActor [weak self] in
             guard let self else { return }
             guard !Task.isCancelled else { return }
             guard isRecording, let meeting = currentMeeting, meeting.id == meetingID else { return }

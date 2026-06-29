@@ -12,7 +12,7 @@
 "settings.section.rules_per_app" = "Styles";
 "settings.section.vocabulary" = "Vocabulary";
 "settings.section.ai" = "Enhancements";
-"settings.section.models" = "Models";
+"settings.section.models" = "AI";
 "settings.section.permissions" = "Permissions";
 
 /* Metrics Dashboard */
@@ -258,17 +258,17 @@
 "settings.ai.failed" = "Failed";
 "settings.enhancements.meeting_intelligence_model" = "Meeting Intelligence Model";
 "settings.enhancements.qa_enabled_desc" = "Enable grounded Q&A on saved meetings.";
-"settings.enhancements.model_warning_desc" = "Configure providers and choose meeting/dictation models in Provider and Model Setup to run post-processing and meeting Q&A.";
+"settings.enhancements.model_warning_desc" = "Configure providers in AI and choose meeting/dictation models in their respective settings to run post-processing and meeting Q&A.";
 "settings.enhancements.provider_model.help" = "Choose the provider and model used for post-processing and meeting Q&A.";
 "settings.enhancements.provider_key_missing_title" = "Provider API key required";
 "settings.enhancements.provider_key_missing_desc" = "Save an API key in Integrations before selecting provider-managed models.";
 "settings.enhancements.custom_model_placeholder" = "Enter custom model ID";
 "settings.enhancements.models_empty_title" = "No models found";
 "settings.enhancements.models_empty_desc" = "Refresh models or verify provider configuration.";
-"settings.enhancements.provider_models.title" = "Provider and Model Setup";
-"settings.enhancements.provider_models.context_title" = "Configure meeting intelligence providers";
-"settings.enhancements.provider_models.context_desc" = "Select a provider, save its API key, and choose a model used by post-processing and meeting Q&A.";
-"settings.enhancements.provider_models.drilldown_hint" = "Opens provider and model setup.";
+"settings.enhancements.provider_models.title" = "AI Providers";
+"settings.enhancements.provider_models.context_title" = "Configure AI providers";
+"settings.enhancements.provider_models.context_desc" = "Add providers and save API keys for meeting and dictation intelligence.";
+"settings.enhancements.provider_models.drilldown_hint" = "Opens AI provider setup.";
 "settings.enhancements.provider_models.summary" = "%@ • %@";
 "settings.enhancements.provider_models.summary.no_model" = "%@ • No model selected";
 "settings.enhancements.provider_models.card.accessibility_hint" = "Expands provider configuration.";
@@ -318,8 +318,6 @@
 "settings.enhancements.selector.meeting.subtitle" = "Used for meeting post-processing and Meeting Q&A.";
 "settings.enhancements.selector.dictation.title" = "Dictation model";
 "settings.enhancements.selector.dictation.subtitle" = "Used for dictation and Assistant mode automatically.";
-"settings.enhancements.selector.moved_title" = "Model selection moved";
-"settings.enhancements.selector.moved_message" = "Choose meeting and dictation models in Provider and Model Setup.";
 "settings.enhancements.readiness.missing_model.title" = "Select a model";
 "settings.enhancements.readiness.missing_model.message" = "Choose a model for the selected provider before running post-processing and meeting Q&A.";
 "settings.enhancements.readiness.missing_key.title" = "Provider API key required";
@@ -355,8 +353,6 @@
 "settings.context_awareness.title" = "Context Awareness";
 "settings.context_awareness.enabled" = "Use Context Awareness";
 "settings.context_awareness.enabled_desc" = "Capture contextual metadata at recording start and include it in AI post-processing.";
-"settings.context_awareness.explicit_action_only" = "Capture only on explicit action";
-"settings.context_awareness.explicit_action_only_desc" = "Only capture focused text when you manually trigger dictation or commands.";
 "settings.context_awareness.clipboard" = "Include Clipboard";
 "settings.context_awareness.clipboard_desc" = "Capture the latest plain-text clipboard content.";
 "settings.context_awareness.window_ocr" = "Include Active Window OCR";
@@ -371,10 +367,11 @@
 "settings.context_awareness.protect_sensitive_apps_desc" = "Skip context capture when the active app is on the sensitive-app blocklist.";
 "settings.context_awareness.redact_sensitive_data" = "Redact Sensitive Data";
 "settings.context_awareness.redact_sensitive_data_desc" = "Redact emails, URLs, secrets, and long numeric sequences before sending context to AI.";
-"settings.context_awareness.excluded_apps" = "Excluded Bundle IDs";
-"settings.context_awareness.excluded_apps_desc" = "One bundle ID per line (or comma-separated). Example: com.example.secureapp";
-"settings.context_awareness.base_exclusions" = "Always excluded apps";
-"settings.context_awareness.base_exclusions_desc" = "These apps are blocked by default for privacy.";
+"settings.context_awareness.excluded_apps_empty" = "No installed sensitive apps found. Add apps that should never provide context.";
+"settings.context_awareness.excluded_apps_add" = "Add App";
+"settings.context_awareness.excluded_apps_remove" = "Remove sensitive app";
+"settings.context_awareness.always_excluded_badge" = "Always excluded";
+"settings.dictation.post_processing_model" = "Post-processing Model";
 "settings.rules_per_app.actions" = "Rule Actions";
 "settings.rules_per_app.language.title" = "Force Translation";
 "settings.rules_per_app.language.option.original" = "Use original language";

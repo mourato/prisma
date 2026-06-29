@@ -19,6 +19,8 @@ public struct DictationSettingsTab: View {
     @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
     @StateObject private var promptViewModel: DictationPromptSettingsViewModel
     @StateObject private var serviceViewModel: ServiceSettingsViewModel
+    @StateObject private var aiSettingsViewModel: AISettingsViewModel
+    private let settings: AppSettingsStore
 
     public init(
         settings: AppSettingsStore = .shared,
@@ -28,6 +30,8 @@ public struct DictationSettingsTab: View {
         _viewModel = StateObject(wrappedValue: GeneralSettingsViewModel(settingsStore: settings))
         _promptViewModel = StateObject(wrappedValue: DictationPromptSettingsViewModel(settings: settings))
         _serviceViewModel = StateObject(wrappedValue: ServiceSettingsViewModel(settings: settings))
+        _aiSettingsViewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
+        self.settings = settings
     }
 
     public var body: some View {
@@ -85,6 +89,14 @@ public struct DictationSettingsTab: View {
             )
 
             ServiceTranscriptionProviderSection(viewModel: serviceViewModel)
+
+            EnhancementsModelSelectionSection(
+                titleKey: "settings.dictation.post_processing_model",
+                icon: "sparkles",
+                target: .dictation,
+                viewModel: aiSettingsViewModel,
+                settings: settings
+            )
 
             DSGroup("settings.dictation.text_handling".localized, icon: "cpu") {
                 VStack(alignment: .leading, spacing: 16) {

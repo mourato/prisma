@@ -546,7 +546,13 @@ public class AppSettingsStore: ObservableObject {
 
     /// Restricts context capture to explicit user actions (dictation/commands).
     @Published public var contextAwarenessExplicitActionOnly: Bool {
-        didSet { UserDefaults.standard.set(contextAwarenessExplicitActionOnly, forKey: Keys.contextAwarenessExplicitActionOnly) }
+        didSet {
+            if !contextAwarenessExplicitActionOnly {
+                contextAwarenessExplicitActionOnly = true
+                return
+            }
+            UserDefaults.standard.set(true, forKey: Keys.contextAwarenessExplicitActionOnly)
+        }
     }
 
     /// Includes clipboard text in context metadata.

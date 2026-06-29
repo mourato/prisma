@@ -113,7 +113,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     var statusCheckTask: Task<Void, Never>?
     var isStartOperationInFlight = false
     var postStartContextCaptureTask: Task<Void, Never>?
-    var deferredContextOCRTask: Task<Void, Never>?
+    var postStartWindowOCRCaptureTask: Task<Void, Never>?
     var deferredIncrementalWarmupTask: Task<Void, Never>?
     var estimatedPostProcessingProgressTask: Task<Void, Never>?
     var estimatedPostProcessingProgressSessionID: UUID?
@@ -163,7 +163,6 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         static let postProcessingProgressTickNanoseconds: UInt64 = 300_000_000
         static let statusResetDelay: Int = 3
         static let startContextCaptureTimeout: UInt64 = 1_500_000_000
-        static let deferredWindowOCRCaptureDelay: UInt64 = 8_000_000_000
         static let deferredIncrementalWarmupDelay: UInt64 = 3_000_000_000
     }
 

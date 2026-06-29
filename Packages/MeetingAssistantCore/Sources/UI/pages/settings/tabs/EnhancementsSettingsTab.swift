@@ -10,15 +10,14 @@ import SwiftUI
 
 public enum EnhancementsSettingsRoute: Hashable {
     case systemGuidelines
-    case providerModels
 }
 
 // MARK: - AI Settings Tab
 
 /// Tab for configuring AI post-processing settings.
 public struct EnhancementsSettingsTab: View {
-    @StateObject private var viewModel: AISettingsViewModel
     @StateObject private var postProcessingViewModel: PostProcessingSettingsViewModel
+    @StateObject private var sensitiveAppsViewModel: InstalledAppsSelectionViewModel
     @Binding private var navigationState: SettingsSubpageNavigationState<EnhancementsSettingsRoute>
     @State private var supportStatus: TextContextSupportStatus = .unknown
     @State private var hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
@@ -29,8 +28,18 @@ public struct EnhancementsSettingsTab: View {
         settings: AppSettingsStore = .shared,
         navigationState: Binding<SettingsSubpageNavigationState<EnhancementsSettingsRoute>> = .constant(SettingsSubpageNavigationState())
     ) {
-        _viewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
         _postProcessingViewModel = StateObject(wrappedValue: PostProcessingSettingsViewModel(settings: settings))
+        _sensitiveAppsViewModel = StateObject(
+            wrappedValue: InstalledAppsSelectionViewModel(
+                defaultBundleIdentifiers: [],
+                protectedBundleIdentifiers: TextContextExclusionPolicy.defaultBundleIDs,
+                hasConfigured: { true },
+                loadBundleIdentifiers: { settings.contextAwarenessExcludedBundleIDs },
+                saveBundleIdentifiers: { settings.contextAwarenessExcludedBundleIDs = $0 },
+                includeProtectedBundleIdentifiersWhenConfigured: true,
+                persistsResolvedInstalledApps: false
+            )
+        )
         _navigationState = navigationState
     }
 
@@ -41,8 +50,6 @@ public struct EnhancementsSettingsTab: View {
                 rootPage
             case .some(.systemGuidelines):
                 systemGuidelinesPage
-            case .some(.providerModels):
-                providerModelsPage
             }
         }
     }
@@ -82,18 +89,7 @@ public struct EnhancementsSettingsTab: View {
                     }
 
                     Divider()
-
-                    SettingsDrillDownButtonRow(
-                        title: "settings.enhancements.provider_models.title".localized,
-                        accessibilityHint: "settings.enhancements.provider_models.drilldown_hint".localized
-                    ) {
-                        navigationState.open(.providerModels)
-                    }
-
-                    Divider()
                 }
-
-                providerModelsQuickSummary
             }
         }
     }
@@ -108,12 +104,6 @@ public struct EnhancementsSettingsTab: View {
                 )
 
                 if postProcessingViewModel.settings.contextAwarenessEnabled {
-                    DSToggleRow(
-                        "settings.context_awareness.explicit_action_only".localized,
-                        description: "settings.context_awareness.explicit_action_only_desc".localized,
-                        isOn: $postProcessingViewModel.settings.contextAwarenessExplicitActionOnly
-                    )
-
                     DSToggleRow(
                         "settings.context_awareness.accessibility_text".localized,
                         description: "settings.context_awareness.accessibility_text_desc".localized,
@@ -157,30 +147,13 @@ public struct EnhancementsSettingsTab: View {
                     )
 
                     if postProcessingViewModel.settings.contextAwarenessProtectSensitiveApps {
-                        VStack(alignment: .leading, spacing: 8) {
-                            SettingsTitleWithPopover(
-                                title: "settings.context_awareness.excluded_apps".localized,
-                                helperMessage: "settings.context_awareness.excluded_apps_desc".localized,
-                                font: .subheadline,
-                                fontWeight: .medium
-                            )
-
-                            TextEditor(text: excludedBundleIDsBinding)
-                                .font(.caption.monospaced())
-                                .frame(minHeight: 72)
-                                .enhancementsEditorSurface(intensity: .subtle)
-
-                            SettingsTitleWithPopover(
-                                title: "settings.context_awareness.base_exclusions".localized,
-                                helperMessage: "settings.context_awareness.base_exclusions_desc".localized,
-                                font: .caption,
-                                fontWeight: .medium
-                            )
-
-                            Text(TextContextExclusionPolicy.defaultBundleIDs.joined(separator: "\n"))
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.secondary)
-                        }
+                        InstalledAppsSelectionList(
+                            emptyKey: "settings.context_awareness.excluded_apps_empty",
+                            addButtonKey: "settings.context_awareness.excluded_apps_add",
+                            removeButtonKey: "settings.context_awareness.excluded_apps_remove",
+                            protectedBadgeKey: "settings.context_awareness.always_excluded_badge",
+                            viewModel: sensitiveAppsViewModel
+                        )
                         .padding(.top, 4)
                     }
                 }
@@ -248,13 +221,6 @@ public struct EnhancementsSettingsTab: View {
         .task { refreshScreenRecordingPermission() }
     }
 
-    private var providerModelsPage: some View {
-        EnhancementsProviderModelsPage(
-            viewModel: viewModel,
-            postProcessingViewModel: postProcessingViewModel
-        )
-    }
-
     private var systemGuidelinesPage: some View {
         SettingsScrollableContent {
             DSGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
@@ -296,52 +262,6 @@ public struct EnhancementsSettingsTab: View {
         }
     }
 
-    private var excludedBundleIDsBinding: Binding<String> {
-        Binding(
-            get: {
-                postProcessingViewModel.settings.contextAwarenessExcludedBundleIDs.joined(separator: "\n")
-            },
-            set: { newValue in
-                postProcessingViewModel.settings.contextAwarenessExcludedBundleIDs = parseBundleIDs(from: newValue)
-            }
-        )
-    }
-
-    private var providerModelsQuickSummary: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            modelSummaryRow(
-                title: "settings.enhancements.selector.meeting.title".localized,
-                summary: selectionSummary(for: postProcessingViewModel.settings.enhancementsAISelection)
-            )
-            modelSummaryRow(
-                title: "settings.enhancements.selector.dictation.title".localized,
-                summary: selectionSummary(for: postProcessingViewModel.settings.enhancementsDictationAISelection)
-            )
-        }
-    }
-
-    private func modelSummaryRow(title: String, summary: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 8)
-            Text(summary)
-                .font(.caption)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private func selectionSummary(for selection: EnhancementsAISelection) -> String {
-        let selectedModel = selection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !selectedModel.isEmpty else {
-            return "settings.enhancements.provider_models.summary.no_model".localized(with: selection.provider.displayName)
-        }
-        return "settings.enhancements.provider_models.summary".localized(with: selection.provider.displayName, selectedModel)
-    }
-
     private func restoreSystemGuidelines() {
         postProcessingViewModel.resetSystemPrompt()
         systemGuidelinesDraft = postProcessingViewModel.settings.systemPrompt
@@ -349,23 +269,6 @@ public struct EnhancementsSettingsTab: View {
 
     private func saveSystemGuidelines() {
         postProcessingViewModel.handleSaveSystemPrompt(systemGuidelinesDraft)
-    }
-
-    private func parseBundleIDs(from rawValue: String) -> [String] {
-        var seen = Set<String>()
-        var ordered: [String] = []
-
-        for token in rawValue
-            .replacingOccurrences(of: ",", with: "\n")
-            .components(separatedBy: .newlines)
-        {
-            let normalized = token.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            guard !normalized.isEmpty, !seen.contains(normalized) else { continue }
-            seen.insert(normalized)
-            ordered.append(normalized)
-        }
-
-        return ordered
     }
 
     @MainActor

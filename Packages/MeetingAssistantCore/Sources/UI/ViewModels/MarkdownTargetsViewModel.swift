@@ -7,34 +7,45 @@ public final class InstalledAppsSelectionViewModel: ObservableObject {
     @Published public private(set) var installedApps: [InstalledAppItem] = []
 
     private let defaultBundleIdentifiers: [String]
+    private let protectedBundleIdentifiers: [String]
     private let hasConfigured: () -> Bool
     private let loadBundleIdentifiers: () -> [String]
     private let saveBundleIdentifiers: ([String]) -> Void
     private let workspace: NSWorkspace
     private let openPanelProvider: @MainActor () -> NSOpenPanel
+    private let includeProtectedBundleIdentifiersWhenConfigured: Bool
+    private let persistsResolvedInstalledApps: Bool
 
     public init(
         defaultBundleIdentifiers: [String],
+        protectedBundleIdentifiers: [String] = [],
         hasConfigured: @escaping () -> Bool,
         loadBundleIdentifiers: @escaping () -> [String],
         saveBundleIdentifiers: @escaping ([String]) -> Void,
         workspace: NSWorkspace = .shared,
-        openPanelProvider: @escaping @MainActor () -> NSOpenPanel = { NSOpenPanel() }
+        openPanelProvider: @escaping @MainActor () -> NSOpenPanel = { NSOpenPanel() },
+        includeProtectedBundleIdentifiersWhenConfigured: Bool = false,
+        persistsResolvedInstalledApps: Bool = true
     ) {
         self.defaultBundleIdentifiers = defaultBundleIdentifiers
+        self.protectedBundleIdentifiers = protectedBundleIdentifiers
         self.hasConfigured = hasConfigured
         self.loadBundleIdentifiers = loadBundleIdentifiers
         self.saveBundleIdentifiers = saveBundleIdentifiers
         self.workspace = workspace
         self.openPanelProvider = openPanelProvider
+        self.includeProtectedBundleIdentifiersWhenConfigured = includeProtectedBundleIdentifiersWhenConfigured
+        self.persistsResolvedInstalledApps = persistsResolvedInstalledApps
     }
 
     public func refreshTargets() {
         let candidates = resolveCandidateBundleIdentifiers()
         let resolved = resolveInstalledApps(from: candidates)
-        let resolvedIdentifiers = resolved.map(\.bundleIdentifier)
+        let resolvedIdentifiers = resolved
+            .filter(\.isRemovable)
+            .map(\.bundleIdentifier)
 
-        if hasConfigured(), resolvedIdentifiers != loadBundleIdentifiers() {
+        if persistsResolvedInstalledApps, hasConfigured(), resolvedIdentifiers != loadBundleIdentifiers() {
             saveBundleIdentifiers(resolvedIdentifiers)
         }
 
@@ -62,10 +73,14 @@ public final class InstalledAppsSelectionViewModel: ObservableObject {
     }
 
     private func resolveCandidateBundleIdentifiers() -> [String] {
+        let configuredIdentifiers = loadBundleIdentifiers()
         if hasConfigured() {
-            return loadBundleIdentifiers()
+            guard includeProtectedBundleIdentifiersWhenConfigured else {
+                return configuredIdentifiers
+            }
+            return protectedBundleIdentifiers + configuredIdentifiers
         }
-        return defaultBundleIdentifiers
+        return protectedBundleIdentifiers + defaultBundleIdentifiers
     }
 
     private func addApp(from url: URL) {
@@ -102,7 +117,8 @@ public final class InstalledAppsSelectionViewModel: ObservableObject {
                 InstalledAppItem(
                     bundleIdentifier: bundleIdentifier,
                     displayName: displayName,
-                    icon: icon
+                    icon: icon,
+                    isRemovable: !isProtectedBundleIdentifier(bundleIdentifier)
                 )
             )
         }
@@ -125,12 +141,18 @@ public final class InstalledAppsSelectionViewModel: ObservableObject {
     private func normalizeBundleIdentifier(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
+
+    private func isProtectedBundleIdentifier(_ value: String) -> Bool {
+        let normalized = normalizeBundleIdentifier(value)
+        return protectedBundleIdentifiers.contains { normalizeBundleIdentifier($0) == normalized }
+    }
 }
 
 public struct InstalledAppItem: Identifiable {
     public let bundleIdentifier: String
     public let displayName: String
     public let icon: NSImage
+    public let isRemovable: Bool
 
     public var id: String {
         bundleIdentifier

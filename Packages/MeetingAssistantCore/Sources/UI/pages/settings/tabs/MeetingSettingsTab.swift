@@ -19,8 +19,10 @@ public struct MeetingSettingsTab: View {
     @StateObject private var meetingViewModel: MeetingSettingsViewModel
     @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
     @StateObject private var serviceViewModel: ServiceSettingsViewModel
+    @StateObject private var aiSettingsViewModel: AISettingsViewModel
     @StateObject private var monitoredAppsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var webTargetsViewModel: WebMeetingTargetsViewModel
+    private let settings: AppSettingsStore
     @State private var showSummaryTemplateEditor = false
     @State private var selectedWebTargetID: UUID?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -32,6 +34,7 @@ public struct MeetingSettingsTab: View {
         _navigationState = navigationState
         _meetingViewModel = StateObject(wrappedValue: MeetingSettingsViewModel(settings: settings))
         _serviceViewModel = StateObject(wrappedValue: ServiceSettingsViewModel(settings: settings))
+        _aiSettingsViewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
         _monitoredAppsViewModel = StateObject(
             wrappedValue: InstalledAppsSelectionViewModel(
                 defaultBundleIdentifiers: AppSettingsStore.defaultMonitoredMeetingBundleIdentifiers,
@@ -41,6 +44,7 @@ public struct MeetingSettingsTab: View {
             )
         )
         _webTargetsViewModel = StateObject(wrappedValue: WebMeetingTargetsViewModel(settings: settings))
+        self.settings = settings
     }
 
     public var body: some View {
@@ -359,14 +363,13 @@ public struct MeetingSettingsTab: View {
                     isOn: $meetingViewModel.settings.meetingQnAEnabled
                 )
 
-                if !meetingViewModel.settings.isEnhancementsInferenceReady {
-                    Divider()
-                    DSCallout(
-                        kind: .info,
-                        title: "settings.enhancements.selector.moved_title".localized,
-                        message: "settings.enhancements.selector.moved_message".localized
-                    )
-                }
+                Divider()
+
+                EnhancementsModelSelectionControl(
+                    target: .meeting,
+                    viewModel: aiSettingsViewModel,
+                    settings: settings
+                )
             }
         }
     }

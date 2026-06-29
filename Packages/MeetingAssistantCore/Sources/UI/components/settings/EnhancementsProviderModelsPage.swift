@@ -7,22 +7,6 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct EnhancementsProviderModelsPage: View {
-    enum ModelSelectionTarget: String, Identifiable {
-        case meeting
-        case dictation
-
-        var id: String {
-            rawValue
-        }
-
-        var mode: IntelligenceKernelMode {
-            switch self {
-            case .meeting: .meeting
-            case .dictation: .dictation
-            }
-        }
-    }
-
     struct RegistrationEditorContext: Identifiable {
         let id = UUID()
         let mode: EnhancementsProviderEditorMode
@@ -33,7 +17,6 @@ public struct EnhancementsProviderModelsPage: View {
     @ObservedObject var viewModel: AISettingsViewModel
     @ObservedObject var postProcessingViewModel: PostProcessingSettingsViewModel
 
-    @State var modelSelectionTarget: ModelSelectionTarget?
     @State var isShowingProviderPicker = false
     @State var registrationEditorContext: RegistrationEditorContext?
 
@@ -56,45 +39,17 @@ public struct EnhancementsProviderModelsPage: View {
     }
 
     public var body: some View {
-        SettingsScrollableContent {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.sectionSpacing) {
             DSCallout(
                 kind: .info,
                 title: "settings.enhancements.provider_models.context_title".localized,
                 message: "settings.enhancements.provider_models.context_desc".localized
             )
 
-            executionModelSelectorsSection
             providerRegistrationsSection
         }
         .onAppear {
             viewModel.refreshEnhancementsProviderModelsManually()
-        }
-        .sheet(item: $modelSelectionTarget) { target in
-            EnhancementsModelSelectionSheet(
-                options: viewModel.enhancementsProviderModels,
-                isSelected: { option in
-                    isSelectedOption(option, for: target)
-                },
-                onSelect: { option in
-                    if let registrationID = option.registrationID {
-                        postProcessingViewModel.settings.updateEnhancementsSelection(
-                            registrationID: registrationID,
-                            model: option.modelID,
-                            for: target.mode
-                        )
-                    } else {
-                        postProcessingViewModel.settings.updateEnhancementsSelection(
-                            provider: option.provider,
-                            model: option.modelID,
-                            for: target.mode
-                        )
-                    }
-                    modelSelectionTarget = nil
-                },
-                onCancel: {
-                    modelSelectionTarget = nil
-                }
-            )
         }
         .sheet(isPresented: $isShowingProviderPicker) {
             EnhancementsProviderPickerSheet(
@@ -247,101 +202,6 @@ extension EnhancementsProviderModelsPage {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    var executionModelSelectorsSection: some View {
-        DSGroup("settings.enhancements.provider_models.title".localized, icon: "slider.horizontal.3") {
-            VStack(alignment: .leading, spacing: 10) {
-                selectorRow(
-                    title: "settings.enhancements.selector.meeting.title".localized,
-                    subtitle: "settings.enhancements.selector.meeting.subtitle".localized,
-                    summary: selectionSummary(for: postProcessingViewModel.settings.enhancementsAISelection),
-                    target: .meeting
-                )
-
-                Divider()
-
-                selectorRow(
-                    title: "settings.enhancements.selector.dictation.title".localized,
-                    subtitle: "settings.enhancements.selector.dictation.subtitle".localized,
-                    summary: selectionSummary(for: postProcessingViewModel.settings.enhancementsDictationAISelection),
-                    target: .dictation
-                )
-            }
-        }
-    }
-
-    func selectorRow(
-        title: String,
-        subtitle: String,
-        summary: String,
-        target: ModelSelectionTarget
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.medium)
-
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 8) {
-                Button(summary) {
-                    modelSelectionTarget = target
-                }
-                .buttonStyle(.bordered)
-                .disabled(viewModel.isLoadingEnhancementsProviderModels || viewModel.enhancementsProviderModels.isEmpty)
-
-                Button {
-                    viewModel.refreshEnhancementsProviderModelsManually()
-                } label: {
-                    if viewModel.isLoadingEnhancementsProviderModels {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .fontWeight(.medium)
-                    }
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("settings.ai.model_refresh".localized)
-                .disabled(viewModel.isLoadingEnhancementsProviderModels)
-            }
-
-            if viewModel.enhancementsProviderModels.isEmpty, !viewModel.isLoadingEnhancementsProviderModels {
-                Text("settings.enhancements.model_selector.empty".localized)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    func selectionSummary(for selection: EnhancementsAISelection) -> String {
-        let providerName = postProcessingViewModel.settings.enhancementsProviderDisplayName(for: selection)
-        let model = selection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !model.isEmpty else {
-            return "settings.enhancements.provider_models.summary.no_model".localized(with: providerName)
-        }
-        return "settings.enhancements.provider_models.summary".localized(with: providerName, model)
-    }
-
-    func isSelectedOption(_ option: EnhancementsProviderModelOption, for target: ModelSelectionTarget) -> Bool {
-        let selection: EnhancementsAISelection = switch target {
-        case .meeting:
-            postProcessingViewModel.settings.enhancementsAISelection
-        case .dictation:
-            postProcessingViewModel.settings.enhancementsDictationAISelection
-        }
-
-        if let selectedRegistrationID = selection.registrationID,
-           let optionRegistrationID = option.registrationID
-        {
-            return selectedRegistrationID == optionRegistrationID
-                && selection.selectedModel == option.modelID
-        }
-
-        return selection.provider == option.provider && selection.selectedModel == option.modelID
     }
 
     func providerStatusText(
