@@ -58,10 +58,11 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 ## Core Values & Precedence
 
 1. **Performance** and **Reliability** first.
-2. Keep **behavior predictable** under load and during failures.
-3. **Safety** — memory safety, data integrity, security first
-4. **Completeness** — feature-complete, no silent failures
-5. **Helpfulness** — clear guidance, actionable advice
+2. **Code quality** — structural cleanliness, maintainability, and simplicity are non-negotiable. Be ambitious about deleting complexity.
+3. Keep **behavior predictable** under load and during failures.
+4. **Safety** — memory safety, data integrity, security first
+5. **Completeness** — feature-complete, no silent failures
+6. **Helpfulness** — clear guidance, actionable advice
 
 If a tradeoff is required, choose **correctness and robustness** over short-term convenience.
 
@@ -78,6 +79,13 @@ Additional maintainability limits:
 - Keep split Swift files organized by owning type directory instead of `+`-separated basenames.
 - Source layout should favor colocation: when a type spans multiple files, use `Bucket/TypeName/TypeName.swift` plus unique sibling files such as `RecordingManagerRetry.swift`, `AppSettingsStoreDefaults.swift`, or `MeetingConversationViewPreview.swift`.
 - Do not introduce `Type+Concern.swift` filenames. Split files by colocated directories instead.
+
+Additional code quality principles:
+
+- **Be ambitious about structural simplification.** Prefer "code judo" moves — restructurings that preserve behavior while making the implementation dramatically simpler, smaller, and more elegant. Look for ways to delete complexity, not just rearrange it.
+- **Bias toward cleaning the design.** Do not accept "it works" implementations that leave the codebase messier. If behavior can stay the same while the structure becomes meaningfully cleaner, push for the cleaner version.
+- **Prefer direct, boring, maintainable code.** Treat brittle, ad-hoc, or "magic" behavior as a code-quality problem. Be skeptical of thin wrappers, identity abstractions, or generic mechanisms that hide simple data-shape assumptions.
+- **Treat unnecessary complexity as a design smell.** New ad-hoc conditionals scattered across unrelated flows, special-case branches inserted into busy paths, and bespoke helpers where canonical ones exist should all be flagged and resisted during implementation.
 
 ## Policy Precedence
 
@@ -261,14 +269,26 @@ If a task or agent deviates from a hard constraint, or an exception is genuinely
 4. **Fix the source** — update `AGENTS.md` or the relevant skill so the same deviation is harder to repeat next time; add a concrete before/after example to the skill or `.agents/docs/`.
 5. **Get sign-off before merging** — exceptions to hard constraints require explicit reviewer approval before merge, not after.
 
-**Self-check before responding or committing**, in one pass:
+**Self-check before responding or committing**, in two passes:
 
+**Pass 1 — Operational:**
 - Did I scan for reusable blocks (reuse → extend → create)?
 - Did I classify risk (Low/Medium/High) using the Risk Matrix?
 - Did I ask about material ambiguity, or document minor assumptions explicitly?
 - Am I about to violate any Hard Constraint?
 - Did I run the right scoped checks during iteration, and the right lane gate at merge?
 - Have I recorded commands/results and assumptions as evidence?
+
+**Pass 2 — Structural (thermo-nuclear quality check):**
+- Is there a "code judo" move that would make this dramatically simpler?
+- Does this change improve or worsen the local architecture?
+- Did I add branching complexity where a better abstraction should exist?
+- Is this code making the surrounding module more coupled, more stateful, or harder to scan?
+- Is this logic living in the right file and layer?
+- Did this change enlarge a file past a healthy size boundary?
+- Is this abstraction actually earning its keep, or is it just a wrapper?
+- Is this logic in the canonical layer, or did I leak details across a boundary?
+- Does this implementation remove moving pieces, or just rearrange them?
 
 **Common deviation signals** — if you catch yourself thinking any of these, stop:
 
@@ -278,6 +298,16 @@ If a task or agent deviates from a hard constraint, or an exception is genuinely
 - "I'll run the full build/test for every tiny edit" → ignores scoped validation; slows the loop unnecessarily.
 - "This is Low risk, so I'll skip testing" → Low risk still requires the Fast Lane's scoped checks.
 - "I know this breaks something, but..." → never commit knowingly broken code.
+
+**Additional structural deviation signals:**
+
+- "I preserved the existing complexity because the tests pass" → structural cleanliness matters as much as correctness.
+- "I'll add this conditional here since it's the easiest place" → likely spaghetti growth; find the right abstraction.
+- "The file is over 600 lines but I'll just add a bit more" → stop and decompose first.
+- "I could extract a helper, but it's only two uses" → two uses is enough; extract it.
+- "This abstraction is thin, but it keeps things clean" → thin wrappers that don't simplify are noise, not cleanliness.
+- "I'll put this in a shared module because it's convenient" → verify the logic belongs there architecturally, not just physically.
+- "I could reframe this to delete a whole branch, but the current version is fine" → if the code-judo path is visible, take it.
 
 ---
 
