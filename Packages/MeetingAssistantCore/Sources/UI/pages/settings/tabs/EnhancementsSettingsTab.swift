@@ -161,9 +161,12 @@ public struct EnhancementsSettingsTab: View {
             }
         }
         .sheet(isPresented: $showAppSearchSheet) {
-            SensitiveAppSearchSheet(
+            AppSearchSheet(
                 viewModel: sensitiveAppsViewModel,
-                isPresented: $showAppSearchSheet
+                isPresented: $showAppSearchSheet,
+                titleKey: "settings.context_awareness.protect_sensitive_apps",
+                descriptionKey: "settings.context_awareness.protect_sensitive_apps_desc",
+                addButtonKey: "settings.context_awareness.excluded_apps_add"
             )
         }
     }

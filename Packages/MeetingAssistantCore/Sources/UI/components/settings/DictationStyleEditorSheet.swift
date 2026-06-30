@@ -18,7 +18,6 @@ public struct DictationStyleEditorSheet: View {
     @State private var replaceBasePrompt: Bool
     @State private var outputLanguage: DictationOutputLanguage
     @State private var targets: [DictationStyleTarget]
-    @State private var appSearchText = ""
     @State private var websiteInput = ""
     @State private var validationMessage: String?
 
@@ -121,58 +120,12 @@ public struct DictationStyleEditorSheet: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
 
-                        VStack(alignment: .leading, spacing: 6) {
-                            TextField("settings.styles.editor.app_search".localized, text: $appSearchText)
-                                .textFieldStyle(.roundedBorder)
-
-                            if isLoadingAppCatalog {
-                                SettingsStateBlock(
-                                    kind: .loading,
-                                    title: "settings.styles.editor.loading_apps".localized,
-                                    message: nil
-                                )
-                            } else if filteredAppCatalog.isEmpty {
-                                Text("settings.styles.editor.app_results_empty".localized)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                ScrollView {
-                                    LazyVStack(spacing: 6) {
-                                        ForEach(filteredAppCatalog.prefix(8)) { app in
-                                            HStack(spacing: 10) {
-                                                AppIconView(
-                                                    bundleIdentifier: app.bundleIdentifier,
-                                                    fallbackSystemName: "app.fill",
-                                                    size: 24,
-                                                    cornerRadius: 6
-                                                )
-
-                                                VStack(alignment: .leading, spacing: 1) {
-                                                    Text(app.displayName)
-                                                        .font(.subheadline)
-                                                    Text(app.bundleIdentifier)
-                                                        .font(.caption2)
-                                                        .foregroundStyle(.secondary)
-                                                }
-
-                                                Spacer()
-
-                                                Button("settings.styles.editor.add_app_target".localized) {
-                                                    addAppTarget(app.bundleIdentifier)
-                                                }
-                                                .buttonStyle(.bordered)
-                                                .controlSize(.small)
-                                            }
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
-                                            .background(AppDesignSystem.Colors.subtleFill2)
-                                            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
-                                        }
-                                    }
-                                }
-                                .frame(maxHeight: 180)
-                            }
-                        }
+                        AppSearchInlineSection(
+                            appCatalog: appCatalog,
+                            isLoading: isLoadingAppCatalog,
+                            selectedBundleIdentifiers: selectedAppBundleIdentifiers,
+                            onAdd: addAppTarget
+                        )
 
                         HStack(spacing: 8) {
                             TextField("settings.styles.editor.website_placeholder".localized, text: $websiteInput)
@@ -236,22 +189,10 @@ public struct DictationStyleEditorSheet: View {
         return trimmed.isEmpty ? "textformat" : trimmed
     }
 
-    private var filteredAppCatalog: [InstalledApplicationRecord] {
-        let query = appSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        let selectedAppKeys = Set(targets.compactMap { target -> String? in
+    private var selectedAppBundleIdentifiers: [String] {
+        targets.compactMap { target in
             guard case let .app(bundleIdentifier) = target else { return nil }
-            return normalizeBundleIdentifier(bundleIdentifier)
-        })
-
-        let candidates = appCatalog.filter { app in
-            !selectedAppKeys.contains(normalizeBundleIdentifier(app.bundleIdentifier))
-        }
-
-        guard !query.isEmpty else { return candidates }
-        return candidates.filter { app in
-            app.displayName.localizedCaseInsensitiveContains(query)
-                || app.bundleIdentifier.localizedCaseInsensitiveContains(query)
+            return bundleIdentifier
         }
     }
 

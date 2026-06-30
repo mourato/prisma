@@ -10,6 +10,7 @@ public struct InstalledAppsSelectionSection: View {
     private let removeButtonKey: String
     private let protectedBadgeKey: String?
     private let icon: String
+    private let onAddApp: (() -> Void)?
     @ObservedObject private var viewModel: InstalledAppsSelectionViewModel
 
     public init(
@@ -20,6 +21,7 @@ public struct InstalledAppsSelectionSection: View {
         removeButtonKey: String = "settings.markdown_targets.remove",
         protectedBadgeKey: String? = nil,
         icon: String,
+        onAddApp: (() -> Void)? = nil,
         viewModel: InstalledAppsSelectionViewModel
     ) {
         self.titleKey = titleKey
@@ -29,6 +31,7 @@ public struct InstalledAppsSelectionSection: View {
         self.removeButtonKey = removeButtonKey
         self.protectedBadgeKey = protectedBadgeKey
         self.icon = icon
+        self.onAddApp = onAddApp
         self.viewModel = viewModel
     }
 
@@ -50,6 +53,7 @@ public struct InstalledAppsSelectionSection: View {
                     addButtonKey: addButtonKey,
                     removeButtonKey: removeButtonKey,
                     protectedBadgeKey: protectedBadgeKey,
+                    onAddApp: onAddApp,
                     viewModel: viewModel
                 )
             }

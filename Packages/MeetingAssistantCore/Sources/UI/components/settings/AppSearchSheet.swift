@@ -2,9 +2,16 @@ import MeetingAssistantCoreCommon
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct SensitiveAppSearchSheet: View {
+public struct AppSearchSheet: View {
     @ObservedObject private var viewModel: InstalledAppsSelectionViewModel
     @Binding private var isPresented: Bool
+
+    private let titleKey: String
+    private let descriptionKey: String?
+    private let addButtonKey: String
+    private let searchPlaceholderKey: String
+    private let loadingKey: String
+    private let emptyResultsKey: String
 
     @State private var appCatalog: [InstalledApplicationRecord] = []
     @State private var isLoading = false
@@ -13,16 +20,28 @@ public struct SensitiveAppSearchSheet: View {
 
     public init(
         viewModel: InstalledAppsSelectionViewModel,
-        isPresented: Binding<Bool>
+        isPresented: Binding<Bool>,
+        titleKey: String,
+        descriptionKey: String? = nil,
+        addButtonKey: String,
+        searchPlaceholderKey: String = "settings.styles.editor.app_search",
+        loadingKey: String = "settings.styles.editor.loading_apps",
+        emptyResultsKey: String = "settings.styles.editor.app_results_empty"
     ) {
         self.viewModel = viewModel
         _isPresented = isPresented
+        self.titleKey = titleKey
+        self.descriptionKey = descriptionKey
+        self.addButtonKey = addButtonKey
+        self.searchPlaceholderKey = searchPlaceholderKey
+        self.loadingKey = loadingKey
+        self.emptyResultsKey = emptyResultsKey
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("settings.context_awareness.protect_sensitive_apps".localized)
+                Text(titleKey.localized)
                     .font(.headline)
                 Spacer()
                 Button("common.cancel".localized) {
@@ -34,21 +53,23 @@ public struct SensitiveAppSearchSheet: View {
 
             Divider()
 
-            Text("settings.context_awareness.protect_sensitive_apps_desc".localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if let descriptionKey {
+                Text(descriptionKey.localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
-            TextField("settings.styles.editor.app_search".localized, text: $searchText)
+            TextField(searchPlaceholderKey.localized, text: $searchText)
                 .textFieldStyle(.roundedBorder)
 
             if isLoading {
                 SettingsStateBlock(
                     kind: .loading,
-                    title: "settings.styles.editor.loading_apps".localized,
+                    title: loadingKey.localized,
                     message: nil
                 )
             } else if filteredCatalog.isEmpty {
-                Text("settings.styles.editor.app_results_empty".localized)
+                Text(emptyResultsKey.localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
@@ -110,7 +131,7 @@ public struct SensitiveAppSearchSheet: View {
 
             Spacer()
 
-            Button("settings.context_awareness.excluded_apps_add".localized) {
+            Button(addButtonKey.localized) {
                 viewModel.addApp(bundleIdentifier: app.bundleIdentifier)
             }
             .buttonStyle(.bordered)

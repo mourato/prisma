@@ -24,6 +24,7 @@ public struct MeetingSettingsTab: View {
     @StateObject private var webTargetsViewModel: WebMeetingTargetsViewModel
     private let settings: AppSettingsStore
     @State private var showSummaryTemplateEditor = false
+    @State private var showMonitoredAppSearchSheet = false
     @State private var selectedWebTargetID: UUID?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -388,6 +389,7 @@ public struct MeetingSettingsTab: View {
                 emptyKey: "settings.general.monitored_apps_empty",
                 addButtonKey: "settings.general.monitored_apps_add",
                 icon: "app.badge",
+                onAddApp: { showMonitoredAppSearchSheet = true },
                 viewModel: monitoredAppsViewModel
             )
 
@@ -404,6 +406,15 @@ public struct MeetingSettingsTab: View {
                 target: webTargetsViewModel.editingTarget,
                 onSave: webTargetsViewModel.handleSave,
                 onCancel: { webTargetsViewModel.showEditor = false }
+            )
+        }
+        .sheet(isPresented: $showMonitoredAppSearchSheet) {
+            AppSearchSheet(
+                viewModel: monitoredAppsViewModel,
+                isPresented: $showMonitoredAppSearchSheet,
+                titleKey: "settings.general.monitored_apps",
+                descriptionKey: "settings.general.monitored_apps_desc",
+                addButtonKey: "settings.general.monitored_apps_add"
             )
         }
         .alert("settings.meetings.web_targets.delete_confirm_title".localized, isPresented: $webTargetsViewModel.showDeleteConfirmation) {
