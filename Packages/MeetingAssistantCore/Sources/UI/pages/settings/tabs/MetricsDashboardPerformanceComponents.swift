@@ -1,4 +1,5 @@
 import MeetingAssistantCoreCommon
+import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import SwiftUI
 
@@ -477,16 +478,7 @@ private enum ModelPerformanceFormatting {
     }
 
     static func duration(_ seconds: Double) -> String {
-        guard seconds > 0 else { return "metrics.performance.summary.none".localized }
-        if seconds < 60 {
-            return String(format: "%.1fs", seconds)
-        }
-
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = seconds >= 3_600 ? [.hour, .minute, .second] : [.minute, .second]
-        formatter.unitsStyle = .abbreviated
-        formatter.zeroFormattingBehavior = .pad
-        return formatter.string(from: seconds) ?? String(format: "%.0fs", seconds)
+        MetricsDashboardFormatters.duration(seconds)
     }
 
     static func throughput(_ value: Double, stage: ModelPerformanceStage) -> String {
@@ -521,10 +513,7 @@ private enum ModelPerformanceFormatting {
     }
 
     static func dateTime(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        MetricsDashboardFormatters.formattedDate(date)
     }
 
     private static func bytesPerSecond(_ bytesPerSecond: Double) -> String {
@@ -539,5 +528,194 @@ private enum ModelPerformanceFormatting {
 
     private static func bytesCount(_ bytes: Int) -> String {
         ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+    }
+}
+
+struct MetricsDashboardPerformancePage: View {
+    @StateObject private var viewModel: MetricsDashboardPerformanceViewModel
+    let openRecording: (UUID) -> Void
+
+    init(
+        storage: StorageService = FileSystemStorageService.shared,
+        openRecording: @escaping (UUID) -> Void = { _ in }
+    ) {
+        _viewModel = StateObject(wrappedValue: MetricsDashboardPerformanceViewModel(storage: storage))
+        self.openRecording = openRecording
+    }
+
+    var body: some View {
+        SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: "metrics.performance.title".localized,
+                description: "metrics.performance.subtitle".localized
+            )
+
+            if let errorMessage = viewModel.errorMessage {
+                SettingsStateBlock(kind: .warning, title: "common.error".localized, message: errorMessage) {
+                    Task {
+                        await viewModel.load()
+                    }
+                }
+            }
+
+            if viewModel.isLoading, viewModel.analysis.summary.totalAttempts == 0 {
+                ProgressView()
+                    .tint(AppDesignSystem.Colors.accent)
+                    .frame(maxWidth: .infinity, minHeight: 200)
+            } else {
+                MetricsDashboardPerformanceWorkspace(
+                    viewModel: viewModel,
+                    openRecording: openRecording
+                )
+            }
+        }
+        .task {
+            await viewModel.load()
+        }
+    }
+}
+
+struct MetricsDashboardPerformanceRecordingPage: View {
+    let recordingID: UUID
+
+    @State private var transcription: Transcription?
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+
+    private let storage: StorageService
+
+    init(
+        recordingID: UUID,
+        storage: StorageService = FileSystemStorageService.shared
+    ) {
+        self.recordingID = recordingID
+        self.storage = storage
+    }
+
+    var body: some View {
+        SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: transcription?.meeting.preferredTitle ?? "metrics.performance.recording.title".localized,
+                description: "metrics.performance.recording.subtitle".localized
+            )
+
+            if let errorMessage {
+                SettingsStateBlock(kind: .warning, title: "common.error".localized, message: errorMessage) {
+                    Task {
+                        await loadRecording()
+                    }
+                }
+            }
+
+            if isLoading {
+                ProgressView()
+                    .tint(AppDesignSystem.Colors.accent)
+                    .frame(maxWidth: .infinity, minHeight: 180)
+            } else if let transcription {
+                recordingSnapshotSection(transcription)
+                transcriptPreviewSection(transcription)
+            } else {
+                MAEmptyStateView(
+                    iconName: "doc.text.magnifyingglass",
+                    title: "metrics.performance.recording.empty.title".localized,
+                    message: "metrics.performance.recording.empty.subtitle".localized
+                )
+            }
+        }
+        .task(id: recordingID) {
+            await loadRecording()
+        }
+    }
+
+    private func recordingSnapshotSection(_ transcription: Transcription) -> some View {
+        DSGroup("metrics.performance.recording.snapshot".localized, icon: "doc.text") {
+            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 12) {
+                GridRow {
+                    recordingMetric(
+                        title: "metrics.performance.recording.capture".localized,
+                        value: transcription.capturePurpose.displayName
+                    )
+                    recordingMetric(
+                        title: "metrics.performance.recording.source".localized,
+                        value: transcription.meeting.appName
+                    )
+                }
+
+                GridRow {
+                    recordingMetric(
+                        title: "metrics.performance.recording.transcription_model".localized,
+                        value: transcription.modelName
+                    )
+                    recordingMetric(
+                        title: "metrics.performance.recording.transcription_time".localized,
+                        value: MetricsDashboardFormatters.duration(transcription.transcriptionDuration)
+                    )
+                }
+
+                GridRow {
+                    recordingMetric(
+                        title: "metrics.performance.recording.post_processing_model".localized,
+                        value: transcription.postProcessingModel ?? "metrics.performance.summary.none".localized
+                    )
+                    recordingMetric(
+                        title: "metrics.performance.recording.post_processing_time".localized,
+                        value: MetricsDashboardFormatters.duration(transcription.postProcessingDuration)
+                    )
+                }
+
+                GridRow {
+                    recordingMetric(
+                        title: "metrics.performance.recording.recorded_at".localized,
+                        value: MetricsDashboardFormatters.formattedDate(transcription.createdAt)
+                    )
+                    recordingMetric(
+                        title: "metrics.performance.recording.input_source".localized,
+                        value: transcription.inputSource ?? "metrics.performance.summary.none".localized
+                    )
+                }
+            }
+
+            if let failureReason = transcription.postProcessingFailureReason?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !failureReason.isEmpty
+            {
+                Divider()
+                Text(failureReason)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+    }
+
+    private func transcriptPreviewSection(_ transcription: Transcription) -> some View {
+        DSGroup("metrics.performance.recording.preview".localized, icon: "text.alignleft") {
+            Text(transcription.processedContent ?? transcription.text)
+                .font(.body)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func recordingMetric(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func loadRecording() async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            transcription = try await storage.loadTranscription(by: recordingID)
+        } catch {
+            transcription = nil
+            errorMessage = "metrics.error.load".localized
+        }
     }
 }

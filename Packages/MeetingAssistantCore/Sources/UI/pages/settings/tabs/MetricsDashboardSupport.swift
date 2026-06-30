@@ -1,6 +1,23 @@
+import Foundation
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import SwiftUI
+
+enum DashboardMetadataCache {
+    private nonisolated(unsafe) static var storage: [TranscriptionMetadata]?
+
+    static func get() -> [TranscriptionMetadata]? {
+        storage
+    }
+
+    static func set(_ metadata: [TranscriptionMetadata]) {
+        storage = metadata
+    }
+
+    static func clear() {
+        storage = nil
+    }
+}
 
 struct ActivityHeatmapWeekColumn: Identifiable {
     let id: Int
@@ -34,6 +51,26 @@ enum MetricsDashboardFormatters {
 
     static func calendarEventIntervalLabel(startDate: Date, endDate: Date) -> String {
         calendarIntervalFormatter.string(from: startDate, to: endDate)
+    }
+
+    static func duration(_ seconds: Double) -> String {
+        guard seconds > 0 else { return "metrics.performance.summary.none".localized }
+        if seconds < 60 {
+            return String(format: "%.1fs", seconds)
+        }
+
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = seconds >= 3_600 ? [.hour, .minute, .second] : [.minute, .second]
+        formatter.unitsStyle = .abbreviated
+        formatter.zeroFormattingBehavior = .pad
+        return formatter.string(from: seconds) ?? String(format: "%.0fs", seconds)
+    }
+
+    static func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }
 

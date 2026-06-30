@@ -56,7 +56,6 @@ public final class MetricsDashboardViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     private static let DEFAULT_BASELINE_WPM: Double = 35
-    private static var cachedMetadata: [TranscriptionMetadata]?
 
     public init(
         storage: StorageService = FileSystemStorageService.shared,
@@ -79,7 +78,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
 
         bindRecordingState()
 
-        if let cachedMetadata = Self.cachedMetadata {
+        if storage is FileSystemStorageService, let cachedMetadata = DashboardMetadataCache.get() {
             allMetadata = cachedMetadata
             hasLoaded = true
             isLoading = false
@@ -113,7 +112,9 @@ public final class MetricsDashboardViewModel: ObservableObject {
             }
 
             upsertMetadata(from: transcription)
-            Self.cachedMetadata = allMetadata
+            if storage is FileSystemStorageService {
+                DashboardMetadataCache.set(allMetadata)
+            }
             hasLoaded = true
             isLoading = false
             recompute()
@@ -135,7 +136,9 @@ public final class MetricsDashboardViewModel: ObservableObject {
 
         do {
             allMetadata = try await storage.loadAllMetadata()
-            Self.cachedMetadata = allMetadata
+            if storage is FileSystemStorageService {
+                DashboardMetadataCache.set(allMetadata)
+            }
             hasLoaded = true
             recompute()
         } catch {
