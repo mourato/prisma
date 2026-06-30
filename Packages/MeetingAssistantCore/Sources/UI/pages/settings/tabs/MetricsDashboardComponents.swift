@@ -180,7 +180,7 @@ struct MetricsDashboardActivitySection: View {
             return ""
         }
 
-        let symbols = weekdaySymbols
+        let symbols = Self.weekdaySymbols
         guard weekdayNumber >= 1, weekdayNumber <= symbols.count else {
             return ""
         }
@@ -318,11 +318,7 @@ struct MetricsDashboardActivitySection: View {
             .accessibilityHidden(true)
     }
 
-    private var weekdaySymbols: [String] {
-        let formatter = DateFormatter()
-        formatter.locale = Locale.current
-        return formatter.shortWeekdaySymbols
-    }
+    private static let weekdaySymbols: [String] = DateFormatter().shortWeekdaySymbols
 
     private static let activityDateFormatter: DateFormatter = {
         let formatter = DateFormatter()

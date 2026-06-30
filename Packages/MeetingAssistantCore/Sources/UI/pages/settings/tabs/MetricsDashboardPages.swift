@@ -478,16 +478,12 @@ private struct MetricsDashboardWeekdayPeaksSection: View {
     }
 
     private func weekdayLabel(for weekday: Int) -> String {
-        let symbols = weekdaySymbols
+        let symbols = Self.weekdaySymbols
         guard weekday >= 1, weekday <= symbols.count else { return "\(weekday)" }
         return symbols[weekday - 1]
     }
 
-    private var weekdaySymbols: [String] {
-        let formatter = DateFormatter()
-        formatter.locale = Locale.current
-        return formatter.shortWeekdaySymbols
-    }
+    private static let weekdaySymbols: [String] = DateFormatter().shortWeekdaySymbols
 }
 
 #Preview("Dashboard More Insights") {
