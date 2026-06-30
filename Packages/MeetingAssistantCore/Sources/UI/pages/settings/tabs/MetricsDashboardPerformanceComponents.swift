@@ -255,14 +255,14 @@ private struct MetricsDashboardPerformanceLeaderboardSection: View {
         HStack(alignment: .center, spacing: 12) {
             Text("metrics.performance.leaderboard.header.model".localized)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text("metrics.performance.leaderboard.header.success".localized)
-                .frame(width: 96, alignment: .trailing)
             Text("metrics.performance.leaderboard.header.speed".localized)
                 .frame(width: 120, alignment: .trailing)
             Text("metrics.performance.leaderboard.header.latency".localized)
                 .frame(width: 96, alignment: .trailing)
             Text("metrics.performance.leaderboard.header.attempts".localized)
                 .frame(width: 80, alignment: .trailing)
+            Text("metrics.performance.leaderboard.header.success".localized)
+                .frame(width: 96, alignment: .trailing)
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
@@ -311,15 +311,6 @@ private struct MetricsDashboardPerformanceLeaderboardRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(ModelPerformanceFormatting.percent(entry.successRate))
-                    .font(.system(.body, design: .monospaced, weight: .semibold))
-                Text("\(entry.failedAttempts) " + "metrics.performance.summary.failures".localized)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(width: 96, alignment: .trailing)
-
-            VStack(alignment: .trailing, spacing: 2) {
                 Text(ModelPerformanceFormatting.throughput(entry.normalizedThroughput, stage: stage))
                     .font(.system(.body, design: .monospaced, weight: .semibold))
                 Text(ModelPerformanceFormatting.secondaryThroughput(entry.secondaryThroughput, stage: stage))
@@ -335,6 +326,15 @@ private struct MetricsDashboardPerformanceLeaderboardRow: View {
             Text("\(entry.attemptCount)")
                 .font(.system(.body, design: .monospaced, weight: .semibold))
                 .frame(width: 80, alignment: .trailing)
+
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(ModelPerformanceFormatting.percent(entry.successRate))
+                    .font(.system(.body, design: .monospaced, weight: .semibold))
+                Text("\(entry.failedAttempts) " + "metrics.performance.summary.failures".localized)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: 96, alignment: .trailing)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

@@ -65,7 +65,7 @@ enum TranscriptionHistoryFilterEngine {
         return [allAppsOption] + sortedAppOptions
     }
 
-    private static func matchesSourceFilter(
+    static func matchesSourceFilter(
         _ transcription: TranscriptionMetadata,
         sourceFilter: RecordingSourceFilter
     ) -> Bool {

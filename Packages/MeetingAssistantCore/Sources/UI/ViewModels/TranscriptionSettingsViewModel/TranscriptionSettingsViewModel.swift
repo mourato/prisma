@@ -79,7 +79,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
 
     @Published public var isLoading = true
     @Published public var sourceFilter: RecordingSourceFilter = .all
-    @Published public var dateFilter: DateFilter = .today
+    @Published public var dateFilter: DateFilter = .thisWeek
     @Published public var searchText = ""
     @Published public var appFilterId = FilterConstants.allAppsId
     @Published public var loadErrorMessage: String?
@@ -183,8 +183,13 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     public var appFilterOptions: [AppFilterOption] {
-        TranscriptionHistoryFilterEngine.appFilterOptions(
-            from: transcriptions,
+        let dateAndSourceFiltered = transcriptions.filter { transcription in
+            let matchesSource = TranscriptionHistoryFilterEngine.matchesSourceFilter(transcription, sourceFilter: sourceFilter)
+            let matchesDate = dateFilter.contains(transcription.createdAt)
+            return matchesSource && matchesDate
+        }
+        return TranscriptionHistoryFilterEngine.appFilterOptions(
+            from: dateAndSourceFiltered,
             allAppsId: FilterConstants.allAppsId,
             rawAppPrefix: FilterConstants.rawAppPrefix,
             bundleAppPrefix: FilterConstants.bundleAppPrefix,

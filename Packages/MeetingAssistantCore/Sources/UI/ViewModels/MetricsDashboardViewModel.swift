@@ -35,7 +35,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
         }
     }
 
-    @Published public var showMeetings: Bool = true {
+    @Published public var showMeetings: Bool = false {
         didSet {
             guard oldValue != showMeetings else { return }
             recompute()

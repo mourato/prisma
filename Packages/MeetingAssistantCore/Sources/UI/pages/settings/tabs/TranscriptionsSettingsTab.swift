@@ -116,11 +116,11 @@ public struct TranscriptionsSettingsTab: View {
                     sourceFilterPicker
                         .frame(maxWidth: .infinity)
 
-                    appFilterMenu
-                        .frame(width: 170)
-
                     dateFilterMenu
                         .frame(width: AppDesignSystem.Layout.narrowPickerWidth)
+
+                    appFilterMenu
+                        .frame(width: 170)
                 }
 
                 if let errorMessage = viewModel.loadErrorMessage {
