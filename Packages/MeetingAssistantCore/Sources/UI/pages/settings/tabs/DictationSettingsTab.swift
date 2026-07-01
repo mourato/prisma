@@ -50,7 +50,7 @@ public struct DictationSettingsTab: View {
         SettingsScrollableContent {
             SettingsSectionHeader(
                 title: "settings.section.dictation".localized,
-                description: "settings.shortcuts.header_desc".localized
+                description: "settings.dictation.description".localized
             )
 
             ShortcutSettingsSection(

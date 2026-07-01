@@ -288,6 +288,8 @@ extension SettingsSearchIndex {
         "settings.storage.cleanup_now",
         "settings.storage.cleanup_success",
         "settings.system.description",
+        "settings.dictation.description",
+        "settings.meetings.description",
         "settings.styles.actions",
         "settings.styles.add",
         "settings.styles.description",
