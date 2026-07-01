@@ -6,6 +6,20 @@ disable-model-invocation: true
 
 # Thermo-Nuclear Code Quality Review
 
+## Role
+
+Use this skill as the strictest maintainability review mode for structural quality, abstraction quality, large-file risk, and spaghetti-condition growth.
+
+## Scope Boundary
+
+- This skill owns unusually strict code-quality review prompts and approval bars.
+- It does not replace `../code-quality/SKILL.md` for everyday readability/refactoring guidance.
+- It does not own semáforo review formatting; use `../code-review/SKILL.md` when the user asks for a general code review.
+
+## When to Use
+
+Use this skill when the user asks for a thermo-nuclear code quality review, thermonuclear review, deep code quality audit, or especially harsh maintainability review.
+
 Use this skill for an unusually strict review focused on implementation quality, maintainability, abstraction quality, and codebase health.
 
 Above all, this skill should push the reviewer to be **ambitious** about code structure. Do not merely identify local cleanup opportunities. Actively search for "code judo" moves: restructurings that preserve behavior while making the implementation dramatically simpler, smaller, more direct, and more elegant.

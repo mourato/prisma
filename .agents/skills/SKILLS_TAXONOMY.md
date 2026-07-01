@@ -19,6 +19,7 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 | git-workflow | Git/Collaboration | Canonical (standard) | Branch, commit, PR, and merge flow | task-lifecycle | Keep |
 | git-worktree | Git/Collaboration | Legacy | Optional legacy worktree operations | git-workflow | Keep as optional legacy |
 | grill-me | Meta-skills | Canonical | Adversarial plan review and design stress testing | skill-development, code-review | Keep |
+| improve | Meta-skills | Canonical | Read-only codebase audits, opportunity prioritization, roadmap advice, and handoff plan authoring | project-standards, skill-development | Keep; advisory only |
 | intelligence-kernel | Runtime/Performance | Canonical | Canonical summary schema, trust flags, and summary benchmark gates | quality-assurance, data-persistence | Keep |
 | keychain-security | Security/Data | Canonical (credentials) | Keychain credential persistence and APIs | security, networking | Keep; credential owner |
 | localization | Security/Data | Canonical | Localization, locale-file hygiene, and accessible copy | accessibility-audit, swiftui-patterns | Keep; not a full accessibility owner |
@@ -43,13 +44,14 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 | swiftui-performance-audit | SwiftUI/UI/UX | Canonical (runtime perf) | SwiftUI rendering, update, and layout performance diagnostics | performance, debugging-strategies | Keep |
 | task-lifecycle | Quality/Engineering Flow | Canonical (macro flow) | Risk classification and lifecycle phase orchestration | git-workflow, quality-assurance, code-review | Keep; macro orchestrator |
 | testing-xctest | Quality/Engineering Flow | Canonical | XCTest implementation patterns, async tests, `@MainActor`, mocks, fakes, and spies | quality-assurance | Keep; XCTest owner |
+| thermo-nuclear-code-quality-review | Quality/Engineering Flow | Specialist | Strict maintainability review for abstraction quality, large files, and spaghetti-condition growth | code-quality, code-review | Keep; harsh review mode |
 
 ## Grouping Summary
 
 1. macOS/Swift Core: `build-macos-apps`, `macos-development`, `architecture`, `swift-conventions`, `swift-package-manager`
 2. SwiftUI/UI/UX: `native-app-designer`, `macos-design-guidelines`, `swiftui-patterns`, `swiftui-animation`, `swiftui-performance-audit`, `preview-coverage`, `menubar`, `accessibility-audit`
 3. Runtime/Performance: `concurrency`, `swift-concurrency-expert`, `performance`, `debugging-strategies`, `audio-realtime`, `observability-diagnostics`, `intelligence-kernel`
-4. Quality/Engineering Flow: `quality-assurance`, `testing-xctest`, `code-review`, `code-quality`, `task-lifecycle`, `project-standards`, `documentation`
+4. Quality/Engineering Flow: `quality-assurance`, `testing-xctest`, `code-review`, `code-quality`, `task-lifecycle`, `project-standards`, `documentation`, `thermo-nuclear-code-quality-review`
 5. Security/Data: `security`, `keychain-security`, `networking`, `data-persistence`, `error-handling`, `localization`
 6. Git/Collaboration: `git-workflow`, `git-advanced-workflows`, `git-worktree`
-7. Meta-skills: `skill-development`, `skills-discovery`, `grill-me`
+7. Meta-skills: `skill-development`, `skills-discovery`, `grill-me`, `improve`
