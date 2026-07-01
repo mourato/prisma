@@ -13,8 +13,9 @@ public struct PermissionsSettingsTab: View {
     @StateObject private var viewModel: PermissionViewModel
     @StateObject private var shortcutSettingsViewModel = ShortcutSettingsViewModel()
     @StateObject private var assistantShortcutSettingsViewModel = AssistantShortcutSettingsViewModel()
+    private let showsHeader: Bool
 
-    public init() {
+    public init(showsHeader: Bool = true) {
         let recordingManager = RecordingManager.shared
         _viewModel = StateObject(wrappedValue: PermissionViewModel(
             manager: recordingManager.permissionStatus,
@@ -25,14 +26,17 @@ public struct PermissionsSettingsTab: View {
             requestAccessibility: { recordingManager.requestAccessibilityPermission() },
             openAccessibilitySettings: { recordingManager.openAccessibilitySettings() }
         ))
+        self.showsHeader = showsHeader
     }
 
     public var body: some View {
         SettingsScrollableContent {
-            SettingsSectionHeader(
-                title: "settings.section.permissions".localized,
-                description: "settings.permissions.description".localized
-            )
+            if showsHeader {
+                SettingsSectionHeader(
+                    title: "settings.section.permissions".localized,
+                    description: "settings.permissions.description".localized
+                )
+            }
 
             DSGroup("settings.permissions.status".localized, icon: "checkmark.shield") {
                 PermissionStatusView(viewModel: viewModel, requiredSource: .all)

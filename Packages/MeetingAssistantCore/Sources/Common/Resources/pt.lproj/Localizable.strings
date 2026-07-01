@@ -18,6 +18,7 @@
 "settings.section.intelligence" = "Inteligência";
 "settings.intelligence.description" = "Configure modelos, limpeza por IA, fontes de contexto e regras de substituição do dicionário.";
 "settings.section.system" = "Sistema";
+"settings.system.description" = "Gerencie comportamento do app, dispositivos de áudio, armazenamento e permissões obrigatórias.";
 
 /* Metrics Dashboard */
 "metrics.title" = "Dashboard";

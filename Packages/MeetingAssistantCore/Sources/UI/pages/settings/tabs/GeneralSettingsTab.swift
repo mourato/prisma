@@ -15,15 +15,20 @@ public struct GeneralSettingsTab: View {
     @State private var shortcutDoubleTapIntervalInput = ""
     @State private var autoDeletePeriodDaysInput = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let showsHeader: Bool
 
-    public init() {}
+    public init(showsHeader: Bool = true) {
+        self.showsHeader = showsHeader
+    }
 
     public var body: some View {
         SettingsScrollableContent {
-            SettingsSectionHeader(
-                title: "settings.general.title".localized,
-                description: "settings.general.language_desc".localized
-            )
+            if showsHeader {
+                SettingsSectionHeader(
+                    title: "settings.general.title".localized,
+                    description: "settings.general.language_desc".localized
+                )
+            }
 
             // Application Behavior
             DSGroup("settings.general.app_behavior".localized, icon: "app.badge") {

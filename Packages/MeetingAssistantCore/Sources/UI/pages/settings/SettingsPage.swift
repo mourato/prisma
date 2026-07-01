@@ -43,6 +43,7 @@ public struct SettingsView: View {
     @State private var enhancementsNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
     @State private var intelligenceRoute: IntelligenceSettingsRoute = .models
     @State private var intelligenceTextContextNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
+    @State private var systemRoute: SystemSettingsRoute = .general
     @State private var columnVisibility: NavigationSplitViewVisibility
     @StateObject private var navigationService = NavigationService.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -530,7 +531,7 @@ private extension SettingsView {
                 textContextNavigationState: $intelligenceTextContextNavigationState
             )
         case .system:
-            GeneralSettingsTab()
+            SystemSettingsTab(route: $systemRoute)
         }
     }
 

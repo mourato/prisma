@@ -287,6 +287,7 @@ extension SettingsSearchIndex {
         "settings.storage.cleanup_confirm_title",
         "settings.storage.cleanup_now",
         "settings.storage.cleanup_success",
+        "settings.system.description",
         "settings.styles.actions",
         "settings.styles.add",
         "settings.styles.description",

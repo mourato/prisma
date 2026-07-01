@@ -177,6 +177,7 @@ enum SettingsSearchIndex {
         .init(prefix: "prompt.instructions_hint", section: .intelligence),
         .init(prefix: "settings.section.audio", section: .system),
         .init(prefix: "settings.section.permissions", section: .system),
+        .init(prefix: "settings.system.", section: .system),
         .init(prefix: "settings.permissions.", section: .system),
         .init(prefix: "permissions.", section: .system),
         .init(prefix: "settings.shortcuts.health.", section: .system),
