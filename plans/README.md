@@ -72,7 +72,7 @@ honor its STOP conditions, and update your row when done.
 | 010 | Establish the consolidated settings routing foundation | P1 | M | - | DONE |
 | 011 | Merge Dashboard and History into Activity | P1 | M | 010 | DONE |
 | 012 | Merge Models, Text & Context, and Dictionary into Intelligence | P1 | M | 010 | DONE |
-| 013 | Merge General, Sound, and Permissions into System | P1 | M | 010 | TODO |
+| 013 | Merge General, Sound, and Permissions into System | P1 | M | 010 | DONE |
 | 014 | Polish consolidated settings layout patterns | P2 | M | 011, 012, 013 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
