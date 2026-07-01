@@ -25,6 +25,13 @@ honor its STOP conditions, and update your row when done.
 - Not audited: live model quality benchmark, provider pricing/latency, full meeting summary prompt schema, accessibility, release/build infra.
 - Reuse decision: extend `AIPromptTemplates`, `PostProcessingPrompt`, existing `IntelligenceKernelMode` routing, and existing prompt tests. Do not create a new prompt subsystem or copy VoiceInk prompt text verbatim.
 
+## Settings Interface Polish Scope
+
+- Effort: standard, focused on Prisma's current settings/sidebar interface after the 2026-06-30 settings taxonomy commits.
+- Audited: settings sidebar section model, settings page routing, search index routing, Dashboard/History, Models/Text & Context/Dictionary, General/Sound/Permissions, major settings tab layouts, settings localization labels, settings navigation tests, and recent native-UI cleanup memory.
+- Not audited: runtime screenshot QA, full accessibility pass, every non-settings app surface, release/build infra, provider credential internals, and audio/runtime behavior beyond settings presentation.
+- Reuse decision: extend `SettingsSection`, `SettingsSearchIndex`, `SettingsSubpageNavigationState`, `SettingsScrollableContent`, `DSGroup`, existing tab views, `InstalledAppsSelection*`, and existing tests. Do not create a parallel navigation framework or copy existing tab bodies into new container pages.
+
 ## Findings
 
 | # | Finding | Category | Impact | Effort | Risk | Evidence |
@@ -32,6 +39,16 @@ honor its STOP conditions, and update your row when done.
 | 1 | Push transcription-history filtering and limits into persistence | perf | History and metrics screens fetch all visible metadata, then filter/group on the main actor; this scales poorly as local-first history grows. | M | MED | `TranscriptionSettingsViewModel.swift:207`, `RetentionCleanup.swift:126`, `TranscriptionMetadata.swift:177` |
 | 2 | Benchmark-gate the Rust audio kernel pilot before enabling it | perf/direction | The Rust path is wired but disabled; enabling it now can add per-buffer allocation and duplicate Swift work instead of reducing audio CPU. | M | MED | `FeatureFlags.swift:37`, `AudioKernelProvider.swift:142`, `AudioKernelProvider.swift:169`, `RustAudioKernelFFI.swift:69` |
 | 3 | Decide whether imported recordings become first-class meeting artifacts | direction | File import exists, but imported recordings are excluded from meeting conversation/Q&A and source retagging, limiting the local-first review workflow. | M | MED | `TranscriptionImportViewModel.swift:27`, `Meeting.swift:161`, `TranscriptionMetadata.swift:34`, `ConversationAndPostProcessing.swift:577` |
+
+## Settings Interface Findings
+
+| # | Finding | Category | Impact | Effort | Risk | Evidence |
+|---|---------|----------|--------|--------|------|----------|
+| 4 | Build a consolidated route contract before moving settings content | tech-debt | The current 12-section enum is used directly by sidebar, search, deep links, and toolbar logic. Without a resolver, every consolidation risks ad-hoc legacy redirects. | M | MED | `SettingsSection.swift:5`, `SettingsPage.swift:90`, `SettingsSearchIndex.swift:120`, `NavigationService.swift:48` |
+| 5 | Merge Dashboard and History into Activity | direction | Dashboard and History are product activity surfaces, not settings categories. Combining them reduces sidebar count and makes "what happened in Prisma" easier to find. | M | MED | `SettingsSection.swift:23`, `MetricsDashboardSettingsTab.swift:24`, `TranscriptionsSettingsTab.swift:107`, `MeetingAssistantApp.swift:147` |
+| 6 | Merge Models, Text & Context, and Dictionary into Intelligence | direction | Model setup, AI cleanup/context, sensitive-app protection, and replacement rules are one mental model: how Prisma turns capture into useful output. Three sidebar rows over-segment that job. | M | MED | `ModelsSettingsTab.swift:24`, `EnhancementsSettingsTab.swift:58`, `VocabularySettingsTab.swift:16`, `FloatingRecordingIndicatorSupport.swift:121` |
+| 7 | Merge General, Sound, and Permissions into System | direction | Low-frequency app/device/privacy setup competes with core workflows. A System page can reduce navigation while preserving focused subareas. | M | MED | `GeneralSettingsTab.swift:21`, `AudioSettingsTab.swift:55`, `PermissionsSettingsTab.swift:30`, `SettingsSearchIndex.swift:169` |
+| 8 | Polish consolidated layout patterns after the sidebar reduction | tech-debt | The new taxonomy will only feel native if headers, helper copy, internal subnavigation, toolbar accessories, and large-file boundaries are normalized afterward. | M | MED | `SettingsSidebarView.swift:21`, `SettingsSectionHeader.swift:24`, `ShortcutSettingsSection.swift:27`, `MeetingSettingsTab.swift:108`, `AudioSettingsTab.swift` |
 
 ## Direction Options
 
@@ -52,6 +69,11 @@ honor its STOP conditions, and update your row when done.
 | 007 | Rename Vocabulary to Dictionary and clarify replacement rules | P2 | M | 004 | DONE |
 | 008 | Move Recording Indicator settings out of General | P2 | M | 004 | DONE |
 | 009 | Add a simple-model dictation prompt strategy | P1 | M | - | DONE |
+| 010 | Establish the consolidated settings routing foundation | P1 | M | - | DONE |
+| 011 | Merge Dashboard and History into Activity | P1 | M | 010 | TODO |
+| 012 | Merge Models, Text & Context, and Dictionary into Intelligence | P1 | M | 010 | TODO |
+| 013 | Merge General, Sound, and Permissions into System | P1 | M | 010 | TODO |
+| 014 | Polish consolidated settings layout patterns | P2 | M | 011, 012, 013 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -62,6 +84,9 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - 005 and 006 can run in parallel after 004; both touch Settings search/localization, so coordinate merge order carefully.
 - 007 and 008 can run after 004 and are independent of each other.
 - 009 can run independently, but if 006 introduces model capability labels first, use that capability surface to decide which models receive the simple dictation prompt strategy.
+- 010 should land before 011-013 because it preserves old section raw values and avoids one-off redirect logic during consolidation.
+- 011, 012, and 013 can run in parallel after 010 if merge order is coordinated around `SettingsSection`, `SettingsPage`, `SettingsSearchIndex`, and localization files.
+- 014 should run after 011-013 because it reviews the reduced interface as a whole and fixes layout/redundancy introduced by the consolidation.
 
 ## Findings considered and rejected
 
@@ -72,3 +97,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - Add a new `Interface` sidebar page now: rejected for this pass because only Recording Indicator clearly belongs there; moving it to Audio keeps the change smaller.
 - Rename Swift types like `EnhancementsSettingsTab` or `VocabularySettingsViewModel`: rejected for this pass because visible taxonomy can improve without broad source churn.
 - Replace Prisma's dictation prompt with VoiceInk's prompt verbatim: rejected because Prisma needs stricter preservation, meeting separation, and context-as-disambiguation rules.
+- Keep 12 sidebar rows and rely on search: rejected because the user explicitly wants considerable reduction, and search does not fix the mixed mental model between product surfaces and settings.
+- Create a separate root-level `Interface` page now: rejected because after moving Sound/Permissions/General into System, the remaining interface polish is better handled as layout normalization rather than another sidebar destination.
+- Move Activity out of Settings into a new main window now: rejected as too large for this sequence; the current app already treats the settings window as the main shell, so first reduce and clarify the existing shell.
+- Merge Assistant and Integrations now: rejected because they are distinct workflows with different capability toggles and editor surfaces; reducing them would hide real product functionality rather than just grouping configuration.
