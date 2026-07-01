@@ -1,5 +1,15 @@
 import MeetingAssistantCoreCommon
 
+public struct SettingsDestination: Equatable, Sendable {
+    public let section: SettingsSection
+    public let activityRoute: ActivitySettingsRoute?
+
+    public init(section: SettingsSection, activityRoute: ActivitySettingsRoute? = nil) {
+        self.section = section
+        self.activityRoute = activityRoute
+    }
+}
+
 // MARK: - Settings Section Enum
 
 public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
@@ -58,16 +68,30 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     }
 
     public var visibleSection: SettingsSection {
+        destination.section
+    }
+
+    public var destination: SettingsDestination {
         switch self {
-        case .metrics, .transcriptions: .activity
-        case .models, .enhancements, .vocabulary: .intelligence
-        case .audio, .permissions, .general: .system
-        case .activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system: self
+        case .metrics:
+            SettingsDestination(section: .activity, activityRoute: .dashboard)
+        case .transcriptions:
+            SettingsDestination(section: .activity, activityRoute: .history)
+        case .models, .enhancements, .vocabulary:
+            SettingsDestination(section: .intelligence)
+        case .audio, .permissions, .general:
+            SettingsDestination(section: .system)
+        case .activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system:
+            SettingsDestination(section: self)
         }
     }
 
     public static func resolvedVisibleSection(for rawValue: String) -> SettingsSection? {
-        SettingsSection(rawValue: rawValue)?.visibleSection
+        resolvedDestination(for: rawValue)?.section
+    }
+
+    public static func resolvedDestination(for rawValue: String) -> SettingsDestination? {
+        SettingsSection(rawValue: rawValue)?.destination
     }
 
     public var title: String {

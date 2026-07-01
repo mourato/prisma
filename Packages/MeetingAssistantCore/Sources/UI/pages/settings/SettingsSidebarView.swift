@@ -4,7 +4,7 @@ import SwiftUI
 struct SettingsSidebarView: View {
     @Binding var selectedSection: SettingsSection
     @Binding var searchText: String
-    let onSelectSection: (SettingsSection) -> Void
+    let onSelectDestination: (SettingsDestination) -> Void
 
     var body: some View {
         Group {
@@ -71,7 +71,7 @@ struct SettingsSidebarView: View {
                 Section("settings.search.results".localized(with: searchResults.count)) {
                     ForEach(searchResults) { result in
                         Button {
-                            onSelectSection(result.section)
+                            onSelectDestination(result.destination)
                             searchText = ""
                         } label: {
                             resultRow(for: result)
@@ -139,7 +139,7 @@ struct SettingsSidebarView: View {
         Binding(
             get: { selectedSection },
             set: { newSection in
-                onSelectSection(newSection)
+                onSelectDestination(newSection.destination)
             }
         )
     }

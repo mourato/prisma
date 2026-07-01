@@ -36,9 +36,7 @@ public struct SettingsView: View {
     private let settingsStore = AppSettingsStore.shared
     @State private var selectedSection: SettingsSection = .activity
     @State private var settingsSearchText = ""
-    @State private var activityRoute: ActivitySettingsRoute = .dashboard
-    @State private var metricsNavigationState = SettingsSubpageNavigationState<MetricsDashboardRoute>()
-    @State private var transcriptionsNavigationHistory = TranscriptionsNavigationHistory()
+    @State private var activityNavigationState = ActivitySettingsNavigationState()
     @State private var transcriptionsSearchText = ""
     @State private var meetingNavigationState = MeetingSettingsNavigationState()
     @State private var dictationNavigationState = SettingsSubpageNavigationState<DictationSettingsRoute>()
@@ -89,22 +87,22 @@ public struct SettingsView: View {
         .onAppear {
             persistSidebarVisibility(columnVisibility)
             if let sectionId = navigationService.requestedSettingsSection,
-               let section = SettingsSection.resolvedVisibleSection(for: sectionId)
+               let destination = SettingsSection.resolvedDestination(for: sectionId)
             {
-                selectSection(section)
+                selectDestination(destination)
                 navigationService.requestedSettingsSection = nil
             }
-            consumePendingActivitySubroute()
+            consumePendingActivityRoute()
         }
         .onChange(of: columnVisibility) { _, newValue in
             persistSidebarVisibility(newValue)
         }
         .onReceive(navigationService.$requestedSettingsSection.compactMap(\.self)) { sectionId in
-            if let section = SettingsSection.resolvedVisibleSection(for: sectionId) {
-                selectSection(section)
+            if let destination = SettingsSection.resolvedDestination(for: sectionId) {
+                selectDestination(destination)
             }
             navigationService.requestedSettingsSection = nil
-            consumePendingActivitySubroute()
+            consumePendingActivityRoute()
         }
         .onReceive(navigationService.$settingsSidebarToggleRequestID.dropFirst()) { _ in
             toggleSidebar()
@@ -117,7 +115,7 @@ public struct SettingsView: View {
         SettingsSidebarView(
             selectedSection: $selectedSection,
             searchText: $settingsSearchText,
-            onSelectSection: selectSection
+            onSelectDestination: selectDestination
         )
         .frame(maxHeight: .infinity, alignment: .top)
         .navigationSplitViewColumnWidth(
@@ -206,7 +204,7 @@ private extension SettingsView {
     }
 
     private var shouldShowTranscriptionsSearch: Bool {
-        selectedSection == .activity && activityRoute == .history && transcriptionsNavigationHistory.currentRoute == .list
+        selectedSection == .activity && activityNavigationState.isShowingHistoryList
     }
 
     @available(macOS 26.0, *)
@@ -377,16 +375,7 @@ private extension SettingsView {
 
     private func navigateBack() {
         if selectedSection == .activity {
-            switch activityRoute {
-            case .dashboard:
-                if metricsNavigationState.canGoBack {
-                    _ = metricsNavigationState.goBack()
-                }
-            case .history:
-                if transcriptionsNavigationHistory.canGoBack {
-                    _ = transcriptionsNavigationHistory.goBack()
-                }
-            }
+            activityNavigationState.goBack()
             return
         }
 
@@ -408,16 +397,7 @@ private extension SettingsView {
 
     private func navigateForward() {
         if selectedSection == .activity {
-            switch activityRoute {
-            case .dashboard:
-                if metricsNavigationState.canGoForward {
-                    _ = metricsNavigationState.goForward()
-                }
-            case .history:
-                if transcriptionsNavigationHistory.canGoForward {
-                    _ = transcriptionsNavigationHistory.goForward()
-                }
-            }
+            activityNavigationState.goForward()
             return
         }
 
@@ -437,21 +417,23 @@ private extension SettingsView {
         }
     }
 
-    private func selectSection(_ section: SettingsSection) {
-        if selectedSection == .activity, section != .activity {
+    private func selectDestination(_ destination: SettingsDestination) {
+        if selectedSection == .activity, destination.section != .activity {
             transcriptionsSearchText = ""
         }
-        selectedSection = section
-        consumePendingActivitySubroute()
+        selectedSection = destination.section
+        activityNavigationState.apply(destination.activityRoute)
+        consumePendingActivityRoute()
     }
 
-    private func consumePendingActivitySubroute() {
+    private func consumePendingActivityRoute() {
         guard selectedSection == .activity,
               let subroute = navigationService.requestedActivitySubroute
         else { return }
         navigationService.requestedActivitySubroute = nil
-        if subroute == "history" {
-            activityRoute = .history
+        switch subroute {
+        case .history:
+            activityNavigationState.apply(.history)
         }
     }
 
@@ -474,10 +456,7 @@ private extension SettingsView {
 
     private var canNavigateBack: Bool {
         if selectedSection == .activity {
-            switch activityRoute {
-            case .dashboard: return metricsNavigationState.canGoBack
-            case .history: return transcriptionsNavigationHistory.canGoBack
-            }
+            return activityNavigationState.canGoBack
         }
 
         if selectedSection == .meetings {
@@ -497,10 +476,7 @@ private extension SettingsView {
 
     private var canNavigateForward: Bool {
         if selectedSection == .activity {
-            switch activityRoute {
-            case .dashboard: return metricsNavigationState.canGoForward
-            case .history: return transcriptionsNavigationHistory.canGoForward
-            }
+            return activityNavigationState.canGoForward
         }
 
         if selectedSection == .meetings {
@@ -523,7 +499,7 @@ private extension SettingsView {
     private var detailView: some View {
         switch selectedSection {
         case .metrics:
-            MetricsDashboardSettingsTab(navigationState: $metricsNavigationState)
+            MetricsDashboardSettingsTab(navigationState: $activityNavigationState.metricsNavigationState)
         case .general:
             GeneralSettingsTab()
         case .models:
@@ -543,7 +519,7 @@ private extension SettingsView {
         case .transcriptions:
             TranscriptionsSettingsTab(
                 searchText: $transcriptionsSearchText,
-                navigationHistory: $transcriptionsNavigationHistory
+                navigationHistory: $activityNavigationState.transcriptionsNavigationHistory
             )
         case .enhancements:
             EnhancementsSettingsTab(navigationState: $enhancementsNavigationState)
@@ -551,9 +527,7 @@ private extension SettingsView {
             PermissionsSettingsTab()
         case .activity:
             ActivitySettingsTab(
-                activeRoute: $activityRoute,
-                metricsNavigationState: $metricsNavigationState,
-                transcriptionsNavigationHistory: $transcriptionsNavigationHistory,
+                navigationState: $activityNavigationState,
                 transcriptionsSearchText: $transcriptionsSearchText
             )
         case .intelligence:

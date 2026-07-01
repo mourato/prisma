@@ -154,6 +154,18 @@ final class SettingsSearchIndexTests: XCTestCase {
         XCTAssertEqual(transcriptionSection, .intelligence)
     }
 
+    func testHistoryKeysPreserveActivityHistoryDestination() {
+        let destination = SettingsSearchIndex.destination(forLocalizationKey: "settings.section.history")
+
+        XCTAssertEqual(destination, SettingsDestination(section: .activity, activityRoute: .history))
+    }
+
+    func testMetricsKeysPreserveActivityDashboardDestination() {
+        let destination = SettingsSearchIndex.destination(forLocalizationKey: "settings.section.metrics")
+
+        XCTAssertEqual(destination, SettingsDestination(section: .activity, activityRoute: .dashboard))
+    }
+
     func testQueryTranscriptionModelsReturnsIntelligenceSection() {
         assertLocalizedQuery("settings.models.transcription_models", routesTo: .intelligence)
     }

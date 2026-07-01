@@ -4,6 +4,7 @@ import SwiftUI
 public struct SettingsSearchResult: Identifiable, Equatable, Sendable {
     public let id: String
     public let section: SettingsSection
+    public let destination: SettingsDestination
     public let title: String
     public let detail: String
 }
@@ -14,7 +15,8 @@ enum SettingsSearchIndex {
         guard !query.isEmpty else { return [] }
 
         return searchableKeys.compactMap { key -> ScoredResult? in
-            guard let section = section(forLocalizationKey: key) else { return nil }
+            guard let destination = destination(forLocalizationKey: key) else { return nil }
+            let section = destination.section
 
             let localized = key.localized
             guard localized != key else { return nil }
@@ -27,6 +29,7 @@ enum SettingsSearchIndex {
                 result: SettingsSearchResult(
                     id: key,
                     section: section,
+                    destination: destination,
                     title: localized,
                     detail: section.title
                 )
@@ -54,27 +57,31 @@ enum SettingsSearchIndex {
     }
 
     static func section(forLocalizationKey key: String) -> SettingsSection? {
+        destination(forLocalizationKey: key)?.section
+    }
+
+    static func destination(forLocalizationKey key: String) -> SettingsDestination? {
         if audioKeysWithinGeneralNamespace.contains(key) {
-            return .system
+            return SettingsSection.audio.destination
         }
 
         if meetingCapabilityKeys.contains(key) {
-            return .meetings
+            return SettingsSection.meetings.destination
         }
 
         if integrationCapabilityKeys.contains(key) {
-            return .integrations
+            return SettingsSection.integrations.destination
         }
 
         if key.hasPrefix("settings.general.") {
-            return .system
+            return SettingsSection.general.destination
         }
 
         for mapping in prefixMappings where key.hasPrefix(mapping.prefix) {
-            return mapping.section
+            return mapping.section.destination
         }
 
-        return exactMappings[key]
+        return exactMappings[key]?.destination
     }
 
     private static func score(for query: String, localizedText: String, localizationKey: String) -> Int {
@@ -117,7 +124,7 @@ enum SettingsSearchIndex {
     }
 
     private static let prefixMappings: [PrefixSectionMapping] = [
-        .init(prefix: "metrics.", section: .activity),
+        .init(prefix: "metrics.", section: .metrics),
         .init(prefix: "settings.section.activity", section: .activity),
         .init(prefix: "settings.section.dictation", section: .dictation),
         .init(prefix: "settings.dictation.", section: .dictation),
@@ -131,8 +138,8 @@ enum SettingsSearchIndex {
         .init(prefix: "settings.shortcuts.meeting", section: .meetings),
         .init(prefix: "settings.models.meeting_transcription.", section: .meetings),
         .init(prefix: "settings.service.transcription_provider.meeting_diarization_warning.", section: .meetings),
-        .init(prefix: "settings.section.history", section: .activity),
-        .init(prefix: "settings.transcriptions.", section: .activity),
+        .init(prefix: "settings.section.history", section: .transcriptions),
+        .init(prefix: "settings.transcriptions.", section: .transcriptions),
         .init(prefix: "settings.models.routing.", section: .dictation),
         .init(prefix: "settings.dictation.", section: .dictation),
         .init(prefix: "settings.service.transcription_provider.provider", section: .dictation),
@@ -146,7 +153,7 @@ enum SettingsSearchIndex {
         .init(prefix: "settings.service.model", section: .meetings),
         .init(prefix: "settings.service.diarization_model_name", section: .meetings),
         .init(prefix: "settings.service.", section: .intelligence),
-        .init(prefix: "transcription.qa.", section: .activity),
+        .init(prefix: "transcription.qa.", section: .transcriptions),
         .init(prefix: "settings.section.models", section: .intelligence),
         .init(prefix: "settings.models.", section: .intelligence),
         .init(prefix: "settings.section.vocabulary", section: .intelligence),
@@ -176,7 +183,7 @@ enum SettingsSearchIndex {
     ]
 
     private static let exactMappings: [String: SettingsSection] = [
-        "settings.section.metrics": .activity,
+        "settings.section.metrics": .metrics,
     ]
 
     private static let meetingCapabilityKeys: Set<String> = [

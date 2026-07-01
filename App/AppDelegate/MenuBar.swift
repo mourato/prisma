@@ -402,8 +402,7 @@ extension AppDelegate {
     @objc func openHistory() {
         performAfterMenuDismissal { [weak self] in
             self?.promoteAppForWindowPresentation()
-            NavigationService.shared.requestedActivitySubroute = "history"
-            NavigationService.shared.openSettings(section: SettingsSection.activity.rawValue)
+            NavigationService.shared.openActivityHistory()
         }
     }
 

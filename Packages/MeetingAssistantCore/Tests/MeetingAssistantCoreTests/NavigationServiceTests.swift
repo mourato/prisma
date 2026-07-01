@@ -6,6 +6,8 @@ final class NavigationServiceTests: XCTestCase {
     private func resetNavigationService() {
         NavigationService.shared.registerOpenSettingsHandler {}
         NavigationService.shared.registerOpenOnboardingHandler {}
+        NavigationService.shared.requestedSettingsSection = nil
+        NavigationService.shared.requestedActivitySubroute = nil
         NavigationService.shared.setSettingsSidebarVisible(true)
     }
 
@@ -47,5 +49,14 @@ final class NavigationServiceTests: XCTestCase {
         NavigationService.shared.setSettingsSidebarVisible(false)
 
         XCTAssertFalse(NavigationService.shared.isSettingsSidebarVisible)
+    }
+
+    func testOpenActivityHistoryRequestsTypedActivityRoute() {
+        resetNavigationService()
+
+        NavigationService.shared.openActivityHistory()
+
+        XCTAssertEqual(NavigationService.shared.requestedSettingsSection, "activity")
+        XCTAssertEqual(NavigationService.shared.requestedActivitySubroute, .history)
     }
 }

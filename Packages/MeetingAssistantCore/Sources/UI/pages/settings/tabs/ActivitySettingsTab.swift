@@ -2,28 +2,17 @@ import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import SwiftUI
 
-public enum ActivitySettingsRoute: Hashable {
-    case dashboard
-    case history
-}
-
 public struct ActivitySettingsTab: View {
-    @Binding private var activeRoute: ActivitySettingsRoute
-    @Binding private var metricsNavigationState: SettingsSubpageNavigationState<MetricsDashboardRoute>
-    @Binding private var transcriptionsNavigationHistory: TranscriptionsNavigationHistory
+    @Binding private var navigationState: ActivitySettingsNavigationState
     @Binding private var transcriptionsSearchText: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @MainActor
     public init(
-        activeRoute: Binding<ActivitySettingsRoute> = .constant(.dashboard),
-        metricsNavigationState: Binding<SettingsSubpageNavigationState<MetricsDashboardRoute>> = .constant(SettingsSubpageNavigationState()),
-        transcriptionsNavigationHistory: Binding<TranscriptionsNavigationHistory> = .constant(TranscriptionsNavigationHistory()),
+        navigationState: Binding<ActivitySettingsNavigationState> = .constant(ActivitySettingsNavigationState()),
         transcriptionsSearchText: Binding<String> = .constant("")
     ) {
-        _activeRoute = activeRoute
-        _metricsNavigationState = metricsNavigationState
-        _transcriptionsNavigationHistory = transcriptionsNavigationHistory
+        _navigationState = navigationState
         _transcriptionsSearchText = transcriptionsSearchText
     }
 
@@ -41,7 +30,7 @@ public struct ActivitySettingsTab: View {
 
     private var header: some View {
         HStack {
-            Picker("", selection: $activeRoute) {
+            Picker("", selection: $navigationState.activeRoute) {
                 Text("settings.section.metrics".localized)
                     .tag(ActivitySettingsRoute.dashboard)
                 Text("settings.section.history".localized)
@@ -59,13 +48,13 @@ public struct ActivitySettingsTab: View {
 
     @ViewBuilder
     private var content: some View {
-        switch activeRoute {
+        switch navigationState.activeRoute {
         case .dashboard:
-            MetricsDashboardSettingsTab(navigationState: $metricsNavigationState)
+            MetricsDashboardSettingsTab(navigationState: $navigationState.metricsNavigationState)
         case .history:
             TranscriptionsSettingsTab(
                 searchText: $transcriptionsSearchText,
-                navigationHistory: $transcriptionsNavigationHistory
+                navigationHistory: $navigationState.transcriptionsNavigationHistory
             )
         }
     }

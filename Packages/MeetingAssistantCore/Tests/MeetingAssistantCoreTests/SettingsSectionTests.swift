@@ -65,6 +65,17 @@ final class SettingsSectionTests: XCTestCase {
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "general"), .system)
     }
 
+    func testResolvedDestination_PreservesLegacyActivitySubroutes() {
+        XCTAssertEqual(
+            SettingsSection.resolvedDestination(for: "metrics"),
+            SettingsDestination(section: .activity, activityRoute: .dashboard)
+        )
+        XCTAssertEqual(
+            SettingsSection.resolvedDestination(for: "transcriptions"),
+            SettingsDestination(section: .activity, activityRoute: .history)
+        )
+    }
+
     func testResolvedVisibleSection_ParsesNewRawValues() {
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "activity"), .activity)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "dictation"), .dictation)
