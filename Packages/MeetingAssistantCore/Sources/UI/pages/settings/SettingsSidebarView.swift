@@ -20,7 +20,7 @@ struct SettingsSidebarView: View {
 
     private var sectionsList: some View {
         List(selection: sectionSelectionBinding) {
-            Section("about.title".localized) {
+            Section("settings.sidebar.workflows".localized) {
                 ForEach(SettingsSection.primarySections) { section in
                     NavigationLink(value: section) {
                         sidebarLabel(for: section)
@@ -28,7 +28,7 @@ struct SettingsSidebarView: View {
                 }
             }
 
-            Section("settings.title".localized) {
+            Section("settings.sidebar.configuration".localized) {
                 ForEach(SettingsSection.settingsSections) { section in
                     NavigationLink(value: section) {
                         sidebarLabel(for: section)

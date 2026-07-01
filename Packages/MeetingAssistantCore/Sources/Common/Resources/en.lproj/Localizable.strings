@@ -19,6 +19,8 @@
 "settings.intelligence.description" = "Configure model setup, AI cleanup, context sources, and dictionary replacement rules.";
 "settings.section.system" = "System";
 "settings.system.description" = "Manage app behavior, audio devices, storage, and required permissions.";
+"settings.sidebar.workflows" = "Prisma";
+"settings.sidebar.configuration" = "Settings";
 
 /* Metrics Dashboard */
 "metrics.title" = "Dashboard";
@@ -128,8 +130,10 @@
 "settings.general.monitoring_active" = "Active monitoring";
 
 "settings.meetings.workflow" = "Workflow";
+"settings.meetings.description" = "Configure meeting capture, detection, summaries, and exported notes.";
 "settings.dictation.workflow" = "Workflow";
 "settings.dictation.text_handling" = "Text handling";
+"settings.dictation.description" = "Tune the dictation workflow, text handling, and reusable writing modes.";
 "settings.dictation.styles.accessibility_hint" = "Opens reusable dictation modes for apps and websites.";
 
 /* Meetings Export */
