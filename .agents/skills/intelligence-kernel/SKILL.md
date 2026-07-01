@@ -121,3 +121,18 @@ Artifacts:
 2. Keep meeting and dictation retry surfaces aligned with their real configuration models, not with a global provider list.
 3. Filter history actions by readiness before display: installed local models, valid remote API keys, and capture-purpose compatibility.
 4. Add contract tests when provider-selection overrides cross AI/Data/UI boundaries or can affect post-processing metrics.
+
+## 2026-07-01 Progression Drill
+
+### New Evidence
+
+- `a62d4a8e` added `AIPromptTemplates.requestPrompts(...)` so request-time and snapshot prompt assembly share the same resolver.
+- `a62d4a8e` introduced a simple-model dictation strategy for `gpt-oss-120b` that only applies to dictation with the default prompt; Flex and custom prompts keep advanced instructions.
+- `PromptServiceTests` now assert mode-specific prompt behavior: dictation avoids meeting language, simple dictation uses `<TRANSCRIPT>`, meeting keeps `<TRANSCRIPTION>`, and existing context metadata is not duplicated.
+
+### Skill Deepening Focus
+
+1. Route prompt assembly through the shared request resolver whenever mode, selected model, context metadata, or prompt type can affect output.
+2. Keep simple-model optimizations tightly scoped by mode and prompt identity; do not weaken meeting or custom-prompt contracts to help one local model.
+3. Preserve context metadata as disambiguation only, and test that tagged context is not duplicated in request bodies.
+4. Pair prompt-template edits with focused prompt tests before broader AI or post-processing checks.

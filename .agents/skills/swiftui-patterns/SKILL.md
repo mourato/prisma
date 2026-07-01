@@ -327,3 +327,18 @@ HStack(spacing: 0) {
 2. Split complex control anatomy by responsibility: controller bridge, display token, chip row, and domain key-code model should not live in one SwiftUI view.
 3. Keep settings tabs as composition roots. Move reusable behavior into components or view models once a tab starts mixing unrelated concerns.
 4. When extracting tabs/components, update previews, settings search entries, and localized strings in the same slice.
+
+## 2026-07-01 Progression Drill
+
+### New Evidence
+
+- `7c568e46` added `SettingsSection.visibleSections`, `visibleSection`, and `resolvedVisibleSection(for:)` so settings UI can reduce visible rows without breaking old raw values.
+- Plans 011-013 explicitly require new container tabs (`ActivitySettingsTab`, `IntelligenceSettingsTab`, `SystemSettingsTab`) that reuse existing tab bodies instead of copying Dashboard, History, Models, Text & Context, Dictionary, General, Sound, or Permissions UI.
+- Plan 014 calls out repeated helper copy and oversized settings tabs, including `AudioSettingsTab.swift` above the preferred size boundary.
+
+### Skill Deepening Focus
+
+1. For settings containers, add only the parent route/selector and pass bindings down; do not paste child tab bodies into the new parent.
+2. Keep legacy section resolution centralized in `SettingsSection` and `SettingsPage` request handling; avoid one-off redirects in toolbar, search, or warning call sites.
+3. Use one internal navigation pattern across Activity, Intelligence, and System unless the content shape clearly differs.
+4. If consolidation touches an already-large tab, extract focused child components before adding more layout code.

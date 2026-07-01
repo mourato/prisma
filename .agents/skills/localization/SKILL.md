@@ -135,3 +135,18 @@ Follow this pattern for consistent naming:
 
 - `../accessibility-audit/SKILL.md`
 - `../swiftui-patterns/SKILL.md`
+
+## 2026-07-01 Progression Drill
+
+### New Evidence
+
+- `a62d4a8e` changed settings labels and prompt copy across both `en.lproj` and `pt.lproj` while updating `SettingsSearchIndex` and related tests.
+- `7c568e46` added localized visible labels for `Activity`, `Intelligence`, and `System` while keeping legacy settings section keys available for old routes and search hits.
+- Plans 011-014 require search/localization updates whenever Dashboard/History, Models/Text & Context/Dictionary, or General/Sound/Permissions are merged into parent destinations.
+
+### Skill Deepening Focus
+
+1. For settings taxonomy changes, update locale files, section titles, search index mappings, and tests in the same slice.
+2. Keep old localization keys only when legacy routes or search terms still need them; otherwise remove orphaned keys symmetrically across locales.
+3. Add search tests for both new parent labels and old child terms so renamed pages remain discoverable.
+4. When consolidating pages, re-check nearby descriptions for duplicated copy introduced by parent and child labels saying the same thing.

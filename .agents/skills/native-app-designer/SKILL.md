@@ -84,3 +84,18 @@ Use this sequence:
 2. Prefer standalone sections/pages when a control is always-on or cross-cutting; avoid hiding it inside another feature's editor.
 3. Check labels and search terms after taxonomy changes so the UI vocabulary, settings search, and localization all say the same thing.
 4. Remove duplicated visible explanations when extraction makes a page's purpose obvious.
+
+## 2026-07-01 Progression Drill
+
+### New Evidence
+
+- `1d7ebf7f` added plans 004-009 after comparing Prisma with VoiceInk and rejected copying VoiceInk's sidebar verbatim because Prisma has first-class Meetings, Assistant, Integrations, and local history workflows.
+- `7c568e46` introduced a consolidated settings route foundation with visible destinations `Activity`, `Dictation`, `Meetings`, `Assistant`, `Integrations`, `Intelligence`, and `System`.
+- Plans 011-014 define the next consolidation/polish slices: merge Dashboard/History into Activity, Models/Text & Context/Dictionary into Intelligence, General/Sound/Permissions into System, then normalize headers, helper copy, and toolbar accessories.
+
+### Skill Deepening Focus
+
+1. Treat settings consolidation as a user-job taxonomy problem, not a row-count exercise: preserve distinct workflows while grouping low-frequency configuration.
+2. Require legacy deep links/search routes to resolve before moving visible content so navigation feels stable during sidebar reduction.
+3. For consolidated pages, standardize internal navigation and avoid a different subnavigation pattern for each destination.
+4. After grouping pages, audit visible copy again; old child-tab descriptions often become redundant under the new parent label.

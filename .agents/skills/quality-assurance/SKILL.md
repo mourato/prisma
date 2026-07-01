@@ -220,3 +220,18 @@ brew install swiftlint swiftformat
 2. When settings taxonomy changes, run focused settings search/localization tests plus `make preview-check` for touched SwiftUI surfaces.
 3. Treat mixed AI/Domain/UI refactors as Full-lane unless the changed-path proof is very narrow and the public contract is unchanged.
 4. When relying on agent summaries, confirm the underlying log parser found the XCTest total line before trusting pass/fail counts.
+
+## 2026-07-01 Progression Drill
+
+### New Evidence
+
+- `7c568e46` validated the settings route foundation through `SettingsSectionTests`, `SettingsSearchIndexTests`, and new `SettingsSection` contract coverage.
+- `a62d4a8e` added focused `PromptServiceTests` for dictation/simple-model prompt selection and settings-search coverage for renamed prompt/model surfaces.
+- Plans 011-014 list focused verification commands for each consolidation slice, then require `make preview-check`, `make build-agent`, and Full-lane gates before push.
+
+### Skill Deepening Focus
+
+1. For settings consolidation, prove the route contract first with `SettingsSectionTests` before moving child tab content.
+2. Pair every search/localization remap with `SettingsSearchIndexTests`, including legacy child terms that should route to the new parent.
+3. For prompt strategy changes, run focused prompt tests before broad AI/post-processing suites.
+4. Use `make preview-check` whenever consolidated settings pages change layout, headers, toolbar accessories, or internal navigation.
