@@ -69,3 +69,18 @@ Use this sequence:
 - Need advanced transition/shader choreography -> `../swiftui-animation/SKILL.md`
 - Need runtime performance diagnosis for jank/layout thrash -> `../swiftui-performance-audit/SKILL.md`
 - Need broader platform lifecycle/integration decisions -> `../macos-development/SKILL.md`
+
+## 2026-06-30 Progression Drill
+
+### New Evidence
+
+- `93b86304` reorganized AI model/provider settings into clearer surfaces instead of keeping provider configuration buried in one crowded tab.
+- `c7294bc9` extracted Protect Sensitive Apps into a standalone always-on section, making privacy behavior discoverable without tying it to dictation-style editing.
+- `68dd959f` renamed styles to modes and extracted user prompts into `UserPromptsSettingsTab`, reducing overloaded settings vocabulary and repeated explanations.
+
+### Skill Deepening Focus
+
+1. For settings UX, classify the user mental model first: provider setup, sensitive-app protection, prompt behavior, and mode selection should not compete in one cluster.
+2. Prefer standalone sections/pages when a control is always-on or cross-cutting; avoid hiding it inside another feature's editor.
+3. Check labels and search terms after taxonomy changes so the UI vocabulary, settings search, and localization all say the same thing.
+4. Remove duplicated visible explanations when extraction makes a page's purpose obvious.

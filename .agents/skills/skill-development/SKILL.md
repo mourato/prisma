@@ -97,3 +97,18 @@ Use available tooling and local checks to ensure consistency.
 ## Related Skills
 
 - `../skills-discovery/SKILL.md`
+
+## 2026-06-30 Progression Drill
+
+### New Evidence
+
+- `650cc5d9` added `thermo-nuclear-code-quality-review` with `disable-model-invocation: true`, creating a specialized review skill rather than overloading the normal `code-quality` owner.
+- `bac49a21` updated `AGENTS.md` with stricter structural-review standards, so skill changes must preserve policy ownership instead of duplicating the same rules everywhere.
+- Recent `.agents` history shows `make guidance-check` remains the required validator after editing skills, indexes, routing docs, or `AGENTS.md`.
+
+### Skill Deepening Focus
+
+1. When adding a sharper specialist skill, define which normal skill still owns everyday guidance and link between them explicitly.
+2. Keep strict review prompts specialized; do not copy their full severity language into broad code-quality or project-standard skills.
+3. Validate new frontmatter fields and routing coverage with `make guidance-check`.
+4. After adding or renaming a skill, check `skills-lock.json`, `.agents/SKILLS_INDEX.md`, taxonomy, and routing docs for drift.

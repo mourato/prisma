@@ -205,3 +205,18 @@ brew install swiftlint swiftformat
 2. When full gates fail, classify failures as changed-path, adjacent, or baseline; list concrete failing test names.
 3. Prefer single-test filters for retry/provider/readiness behavior before running broad package suites.
 4. For persistence or analytics migrations, pair focused repository/migration tests with at least one narrow build gate such as `make build-agent`.
+
+## 2026-06-30 Progression Drill
+
+### New Evidence
+
+- `a0c09ad4` added in-memory consolidated Keychain storage for tests and fixed `agent-output.sh` to parse multiple XCTest summary formats.
+- `93b86304` and `68dd959f` changed settings search keys, localization, and settings tab structure together.
+- `b953d6ad` touched AI, Domain, Infrastructure, RecordingManager retry, design-system components, and vocabulary UI in one refactor, making scope classification and targeted proof important.
+
+### Skill Deepening Focus
+
+1. For Keychain/provider tests, prefer the in-memory test store path and verify `KeychainManager.invalidateCache()` resets test state.
+2. When settings taxonomy changes, run focused settings search/localization tests plus `make preview-check` for touched SwiftUI surfaces.
+3. Treat mixed AI/Domain/UI refactors as Full-lane unless the changed-path proof is very narrow and the public contract is unchanged.
+4. When relying on agent summaries, confirm the underlying log parser found the XCTest total line before trusting pass/fail counts.

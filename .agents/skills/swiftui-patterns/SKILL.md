@@ -312,3 +312,18 @@ HStack(spacing: 0) {
 - [SettingsPage.swift](Packages/MeetingAssistantCore/Sources/UI/pages/settings/SettingsPage.swift)
 - [TranscriptionStatusPage.swift](Packages/MeetingAssistantCore/Sources/UI/pages/transcription/TranscriptionStatusPage.swift)
 - `.agents/skills/preview-coverage/SKILL.md`
+
+## 2026-06-30 Progression Drill
+
+### New Evidence
+
+- `64723e9d` consolidated app-search UI into `AppSearchInlineSection` and renamed the sheet to the reusable `AppSearchSheet`.
+- `b953d6ad` split the shortcut editor into focused components (`ShortcutRecorderController`, `ShortcutChipRow`, `ShortcutKeyCode`, `ModifierShortcutKeyTokenLabel`) and removed `DSModifierShortcutEditor`.
+- `68dd959f` extracted `UserPromptsSettingsTab`, shrinking `DictationSettingsTab` and giving prompts their own settings composition.
+
+### Skill Deepening Focus
+
+1. Before adding settings UI, search for reusable inline sections and sheets; prefer extending `AppSearchInlineSection`/`AppSearchSheet` for app-picking flows.
+2. Split complex control anatomy by responsibility: controller bridge, display token, chip row, and domain key-code model should not live in one SwiftUI view.
+3. Keep settings tabs as composition roots. Move reusable behavior into components or view models once a tab starts mixing unrelated concerns.
+4. When extracting tabs/components, update previews, settings search entries, and localized strings in the same slice.

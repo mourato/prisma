@@ -54,3 +54,18 @@ Fundamental rules for writing clean, self-explanatory, and maintainable code.
 
 - `../swift-conventions/SKILL.md`
 - `../code-review/SKILL.md`
+
+## 2026-06-30 Progression Drill
+
+### New Evidence
+
+- `bac49a21` promoted structural simplification, reuse-before-create, file-size discipline, and aggressive complexity deletion into `AGENTS.md`.
+- `650cc5d9` added `thermo-nuclear-code-quality-review` as a strict maintainability review mode for abstraction quality, giant files, and spaghetti-condition growth.
+- `b953d6ad`, `68dd959f`, and `cdd980f5` showed the preferred pattern: extract domain/support helpers and delete crowded UI logic instead of accepting large tab/view-model files.
+
+### Skill Deepening Focus
+
+1. During refactors, look for changes that delete concepts, branches, or duplicate helpers rather than only moving code between files.
+2. Treat ad-hoc special cases in busy flows as design smells; push them into a canonical model, support helper, or focused component.
+3. When a change approaches the file-size budget, ask for decomposition before accepting more local code.
+4. Route unusually strict maintainability audits to `../thermo-nuclear-code-quality-review/SKILL.md` and keep normal cleanup guidance here.

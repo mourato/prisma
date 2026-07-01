@@ -79,3 +79,18 @@ make profile-report
 2. Separate raw latency from normalized throughput: transcription should account for audio duration; post-processing should account for text/bytes handled.
 3. Keep dashboard UX compact by default: summary, filters, leaderboard, and newest 10 attempts before adding search-heavy controls.
 4. Add regression tests for ranking order, error-rate impact, newest-first history, and UI-facing caps whenever performance aggregation changes.
+
+## 2026-06-30 Progression Drill
+
+### New Evidence
+
+- `e9f99c25` centralized metrics metadata caching and formatting logic instead of recomputing it inside dashboard pages.
+- `cdd980f5` moved leaderboard sorting into `ModelPerformance` and heatmap calculations into `MetricsDashboardSupport`, separating pure calculation from SwiftUI rendering.
+- `77b1b90f` replaced instance-based weekday symbol retrieval with a static constant to avoid repeated `DateFormatter` creation in dashboard sections.
+
+### Skill Deepening Focus
+
+1. Treat dashboard performance work as two tracks: pure domain/support calculations and SwiftUI rendering cost.
+2. Cache stable formatters, symbols, and metadata outside hot view body paths; do not instantiate formatters per render.
+3. Keep leaderboard and heatmap rules testable outside the view layer before tuning visual layout.
+4. When optimizing settings dashboards, pair the code change with a quick scan for repeated formatters, sorting, grouping, or date math in computed view properties.
