@@ -14,6 +14,9 @@
 "settings.section.ai" = "Text & Context";
 "settings.section.models" = "Models";
 "settings.section.permissions" = "Permissions";
+"settings.section.activity" = "Activity";
+"settings.section.intelligence" = "Intelligence";
+"settings.section.system" = "System";
 
 /* Metrics Dashboard */
 "metrics.title" = "Dashboard";

@@ -15,6 +15,9 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     case enhancements
     case audio
     case permissions
+    case activity
+    case intelligence
+    case system
 
     public var id: String {
         rawValue
@@ -38,6 +41,40 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         .general,
     ]
 
+    public static var visibleSections: [SettingsSection] {
+        [
+            .activity,
+            .dictation,
+            .meetings,
+            .assistant,
+            .integrations,
+            .intelligence,
+            .system,
+        ]
+    }
+
+    public var isLegacyRedirect: Bool {
+        switch self {
+        case .metrics, .transcriptions, .models, .enhancements, .vocabulary, .audio, .permissions, .general:
+            true
+        case .activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system:
+            false
+        }
+    }
+
+    public var visibleSection: SettingsSection {
+        switch self {
+        case .metrics, .transcriptions: .activity
+        case .models, .enhancements, .vocabulary: .intelligence
+        case .audio, .permissions, .general: .system
+        case .activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system: self
+        }
+    }
+
+    public static func resolvedVisibleSection(for rawValue: String) -> SettingsSection? {
+        SettingsSection(rawValue: rawValue)?.visibleSection
+    }
+
     public var title: String {
         switch self {
         case .metrics: "settings.section.metrics".localized
@@ -52,6 +89,9 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .vocabulary: "settings.section.vocabulary".localized
         case .enhancements: "settings.section.ai".localized
         case .permissions: "settings.section.permissions".localized
+        case .activity: "settings.section.activity".localized
+        case .intelligence: "settings.section.intelligence".localized
+        case .system: "settings.section.system".localized
         }
     }
 
@@ -69,6 +109,9 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .vocabulary: "character.book.closed"
         case .enhancements: "sparkles"
         case .permissions: "checkmark.shield"
+        case .activity: "chart.pie.fill"
+        case .intelligence: "sparkles"
+        case .system: "gearshape.2"
         }
     }
 

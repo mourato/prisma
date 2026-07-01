@@ -55,7 +55,7 @@ enum SettingsSearchIndex {
 
     static func section(forLocalizationKey key: String) -> SettingsSection? {
         if audioKeysWithinGeneralNamespace.contains(key) {
-            return .audio
+            return .system
         }
 
         if meetingCapabilityKeys.contains(key) {
@@ -67,7 +67,7 @@ enum SettingsSearchIndex {
         }
 
         if key.hasPrefix("settings.general.") {
-            return .general
+            return .system
         }
 
         for mapping in prefixMappings where key.hasPrefix(mapping.prefix) {
@@ -117,7 +117,7 @@ enum SettingsSearchIndex {
     }
 
     private static let prefixMappings: [PrefixSectionMapping] = [
-        .init(prefix: "metrics.", section: .metrics),
+        .init(prefix: "metrics.", section: .activity),
         .init(prefix: "settings.section.dictation", section: .dictation),
         .init(prefix: "settings.dictation.", section: .dictation),
         .init(prefix: "settings.shortcuts.header_desc", section: .dictation),
@@ -130,8 +130,8 @@ enum SettingsSearchIndex {
         .init(prefix: "settings.shortcuts.meeting", section: .meetings),
         .init(prefix: "settings.models.meeting_transcription.", section: .meetings),
         .init(prefix: "settings.service.transcription_provider.meeting_diarization_warning.", section: .meetings),
-        .init(prefix: "settings.section.history", section: .transcriptions),
-        .init(prefix: "settings.transcriptions.", section: .transcriptions),
+        .init(prefix: "settings.section.history", section: .activity),
+        .init(prefix: "settings.transcriptions.", section: .activity),
         .init(prefix: "settings.models.routing.", section: .dictation),
         .init(prefix: "settings.dictation.", section: .dictation),
         .init(prefix: "settings.service.transcription_provider.provider", section: .dictation),
@@ -144,38 +144,38 @@ enum SettingsSearchIndex {
         .init(prefix: "settings.styles.", section: .dictation),
         .init(prefix: "settings.service.model", section: .meetings),
         .init(prefix: "settings.service.diarization_model_name", section: .meetings),
-        .init(prefix: "settings.service.", section: .models),
-        .init(prefix: "transcription.qa.", section: .transcriptions),
-        .init(prefix: "settings.section.models", section: .models),
-        .init(prefix: "settings.models.", section: .models),
-        .init(prefix: "settings.section.vocabulary", section: .vocabulary),
-        .init(prefix: "settings.vocabulary.", section: .vocabulary),
-        .init(prefix: "settings.section.ai", section: .enhancements),
-        .init(prefix: "settings.context_awareness.", section: .enhancements),
-        .init(prefix: "settings.text_context.", section: .enhancements),
-        .init(prefix: "settings.post_processing.", section: .enhancements),
+        .init(prefix: "settings.service.", section: .intelligence),
+        .init(prefix: "transcription.qa.", section: .activity),
+        .init(prefix: "settings.section.models", section: .intelligence),
+        .init(prefix: "settings.models.", section: .intelligence),
+        .init(prefix: "settings.section.vocabulary", section: .intelligence),
+        .init(prefix: "settings.vocabulary.", section: .intelligence),
+        .init(prefix: "settings.section.ai", section: .intelligence),
+        .init(prefix: "settings.context_awareness.", section: .intelligence),
+        .init(prefix: "settings.text_context.", section: .intelligence),
+        .init(prefix: "settings.post_processing.", section: .intelligence),
         .init(prefix: "settings.enhancements.meeting_intelligence_model", section: .meetings),
         .init(prefix: "settings.enhancements.qa_enabled_desc", section: .meetings),
         .init(prefix: "settings.enhancements.selector.meeting.", section: .meetings),
         .init(prefix: "settings.enhancements.selector.dictation.", section: .dictation),
-        .init(prefix: "settings.enhancements.provider_models.", section: .models),
-        .init(prefix: "settings.enhancements.provider.", section: .models),
-        .init(prefix: "settings.enhancements.providers.", section: .models),
-        .init(prefix: "settings.enhancements.badge.", section: .models),
-        .init(prefix: "settings.enhancements.model_selector.", section: .models),
-        .init(prefix: "settings.enhancements.test_and_save", section: .models),
-        .init(prefix: "settings.enhancements.", section: .enhancements),
-        .init(prefix: "prompt.instructions_hint", section: .enhancements),
-        .init(prefix: "settings.section.audio", section: .audio),
-        .init(prefix: "settings.section.permissions", section: .permissions),
-        .init(prefix: "settings.permissions.", section: .permissions),
-        .init(prefix: "permissions.", section: .permissions),
-        .init(prefix: "settings.shortcuts.health.", section: .permissions),
-        .init(prefix: "settings.storage.", section: .general),
+        .init(prefix: "settings.enhancements.provider_models.", section: .intelligence),
+        .init(prefix: "settings.enhancements.provider.", section: .intelligence),
+        .init(prefix: "settings.enhancements.providers.", section: .intelligence),
+        .init(prefix: "settings.enhancements.badge.", section: .intelligence),
+        .init(prefix: "settings.enhancements.model_selector.", section: .intelligence),
+        .init(prefix: "settings.enhancements.test_and_save", section: .intelligence),
+        .init(prefix: "settings.enhancements.", section: .intelligence),
+        .init(prefix: "prompt.instructions_hint", section: .intelligence),
+        .init(prefix: "settings.section.audio", section: .system),
+        .init(prefix: "settings.section.permissions", section: .system),
+        .init(prefix: "settings.permissions.", section: .system),
+        .init(prefix: "permissions.", section: .system),
+        .init(prefix: "settings.shortcuts.health.", section: .system),
+        .init(prefix: "settings.storage.", section: .system),
     ]
 
     private static let exactMappings: [String: SettingsSection] = [
-        "settings.section.metrics": .metrics,
+        "settings.section.metrics": .activity,
     ]
 
     private static let meetingCapabilityKeys: Set<String> = [

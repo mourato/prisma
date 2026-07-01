@@ -88,7 +88,7 @@ public struct SettingsView: View {
         .onAppear {
             persistSidebarVisibility(columnVisibility)
             if let sectionId = navigationService.requestedSettingsSection,
-               let section = SettingsSection(rawValue: sectionId)
+               let section = SettingsSection.resolvedVisibleSection(for: sectionId)
             {
                 selectSection(section)
                 navigationService.requestedSettingsSection = nil
@@ -98,7 +98,7 @@ public struct SettingsView: View {
             persistSidebarVisibility(newValue)
         }
         .onReceive(navigationService.$requestedSettingsSection.compactMap(\.self)) { sectionId in
-            if let section = SettingsSection(rawValue: sectionId) {
+            if let section = SettingsSection.resolvedVisibleSection(for: sectionId) {
                 selectSection(section)
             }
             navigationService.requestedSettingsSection = nil
@@ -529,6 +529,12 @@ private extension SettingsView {
             EnhancementsSettingsTab(navigationState: $enhancementsNavigationState)
         case .permissions:
             PermissionsSettingsTab()
+        case .activity:
+            MetricsDashboardSettingsTab(navigationState: $metricsNavigationState)
+        case .intelligence:
+            ModelsSettingsTab()
+        case .system:
+            GeneralSettingsTab()
         }
     }
 
