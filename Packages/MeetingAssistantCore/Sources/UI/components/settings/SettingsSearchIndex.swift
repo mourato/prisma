@@ -65,6 +65,10 @@ enum SettingsSearchIndex {
             return SettingsSection.audio.destination
         }
 
+        if key.hasPrefix("settings.permissions.") || key.hasPrefix("permissions.") {
+            return SettingsSection.permissions.destination
+        }
+
         if meetingCapabilityKeys.contains(key) {
             return SettingsSection.meetings.destination
         }
@@ -175,11 +179,9 @@ enum SettingsSearchIndex {
         .init(prefix: "settings.enhancements.test_and_save", section: .intelligence),
         .init(prefix: "settings.enhancements.", section: .intelligence),
         .init(prefix: "prompt.instructions_hint", section: .intelligence),
-        .init(prefix: "settings.section.audio", section: .system),
-        .init(prefix: "settings.section.permissions", section: .system),
+        .init(prefix: "settings.section.audio", section: .audio),
+        .init(prefix: "settings.section.permissions", section: .permissions),
         .init(prefix: "settings.system.", section: .system),
-        .init(prefix: "settings.permissions.", section: .system),
-        .init(prefix: "permissions.", section: .system),
         .init(prefix: "settings.shortcuts.health.", section: .system),
         .init(prefix: "settings.storage.", section: .system),
     ]
@@ -206,6 +208,7 @@ enum SettingsSearchIndex {
         "settings.general.audio_devices_empty",
         "settings.general.audio_ducking_note",
         "settings.general.audio_ducking_percent",
+        "settings.general.audio_format",
         "settings.general.audio_input_mode.custom_device",
         "settings.general.audio_input_mode.custom_device_desc",
         "settings.general.audio_input_mode.system_default",
@@ -241,12 +244,5 @@ enum SettingsSearchIndex {
         "settings.general.sound_feedback.preview",
         "settings.general.sound_feedback.start_sound",
         "settings.general.sound_feedback.stop_sound",
-        "settings.general.recording_indicator",
-        "settings.general.recording_indicator.animation_speed",
-        "settings.general.recording_indicator.animation_speed_desc",
-        "settings.general.recording_indicator.enabled",
-        "settings.general.recording_indicator.enabled_desc",
-        "settings.general.recording_indicator.position",
-        "settings.general.recording_indicator.style",
     ]
 }

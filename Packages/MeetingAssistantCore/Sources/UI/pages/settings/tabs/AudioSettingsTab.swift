@@ -64,6 +64,26 @@ public struct AudioSettingsTab: View {
                 )
             }
 
+            DSGroup("settings.general.audio_format".localized, icon: "waveform.path") {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("settings.general.audio_format".localized)
+                            .font(.body)
+                            .foregroundStyle(.primary)
+
+                        Spacer()
+
+                        Picker("", selection: $viewModel.audioFormat) {
+                            ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
+                                Text(format.displayName).tag(format)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+                }
+            }
+
             // Audio Devices
             DSGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
                 VStack(alignment: .leading, spacing: 16) {
@@ -194,7 +214,6 @@ public struct AudioSettingsTab: View {
                 }
             }
 
-            recordingIndicatorSection
         }
     }
 
@@ -235,76 +254,6 @@ public struct AudioSettingsTab: View {
             get: { Double(viewModel.audioDuckingLevelPercent) },
             set: { viewModel.audioDuckingLevelPercent = Int($0.rounded()) }
         )
-    }
-
-    private var recordingIndicatorSection: some View {
-        DSGroup("settings.general.recording_indicator".localized, icon: "record.circle") {
-            VStack(alignment: .leading, spacing: 16) {
-                DSToggleRow(
-                    "settings.general.recording_indicator.enabled".localized,
-                    description: "settings.general.recording_indicator.enabled_desc".localized,
-                    isOn: $viewModel.recordingIndicatorEnabled.animated()
-                )
-
-                if viewModel.recordingIndicatorEnabled {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Divider()
-
-                        HStack {
-                            Text("settings.general.recording_indicator.style".localized)
-                                .font(.body)
-
-                            Spacer()
-
-                            Picker("", selection: $viewModel.recordingIndicatorStyle) {
-                                ForEach(RecordingIndicatorStyle.allCases, id: \.self) { style in
-                                    Text(style.displayName).tag(style)
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.segmented)
-                        }
-
-                        Divider()
-
-                        HStack {
-                            Text("settings.general.recording_indicator.position".localized)
-                                .font(.body)
-
-                            Spacer()
-
-                            Picker("", selection: $viewModel.recordingIndicatorPosition) {
-                                ForEach(RecordingIndicatorPosition.allCases, id: \.self) { pos in
-                                    Text(pos.displayName).tag(pos)
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.segmented)
-                        }
-
-                        Divider()
-
-                        HStack(spacing: 12) {
-                            SettingsTitleWithPopover(
-                                title: "settings.general.recording_indicator.animation_speed".localized,
-                                helperMessage: "settings.general.recording_indicator.animation_speed_desc".localized
-                            )
-
-                            Spacer()
-
-                            Picker("", selection: $viewModel.recordingIndicatorAnimationSpeed) {
-                                ForEach(RecordingIndicatorAnimationSpeed.allCases, id: \.self) { speed in
-                                    Text(speed.displayName).tag(speed)
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.segmented)
-                        }
-                    }
-                    .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
-                }
-            }
-        }
     }
 
     private func previewSound(_ sound: SoundFeedbackSound) {

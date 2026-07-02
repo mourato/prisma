@@ -43,7 +43,7 @@ public struct SettingsView: View {
     @State private var enhancementsNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
     @State private var intelligenceRoute: IntelligenceSettingsRoute = .models
     @State private var intelligenceTextContextNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
-    @State private var systemRoute: SystemSettingsRoute = .general
+    @State private var systemRoute: SystemSettingsRoute = .root
     @State private var columnVisibility: NavigationSplitViewVisibility
     @StateObject private var navigationService = NavigationService.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -396,6 +396,8 @@ private extension SettingsView {
             _ = enhancementsNavigationState.goBack()
         case .intelligence where canNavigateIntelligenceTextContextBack:
             _ = intelligenceTextContextNavigationState.goBack()
+        case .system where systemRoute != .root:
+            systemRoute = .root
         default:
             break
         }
@@ -424,6 +426,9 @@ private extension SettingsView {
         }
         selectedSection = destination.section
         activityNavigationState.apply(destination.activityRoute)
+        if destination.section == .system {
+            systemRoute = destination.systemRoute ?? .root
+        }
         consumePendingActivityRoute()
     }
 
@@ -467,6 +472,8 @@ private extension SettingsView {
             enhancementsNavigationState.canGoBack
         case .intelligence:
             canNavigateIntelligenceTextContextBack
+        case .system:
+            systemRoute != .root
         default:
             false
         }

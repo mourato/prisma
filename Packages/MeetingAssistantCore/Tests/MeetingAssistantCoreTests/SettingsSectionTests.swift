@@ -12,14 +12,14 @@ final class SettingsSectionTests: XCTestCase {
     func testSettingsSections_OrderStartsWithConsolidatedSections() {
         XCTAssertEqual(
             SettingsSection.settingsSections,
-            [.intelligence, .system]
+            [.intelligence, .system, .audio]
         )
     }
 
     func testVisibleSections_OrderMatchesProductConcepts() {
         XCTAssertEqual(
             SettingsSection.visibleSections,
-            [.activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system]
+            [.activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system, .audio]
         )
     }
 
@@ -39,11 +39,11 @@ final class SettingsSectionTests: XCTestCase {
         XCTAssertTrue(SettingsSection.vocabulary.isLegacyRedirect)
     }
 
-    func testLegacyRedirect_AudioPermissionsGeneralMapToSystem() {
-        XCTAssertEqual(SettingsSection.audio.visibleSection, .system)
+    func testLegacyRedirect_PermissionsGeneralMapToSystemAndAudioStaysVisible() {
+        XCTAssertEqual(SettingsSection.audio.visibleSection, .audio)
         XCTAssertEqual(SettingsSection.permissions.visibleSection, .system)
         XCTAssertEqual(SettingsSection.general.visibleSection, .system)
-        XCTAssertTrue(SettingsSection.audio.isLegacyRedirect)
+        XCTAssertFalse(SettingsSection.audio.isLegacyRedirect)
         XCTAssertTrue(SettingsSection.permissions.isLegacyRedirect)
         XCTAssertTrue(SettingsSection.general.isLegacyRedirect)
     }
@@ -60,7 +60,7 @@ final class SettingsSectionTests: XCTestCase {
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "models"), .intelligence)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "enhancements"), .intelligence)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "vocabulary"), .intelligence)
-        XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "audio"), .system)
+        XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "audio"), .audio)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "permissions"), .system)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "general"), .system)
     }
@@ -76,11 +76,27 @@ final class SettingsSectionTests: XCTestCase {
         )
     }
 
+    func testResolvedDestination_PreservesSystemSubroutes() {
+        XCTAssertEqual(
+            SettingsSection.resolvedDestination(for: "general"),
+            SettingsDestination(section: .system)
+        )
+        XCTAssertEqual(
+            SettingsSection.resolvedDestination(for: "permissions"),
+            SettingsDestination(section: .system, systemRoute: .permissions)
+        )
+        XCTAssertEqual(
+            SettingsSection.resolvedDestination(for: "audio"),
+            SettingsDestination(section: .audio)
+        )
+    }
+
     func testResolvedVisibleSection_ParsesNewRawValues() {
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "activity"), .activity)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "dictation"), .dictation)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "intelligence"), .intelligence)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "system"), .system)
+        XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "audio"), .audio)
     }
 
     func testOldRawValuesStillParseAsSettingsSection() {

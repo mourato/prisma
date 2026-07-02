@@ -24,7 +24,8 @@
 "settings.section.intelligence" = "Intelligence";
 "settings.intelligence.description" = "Configure model setup, AI cleanup, context sources, and dictionary replacement rules.";
 "settings.section.system" = "System";
-"settings.system.description" = "Manage app behavior, audio devices, storage, and required permissions.";
+"settings.system.description" = "Manage app behavior, interface options, storage, and required permissions.";
+"settings.system.permissions.accessibility_hint" = "Opens permission status and setup guidance.";
 "settings.sidebar.workflows" = "Prisma";
 "settings.sidebar.configuration" = "Settings";
 

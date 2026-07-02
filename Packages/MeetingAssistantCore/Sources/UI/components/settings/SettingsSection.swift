@@ -3,10 +3,16 @@ import MeetingAssistantCoreCommon
 public struct SettingsDestination: Equatable, Sendable {
     public let section: SettingsSection
     public let activityRoute: ActivitySettingsRoute?
+    public let systemRoute: SystemSettingsRoute?
 
-    public init(section: SettingsSection, activityRoute: ActivitySettingsRoute? = nil) {
+    public init(
+        section: SettingsSection,
+        activityRoute: ActivitySettingsRoute? = nil,
+        systemRoute: SystemSettingsRoute? = nil
+    ) {
         self.section = section
         self.activityRoute = activityRoute
+        self.systemRoute = systemRoute
     }
 }
 
@@ -44,6 +50,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     public static let settingsSections: [SettingsSection] = [
         .intelligence,
         .system,
+        .audio,
     ]
 
     public static var visibleSections: [SettingsSection] {
@@ -55,14 +62,15 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
             .integrations,
             .intelligence,
             .system,
+            .audio,
         ]
     }
 
     public var isLegacyRedirect: Bool {
         switch self {
-        case .metrics, .transcriptions, .models, .enhancements, .vocabulary, .audio, .permissions, .general:
+        case .metrics, .transcriptions, .models, .enhancements, .vocabulary, .permissions, .general:
             true
-        case .activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system:
+        case .activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system, .audio:
             false
         }
     }
@@ -79,9 +87,11 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
             SettingsDestination(section: .activity, activityRoute: .history)
         case .models, .enhancements, .vocabulary:
             SettingsDestination(section: .intelligence)
-        case .audio, .permissions, .general:
+        case .permissions:
+            SettingsDestination(section: .system, systemRoute: .permissions)
+        case .general:
             SettingsDestination(section: .system)
-        case .activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system:
+        case .activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system, .audio:
             SettingsDestination(section: self)
         }
     }

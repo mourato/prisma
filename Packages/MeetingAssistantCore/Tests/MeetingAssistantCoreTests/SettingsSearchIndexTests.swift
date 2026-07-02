@@ -14,14 +14,14 @@ final class SettingsSearchIndexTests: XCTestCase {
         XCTAssertEqual(section, .meetings)
     }
 
-    func testResultsIncludeSystemSectionForAudioQuery() {
+    func testResultsIncludeAudioSectionForAudioQuery() {
         let audioTitle = "settings.section.audio".localized
         guard audioTitle != "settings.section.audio" else { return }
 
         let results = SettingsSearchIndex.results(for: audioTitle)
 
         XCTAssertFalse(results.isEmpty)
-        XCTAssertTrue(results.contains(where: { $0.section == .system }))
+        XCTAssertTrue(results.contains(where: { $0.section == .audio }))
         XCTAssertTrue(results.allSatisfy { !$0.title.isEmpty && !$0.detail.isEmpty })
     }
 
@@ -67,16 +67,16 @@ final class SettingsSearchIndexTests: XCTestCase {
         XCTAssertEqual(section, .intelligence)
     }
 
-    func testSectionMappingRoutesGeneralAudioFormatToSystemSection() {
+    func testSectionMappingRoutesGeneralAudioFormatToAudioSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.general.audio_format")
 
-        XCTAssertEqual(section, .system)
+        XCTAssertEqual(section, .audio)
     }
 
-    func testSectionMappingRoutesAudioDeviceKeyToSystemSection() {
+    func testSectionMappingRoutesAudioDeviceKeyToAudioSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.general.audio_devices")
 
-        XCTAssertEqual(section, .system)
+        XCTAssertEqual(section, .audio)
     }
 
     func testEverySearchableKeyMapsToASection() {
@@ -145,6 +145,11 @@ final class SettingsSearchIndexTests: XCTestCase {
     func testRecordingIndicatorAnimationSpeedRoutesToSystem() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.general.recording_indicator.animation_speed")
         XCTAssertEqual(section, .system)
+    }
+
+    func testPermissionsQueryRoutesToSystemPermissionsDestination() {
+        let destination = SettingsSearchIndex.destination(forLocalizationKey: "settings.permissions.description")
+        XCTAssertEqual(destination, SettingsDestination(section: .system, systemRoute: .permissions))
     }
 
     func testModelHubKeysRouteToIntelligenceSection() {

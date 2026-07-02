@@ -550,10 +550,11 @@ public struct MeetingSettingsTab: View {
                 openPromptEditor(for: prompt)
             },
             unselectedStrokeColor: AppDesignSystem.Colors.separator.opacity(0.4),
-            menuAccessibilityLabel: "transcription.ai_actions".localized
-        ) {
-            promptMenuContent(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)
-        }
+            menuAccessibilityLabel: "transcription.ai_actions".localized,
+            menuContent: {
+                promptMenuContent(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)
+            }
+        )
     }
 
     @ViewBuilder

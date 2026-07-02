@@ -88,10 +88,10 @@ honor its STOP conditions, and update your row when done.
 | 012 | Merge Models, Text & Context, and Dictionary into Intelligence | P1 | M | 010 | DONE |
 | 013 | Merge General, Sound, and Permissions into System | P1 | M | 010 | DONE |
 | 014 | Polish consolidated settings layout patterns | P2 | M | 011, 012, 013 | DONE |
-| 015 | Rework Activity into drill-down navigation | P1 | S | - | TODO |
-| 016 | Rework Meetings workflow and post-processing pages | P1 | M | - | TODO |
-| 017 | Add an Assistant capability toggle | P1 | M | - | TODO |
-| 018 | Rework System and Sound navigation | P1 | M | - | TODO |
+| 015 | Rework Activity into drill-down navigation | P1 | S | - | DONE |
+| 016 | Rework Meetings workflow and post-processing pages | P1 | M | - | DONE |
+| 017 | Add an Assistant capability toggle | P1 | M | - | DONE |
+| 018 | Rework System and Sound navigation | P1 | M | - | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
