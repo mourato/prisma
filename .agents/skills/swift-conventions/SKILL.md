@@ -95,7 +95,6 @@ Use this section as the practical "how to write code here" reference. Keep it al
 ## Related Skills
 
 - `../code-quality/SKILL.md`
-- `../swift-package-manager/SKILL.md`
 
 ## References
 

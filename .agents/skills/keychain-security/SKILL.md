@@ -16,8 +16,6 @@ Use this skill as the canonical owner for credential persistence through Keychai
 ## Scope Boundaries
 
 - Use this skill for local secret persistence through KeychainManager/KeychainProvider.
-- Use ../security/SKILL.md for broader security controls outside credential persistence.
-- Use ../networking/SKILL.md for transport and API request hardening concerns.
 
 Guidance for secure credential storage in the B2 modular architecture.
 
@@ -89,7 +87,3 @@ let value = try keychain.retrieve(for: .aiAPIKeyOpenAI)
 - `Packages/MeetingAssistantCore/Sources/Infrastructure/Services/KeychainManager.swift`
 - `AGENTS.md` (branch workflow + language policy)
 
-## Related Skills
-
-- `../security/SKILL.md`
-- `../networking/SKILL.md`

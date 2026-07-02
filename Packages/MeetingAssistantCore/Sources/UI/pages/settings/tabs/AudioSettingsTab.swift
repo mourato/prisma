@@ -64,24 +64,23 @@ public struct AudioSettingsTab: View {
                 )
             }
 
-            DSGroup("settings.general.audio_format".localized, icon: "waveform.path") {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("settings.general.audio_format".localized)
-                            .font(.body)
-                            .foregroundStyle(.primary)
+            SettingsListGroup("settings.general.audio_format".localized, icon: "waveform.path") {
+                HStack {
+                    Text("settings.general.audio_format".localized)
+                        .font(.body)
+                        .foregroundStyle(.primary)
 
-                        Spacer()
+                    Spacer()
 
-                        Picker("", selection: $viewModel.audioFormat) {
-                            ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
-                                Text(format.displayName).tag(format)
-                            }
+                    Picker("", selection: $viewModel.audioFormat) {
+                        ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
+                            Text(format.displayName).tag(format)
                         }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
                     }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
                 }
+                .settingsListRow()
             }
 
             // Audio Devices
@@ -169,7 +168,7 @@ public struct AudioSettingsTab: View {
                 }
             }
 
-            DSGroup("settings.general.audio_processing".localized, icon: "waveform.badge.minus") {
+            SettingsListGroup("settings.general.audio_processing".localized, icon: "waveform.badge.minus") {
                 VStack(alignment: .leading, spacing: 12) {
                     DSToggleRow(
                         "settings.general.remove_silence_before_processing".localized,
@@ -181,36 +180,35 @@ public struct AudioSettingsTab: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 14)
                 }
             }
 
             // Sound Feedback
-            DSGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
-                VStack(alignment: .leading, spacing: 16) {
-                    DSToggleRow(
-                        "settings.general.sound_feedback.enabled".localized,
-                        description: "settings.general.sound_feedback.enabled_desc".localized,
-                        isOn: $viewModel.soundFeedbackEnabled.animated()
-                    )
+            SettingsListGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
+                DSToggleRow(
+                    "settings.general.sound_feedback.enabled".localized,
+                    description: "settings.general.sound_feedback.enabled_desc".localized,
+                    isOn: $viewModel.soundFeedbackEnabled.animated()
+                )
 
-                    if viewModel.soundFeedbackEnabled {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Divider()
+                if viewModel.soundFeedbackEnabled {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Divider()
 
-                            soundPickerRow(
-                                title: "settings.general.sound_feedback.start_sound".localized,
-                                selection: $viewModel.recordingStartSound
-                            )
+                        soundPickerRow(
+                            title: "settings.general.sound_feedback.start_sound".localized,
+                            selection: $viewModel.recordingStartSound
+                        )
 
-                            Divider()
+                        Divider()
 
-                            soundPickerRow(
-                                title: "settings.general.sound_feedback.stop_sound".localized,
-                                selection: $viewModel.recordingStopSound
-                            )
-                        }
-                        .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
+                        soundPickerRow(
+                            title: "settings.general.sound_feedback.stop_sound".localized,
+                            selection: $viewModel.recordingStopSound
+                        )
                     }
+                    .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
                 }
             }
 
@@ -247,6 +245,7 @@ public struct AudioSettingsTab: View {
             .accessibilityLabel("settings.general.sound_feedback.preview".localized)
             .accessibilityHint("settings.general.sound_feedback.enabled_desc".localized)
         }
+        .settingsListRow()
     }
 
     private var audioDuckingSliderBinding: Binding<Double> {

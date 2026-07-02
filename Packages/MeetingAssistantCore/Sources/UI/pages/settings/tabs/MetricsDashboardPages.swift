@@ -247,35 +247,33 @@ private struct ActivityDashboardDrillDownSection: View {
     let openPerformance: () -> Void
 
     var body: some View {
-        DSGroup("settings.section.activity".localized, icon: "chart.line.uptrend.xyaxis") {
-            VStack(alignment: .leading, spacing: 0) {
-                SettingsDrillDownButtonRow(
-                    title: "settings.activity.recording_history.title".localized,
-                    subtitle: "settings.activity.recording_history.subtitle".localized,
-                    accessibilityHint: "settings.activity.recording_history.accessibility_hint".localized
-                ) {
-                    openHistory()
-                }
+        SettingsListGroup("settings.section.activity".localized, icon: "chart.line.uptrend.xyaxis") {
+            SettingsDrillDownButtonRow(
+                title: "settings.activity.recording_history.title".localized,
+                subtitle: "settings.activity.recording_history.subtitle".localized,
+                accessibilityHint: "settings.activity.recording_history.accessibility_hint".localized
+            ) {
+                openHistory()
+            }
 
-                Divider()
+            Divider()
 
-                SettingsDrillDownButtonRow(
-                    title: "metrics.performance.link.title".localized,
-                    subtitle: "settings.activity.model_performance.subtitle".localized,
-                    accessibilityHint: "metrics.performance.link.accessibility_hint".localized
-                ) {
-                    openPerformance()
-                }
+            SettingsDrillDownButtonRow(
+                title: "metrics.performance.link.title".localized,
+                subtitle: "settings.activity.model_performance.subtitle".localized,
+                accessibilityHint: "metrics.performance.link.accessibility_hint".localized
+            ) {
+                openPerformance()
+            }
 
-                Divider()
+            Divider()
 
-                SettingsDrillDownButtonRow(
-                    title: "metrics.more_insights.title".localized,
-                    subtitle: "settings.activity.more_insights.subtitle".localized,
-                    accessibilityHint: "metrics.more_insights.accessibility_hint".localized
-                ) {
-                    openMoreInsights()
-                }
+            SettingsDrillDownButtonRow(
+                title: "metrics.more_insights.title".localized,
+                subtitle: "settings.activity.more_insights.subtitle".localized,
+                accessibilityHint: "metrics.more_insights.accessibility_hint".localized
+            ) {
+                openMoreInsights()
             }
         }
     }

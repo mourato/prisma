@@ -11,7 +11,6 @@ Use this skill to shape diagnostic data in Prisma.
 
 - Own logging structure, telemetry naming, payload redaction, and failure-signature guidance.
 - Complement `../debugging-strategies/SKILL.md` by improving what the system emits before and during investigation.
-- Complement `../error-handling/SKILL.md` by defining how failures should be observed, not how they are modeled.
 
 ## Scope Boundary
 
@@ -65,6 +64,3 @@ Use these as the current baseline for structured events, metrics intake, and pri
 ## Related Skills
 
 - `../debugging-strategies/SKILL.md`
-- `../error-handling/SKILL.md`
-- `../performance/SKILL.md`
-- `../security/SKILL.md`

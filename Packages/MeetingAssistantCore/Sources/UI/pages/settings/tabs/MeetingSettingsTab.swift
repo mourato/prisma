@@ -134,39 +134,37 @@ public struct MeetingSettingsTab: View {
                     }
                 )
 
-                DSGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
-                    VStack(alignment: .leading, spacing: 0) {
-                        DSToggleRow(
-                            "settings.general.auto_start".localized,
-                            isOn: $meetingViewModel.settings.autoStartRecording
-                        )
+                SettingsListGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
+                    DSToggleRow(
+                        "settings.general.auto_start".localized,
+                        isOn: $meetingViewModel.settings.autoStartRecording
+                    )
 
-                        Divider()
+                    Divider()
 
-                        SettingsDrillDownButtonRow(
-                            title: "settings.meetings.monitoring_access.button".localized,
-                            subtitle: "settings.meetings.monitoring_access.desc".localized,
-                            accessibilityHint: "settings.meetings.monitoring_access.accessibility_hint".localized
-                        ) {
-                            updateNavigationState(to: .monitoringTargets)
-                        }
+                    SettingsDrillDownButtonRow(
+                        title: "settings.meetings.monitoring_access.button".localized,
+                        subtitle: "settings.meetings.monitoring_access.desc".localized,
+                        accessibilityHint: "settings.meetings.monitoring_access.accessibility_hint".localized
+                    ) {
+                        updateNavigationState(to: .monitoringTargets)
+                    }
 
-                        Divider()
+                    Divider()
 
-                        DSToggleRow(
-                            "settings.general.merge_audio".localized,
-                            isOn: $meetingViewModel.settings.shouldMergeAudioFiles
-                        )
+                    DSToggleRow(
+                        "settings.general.merge_audio".localized,
+                        isOn: $meetingViewModel.settings.shouldMergeAudioFiles
+                    )
 
-                        Divider()
+                    Divider()
 
-                        SettingsDrillDownButtonRow(
-                            title: "settings.meetings.export".localized,
-                            subtitle: "settings.meetings.export_drilldown_desc".localized,
-                            accessibilityHint: "settings.meetings.export_drilldown_accessibility_hint".localized
-                        ) {
-                            updateNavigationState(to: .export)
-                        }
+                    SettingsDrillDownButtonRow(
+                        title: "settings.meetings.export".localized,
+                        subtitle: "settings.meetings.export_drilldown_desc".localized,
+                        accessibilityHint: "settings.meetings.export_drilldown_accessibility_hint".localized
+                    ) {
+                        updateNavigationState(to: .export)
                     }
                 }
 
@@ -225,42 +223,41 @@ public struct MeetingSettingsTab: View {
     }
 
     private var meetingIntelligenceSection: some View {
-        DSGroup("settings.enhancements.meeting_intelligence_model".localized, icon: "bubble.left.and.bubble.right.fill") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.itemSpacing) {
-                DSToggleRow(
-                    "settings.meetings.post_processing_enabled".localized,
-                    description: "settings.meetings.post_processing_enabled_desc".localized,
-                    isOn: meetingPostProcessingBinding
-                )
+        SettingsListGroup("settings.enhancements.meeting_intelligence_model".localized, icon: "bubble.left.and.bubble.right.fill") {
+            DSToggleRow(
+                "settings.meetings.post_processing_enabled".localized,
+                description: "settings.meetings.post_processing_enabled_desc".localized,
+                isOn: meetingPostProcessingBinding
+            )
 
-                Divider()
+            Divider()
 
-                EnhancementsModelSelectionControl(
-                    target: .meeting,
-                    viewModel: aiSettingsViewModel,
-                    settings: settings
-                )
+            EnhancementsModelSelectionControl(
+                target: .meeting,
+                viewModel: aiSettingsViewModel,
+                settings: settings
+            )
+            .settingsListRow()
 
-                Divider()
+            Divider()
 
-                DSToggleRow(
-                    "transcription.qa.title".localized,
-                    description: "settings.enhancements.qa_enabled_desc".localized,
-                    isOn: $meetingViewModel.settings.meetingQnAEnabled
-                )
+            DSToggleRow(
+                "transcription.qa.title".localized,
+                description: "settings.enhancements.qa_enabled_desc".localized,
+                isOn: $meetingViewModel.settings.meetingQnAEnabled
+            )
 
-                Divider()
+            Divider()
 
-                SettingsDrillDownButtonRow(
-                    title: "settings.meetings.prompts".localized,
-                    subtitle: "settings.meetings.prompts_drilldown_desc".localized,
-                    accessibilityHint: "settings.meetings.prompts_drilldown_accessibility_hint".localized
-                ) {
-                    updateNavigationState(to: .meetingPrompts)
-                }
-                .disabled(!meetingViewModel.isMeetingPostProcessingEnabled)
-                .opacity(meetingViewModel.isMeetingPostProcessingEnabled ? 1 : CapabilityLayout.disabledOpacity)
+            SettingsDrillDownButtonRow(
+                title: "settings.meetings.prompts".localized,
+                subtitle: "settings.meetings.prompts_drilldown_desc".localized,
+                accessibilityHint: "settings.meetings.prompts_drilldown_accessibility_hint".localized
+            ) {
+                updateNavigationState(to: .meetingPrompts)
             }
+            .disabled(!meetingViewModel.isMeetingPostProcessingEnabled)
+            .opacity(meetingViewModel.isMeetingPostProcessingEnabled ? 1 : CapabilityLayout.disabledOpacity)
         }
     }
 

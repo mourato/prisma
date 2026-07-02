@@ -70,14 +70,12 @@ make lint
 
 ## Related Skills
 
-- `../build-macos-apps/SKILL.md` (intake/router)
 - `../native-app-designer/SKILL.md` (primary UI/UX direction)
 - `../quality-assurance/SKILL.md` (verification policy)
 - `../swiftui-patterns/SKILL.md`
 - `../menubar/SKILL.md`
 - `../audio-realtime/SKILL.md`
 - `../localization/SKILL.md`
-- `../swift-package-manager/SKILL.md`
 
 ## Reference Index
 

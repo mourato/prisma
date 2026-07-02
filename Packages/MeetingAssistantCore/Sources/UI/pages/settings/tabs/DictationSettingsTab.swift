@@ -72,60 +72,55 @@ public struct DictationSettingsTab: View {
                 }
             )
 
-            DSGroup("settings.dictation.modes_and_prompts.title".localized, icon: "paintpalette") {
-                VStack(alignment: .leading, spacing: 0) {
-                    SettingsDrillDownButtonRow(
-                        title: "settings.dictation.modes.title".localized,
-                        subtitle: "settings.dictation.modes.description".localized,
-                        accessibilityHint: "settings.dictation.modes.accessibility_hint".localized
-                    ) {
-                        navigationState.open(.modes)
-                    }
+            SettingsListGroup("settings.dictation.modes_and_prompts.title".localized, icon: "paintpalette") {
+                SettingsDrillDownButtonRow(
+                    title: "settings.dictation.modes.title".localized,
+                    subtitle: "settings.dictation.modes.description".localized,
+                    accessibilityHint: "settings.dictation.modes.accessibility_hint".localized
+                ) {
+                    navigationState.open(.modes)
+                }
 
-                    Divider()
-                        .padding(.leading, 0)
+                Divider()
 
-                    SettingsDrillDownButtonRow(
-                        title: "settings.dictation.user_prompts.title".localized,
-                        subtitle: "settings.dictation.user_prompts.description".localized,
-                        accessibilityHint: "settings.dictation.user_prompts.accessibility_hint".localized
-                    ) {
-                        navigationState.open(.userPrompts)
-                    }
+                SettingsDrillDownButtonRow(
+                    title: "settings.dictation.user_prompts.title".localized,
+                    subtitle: "settings.dictation.user_prompts.description".localized,
+                    accessibilityHint: "settings.dictation.user_prompts.accessibility_hint".localized
+                ) {
+                    navigationState.open(.userPrompts)
                 }
             }
 
-            DSGroup("settings.dictation.text_handling".localized, icon: "cpu") {
-                VStack(alignment: .leading, spacing: 16) {
-                    DSToggleRow(
-                        "settings.general.auto_copy_transcription".localized,
-                        description: "settings.general.auto_copy_transcription_desc".localized,
-                        isOn: $viewModel.autoCopyTranscriptionToClipboard
-                    )
+            SettingsListGroup("settings.dictation.text_handling".localized, icon: "cpu") {
+                DSToggleRow(
+                    "settings.general.auto_copy_transcription".localized,
+                    description: "settings.general.auto_copy_transcription_desc".localized,
+                    isOn: $viewModel.autoCopyTranscriptionToClipboard
+                )
 
-                    Divider()
+                Divider()
 
-                    DSToggleRow(
-                        "settings.general.auto_paste_transcription".localized,
-                        isOn: $viewModel.autoPasteTranscriptionToActiveApp
-                    )
+                DSToggleRow(
+                    "settings.general.auto_paste_transcription".localized,
+                    isOn: $viewModel.autoPasteTranscriptionToActiveApp
+                )
 
-                    Divider()
+                Divider()
 
-                    DSToggleRow(
-                        "settings.dictation.smart_spacing".localized,
-                        description: "settings.dictation.smart_spacing_desc".localized,
-                        isOn: $viewModel.smartSpacingAndCapitalizationEnabled
-                    )
+                DSToggleRow(
+                    "settings.dictation.smart_spacing".localized,
+                    description: "settings.dictation.smart_spacing_desc".localized,
+                    isOn: $viewModel.smartSpacingAndCapitalizationEnabled
+                )
 
-                    Divider()
+                Divider()
 
-                    DSToggleRow(
-                        "settings.dictation.smart_paragraphs".localized,
-                        description: "settings.dictation.smart_paragraphs_desc".localized,
-                        isOn: $viewModel.smartParagraphsEnabled
-                    )
-                }
+                DSToggleRow(
+                    "settings.dictation.smart_paragraphs".localized,
+                    description: "settings.dictation.smart_paragraphs_desc".localized,
+                    isOn: $viewModel.smartParagraphsEnabled
+                )
             }
 
             ServiceTranscriptionProviderSection(viewModel: serviceViewModel)

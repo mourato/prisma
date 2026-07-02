@@ -222,15 +222,10 @@ Use `code-review` for review output; it always includes `thermo-nuclear-code-qua
 | `macos-design-guidelines` | `.agents/skills/macos-design-guidelines/SKILL.md` | Human Interface Guidelines for Mac |
 | `macos-development` | `.agents/skills/macos-development/SKILL.md` | Canonical macOS and Swift guidance |
 | `native-app-designer` | `.agents/skills/native-app-designer/SKILL.md` | UI and UX direction |
-| `networking` | `.agents/skills/networking/SKILL.md` | API clients and URLSession |
 | `observability-diagnostics` | `.agents/skills/observability-diagnostics/SKILL.md` | Logs, telemetry, redaction, diagnostic signatures |
-| `performance` | `.agents/skills/performance/SKILL.md` | CPU, memory, startup, and energy profiling |
 | `quality-assurance` | `.agents/skills/quality-assurance/SKILL.md` | Verification gates and command policy |
-| `skills-discovery` | `.agents/skills/skills-discovery/SKILL.md` | Find or install external skills |
-| `skill-development` | `.agents/skills/skill-development/SKILL.md` | Create or refactor local skills |
 | `task-lifecycle` | `.agents/skills/task-lifecycle/SKILL.md` | Risk classification and lifecycle policy |
 | `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest code structure, mocks, async tests |
-| `security` | `.agents/skills/security/SKILL.md` | Input validation and data protection |
 | `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/SKILL.md` | Swift 6.2 actor isolation and Sendable fixes |
 | `swiftui-animation` | `.agents/skills/swiftui-animation/SKILL.md` | Advanced animations and shaders |
 | `swiftui-patterns` | `.agents/skills/swiftui-patterns/SKILL.md` | View composition and state management |

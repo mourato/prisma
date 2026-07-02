@@ -30,8 +30,7 @@ Use this skill when the dominant symptom is in SwiftUI render/update behavior.
 Out of scope for this skill:
 - Audio pipeline timing/callback pressure (`audio-realtime`)
 - Compiler diagnostics related to actor isolation/Sendable (`swift-concurrency-expert`)
-- Networking latency and API throughput (`networking`)
-- Generic app-wide resource tuning not tied to SwiftUI rendering (`performance`)
+
 
 ## Workflow Decision Tree
 

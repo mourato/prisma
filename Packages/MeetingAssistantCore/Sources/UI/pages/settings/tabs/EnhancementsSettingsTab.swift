@@ -74,27 +74,20 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var mainSection: some View {
-        DSGroup("settings.post_processing.title".localized, icon: "brain") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.itemSpacing) {
-                DSToggleRow(
-                    "settings.post_processing.enabled".localized,
-                    description: "settings.post_processing.description".localized,
-                    isOn: $postProcessingViewModel.settings.postProcessingEnabled
-                )
+        SettingsListGroup("settings.post_processing.title".localized, icon: "brain") {
+            DSToggleRow(
+                "settings.post_processing.enabled".localized,
+                description: "settings.post_processing.description".localized,
+                isOn: $postProcessingViewModel.settings.postProcessingEnabled
+            )
 
-                VStack(alignment: .leading, spacing: 0) {
+            Divider()
 
-                    Divider()
-
-                    SettingsDrillDownButtonRow(
-                        title: "settings.post_processing.edit_system_prompt".localized,
-                        accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized
-                    ) {
-                        navigationState.open(.systemGuidelines)
-                    }
-
-                    Divider()
-                }
+            SettingsDrillDownButtonRow(
+                title: "settings.post_processing.edit_system_prompt".localized,
+                accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized
+            ) {
+                navigationState.open(.systemGuidelines)
             }
         }
     }
