@@ -198,6 +198,7 @@ extension AppSettingsStore {
 
     struct CapabilitySettingsValues {
         let isMeetingTranscriptionEnabled: Bool
+        let isAssistantEnabled: Bool
         let isAssistantIntegrationsEnabled: Bool
     }
 
@@ -205,6 +206,11 @@ extension AppSettingsStore {
         CapabilitySettingsValues(
             isMeetingTranscriptionEnabled: loadCapabilityToggle(
                 forKey: Keys.isMeetingTranscriptionEnabled,
+                defaultForNewInstall: false,
+                defaultForExistingInstall: true
+            ),
+            isAssistantEnabled: loadCapabilityToggle(
+                forKey: Keys.isAssistantEnabled,
                 defaultForNewInstall: false,
                 defaultForExistingInstall: true
             ),

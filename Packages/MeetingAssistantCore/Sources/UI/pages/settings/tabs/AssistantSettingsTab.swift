@@ -12,7 +12,12 @@ public struct AssistantSettingsTab: View {
         static let previewDurationNanoseconds: UInt64 = 2_000_000_000
     }
 
+    private enum CapabilityLayout {
+        static let disabledOpacity = 0.58
+    }
+
     @StateObject private var viewModel = AssistantShortcutSettingsViewModel()
+    @StateObject private var settings = AppSettingsStore.shared
     @State private var previewController: AssistantScreenBorderController?
     @State private var previewTask: Task<Void, Never>?
     @State private var isPreviewRunning = false
@@ -28,7 +33,11 @@ public struct AssistantSettingsTab: View {
                 description: "settings.assistant.header_desc".localized
             )
             assistantControlsSection
+                .disabled(!settings.isAssistantEnabled)
+                .opacity(settings.isAssistantEnabled ? 1 : CapabilityLayout.disabledOpacity)
             visualFeedbackSection
+                .disabled(!settings.isAssistantEnabled)
+                .opacity(settings.isAssistantEnabled ? 1 : CapabilityLayout.disabledOpacity)
         }
         .onAppear {
             glowSizeInput = String(Int(viewModel.glowSize))
@@ -42,6 +51,15 @@ public struct AssistantSettingsTab: View {
         .onDisappear {
             stopPreviewIfNeeded()
         }
+        .onChange(of: settings.isAssistantEnabled) { _, isEnabled in
+            if !isEnabled {
+                stopPreviewIfNeeded()
+            }
+        }
+        .animation(
+            SettingsMotion.sectionAnimation(reduceMotion: reduceMotion),
+            value: settings.isAssistantEnabled
+        )
     }
 
     private var assistantControlsSection: some View {

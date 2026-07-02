@@ -303,6 +303,7 @@ extension AppDelegate {
             recordingManager.$isMeetingNotesPanelVisible.map { _ in () }.eraseToAnyPublisher(),
             settingsStore.$cancelRecordingShortcutDefinition.map { _ in () }.eraseToAnyPublisher(),
             settingsStore.$isMeetingTranscriptionEnabled.map { _ in () }.eraseToAnyPublisher(),
+            settingsStore.$isAssistantEnabled.map { _ in () }.eraseToAnyPublisher(),
             settingsStore.$isAssistantIntegrationsEnabled.map { _ in () }.eraseToAnyPublisher()
         )
         // @Published emits in willSet; schedule refresh so re-reads observe committed values.
@@ -373,7 +374,7 @@ extension AppDelegate {
             ),
             cancelRecordingShortcutDefinition: settingsStore.cancelRecordingShortcutDefinition,
             meetingCapabilityEnabled: settingsStore.isMeetingTranscriptionEnabled,
-            assistantCapabilityEnabled: true
+            assistantCapabilityEnabled: settingsStore.isAssistantEnabled
         )
         let renderState = RecordingUIRenderState(
             isRecording: isRecording,
@@ -505,6 +506,16 @@ extension AppDelegate {
                 self?.refreshRecordingUIState()
             }
             .store(in: &cancellables)
+
+        settingsStore.$isAssistantEnabled
+            .dropFirst()
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isEnabled in
+                self?.applyAssistantCapabilityState(isEnabled: isEnabled)
+                self?.refreshRecordingUIState()
+            }
+            .store(in: &cancellables)
     }
 
     private func maybeWarmupMeetingTranscriptionModel() {
@@ -537,6 +548,18 @@ extension AppDelegate {
 
         _ = FluidAIModelManager.shared.unloadDiarizationFromMemoryIfPossible()
         _ = FluidAIModelManager.shared.unloadASRFromMemoryIfPossible()
+    }
+
+    private func applyAssistantCapabilityState(isEnabled: Bool) {
+        assistantShortcutController.refresh()
+
+        guard !isEnabled else { return }
+
+        if assistantVoiceCommandService.isRecording || assistantVoiceCommandService.isProcessing {
+            Task {
+                await assistantVoiceCommandService.cancelRecording()
+            }
+        }
     }
 
 }

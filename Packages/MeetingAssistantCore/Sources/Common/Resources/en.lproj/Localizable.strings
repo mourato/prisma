@@ -574,6 +574,8 @@
 "settings.shortcuts.reset" = "Reset to Default Shortcuts";
 "settings.capabilities.meeting_transcription" = "Meeting Transcription";
 "settings.capabilities.meeting_transcription_desc" = "Enable meeting recording and transcription workflows.";
+"settings.capabilities.assistant" = "Assistant";
+"settings.capabilities.assistant_desc" = "Enable Assistant recording, shortcuts, and command actions.";
 "settings.capabilities.assistant_integrations" = "Assistant Integrations";
 "settings.capabilities.assistant_integrations_desc" = "Enable integrations and Assistant dispatch actions.";
 "settings.assistant.header_desc" = "Configure the Assistant shortcut to edit selected text with voice commands in any app.";
@@ -682,6 +684,7 @@
 "assistant.error.start_failed" = "Unable to start Assistant recording.";
 "assistant.error.stop_failed" = "Unable to stop Assistant recording.";
 "assistant.error.recording_in_progress" = "A recording is in progress. Stop it before using Assistant.";
+"assistant.error.disabled" = "Assistant is disabled. Enable it in Settings to continue.";
 "recording.error.mode_switch_blocked" = "Finish the current recording before starting another mode.";
 "recording.error.meeting_transcription_disabled" = "Meeting transcription is disabled. Enable it in Settings to start meetings.";
 "assistant.error.processing_failed" = "Unable to process the Assistant command.";

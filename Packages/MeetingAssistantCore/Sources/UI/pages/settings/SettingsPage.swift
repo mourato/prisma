@@ -306,7 +306,7 @@ private extension SettingsView {
     }
 
     private var showsCapabilityToolbarAccessory: Bool {
-        selectedSection == .meetings || selectedSection == .integrations
+        selectedSection == .meetings || selectedSection == .assistant || selectedSection == .integrations
     }
 
     @ViewBuilder
@@ -318,6 +318,14 @@ private extension SettingsView {
                 isOn: Binding(
                     get: { settingsStore.isMeetingTranscriptionEnabled },
                     set: { settingsStore.isMeetingTranscriptionEnabled = $0 }
+                )
+            )
+        case .assistant:
+            makeCapabilityToolbarToggle(
+                title: "settings.capabilities.assistant".localized,
+                isOn: Binding(
+                    get: { settingsStore.isAssistantEnabled },
+                    set: { settingsStore.isAssistantEnabled = $0 }
                 )
             )
         case .integrations:

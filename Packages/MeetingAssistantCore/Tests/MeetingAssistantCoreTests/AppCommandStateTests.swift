@@ -45,6 +45,15 @@ final class AppCommandStateTests: XCTestCase {
         XCTAssertEqual(state.assistantTitleKey, "menubar.stop_assistant")
     }
 
+    func testAssistantActionIsHiddenWhenCapabilityDisabled() {
+        let state = AppCommandState(
+            recordingSection: .idle,
+            assistantCapabilityEnabled: false
+        )
+
+        XCTAssertFalse(state.showsAssistantAction)
+    }
+
     func testCancelTitleKeyStaysStable() {
         let shortcut = ShortcutDefinition(
             modifiers: [.command],

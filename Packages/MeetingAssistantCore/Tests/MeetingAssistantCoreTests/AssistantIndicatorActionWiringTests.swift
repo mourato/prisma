@@ -17,6 +17,7 @@ final class AssistantIndicatorActionWiringTests: XCTestCase {
         originalIndicatorEnabled = settings.recordingIndicatorEnabled
         originalIndicatorStyle = settings.recordingIndicatorStyle
         RecordingIndicatorProcessingStateStore.shared.reset()
+        settings.isAssistantEnabled = true
         settings.recordingIndicatorEnabled = false
         settings.recordingIndicatorStyle = .none
     }

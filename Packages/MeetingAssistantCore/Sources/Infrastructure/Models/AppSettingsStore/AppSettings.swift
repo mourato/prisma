@@ -176,6 +176,14 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Controls whether assistant features are available.
+    /// New installs default to disabled for lower runtime footprint.
+    @Published public var isAssistantEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(isAssistantEnabled, forKey: Keys.isAssistantEnabled)
+        }
+    }
+
     /// Controls whether assistant third-party integrations are available.
     /// New installs default to disabled for lower runtime footprint.
     @Published public var isAssistantIntegrationsEnabled: Bool {
@@ -747,8 +755,9 @@ public class AppSettingsStore: ObservableObject {
         shouldMergeAudioFiles = postProcessing.shouldMergeAudioFiles
 
         let capabilities = Self.loadCapabilitySettings()
-        (isMeetingTranscriptionEnabled, isAssistantIntegrationsEnabled) = (
+        (isMeetingTranscriptionEnabled, isAssistantEnabled, isAssistantIntegrationsEnabled) = (
             capabilities.isMeetingTranscriptionEnabled,
+            capabilities.isAssistantEnabled,
             capabilities.isAssistantIntegrationsEnabled
         )
 

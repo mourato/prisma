@@ -48,6 +48,8 @@ extension AssistantShortcutController {
     // MARK: - Routing helpers
 
     func routeAssistantMonitorEvent(event: ShortcutInputEvent, mode: ShortcutEventRoutingMode) {
+        guard settings.isAssistantEnabled else { return }
+
         let result = shortcutRouter.routeMonitorEvent(
             configuration: assistantRoutingConfiguration(),
             mode: mode,
@@ -98,6 +100,16 @@ extension AssistantShortcutController {
     }
 
     func handleCustomShortcutDown() async {
+        guard settings.isAssistantEnabled else {
+            emitShortcutRejected(
+                shortcutTarget: "assistant",
+                source: "keyboardshortcuts_custom",
+                triggerToken: "unknown",
+                reason: "assistant_disabled"
+            )
+            return
+        }
+
         let outcomes = shortcutRouter.routeCustomShortcutDown(
             configuration: assistantRoutingConfiguration()
         )
@@ -105,6 +117,8 @@ extension AssistantShortcutController {
     }
 
     func handleCustomShortcutUp() async {
+        guard settings.isAssistantEnabled else { return }
+
         let outcomes = shortcutRouter.routeCustomShortcutUp(
             configuration: assistantRoutingConfiguration()
         )
@@ -112,6 +126,16 @@ extension AssistantShortcutController {
     }
 
     func handleShortcutDown(activationModeOverride: ShortcutActivationMode? = nil) async {
+        guard settings.isAssistantEnabled else {
+            emitShortcutRejected(
+                shortcutTarget: "assistant",
+                source: "assistant_shortcut_down",
+                trigger: activationModeOverride,
+                reason: "assistant_disabled"
+            )
+            return
+        }
+
         if shouldUseAssistantShortcutLayer {
             let activationMode = activationModeOverride ?? settings.assistantShortcutActivationMode
             if activationMode == .doubleTap {
@@ -139,6 +163,8 @@ extension AssistantShortcutController {
     }
 
     func handleShortcutUp(activationModeOverride: ShortcutActivationMode? = nil) async {
+        guard settings.isAssistantEnabled else { return }
+
         if shouldUseAssistantShortcutLayer {
             let activationMode = activationModeOverride ?? settings.assistantShortcutActivationMode
             if activationMode == .doubleTap {
@@ -195,6 +221,16 @@ extension AssistantShortcutController {
     }
 
     func performAction(_ action: SmartShortcutHandler.Action) async {
+        guard settings.isAssistantEnabled else {
+            emitShortcutRejected(
+                shortcutTarget: "assistant",
+                source: "assistant_shortcut_action",
+                trigger: settings.assistantShortcutActivationMode,
+                reason: "assistant_disabled"
+            )
+            return
+        }
+
         switch action {
         case .startRecording:
             if let blockingMode = await RecordingExclusivityCoordinator.shared.blockingMode(for: .assistant) {

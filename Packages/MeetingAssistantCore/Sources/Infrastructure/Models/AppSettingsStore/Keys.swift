@@ -23,6 +23,7 @@ extension AppSettingsStore {
         static let isDiarizationEnabled = "isDiarizationEnabled"
         static let modelResidencyTimeout = "modelResidencyTimeout"
         static let isMeetingTranscriptionEnabled = "isMeetingTranscriptionEnabled"
+        static let isAssistantEnabled = "isAssistantEnabled"
         static let isAssistantIntegrationsEnabled = "isAssistantIntegrationsEnabled"
         static let transcriptionInputLanguageHint = "transcriptionInputLanguageHint"
         static let minSpeakers = "minSpeakers"

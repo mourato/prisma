@@ -5,6 +5,11 @@ import MeetingAssistantCore
 @MainActor
 extension AssistantShortcutController {
     func refreshEventMonitors() {
+        guard settings.isAssistantEnabled else {
+            removeEventMonitors()
+            return
+        }
+
         // Global runtime now uses direct hotkeys + KeyboardShortcuts custom handlers.
         // Keep monitor backend disabled for global capture.
         inputBackend.stopAllMonitoring()
@@ -27,6 +32,11 @@ extension AssistantShortcutController {
     }
 
     func refreshCustomShortcutRegistration() {
+        guard settings.isAssistantEnabled else {
+            KeyboardShortcuts.disable(.assistantCommand)
+            return
+        }
+
         switch settings.assistantSelectedPresetKey {
         case .custom where settings.assistantModifierShortcutGesture == nil && settings.assistantShortcutDefinition == nil:
             KeyboardShortcuts.enable(.assistantCommand)
@@ -43,7 +53,7 @@ extension AssistantShortcutController {
             integrationPresetStates.removeValue(forKey: removedID)
         }
 
-        guard settings.isAssistantIntegrationsEnabled else {
+        guard settings.isAssistantEnabled, settings.isAssistantIntegrationsEnabled else {
             for integrationID in currentIDs {
                 KeyboardShortcuts.disable(.assistantIntegration(integrationID))
             }
@@ -104,7 +114,8 @@ extension AssistantShortcutController {
     }
 
     private func assistantInHouseRegistration() -> HotkeyRegistration? {
-        guard let definition = settings.assistantShortcutDefinition,
+        guard settings.isAssistantEnabled,
+              let definition = settings.assistantShortcutDefinition,
               let descriptor = GlobalHotkeyMapper.descriptor(for: definition)
         else {
             return nil
@@ -135,7 +146,7 @@ extension AssistantShortcutController {
     }
 
     private func integrationInHouseRegistrations() -> [HotkeyRegistration] {
-        guard settings.isAssistantIntegrationsEnabled else {
+        guard settings.isAssistantEnabled, settings.isAssistantIntegrationsEnabled else {
             return []
         }
 
@@ -179,13 +190,14 @@ extension AssistantShortcutController {
     }
 
     var isAssistantCustomShortcutEnabled: Bool {
-        settings.assistantSelectedPresetKey == .custom
+        settings.isAssistantEnabled
+            && settings.assistantSelectedPresetKey == .custom
             && settings.assistantModifierShortcutGesture == nil
             && settings.assistantShortcutDefinition == nil
     }
 
     var integrationCustomEnabledCount: Int {
-        guard settings.isAssistantIntegrationsEnabled else {
+        guard settings.isAssistantEnabled, settings.isAssistantIntegrationsEnabled else {
             return 0
         }
 

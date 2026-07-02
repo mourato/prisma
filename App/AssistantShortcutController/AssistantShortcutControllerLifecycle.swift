@@ -66,6 +66,16 @@ extension AssistantShortcutController {
     }
 
     private func observeSettings() {
+        settings.$isAssistantEnabled
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resetShortcutState()
+                self?.refreshCustomShortcutRegistration()
+                self?.refreshIntegrationCustomShortcutRegistrations()
+                self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
+
         settings.$assistantSelectedPresetKey
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

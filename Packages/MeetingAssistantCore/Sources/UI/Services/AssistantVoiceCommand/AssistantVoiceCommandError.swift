@@ -8,6 +8,7 @@ public enum AssistantVoiceCommandError: LocalizedError {
     case failedToStartRecording
     case failedToStopRecording
     case recordingInProgress
+    case assistantDisabled
     case processingFailed
     case integrationDisabled
     case raycastIntegrationDisabled
@@ -30,6 +31,8 @@ public enum AssistantVoiceCommandError: LocalizedError {
             "assistant.error.stop_failed".localized
         case .recordingInProgress:
             "assistant.error.recording_in_progress".localized
+        case .assistantDisabled:
+            "assistant.error.disabled".localized
         case .processingFailed:
             "assistant.error.processing_failed".localized
         case .integrationDisabled:

@@ -28,11 +28,11 @@ public struct IntegrationsSettingsTab: View {
             )
 
             integrationsSection
-                .disabled(!settings.isAssistantIntegrationsEnabled)
-                .opacity(settings.isAssistantIntegrationsEnabled ? 1 : CapabilityLayout.disabledOpacity)
+                .disabled(!isIntegrationsContentEnabled)
+                .opacity(isIntegrationsContentEnabled ? 1 : CapabilityLayout.disabledOpacity)
                 .animation(
                     SettingsMotion.sectionAnimation(reduceMotion: reduceMotion),
-                    value: settings.isAssistantIntegrationsEnabled
+                    value: isIntegrationsContentEnabled
                 )
         }
         .sheet(item: $editingIntegration) { integration in
@@ -84,6 +84,10 @@ public struct IntegrationsSettingsTab: View {
             showsCapabilityToggle: false,
             editingIntegration: $editingIntegration
         )
+    }
+
+    private var isIntegrationsContentEnabled: Bool {
+        settings.isAssistantEnabled && settings.isAssistantIntegrationsEnabled
     }
 
 }

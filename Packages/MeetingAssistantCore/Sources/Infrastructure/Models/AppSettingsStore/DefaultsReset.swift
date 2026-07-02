@@ -25,6 +25,7 @@ public extension AppSettingsStore {
         isDiarizationEnabled = false
         modelResidencyTimeout = .minutes30
         isMeetingTranscriptionEnabled = false
+        isAssistantEnabled = false
         isAssistantIntegrationsEnabled = false
         transcriptionInputLanguageHint = .automatic
         minSpeakers = nil

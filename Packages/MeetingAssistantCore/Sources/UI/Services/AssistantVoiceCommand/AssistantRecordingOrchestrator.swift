@@ -36,6 +36,10 @@ public final class AssistantRecordingOrchestrator {
         onStop: @escaping @Sendable () -> Void,
         onCancel: @escaping @Sendable () -> Void
     ) async throws -> URL {
+        guard settings.isAssistantEnabled else {
+            throw AssistantVoiceCommandError.assistantDisabled
+        }
+
         if flow == .integrationDispatch, !settings.isAssistantIntegrationsEnabled {
             throw AssistantVoiceCommandError.integrationDisabled
         }
