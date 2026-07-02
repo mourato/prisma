@@ -73,7 +73,7 @@ public struct DictationSettingsTab: View {
             )
 
             SettingsListGroup("settings.dictation.modes_and_prompts.title".localized, icon: "paintpalette") {
-                SettingsDrillDownButtonRow(
+                SettingsListDrillDownButtonRow(
                     title: "settings.dictation.modes.title".localized,
                     subtitle: "settings.dictation.modes.description".localized,
                     accessibilityHint: "settings.dictation.modes.accessibility_hint".localized
@@ -81,9 +81,7 @@ public struct DictationSettingsTab: View {
                     navigationState.open(.modes)
                 }
 
-                Divider()
-
-                SettingsDrillDownButtonRow(
+                SettingsListDrillDownButtonRow(
                     title: "settings.dictation.user_prompts.title".localized,
                     subtitle: "settings.dictation.user_prompts.description".localized,
                     accessibilityHint: "settings.dictation.user_prompts.accessibility_hint".localized
@@ -99,22 +97,16 @@ public struct DictationSettingsTab: View {
                     isOn: $viewModel.autoCopyTranscriptionToClipboard
                 )
 
-                Divider()
-
                 DSToggleRow(
                     "settings.general.auto_paste_transcription".localized,
                     isOn: $viewModel.autoPasteTranscriptionToActiveApp
                 )
-
-                Divider()
 
                 DSToggleRow(
                     "settings.dictation.smart_spacing".localized,
                     description: "settings.dictation.smart_spacing_desc".localized,
                     isOn: $viewModel.smartSpacingAndCapitalizationEnabled
                 )
-
-                Divider()
 
                 DSToggleRow(
                     "settings.dictation.smart_paragraphs".localized,

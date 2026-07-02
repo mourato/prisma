@@ -81,9 +81,7 @@ public struct EnhancementsSettingsTab: View {
                 isOn: $postProcessingViewModel.settings.postProcessingEnabled
             )
 
-            Divider()
-
-            SettingsDrillDownButtonRow(
+            SettingsListDrillDownButtonRow(
                 title: "settings.post_processing.edit_system_prompt".localized,
                 accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized
             ) {

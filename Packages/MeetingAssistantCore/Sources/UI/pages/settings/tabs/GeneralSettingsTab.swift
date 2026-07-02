@@ -48,22 +48,16 @@ public struct GeneralSettingsTab: View {
                     isOn: $viewModel.launchAtLogin
                 )
 
-                Divider()
-
                 DSToggleRow(
                     "settings.general.show_in_dock".localized,
                     description: "settings.general.show_in_dock_desc".localized,
                     isOn: $viewModel.showInDock
                 )
 
-                Divider()
-
                 DSToggleRow(
                     "settings.general.show_settings_on_launch".localized,
                     isOn: $viewModel.showSettingsOnLaunch
                 )
-
-                Divider()
 
                 HStack(alignment: .center, spacing: 12) {
                     SettingsTitleWithPopover(
@@ -90,9 +84,6 @@ public struct GeneralSettingsTab: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .settingsListRow()
-
-                Divider()
 
                 HStack(alignment: .top, spacing: 12) {
                     SettingsTitleWithPopover(
@@ -109,7 +100,6 @@ public struct GeneralSettingsTab: View {
                         maxInputWidth: AppDesignSystem.Layout.maxCompactTextFieldWidth
                     )
                 }
-                .settingsListRow()
             }
 
             // Appearance
@@ -129,7 +119,6 @@ public struct GeneralSettingsTab: View {
                     .labelsHidden()
                     .pickerStyle(.menu)
                 }
-                .settingsListRow()
             }
 
             recordingIndicatorSection
@@ -192,7 +181,7 @@ public struct GeneralSettingsTab: View {
 
             if let openPermissions {
                 SettingsListGroup("settings.section.permissions".localized, icon: "checkmark.shield") {
-                    SettingsDrillDownButtonRow(
+                    SettingsListDrillDownButtonRow(
                         title: "settings.section.permissions".localized,
                         subtitle: "settings.permissions.description".localized,
                         accessibilityHint: "settings.system.permissions.accessibility_hint".localized,
@@ -243,62 +232,51 @@ public struct GeneralSettingsTab: View {
             )
 
             if viewModel.recordingIndicatorEnabled {
-                VStack(alignment: .leading, spacing: 0) {
-                    Divider()
+                HStack {
+                    Text("settings.general.recording_indicator.style".localized)
+                        .font(.body)
 
-                    HStack {
-                        Text("settings.general.recording_indicator.style".localized)
-                            .font(.body)
+                    Spacer()
 
-                        Spacer()
-
-                        Picker("", selection: $viewModel.recordingIndicatorStyle) {
-                            ForEach(RecordingIndicatorStyle.allCases, id: \.self) { style in
-                                Text(style.displayName).tag(style)
-                            }
+                    Picker("", selection: $viewModel.recordingIndicatorStyle) {
+                        ForEach(RecordingIndicatorStyle.allCases, id: \.self) { style in
+                            Text(style.displayName).tag(style)
                         }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
                     }
-                    .settingsListRow()
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                }
 
-                    Divider()
+                HStack {
+                    Text("settings.general.recording_indicator.position".localized)
+                        .font(.body)
 
-                    HStack {
-                        Text("settings.general.recording_indicator.position".localized)
-                            .font(.body)
+                    Spacer()
 
-                        Spacer()
-
-                        Picker("", selection: $viewModel.recordingIndicatorPosition) {
-                            ForEach(RecordingIndicatorPosition.allCases, id: \.self) { pos in
-                                Text(pos.displayName).tag(pos)
-                            }
+                    Picker("", selection: $viewModel.recordingIndicatorPosition) {
+                        ForEach(RecordingIndicatorPosition.allCases, id: \.self) { pos in
+                            Text(pos.displayName).tag(pos)
                         }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
                     }
-                    .settingsListRow()
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                }
 
-                    Divider()
+                HStack(spacing: 12) {
+                    SettingsTitleWithPopover(
+                        title: "settings.general.recording_indicator.animation_speed".localized,
+                        helperMessage: "settings.general.recording_indicator.animation_speed_desc".localized
+                    )
 
-                    HStack(spacing: 12) {
-                        SettingsTitleWithPopover(
-                            title: "settings.general.recording_indicator.animation_speed".localized,
-                            helperMessage: "settings.general.recording_indicator.animation_speed_desc".localized
-                        )
+                    Spacer()
 
-                        Spacer()
-
-                        Picker("", selection: $viewModel.recordingIndicatorAnimationSpeed) {
-                            ForEach(RecordingIndicatorAnimationSpeed.allCases, id: \.self) { speed in
-                                Text(speed.displayName).tag(speed)
-                            }
+                    Picker("", selection: $viewModel.recordingIndicatorAnimationSpeed) {
+                        ForEach(RecordingIndicatorAnimationSpeed.allCases, id: \.self) { speed in
+                            Text(speed.displayName).tag(speed)
                         }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
                     }
-                    .settingsListRow()
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
                 }
                 .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
             }

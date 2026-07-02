@@ -248,7 +248,7 @@ private struct ActivityDashboardDrillDownSection: View {
 
     var body: some View {
         SettingsListGroup("settings.section.activity".localized, icon: "chart.line.uptrend.xyaxis") {
-            SettingsDrillDownButtonRow(
+            SettingsListDrillDownButtonRow(
                 title: "settings.activity.recording_history.title".localized,
                 subtitle: "settings.activity.recording_history.subtitle".localized,
                 accessibilityHint: "settings.activity.recording_history.accessibility_hint".localized
@@ -256,9 +256,7 @@ private struct ActivityDashboardDrillDownSection: View {
                 openHistory()
             }
 
-            Divider()
-
-            SettingsDrillDownButtonRow(
+            SettingsListDrillDownButtonRow(
                 title: "metrics.performance.link.title".localized,
                 subtitle: "settings.activity.model_performance.subtitle".localized,
                 accessibilityHint: "metrics.performance.link.accessibility_hint".localized
@@ -266,9 +264,7 @@ private struct ActivityDashboardDrillDownSection: View {
                 openPerformance()
             }
 
-            Divider()
-
-            SettingsDrillDownButtonRow(
+            SettingsListDrillDownButtonRow(
                 title: "metrics.more_insights.title".localized,
                 subtitle: "settings.activity.more_insights.subtitle".localized,
                 accessibilityHint: "metrics.more_insights.accessibility_hint".localized

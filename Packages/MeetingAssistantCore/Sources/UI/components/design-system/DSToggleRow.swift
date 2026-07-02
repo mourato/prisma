@@ -40,7 +40,6 @@ public struct DSToggleRow: View {
                 .toggleStyle(.switch)
                 .controlSize(.small)
         }
-        .padding(.vertical, 14)
         .contentShape(Rectangle())
         .onTapGesture {
             isOn.toggle()

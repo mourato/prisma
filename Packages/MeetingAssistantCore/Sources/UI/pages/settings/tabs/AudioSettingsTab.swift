@@ -80,7 +80,6 @@ public struct AudioSettingsTab: View {
                     .labelsHidden()
                     .pickerStyle(.menu)
                 }
-                .settingsListRow()
             }
 
             // Audio Devices
@@ -180,7 +179,6 @@ public struct AudioSettingsTab: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.bottom, 14)
                 }
             }
 
@@ -193,21 +191,15 @@ public struct AudioSettingsTab: View {
                 )
 
                 if viewModel.soundFeedbackEnabled {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Divider()
+                    soundPickerRow(
+                        title: "settings.general.sound_feedback.start_sound".localized,
+                        selection: $viewModel.recordingStartSound
+                    )
 
-                        soundPickerRow(
-                            title: "settings.general.sound_feedback.start_sound".localized,
-                            selection: $viewModel.recordingStartSound
-                        )
-
-                        Divider()
-
-                        soundPickerRow(
-                            title: "settings.general.sound_feedback.stop_sound".localized,
-                            selection: $viewModel.recordingStopSound
-                        )
-                    }
+                    soundPickerRow(
+                        title: "settings.general.sound_feedback.stop_sound".localized,
+                        selection: $viewModel.recordingStopSound
+                    )
                     .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
                 }
             }
@@ -245,7 +237,6 @@ public struct AudioSettingsTab: View {
             .accessibilityLabel("settings.general.sound_feedback.preview".localized)
             .accessibilityHint("settings.general.sound_feedback.enabled_desc".localized)
         }
-        .settingsListRow()
     }
 
     private var audioDuckingSliderBinding: Binding<Double> {

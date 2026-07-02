@@ -140,9 +140,7 @@ public struct MeetingSettingsTab: View {
                         isOn: $meetingViewModel.settings.autoStartRecording
                     )
 
-                    Divider()
-
-                    SettingsDrillDownButtonRow(
+                    SettingsListDrillDownButtonRow(
                         title: "settings.meetings.monitoring_access.button".localized,
                         subtitle: "settings.meetings.monitoring_access.desc".localized,
                         accessibilityHint: "settings.meetings.monitoring_access.accessibility_hint".localized
@@ -150,16 +148,12 @@ public struct MeetingSettingsTab: View {
                         updateNavigationState(to: .monitoringTargets)
                     }
 
-                    Divider()
-
                     DSToggleRow(
                         "settings.general.merge_audio".localized,
                         isOn: $meetingViewModel.settings.shouldMergeAudioFiles
                     )
 
-                    Divider()
-
-                    SettingsDrillDownButtonRow(
+                    SettingsListDrillDownButtonRow(
                         title: "settings.meetings.export".localized,
                         subtitle: "settings.meetings.export_drilldown_desc".localized,
                         accessibilityHint: "settings.meetings.export_drilldown_accessibility_hint".localized
@@ -230,16 +224,11 @@ public struct MeetingSettingsTab: View {
                 isOn: meetingPostProcessingBinding
             )
 
-            Divider()
-
             EnhancementsModelSelectionControl(
                 target: .meeting,
                 viewModel: aiSettingsViewModel,
                 settings: settings
             )
-            .settingsListRow()
-
-            Divider()
 
             DSToggleRow(
                 "transcription.qa.title".localized,
@@ -247,9 +236,7 @@ public struct MeetingSettingsTab: View {
                 isOn: $meetingViewModel.settings.meetingQnAEnabled
             )
 
-            Divider()
-
-            SettingsDrillDownButtonRow(
+            SettingsListDrillDownButtonRow(
                 title: "settings.meetings.prompts".localized,
                 subtitle: "settings.meetings.prompts_drilldown_desc".localized,
                 accessibilityHint: "settings.meetings.prompts_drilldown_accessibility_hint".localized
