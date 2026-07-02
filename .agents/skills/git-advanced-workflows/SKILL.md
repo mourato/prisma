@@ -17,7 +17,7 @@ Use this skill as the canonical owner for advanced Git history surgery and recov
 
 - Use this skill for advanced Git operations and recovery scenarios.
 - Use `../git-workflow/SKILL.md` for standard branch, commit, PR, and cleanup flow.
-- Use `../git-worktree/SKILL.md` for optional worktree-specific operations.
+- Keep optional worktree-specific operations scoped to the current repository tooling.
 
 ## When to Use
 
@@ -116,4 +116,3 @@ git reset --soft HEAD^
 ## Related Skills
 
 - `../git-workflow/SKILL.md`
-- `../git-worktree/SKILL.md`

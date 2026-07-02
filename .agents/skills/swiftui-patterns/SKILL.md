@@ -43,7 +43,7 @@ Route to `swiftui-animation` when the task is primarily about advanced transitio
 
 Before writing new UI code, treat the interface as reusable blocks:
 
-- Search existing design-system/UI blocks first (`MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker` and related components).
+- Search existing design-system/UI blocks first (`SettingsListGroup`, `DSGroup`, `DSCard`, `DSToggleRow`, `DSCallout`, `DSBadge`, `DSModifierShortcutEditor`, `DSThemePicker` and related components).
 - Apply `reuse -> extend -> create`:
   - **Reuse** when an existing component already fits.
   - **Extend** when the component can absorb the variant without breaking existing usage.
@@ -159,7 +159,8 @@ struct ContentView: View {
 ### Settings UX Consistency Checklist
 
 - Use drill-down rows consistently for secondary settings pages.
-- For any settings row that pushes a secondary page, reuse `SettingsDrillDownListRow` inside a `NavigationStack`, following the pattern in `EnhancementsSettingsTab` before creating a custom row wrapper.
+- For any settings row that pushes a secondary page from a `NavigationStack`, reuse `SettingsDrillDownListRow`.
+- For button-driven drill-downs inside `SettingsListGroup`, use `SettingsListDrillDownButtonRow`.
 - Keep row anatomy stable: title, optional short subtitle, disclosure indicator.
 - Avoid repeating the same title or description in the page header and again in the first settings card unless the card introduces materially new context.
 - Prefer inline descriptive copy for the page-level explanation. Reserve info popovers/tooltips for secondary guidance, edge cases, or optional workflows.
@@ -174,30 +175,50 @@ struct ContentView: View {
 Use the project's Design System tokens/components to keep UI consistent and DRY:
 
 - Tokens: `MeetingAssistantDesignSystem`
-- Components: `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`
+- List containers: `SettingsListGroup`
+- Content containers: `DSGroup`, `DSCard`
+- Rows and controls: `DSToggleRow`, `SettingsListDrillDownButtonRow`, `SettingsDrillDownListRow`, `DSCallout`, `DSBadge`, `DSModifierShortcutEditor`, `DSThemePicker`
 - Always evaluate reusing/extending these components before introducing custom wrappers in feature views.
 - Keyboard shortcut registration sections should use `MAShortcutSettingsSection` (instead of duplicating section layout). Keep a single consolidated helper affordance for shortcut context plus optional external remap guidance; do not stack multiple adjacent info popovers or repeat the same warning inline in each settings tab.
 
+#### Settings list groups
+
+Use `SettingsListGroup` for plain settings lists: toggles, pickers, value rows, and drill-down rows that should share native list rhythm. `SettingsListGroup` owns row padding and separators.
+
+Do not put `Divider()` inside `SettingsListGroup`. Do not add vertical row padding manually. Do not add a local `.settingsListRow()` modifier. If a row needs custom layout, make the row content itself a single view and let `SettingsListGroup` wrap it.
+
+Use `DSGroup` for content sections that are not simple lists: editors, tables, app pickers, model cards, dense status blocks, callouts plus action clusters, or content with internal grouping.
+
 ```swift
-// Use MAGroup for labeled sections
-MAGroup("Recording", icon: "recordingtape") {
-    MAToggleRow(
+SettingsListGroup("Recording", icon: "recordingtape") {
+    DSToggleRow(
         "Auto-start recording",
         description: "Optional description text",
         isOn: $viewModel.autoStart
     )
-    
-    Divider()
-    
-    // Additional content
-}
 
-// Use MACard for unlabeled containers
-MACard {
+    SettingsListDrillDownButtonRow(
+        title: "Advanced",
+        subtitle: "Configure advanced recording options"
+    ) {
+        navigationState.open(.advanced)
+    }
+
     HStack {
         Text("Format")
         Spacer()
         Picker("", selection: $format) { ... }
+            .labelsHidden()
+            .pickerStyle(.menu)
+    }
+}
+```
+
+```swift
+DSGroup("Prompt editor", icon: "terminal.fill") {
+    VStack(alignment: .leading, spacing: 12) {
+        TextEditor(text: $prompt)
+        DSCallout(kind: .info, title: title, message: message)
     }
 }
 ```
@@ -208,7 +229,7 @@ MACard {
 
 ```swift
 // ✅ CORRECT - Toggle for immediate-effect settings
-MAToggleRow("Enable feature", isOn: $viewModel.isEnabled)
+DSToggleRow("Enable feature", isOn: $viewModel.isEnabled)
 
 // ❌ WRONG - Checkbox for settings without explicit save
 Toggle(isOn: $isEnabled) {

@@ -11,12 +11,12 @@ Use this skill as the canonical owner for Swift concurrency diagnostics and reme
 
 - Own actor-isolation fixes, Sendable remediation, and compiler-driven concurrency triage.
 - Keep concurrency fixes minimal, behavior-preserving, and explicit about ownership boundaries.
-- Delegate conceptual-only concurrency teaching to the concurrency bridge skill.
+- Keep conceptual-only concurrency teaching separate from concrete compiler remediation.
 
 ## Scope Boundary
 
 - Use this skill for concrete Swift concurrency compiler issues and remediation.
-- Use `../concurrency/SKILL.md` for conceptual guidance without concrete compiler remediation.
+- For conceptual guidance without concrete compiler remediation, answer directly from Swift concurrency principles instead of expanding this skill's remediation workflow.
 
 ## When to Use
 

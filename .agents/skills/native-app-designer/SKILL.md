@@ -55,6 +55,7 @@ Use this sequence:
 - Prefer semantic colors/materials and design-system tokens over hardcoded values.
 - Avoid generic, repetitive layouts that flatten hierarchy.
 - In settings and inspector-style screens, keep one primary explanation per cluster. Do not repeat identical copy in the page header, section header, card body, and tooltip.
+- In settings screens, use `SettingsListGroup` for simple lists of rows so spacing and separators stay native and consistent. Use `DSGroup` only for composed content such as editors, tables, cards, app/model pickers, or callout/action clusters.
 - Treat popovers/help affordances as escalation, not baseline content. If two or more nearby popovers explain the same concept or add little beyond visible copy, consolidate or remove them.
 - Use motion to guide attention and communicate state changes.
 - Keep reduced-motion behavior available for motion-heavy transitions.

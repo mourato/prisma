@@ -17,7 +17,6 @@ Use this skill as the canonical owner for cross-cutting debugging methodology in
 
 - Use this skill for cross-cutting investigation methodology when root cause is unknown.
 - Use `../swiftui-performance-audit/SKILL.md` when the issue is specifically SwiftUI rendering/update/layout/animation runtime behavior.
-- Use `../performance/SKILL.md` for app-wide optimization once the bottleneck is known and is not SwiftUI-rendering-centric.
 - Use `../audio-realtime/SKILL.md` for render-thread and low-latency audio defects once the failing path is confirmed.
 - Use `../swift-concurrency-expert/SKILL.md` for concrete actor-isolation or `Sendable` diagnostics.
 
@@ -94,7 +93,6 @@ make build-agent
 
 - `../audio-realtime/SKILL.md`
 - `../swift-concurrency-expert/SKILL.md`
-- `../performance/SKILL.md`
 - `../swiftui-performance-audit/SKILL.md`
 - `../observability-diagnostics/SKILL.md`
 

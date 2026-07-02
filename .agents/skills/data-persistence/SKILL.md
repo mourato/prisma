@@ -17,7 +17,7 @@ Use this skill as the canonical owner for storage, repository, and migration gui
 
 - Use this skill for repositories, storage design, migration planning, and persistence synchronization.
 - Use `../keychain-security/SKILL.md` for credential persistence.
-- Use `../security/SKILL.md` for sensitive-data policy beyond persistence mechanics.
+- Keep sensitive-data policy beyond persistence mechanics aligned with `AGENTS.md` security constraints.
 
 ## When to Use
 

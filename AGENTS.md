@@ -215,7 +215,7 @@ If requirements are ambiguous, incomplete, or have meaningful trade-offs:
 - Apply least-privilege thinking for entitlements, capabilities, and integrations.
 - Validate and sanitize external input at module boundaries (network payloads, file content, provider responses).
 - Avoid logging sensitive data (keys, tokens, full transcripts, personal identifiers).
-- See `.agents/skills/security/` and `.agents/skills/keychain-security/` for implementation guidance.
+- See `.agents/skills/keychain-security/` for credential persistence guidance.
 
 ---
 

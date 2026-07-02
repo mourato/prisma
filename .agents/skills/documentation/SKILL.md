@@ -17,7 +17,6 @@ Use this skill as the canonical owner for documentation practices in Prisma.
 
 - Use this skill for writing or refining documentation and DocC comments.
 - Use `../project-standards/SKILL.md` for project policy, AGENTS maintenance, and guidance governance.
-- Use `../skills-discovery/SKILL.md` when the task is to find or install an external skill.
 
 ## When to Use
 
@@ -44,7 +43,7 @@ Preferred order:
 3. Official SDK or framework source
 4. Web lookup only when the information is not available locally
 
-If an external skill would materially help, treat it as optional and use `../skills-discovery/SKILL.md` explicitly rather than assuming that skill is installed.
+If an external skill would materially help, treat it as optional and use the available skill-discovery mechanism rather than assuming that skill is installed.
 
 ## 3. Tool-Agnostic Principles
 
@@ -114,4 +113,3 @@ Use `// MARK:` to organize code into logical sections:
 ## Related Skills
 
 - `../project-standards/SKILL.md`
-- `../skills-discovery/SKILL.md`

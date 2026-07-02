@@ -207,7 +207,6 @@ Provide:
 ## Related Skills
 
 - `../swiftui-patterns/SKILL.md`
-- `../performance/SKILL.md`
 - `../swiftui-animation/SKILL.md`
 
 ## References

@@ -11,12 +11,12 @@ Use this skill as the canonical owner for project-level guidance governance in P
 
 - Own AGENTS alignment, documentation policy, and information-routing standards.
 - Keep project guidance synchronized with current tools, scripts, and skill ownership.
-- Delegate skill-authoring mechanics to the skill-development owner.
+- Keep skill-authoring mechanics aligned with the current local skill structure.
 
 ## Scope Boundary
 
 - Use this skill for AGENTS maintenance, policy updates, and repository standards.
-- Use `../skill-development/SKILL.md` for refactoring or authoring the structure of individual skills.
+- Keep individual skill structure changes focused and validated with `make guidance-check`.
 
 ## When to Use
 
@@ -80,10 +80,8 @@ Rules:
 
 ## Related Skills
 
-- `../skill-development/SKILL.md`
 - `../documentation/SKILL.md`
 
 ## References
 
 - `AGENTS.md`
-- `../skill-development/SKILL.md`
