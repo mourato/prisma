@@ -18,7 +18,7 @@ Use this skill as the canonical owner for macro task sequencing in Prisma.
 - This skill owns macro task sequencing (risk, lane, lifecycle phases).
 - Use ../git-workflow/SKILL.md for detailed Git operations.
 - Use ../quality-assurance/SKILL.md for verification strategy and command policy.
-- Use ../code-review/SKILL.md for review findings format and severity ritual.
+- Use ../code-review/SKILL.md for review findings format and severity ritual; it includes the mandatory thermo-nuclear structural pass.
 
 ## When to Use
 
@@ -120,7 +120,7 @@ Repeat the following loop until the task is complete:
 
 ## Phase 3: Local Code Review Ritual (Risk-based)
 
-Before the final push/merge, perform a local review using **[code-review](../code-review/SKILL.md)**.
+Before the final push/merge, perform a local review using **[code-review](../code-review/SKILL.md)**. That review must include the mandatory structural pass from **[thermo-nuclear-code-quality-review](../thermo-nuclear-code-quality-review/SKILL.md)**.
 
 1. **Define the scope**: Review the commit list and files touched.
 2. **Review depth by lane**:
@@ -168,3 +168,4 @@ Once the task is complete and verified:
 - **[git-workflow](../git-workflow/SKILL.md)**: Detailed commit and branching guidelines.
 - **[quality-assurance](../quality-assurance/SKILL.md)**: Standards for testing and build verification.
 - **[code-review](../code-review/SKILL.md)**: Mandatory pre-push review ritual and reporting format.
+- **[thermo-nuclear-code-quality-review](../thermo-nuclear-code-quality-review/SKILL.md)**: Mandatory structural maintainability pass inside code review.

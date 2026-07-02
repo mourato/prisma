@@ -53,7 +53,7 @@ For workflow-oriented skills, keep ownership sharp:
 - `task-lifecycle` owns risk classification, lane choice, and lifecycle sequencing.
 - `quality-assurance` owns concrete command mapping and validation strategy.
 - `git-workflow` owns branch, commit, PR, and cleanup mechanics.
-- `code-review` owns findings format, severity framing, and review output.
+- `code-review` owns findings format, severity framing, and review output; every code review includes `thermo-nuclear-code-quality-review` for structural maintainability analysis.
 - Router skills should route to these owners rather than restate their rules.
 
 ## Skill Quality Checklist
@@ -108,7 +108,7 @@ Use available tooling and local checks to ensure consistency.
 
 ### Skill Deepening Focus
 
-1. When adding a sharper specialist skill, define which normal skill still owns everyday guidance and link between them explicitly.
-2. Keep strict review prompts specialized; do not copy their full severity language into broad code-quality or project-standard skills.
+1. When adding a sharper specialist skill, define which normal skill invokes it and which output contract remains elsewhere.
+2. Keep strict review prompts specialized; route to them instead of copying their full severity language into broad code-quality or project-standard skills.
 3. Validate new frontmatter fields and routing coverage with `make guidance-check`.
 4. After adding or renaming a skill, check `skills-lock.json`, `.agents/SKILLS_INDEX.md`, taxonomy, and routing docs for drift.

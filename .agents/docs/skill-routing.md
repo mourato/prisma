@@ -105,7 +105,9 @@ When inspecting code outside this repository, use this source order:
 - Readability and maintainability improvements
 - Refactoring duplicated logic
 
-**Complementary:** `swift-conventions`, `code-review`
+**Complementary:** `swift-conventions`
+
+Use `code-review` for review output; it always includes `thermo-nuclear-code-quality-review` for structural maintainability analysis.
 
 **Example:** "Extract duplicate audio logic into a reusable service" → `code-quality`
 
@@ -288,7 +290,7 @@ When inspecting code outside this repository, use this source order:
 | `audio-realtime` | `.agents/skills/audio-realtime/SKILL.md` | AVAudioSourceNode, ProcessTap, underruns |
 | `build-macos-apps` | `.agents/skills/build-macos-apps/SKILL.md` | Quick workflow routing |
 | `code-quality` | `.agents/skills/code-quality/SKILL.md` | Readability, refactoring |
-| `code-review` | `.agents/skills/code-review/SKILL.md` | Semáforo review |
+| `code-review` | `.agents/skills/code-review/SKILL.md` | Semáforo review with mandatory thermo-nuclear structural pass |
 | `concurrency` | `.agents/skills/concurrency/SKILL.md` | Conceptual async/await guidance |
 | `data-persistence` | `.agents/skills/data-persistence/SKILL.md` | Storage design, migrations |
 | `debugging-strategies` | `.agents/skills/debugging-strategies/SKILL.md` | Crash and flaky investigation |

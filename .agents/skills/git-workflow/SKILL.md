@@ -17,7 +17,7 @@ Use this skill as the canonical owner for day-to-day Git operations in Prisma.
 
 - Use `../task-lifecycle/SKILL.md` for risk classification and lifecycle sequencing.
 - Use `../quality-assurance/SKILL.md` for concrete validation commands and merge gates.
-- Use `../code-review/SKILL.md` for findings format and semáforo review output.
+- Use `../code-review/SKILL.md` for findings format and semáforo review output; it includes the mandatory `../thermo-nuclear-code-quality-review/SKILL.md` structural pass.
 
 ## When to Use
 
@@ -38,7 +38,7 @@ Break your work into small, self-contained units.
 - **Safe State**: Do not commit knowingly broken code.
 
 ### 2. Pre-Push / Pre-Merge Code Review
-Before the final push/merge, perform a local review using **[code-review](../code-review/SKILL.md)**.
+Before the final push/merge, perform a local review using **[code-review](../code-review/SKILL.md)**, including the mandatory structural pass from **[thermo-nuclear-code-quality-review](../thermo-nuclear-code-quality-review/SKILL.md)**.
 
 - Fast lane: lightweight checklist review is acceptable.
 - Full lane: create a semáforo report (🔴/🟡/🟢).
@@ -166,6 +166,7 @@ For complex Git operations, see the **[git-advanced-workflows](../git-advanced-w
 - `../task-lifecycle/SKILL.md`
 - `../quality-assurance/SKILL.md`
 - `../code-review/SKILL.md`
+- `../thermo-nuclear-code-quality-review/SKILL.md`
 - `../git-advanced-workflows/SKILL.md`
 
 ## References

@@ -9,7 +9,7 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 | audio-realtime | Runtime/Performance | Canonical | Low-latency audio pipeline and callback constraints | performance, debugging-strategies | Keep; specialized runtime owner |
 | build-macos-apps | macOS/Swift Core | Router | Intake and workflow routing for macOS tasks | macos-development, task-lifecycle, quality-assurance | Keep; router-only, no deep implementation duplication |
 | code-quality | Quality/Engineering Flow | Canonical (generic) | Readability and maintainability principles | swift-conventions | Keep; non-language-specific quality owner |
-| code-review | Quality/Engineering Flow | Canonical | Risk-first review ritual and findings format | task-lifecycle, quality-assurance | Keep; review specialist |
+| code-review | Quality/Engineering Flow | Canonical | Risk-first review ritual and findings format; always includes thermo-nuclear structural review | task-lifecycle, quality-assurance, thermo-nuclear-code-quality-review | Keep; review specialist |
 | concurrency | Runtime/Performance | Bridge | Conceptual async/actor/thread-safety guidance | swift-concurrency-expert | Keep; bridge only |
 | data-persistence | Security/Data | Canonical | Repository, storage, migration, and synchronization strategy | architecture, security | Keep |
 | debugging-strategies | Runtime/Performance | Canonical (method) | Cross-cutting debugging methodology | observability-diagnostics, performance, swiftui-performance-audit | Keep; investigation owner |
@@ -44,7 +44,7 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 | swiftui-performance-audit | SwiftUI/UI/UX | Canonical (runtime perf) | SwiftUI rendering, update, and layout performance diagnostics | performance, debugging-strategies | Keep |
 | task-lifecycle | Quality/Engineering Flow | Canonical (macro flow) | Risk classification and lifecycle phase orchestration | git-workflow, quality-assurance, code-review | Keep; macro orchestrator |
 | testing-xctest | Quality/Engineering Flow | Canonical | XCTest implementation patterns, async tests, `@MainActor`, mocks, fakes, and spies | quality-assurance | Keep; XCTest owner |
-| thermo-nuclear-code-quality-review | Quality/Engineering Flow | Specialist | Strict maintainability review for abstraction quality, large files, and spaghetti-condition growth | code-quality, code-review | Keep; harsh review mode |
+| thermo-nuclear-code-quality-review | Quality/Engineering Flow | Specialist | Mandatory structural maintainability pass for code review; strict abstraction, large-file, and spaghetti-growth analysis | code-quality, code-review | Keep; harsh review mode |
 
 ## Grouping Summary
 

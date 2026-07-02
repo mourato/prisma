@@ -11,7 +11,7 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 | `audio-realtime` | `.agents/skills/audio-realtime/` | AVAudioSourceNode, AudioRecorder, ProcessTap, audio glitches, underruns, low-latency optimization |
 | `build-macos-apps` | `.agents/skills/build-macos-apps/` | Request intake and workflow routing for macOS app tasks (select Fast vs Full lane quickly) |
 | `code-quality` | `.agents/skills/code-quality/` | Improve code readability, rename for clarity, refactor duplicated logic, apply clean code conventions |
-| `code-review` | `.agents/skills/code-review/` | Review changes, do semáforo review (🔴/🟡/🟢), audit PRs, find risks before merge |
+| `code-review` | `.agents/skills/code-review/` | Review changes, do semáforo review (🔴/🟡/🟢), audit PRs, find risks before merge; always includes thermo-nuclear structural analysis |
 | `concurrency` | `.agents/skills/concurrency/` | Conceptual guidance on async/await, actors, thread-safety patterns (NOT Swift 6.2 compiler fixes) |
 | `data-persistence` | `.agents/skills/data-persistence/` | Store/load data, design repositories, plan migrations, implement synchronization |
 | `debugging-strategies` | `.agents/skills/debugging-strategies/` | Debug bugs, investigate crashes, analyze flaky behavior, trace unknown root causes |
@@ -119,7 +119,7 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 - `task-lifecycle`: risk classification, lane selection, lifecycle sequencing
 - `quality-assurance`: validation strategy, command mapping, escalation to full gates
 - `git-workflow`: branch, commit, PR, and cleanup mechanics
-- `code-review`: findings format, severity framing, semáforo review output
+- `code-review`: findings format, severity framing, semáforo review output; always includes `thermo-nuclear-code-quality-review` for structural code analysis
 - `build-macos-apps`: macOS request intake and routing only
 
 ---
@@ -137,4 +137,5 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 - `data-persistence` → `security` (if sensitive data involved)
 - `quality-assurance` → `testing-xctest` (general QA → XCTest specifics)
 - `observability-diagnostics` → `debugging-strategies` (diagnostic data supports investigation)
+- `code-review` → `thermo-nuclear-code-quality-review` (mandatory structural maintainability pass)
 - `code-review` → other skills (review may escalate to specific domain)

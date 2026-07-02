@@ -11,12 +11,14 @@ Use this skill as the canonical owner for local review depth, findings format, a
 
 - Own review framing, severity language, and output expectations.
 - Focus on correctness, regression risk, safety, and missing verification.
+- Always include the structural maintainability pass from `../thermo-nuclear-code-quality-review/SKILL.md`.
 - Delegate lane policy and command selection to their specialist owners.
 
 ## Scope Boundary
 
 - Use `../task-lifecycle/SKILL.md` for deciding when review happens and how deep it must be by lane.
 - Use `../quality-assurance/SKILL.md` for validation commands and merge gates.
+- Use `../thermo-nuclear-code-quality-review/SKILL.md` as the mandatory owner for code-structure, abstraction, file-size, and spaghetti-growth analysis in every code review.
 - Use subsystem skills for domain-specific review details when the change is in a specialized area.
 
 ## When to Use
@@ -34,6 +36,8 @@ Perform a pragmatic review of the change set before the final push, focusing on:
 - Maintainability (duplication, cohesion, coupling, naming)
 - Testability (injection points, pure logic)
 
+Maintainability findings must be evaluated through `../thermo-nuclear-code-quality-review/SKILL.md`; do not duplicate or soften that skill's structural bar here.
+
 ## Review Workflow
 
 ### 1) Scope
@@ -50,18 +54,22 @@ Perform a pragmatic review of the change set before the final push, focusing on:
 - Logs: no PII; consistent severity.
 - i18n/a11y: localization keys and accessibility labels/hints are correct.
 
-### 3) UX checklist
+### 3) Structural maintainability checklist
+
+Run the review pass defined by **[thermo-nuclear-code-quality-review](../thermo-nuclear-code-quality-review/SKILL.md)** and include any high-conviction findings in the final semáforo output.
+
+### 4) UX checklist
 
 - Settings placement is coherent and discoverable.
 - “Reset” returns the UI to a predictable, consistent state.
 - Custom shortcuts are disabled when not selected.
 
-### 4) Security checklist
+### 5) Security checklist
 
 - No conflicting simultaneous recording.
 - No leaking of file paths or sensitive inputs in logs.
 
-### 5) Final summary table (traffic-light)
+### 6) Final summary table (traffic-light)
 
 Use a short table with priority and recommendation:
 
@@ -85,6 +93,7 @@ Suggested columns:
 
 ## Related Skills
 
+- `../thermo-nuclear-code-quality-review/SKILL.md`
 - `../task-lifecycle/SKILL.md`
 - `../quality-assurance/SKILL.md`
 - Domain specialist skills relevant to the reviewed change

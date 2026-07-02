@@ -13,12 +13,15 @@ Use this skill as the strictest maintainability review mode for structural quali
 ## Scope Boundary
 
 - This skill owns unusually strict code-quality review prompts and approval bars.
+- This skill is the mandatory structural maintainability pass for every `../code-review/SKILL.md` review.
 - It does not replace `../code-quality/SKILL.md` for everyday readability/refactoring guidance.
-- It does not own semáforo review formatting; use `../code-review/SKILL.md` when the user asks for a general code review.
+- It does not own semáforo review formatting; use `../code-review/SKILL.md` for the final findings format and severity framing.
 
 ## When to Use
 
 Use this skill when the user asks for a thermo-nuclear code quality review, thermonuclear review, deep code quality audit, or especially harsh maintainability review.
+
+Also use this skill whenever `../code-review/SKILL.md` is used. A normal "code review" in Prisma must include this structural pass.
 
 Use this skill for an unusually strict review focused on implementation quality, maintainability, abstraction quality, and codebase health.
 
