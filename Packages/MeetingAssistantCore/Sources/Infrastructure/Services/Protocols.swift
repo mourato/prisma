@@ -120,6 +120,15 @@ public protocol PostProcessingServiceProtocol: ObservableObject {
         systemPromptOverride: String?
     ) async throws -> String
 
+    /// Process a raw transcription using a specific prompt and an explicit enhancements model selection.
+    func processTranscription(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection,
+        systemPromptOverride: String?
+    ) async throws -> String
+
     /// Process transcription using hardened structured summary pipeline.
     func processTranscriptionStructured(_ transcription: String) async throws -> DomainPostProcessingResult
 
@@ -135,9 +144,30 @@ public protocol PostProcessingServiceProtocol: ObservableObject {
         with prompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode
     ) async throws -> DomainPostProcessingResult
+
+    /// Process transcription using hardened structured summary pipeline with an explicit enhancements model selection.
+    func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection
+    ) async throws -> DomainPostProcessingResult
 }
 
 public extension PostProcessingServiceProtocol {
+    func processTranscription(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode _: IntelligenceKernelMode,
+        selectionOverride _: EnhancementsAISelection,
+        systemPromptOverride _: String?
+    ) async throws -> String {
+        try await processTranscription(
+            transcription,
+            with: prompt
+        )
+    }
+
     func processTranscription(
         _ transcription: String,
         with prompt: PostProcessingPrompt,
@@ -154,6 +184,18 @@ public extension PostProcessingServiceProtocol {
         _ transcription: String,
         with prompt: PostProcessingPrompt,
         mode _: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult {
+        try await processTranscriptionStructured(
+            transcription,
+            with: prompt
+        )
+    }
+
+    func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode _: IntelligenceKernelMode,
+        selectionOverride _: EnhancementsAISelection
     ) async throws -> DomainPostProcessingResult {
         try await processTranscriptionStructured(
             transcription,

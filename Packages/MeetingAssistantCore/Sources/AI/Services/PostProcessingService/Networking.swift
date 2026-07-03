@@ -8,17 +8,21 @@ extension PostProcessingService {
         let transcription: String
         let prompt: PostProcessingPrompt
         let mode: IntelligenceKernelMode
+        let selectionOverride: EnhancementsAISelection?
         let systemPromptOverride: String?
         let timeoutSeconds: TimeInterval
+        let requestConfig: AIConfiguration
         let traceContext: RequestTraceContext
         let attempt: Int
     }
 
     struct CustomProviderRequestContext {
         let mode: IntelligenceKernelMode
+        let selectionOverride: EnhancementsAISelection?
         let systemPrompt: String
         let userContent: String
         let timeoutSeconds: TimeInterval
+        let requestConfig: AIConfiguration
         let traceContext: RequestTraceContext
         let attempt: Int
     }
@@ -27,8 +31,8 @@ extension PostProcessingService {
 
     func performAIRequest(context: ProviderRequestContext) async throws -> String {
         let requestStartedAt = Date()
-        let config = settings.resolvedEnhancementsAIConfiguration(for: context.mode)
-        let apiKey = try getAPIKey(for: context.mode, provider: config.provider)
+        let config = context.requestConfig
+        let apiKey = try getAPIKey(selectionOverride: context.selectionOverride, mode: context.mode, provider: config.provider)
         let url = try buildURL(for: config, apiKey: apiKey)
 
         var request = URLRequest(url: url)
@@ -75,8 +79,8 @@ extension PostProcessingService {
 
     func performCustomAIRequest(context: CustomProviderRequestContext) async throws -> String {
         let requestStartedAt = Date()
-        let config = settings.resolvedEnhancementsAIConfiguration(for: context.mode)
-        let apiKey = try getAPIKey(for: context.mode, provider: config.provider)
+        let config = context.requestConfig
+        let apiKey = try getAPIKey(selectionOverride: context.selectionOverride, mode: context.mode, provider: config.provider)
         let url = try buildURL(for: config, apiKey: apiKey)
 
         var request = URLRequest(url: url)
@@ -133,6 +137,21 @@ extension PostProcessingService {
     }
 
     func getAPIKey(for mode: IntelligenceKernelMode, provider: AIProvider) throws -> String {
+        try getAPIKey(selectionOverride: nil, mode: mode, provider: provider)
+    }
+
+    func getAPIKey(
+        selectionOverride: EnhancementsAISelection?,
+        mode: IntelligenceKernelMode,
+        provider: AIProvider
+    ) throws -> String {
+        if let selectionOverride,
+           let modeKey = settings.enhancementsAPIKey(for: selectionOverride),
+           !modeKey.isEmpty
+        {
+            return modeKey
+        }
+
         if let modeKey = settings.enhancementsAPIKey(for: mode), !modeKey.isEmpty {
             return modeKey
         }

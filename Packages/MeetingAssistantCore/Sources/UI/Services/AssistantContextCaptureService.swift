@@ -46,11 +46,13 @@ public final class AssistantContextCaptureService {
         activeTabURL: String?,
         calendarContext: String?,
         isDictationMode: Bool,
+        contextSourcePolicy: DictationContextSourcePolicy? = nil,
         includeWindowOCR: Bool? = nil
     ) async -> (context: String?, items: [TranscriptionContextItem]) {
-        let shouldIncludeWindowOCR = includeWindowOCR ?? settings.contextAwarenessIncludeWindowOCR
+        let contextAwarenessEnabled = contextSourcePolicy?.isEnabled ?? settings.contextAwarenessEnabled
+        let shouldIncludeWindowOCR = includeWindowOCR ?? contextSourcePolicy?.includeWindowOCR ?? settings.contextAwarenessIncludeWindowOCR
 
-        guard settings.contextAwarenessEnabled else {
+        guard contextAwarenessEnabled else {
             AppLogger.debug(
                 "Context awareness disabled, skipping context capture",
                 category: .recordingManager,
@@ -70,11 +72,11 @@ public final class AssistantContextCaptureService {
         let snapshot = await contextAwarenessService.captureSnapshot(
             options: .init(
                 includeActiveApp: true,
-                includeClipboard: settings.contextAwarenessIncludeClipboard,
+                includeClipboard: contextSourcePolicy?.includeClipboard ?? settings.contextAwarenessIncludeClipboard,
                 includeWindowOCR: shouldIncludeWindowOCR,
-                includeAccessibilityText: settings.contextAwarenessIncludeAccessibilityText,
+                includeAccessibilityText: contextSourcePolicy?.includeAccessibilityText ?? settings.contextAwarenessIncludeAccessibilityText,
                 protectSensitiveApps: true,
-                redactSensitiveData: settings.contextAwarenessRedactSensitiveData,
+                redactSensitiveData: contextSourcePolicy?.redactSensitiveData ?? settings.contextAwarenessRedactSensitiveData,
                 excludedBundleIDs: settings.contextAwarenessExcludedBundleIDs
             )
         )
@@ -108,6 +110,7 @@ public final class AssistantContextCaptureService {
         activeTabURL: String?,
         calendarContext: String?,
         isDictationMode: Bool,
+        contextSourcePolicy: DictationContextSourcePolicy? = nil,
         includeWindowOCR: Bool? = nil,
         timeoutNanoseconds: UInt64
     ) async -> PostProcessingContextCaptureResult {
@@ -122,6 +125,7 @@ public final class AssistantContextCaptureService {
                     activeTabURL: activeTabURL,
                     calendarContext: calendarContext,
                     isDictationMode: isDictationMode,
+                    contextSourcePolicy: contextSourcePolicy,
                     includeWindowOCR: includeWindowOCR
                 )
                 return PostProcessingContextCaptureResult(

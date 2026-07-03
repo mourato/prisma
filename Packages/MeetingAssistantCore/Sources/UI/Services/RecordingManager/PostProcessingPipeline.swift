@@ -77,7 +77,13 @@ extension RecordingManager {
             for: meeting,
             capturePurposeOverride: capturePurposeOverride
         )
-        let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
+        let isDictation = kernelMode == .dictation
+        let dictationSelectionOverride = isDictation
+            ? matchingDictationStyleForDictation(settings: settings)?.enhancementsSelection
+            : nil
+        let readinessIssue = dictationSelectionOverride.map {
+            settings.enhancementsInferenceReadinessIssue(for: $0, apiKeyExists: apiKeyExists)
+        } ?? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
         setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
         if let readinessIssue {
             let reasonCode = readinessIssue.rawValue
@@ -89,7 +95,6 @@ extension RecordingManager {
             return PostProcessingResult(failureReason: "recording_indicator.post_processing_warning.missing_config".localized)
         }
 
-        let isDictation = kernelMode == .dictation
         guard !isPostProcessingDisabled(isDictation: isDictation, settings: settings) else {
             return PostProcessingResult(failureReason: "Post-processing is disabled for this recording type.")
         }
@@ -136,6 +141,7 @@ extension RecordingManager {
             settings: settings,
             qualityProfile: qualityProfile,
             kernelMode: kernelMode,
+            selectionOverride: dictationSelectionOverride,
             dictationStructuredPostProcessingEnabled: settings.dictationStructuredPostProcessingEnabled,
             contextMetadata: contextMetadata
         )
@@ -147,15 +153,19 @@ extension RecordingManager {
         settings: AppSettingsStore,
         qualityProfile: TranscriptionQualityProfile?,
         kernelMode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection? = nil,
         dictationStructuredPostProcessingEnabled: Bool,
         contextMetadata: String
     ) async -> PostProcessingResult {
+        let requestConfig = selectionOverride.map {
+            settings.resolvedEnhancementsAIConfiguration(for: $0)
+        } ?? settings.resolvedEnhancementsAIConfiguration(for: kernelMode)
         let (requestSystemPrompt, requestUserPrompt) = buildRequestPrompts(
             prompt: prompt,
             from: prompt.promptText,
             transcription: postProcessingInput,
             mode: kernelMode,
-            selectedModel: settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel,
+            selectedModel: requestConfig.selectedModel,
             contextMetadata: contextMetadata
         )
 
@@ -167,11 +177,20 @@ extension RecordingManager {
             let canonicalSummary: CanonicalSummary?
 
             if useStructuredPipeline {
-                let structuredResult = try await postProcessingService.processTranscriptionStructured(
-                    postProcessingInput,
-                    with: prompt,
-                    mode: kernelMode
-                )
+                let structuredResult = if let selectionOverride {
+                    try await postProcessingService.processTranscriptionStructured(
+                        postProcessingInput,
+                        with: prompt,
+                        mode: kernelMode,
+                        selectionOverride: selectionOverride
+                    )
+                } else {
+                    try await postProcessingService.processTranscriptionStructured(
+                        postProcessingInput,
+                        with: prompt,
+                        mode: kernelMode
+                    )
+                }
                 processedContent = structuredResult.processedText
                 canonicalSummary = qualityProfile.map { profile in
                     recalibrateCanonicalSummary(structuredResult.canonicalSummary, with: profile)
@@ -187,12 +206,22 @@ extension RecordingManager {
                     ]
                 )
             } else {
-                processedContent = try await postProcessingService.processTranscription(
-                    postProcessingInput,
-                    with: prompt,
-                    mode: kernelMode,
-                    systemPromptOverride: nil
-                )
+                processedContent = if let selectionOverride {
+                    try await postProcessingService.processTranscription(
+                        postProcessingInput,
+                        with: prompt,
+                        mode: kernelMode,
+                        selectionOverride: selectionOverride,
+                        systemPromptOverride: nil
+                    )
+                } else {
+                    try await postProcessingService.processTranscription(
+                        postProcessingInput,
+                        with: prompt,
+                        mode: kernelMode,
+                        systemPromptOverride: nil
+                    )
+                }
                 canonicalSummary = nil
                 AppLogger.info(
                     "Post-processing complete",
@@ -206,7 +235,7 @@ extension RecordingManager {
             }
 
             let duration = Date().timeIntervalSince(startTime)
-            let model = settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel
+            let model = requestConfig.selectedModel
             RecordingIndicatorProcessingStateStore.shared.update(
                 snapshot: RecordingIndicatorProcessingSnapshot(step: .finalizingResult, progressPercent: 100)
             )

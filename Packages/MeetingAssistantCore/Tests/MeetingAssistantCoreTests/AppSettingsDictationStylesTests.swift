@@ -47,8 +47,8 @@ final class AppSettingsDictationStylesTests: XCTestCase {
             ),
         ]
 
-        let styleA = settings.dictationStyles[0]
-        let styleB = settings.dictationStyles[1]
+        let styleA = settings.dictationStyles[1]
+        let styleB = settings.dictationStyles[2]
 
         XCTAssertTrue(styleA.targets.contains(sharedTarget))
         XCTAssertFalse(styleB.targets.contains(sharedTarget))
@@ -74,7 +74,7 @@ final class AppSettingsDictationStylesTests: XCTestCase {
             ),
         ]
 
-        let targets = settings.dictationStyles[0].targets
+        let targets = settings.dictationStyles[1].targets
         XCTAssertEqual(
             targets,
             [
@@ -82,5 +82,80 @@ final class AppSettingsDictationStylesTests: XCTestCase {
                 .website(url: "https://docs.example.com"),
             ]
         )
+    }
+
+    func testDictationStyles_CreatesDefaultModeWhenDeleted() {
+        settings.dictationStyles = []
+
+        XCTAssertEqual(settings.dictationStyles.count, 1)
+        XCTAssertEqual(settings.dictationStyles.first?.id, AppSettingsStore.defaultDictationModeID)
+        XCTAssertEqual(settings.dictationStyles.first?.isDefault, true)
+        XCTAssertEqual(settings.dictationStyles.first?.targets, [])
+    }
+
+    func testDictationStyles_DefaultModeAdoptsLegacyContextAndModelSelection() {
+        settings.contextAwarenessEnabled = true
+        settings.contextAwarenessIncludeClipboard = true
+        settings.contextAwarenessIncludeWindowOCR = false
+        settings.contextAwarenessIncludeAccessibilityText = true
+        settings.contextAwarenessRedactSensitiveData = false
+        settings.enhancementsDictationAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "gpt-4.1-mini")
+
+        settings.dictationStyles = []
+
+        let defaultStyle = settings.dictationStyles[0]
+        XCTAssertEqual(defaultStyle.contextSourcePolicy?.isEnabled, true)
+        XCTAssertEqual(defaultStyle.contextSourcePolicy?.includeClipboard, true)
+        XCTAssertEqual(defaultStyle.contextSourcePolicy?.includeWindowOCR, false)
+        XCTAssertEqual(defaultStyle.contextSourcePolicy?.includeAccessibilityText, true)
+        XCTAssertEqual(defaultStyle.contextSourcePolicy?.redactSensitiveData, false)
+        XCTAssertEqual(defaultStyle.enhancementsSelection?.provider, .openai)
+        XCTAssertEqual(defaultStyle.enhancementsSelection?.selectedModel, "gpt-4.1-mini")
+    }
+
+    func testDictationStyles_DefaultModeDoesNotMatchTargets() {
+        settings.dictationStyles = [
+            DictationStyle(
+                id: AppSettingsStore.defaultDictationModeID,
+                name: "Default",
+                promptInstructions: "",
+                forceMarkdownOutput: true,
+                replaceBasePrompt: false,
+                targets: [.app(bundleIdentifier: "com.apple.TextEdit")],
+                isDefault: true
+            ),
+        ]
+
+        let defaultStyle = settings.dictationStyles[0]
+        XCTAssertEqual(defaultStyle.targets, [])
+        XCTAssertFalse(defaultStyle.matches(bundleIdentifier: "com.apple.TextEdit", activeURL: nil))
+    }
+
+    func testEffectiveDictationStyle_UsesDefaultModeWithoutContext() {
+        let selection = EnhancementsAISelection(provider: .anthropic, selectedModel: "claude-3-5-haiku")
+        settings.dictationStyles = [
+            DictationStyle(
+                id: AppSettingsStore.defaultDictationModeID,
+                name: "Default",
+                promptInstructions: "Default instructions",
+                forceMarkdownOutput: true,
+                replaceBasePrompt: false,
+                targets: [],
+                enhancementsSelection: selection,
+                isDefault: true
+            ),
+            DictationStyle(
+                name: "Safari",
+                promptInstructions: "Safari instructions",
+                forceMarkdownOutput: false,
+                replaceBasePrompt: false,
+                targets: [.app(bundleIdentifier: "com.apple.Safari")]
+            ),
+        ]
+
+        let effectiveStyle = settings.effectiveDictationStyle(bundleIdentifier: nil, activeURL: nil)
+
+        XCTAssertEqual(effectiveStyle.id, AppSettingsStore.defaultDictationModeID)
+        XCTAssertEqual(effectiveStyle.enhancementsSelection, selection)
     }
 }

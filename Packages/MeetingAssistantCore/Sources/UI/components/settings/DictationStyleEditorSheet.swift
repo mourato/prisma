@@ -7,6 +7,10 @@ public struct DictationStyleEditorSheet: View {
     private let isLoadingAppCatalog: Bool
     private let onEnsureAppCatalogLoaded: () -> Void
     private let onFindConflictingStyleName: (DictationStyleTarget, UUID?) -> String?
+    private let modelOptions: [EnhancementsProviderModelOption]
+    private let isLoadingModelOptions: Bool
+    private let onRefreshModelOptions: () -> Void
+    private let providerDisplayName: (EnhancementsAISelection) -> String
     private let onSave: (DictationStyleEditorDraft) -> Void
     private let onCancel: () -> Void
 
@@ -18,6 +22,13 @@ public struct DictationStyleEditorSheet: View {
     @State private var replaceBasePrompt: Bool
     @State private var outputLanguage: DictationOutputLanguage
     @State private var targets: [DictationStyleTarget]
+    @State private var contextAwarenessEnabled: Bool
+    @State private var includeClipboard: Bool
+    @State private var includeWindowOCR: Bool
+    @State private var includeAccessibilityText: Bool
+    @State private var redactSensitiveData: Bool
+    @State private var enhancementsSelection: EnhancementsAISelection?
+    @State private var isDefault: Bool
     @State private var websiteInput = ""
     @State private var validationMessage: String?
 
@@ -27,6 +38,10 @@ public struct DictationStyleEditorSheet: View {
         isLoadingAppCatalog: Bool,
         onEnsureAppCatalogLoaded: @escaping () -> Void,
         onFindConflictingStyleName: @escaping (DictationStyleTarget, UUID?) -> String?,
+        modelOptions: [EnhancementsProviderModelOption],
+        isLoadingModelOptions: Bool,
+        onRefreshModelOptions: @escaping () -> Void,
+        providerDisplayName: @escaping (EnhancementsAISelection) -> String,
         onSave: @escaping (DictationStyleEditorDraft) -> Void,
         onCancel: @escaping () -> Void
     ) {
@@ -34,6 +49,10 @@ public struct DictationStyleEditorSheet: View {
         self.isLoadingAppCatalog = isLoadingAppCatalog
         self.onEnsureAppCatalogLoaded = onEnsureAppCatalogLoaded
         self.onFindConflictingStyleName = onFindConflictingStyleName
+        self.modelOptions = modelOptions
+        self.isLoadingModelOptions = isLoadingModelOptions
+        self.onRefreshModelOptions = onRefreshModelOptions
+        self.providerDisplayName = providerDisplayName
         self.onSave = onSave
         self.onCancel = onCancel
 
@@ -45,6 +64,14 @@ public struct DictationStyleEditorSheet: View {
         _replaceBasePrompt = State(initialValue: draft.replaceBasePrompt)
         _outputLanguage = State(initialValue: draft.outputLanguage)
         _targets = State(initialValue: draft.targets)
+        let contextPolicy = draft.contextSourcePolicy
+        _contextAwarenessEnabled = State(initialValue: contextPolicy?.isEnabled ?? false)
+        _includeClipboard = State(initialValue: contextPolicy?.includeClipboard ?? false)
+        _includeWindowOCR = State(initialValue: contextPolicy?.includeWindowOCR ?? false)
+        _includeAccessibilityText = State(initialValue: contextPolicy?.includeAccessibilityText ?? true)
+        _redactSensitiveData = State(initialValue: contextPolicy?.redactSensitiveData ?? true)
+        _enhancementsSelection = State(initialValue: draft.enhancementsSelection)
+        _isDefault = State(initialValue: draft.isDefault)
     }
 
     public var body: some View {
@@ -114,36 +141,63 @@ public struct DictationStyleEditorSheet: View {
                     .labelsHidden()
                 }
 
-                DSGroup("settings.styles.editor.targets".localized, icon: "scope") {
+                DSGroup("settings.styles.editor.context_sources".localized, icon: "text.viewfinder") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("settings.styles.editor.targets_hint".localized)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-
-                        AppSearchInlineSection(
-                            appCatalog: appCatalog,
-                            isLoading: isLoadingAppCatalog,
-                            selectedBundleIdentifiers: selectedAppBundleIdentifiers,
-                            onAdd: addAppTarget
+                        DSToggleRow(
+                            "settings.context_awareness.enabled".localized,
+                            isOn: $contextAwarenessEnabled
                         )
 
-                        HStack(spacing: 8) {
-                            TextField("settings.styles.editor.website_placeholder".localized, text: $websiteInput)
-                                .textFieldStyle(.roundedBorder)
-
-                            Button("settings.styles.editor.add_website".localized) {
-                                addWebsiteTarget()
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(normalizedWebsiteInput == nil)
+                        if contextAwarenessEnabled {
+                            DSToggleRow(
+                                "settings.context_awareness.accessibility_text".localized,
+                                isOn: $includeAccessibilityText
+                            )
+                            DSToggleRow(
+                                "settings.context_awareness.clipboard".localized,
+                                isOn: $includeClipboard
+                            )
+                            DSToggleRow(
+                                "settings.context_awareness.window_ocr".localized,
+                                isOn: $includeWindowOCR
+                            )
+                            DSToggleRow(
+                                "settings.context_awareness.redact_sensitive_data".localized,
+                                isOn: $redactSensitiveData
+                            )
                         }
-
-                        Text("settings.styles.editor.selected_targets".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        selectedTargetsList
                     }
+                }
+
+                DSGroup("settings.enhancements.selector.dictation.title".localized, icon: "cpu") {
+                    EnhancementsModelPicker(
+                        title: "settings.enhancements.selector.dictation.title".localized,
+                        subtitle: "settings.enhancements.selector.dictation.subtitle".localized,
+                        selection: enhancementsSelection ?? .default,
+                        options: modelOptions,
+                        isLoadingOptions: isLoadingModelOptions,
+                        providerDisplayName: providerDisplayName,
+                        onRefresh: onRefreshModelOptions,
+                        onSelect: { option in
+                            enhancementsSelection = EnhancementsAISelection(
+                                provider: option.provider,
+                                selectedModel: option.modelID,
+                                registrationID: option.registrationID
+                            )
+                        }
+                    )
+                }
+
+                if !isDefault {
+                    DSGroup("settings.styles.editor.targets".localized, icon: "scope") {
+                        targetsEditor
+                    }
+                }
+
+                if isDefault {
+                    Text("settings.styles.editor.default_mode_hint".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 if let validationMessage, !validationMessage.isEmpty {
@@ -171,6 +225,39 @@ public struct DictationStyleEditorSheet: View {
         .frame(minWidth: 700, minHeight: 720)
         .onAppear {
             onEnsureAppCatalogLoaded()
+            onRefreshModelOptions()
+        }
+    }
+
+    private var targetsEditor: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("settings.styles.editor.targets_hint".localized)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            AppSearchInlineSection(
+                appCatalog: appCatalog,
+                isLoading: isLoadingAppCatalog,
+                selectedBundleIdentifiers: selectedAppBundleIdentifiers,
+                onAdd: addAppTarget
+            )
+
+            HStack(spacing: 8) {
+                TextField("settings.styles.editor.website_placeholder".localized, text: $websiteInput)
+                    .textFieldStyle(.roundedBorder)
+
+                Button("settings.styles.editor.add_website".localized) {
+                    addWebsiteTarget()
+                }
+                .buttonStyle(.bordered)
+                .disabled(normalizedWebsiteInput == nil)
+            }
+
+            Text("settings.styles.editor.selected_targets".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            selectedTargetsList
         }
     }
 
@@ -290,12 +377,12 @@ public struct DictationStyleEditorSheet: View {
 
         let normalizedPrompt = promptInstructions.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard !targets.isEmpty else {
+        guard isDefault || !targets.isEmpty else {
             validationMessage = "settings.styles.editor.validation.targets_required".localized
             return
         }
 
-        let normalizedTargets = deduplicatedTargets(targets)
+        let normalizedTargets = isDefault ? [] : deduplicatedTargets(targets)
         for target in normalizedTargets {
             if let styleName = onFindConflictingStyleName(target, styleID) {
                 validationMessage = styleName.isEmpty
@@ -315,7 +402,16 @@ public struct DictationStyleEditorSheet: View {
                 forceMarkdownOutput: forceMarkdownOutput,
                 replaceBasePrompt: replaceBasePrompt,
                 outputLanguage: outputLanguage,
-                targets: normalizedTargets
+                targets: normalizedTargets,
+                contextSourcePolicy: DictationContextSourcePolicy(
+                    isEnabled: contextAwarenessEnabled,
+                    includeClipboard: includeClipboard,
+                    includeWindowOCR: includeWindowOCR,
+                    includeAccessibilityText: includeAccessibilityText,
+                    redactSensitiveData: redactSensitiveData
+                ),
+                enhancementsSelection: enhancementsSelection,
+                isDefault: isDefault
             )
         )
     }
@@ -400,7 +496,16 @@ public struct DictationStyleEditorSheet: View {
             targets: [
                 .app(bundleIdentifier: "com.tinyspeck.slackmacgap"),
                 .website(url: "docs.example.com"),
-            ]
+            ],
+            contextSourcePolicy: .init(
+                isEnabled: true,
+                includeClipboard: true,
+                includeWindowOCR: false,
+                includeAccessibilityText: true,
+                redactSensitiveData: true
+            ),
+            enhancementsSelection: .default,
+            isDefault: false
         ),
         appCatalog: [
             InstalledApplicationRecord(bundleIdentifier: "com.tinyspeck.slackmacgap", displayName: "Slack"),
@@ -409,6 +514,10 @@ public struct DictationStyleEditorSheet: View {
         isLoadingAppCatalog: false,
         onEnsureAppCatalogLoaded: {},
         onFindConflictingStyleName: { _, _ in nil },
+        modelOptions: [],
+        isLoadingModelOptions: false,
+        onRefreshModelOptions: {},
+        providerDisplayName: { $0.provider.displayName },
         onSave: { _ in },
         onCancel: {}
     )

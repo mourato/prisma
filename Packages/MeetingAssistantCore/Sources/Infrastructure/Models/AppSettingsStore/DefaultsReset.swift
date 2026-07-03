@@ -89,7 +89,16 @@ public extension AppSettingsStore {
         meetingQnAEnabled = true
         markdownTargetBundleIdentifiers = Self.defaultMarkdownTargetBundleIdentifiers
         dictationAppRules = Self.defaultDictationAppRules
-        dictationStyles = Self.defaultDictationStyles
+        dictationStyles = [
+            Self.defaultDictationStyle(
+                contextAwarenessEnabled: contextAwarenessEnabled,
+                includeClipboard: contextAwarenessIncludeClipboard,
+                includeWindowOCR: contextAwarenessIncludeWindowOCR,
+                includeAccessibilityText: contextAwarenessIncludeAccessibilityText,
+                redactSensitiveData: contextAwarenessRedactSensitiveData,
+                dictationSelection: enhancementsDictationAISelection
+            ),
+        ]
         vocabularyReplacementRules = []
         markdownWebTargets = Self.defaultMarkdownWebTargets
         webTargetBrowserBundleIdentifiers = Self.defaultWebTargetBrowserBundleIdentifiers

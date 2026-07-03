@@ -103,13 +103,52 @@ extension AppSettingsStore {
         return ordered
     }
 
-    static func normalizedDictationStyles(_ styles: [DictationStyle]) -> [DictationStyle] {
+    static func defaultDictationStyle(
+        contextAwarenessEnabled: Bool,
+        includeClipboard: Bool,
+        includeWindowOCR: Bool,
+        includeAccessibilityText: Bool,
+        redactSensitiveData: Bool,
+        dictationSelection: EnhancementsAISelection
+    ) -> DictationStyle {
+        DictationStyle(
+            id: defaultDictationModeID,
+            name: "settings.dictation.modes.default_name".localized,
+            iconSymbol: "textformat",
+            promptInstructions: "",
+            forceMarkdownOutput: false,
+            replaceBasePrompt: false,
+            outputLanguage: .original,
+            targets: [],
+            contextSourcePolicy: DictationContextSourcePolicy(
+                isEnabled: contextAwarenessEnabled,
+                includeClipboard: includeClipboard,
+                includeWindowOCR: includeWindowOCR,
+                includeAccessibilityText: includeAccessibilityText,
+                redactSensitiveData: redactSensitiveData
+            ),
+            enhancementsSelection: dictationSelection,
+            isDefault: true
+        )
+    }
+
+    static func normalizedDictationStyles(
+        _ styles: [DictationStyle],
+        defaultStyle: DictationStyle = defaultDictationStyles[0]
+    ) -> [DictationStyle] {
         var seenStyleIDs = Set<UUID>()
         var globallyAssignedTargetKeys = Set<String>()
-        var ordered: [DictationStyle] = []
+        var userStyles: [DictationStyle] = []
+        var persistedDefaultStyle: DictationStyle?
 
         for style in styles {
             guard seenStyleIDs.insert(style.id).inserted else { continue }
+            if style.isDefault || style.id == defaultDictationModeID {
+                if persistedDefaultStyle == nil {
+                    persistedDefaultStyle = style
+                }
+                continue
+            }
 
             var seenStyleTargetKeys = Set<String>()
             var normalizedTargets: [DictationStyleTarget] = []
@@ -127,7 +166,7 @@ extension AppSettingsStore {
                 normalizedTargets.append(normalizedTarget)
             }
 
-            ordered.append(
+            userStyles.append(
                 DictationStyle(
                     id: style.id,
                     name: style.normalizedName,
@@ -136,12 +175,39 @@ extension AppSettingsStore {
                     forceMarkdownOutput: style.forceMarkdownOutput,
                     replaceBasePrompt: style.replaceBasePrompt,
                     outputLanguage: style.outputLanguage,
-                    targets: normalizedTargets
+                    targets: normalizedTargets,
+                    contextSourcePolicy: style.contextSourcePolicy,
+                    enhancementsSelection: style.enhancementsSelection,
+                    isDefault: false
                 )
             )
         }
 
-        return ordered
+        let normalizedDefault = normalizedDefaultDictationStyle(
+            persistedDefaultStyle,
+            fallback: defaultStyle
+        )
+        return [normalizedDefault] + userStyles
+    }
+
+    private static func normalizedDefaultDictationStyle(
+        _ style: DictationStyle?,
+        fallback: DictationStyle
+    ) -> DictationStyle {
+        let source = style ?? fallback
+        return DictationStyle(
+            id: defaultDictationModeID,
+            name: source.normalizedName.isEmpty ? fallback.name : source.normalizedName,
+            iconSymbol: source.normalizedIconSymbol,
+            promptInstructions: source.normalizedPromptInstructions,
+            forceMarkdownOutput: source.forceMarkdownOutput,
+            replaceBasePrompt: source.replaceBasePrompt,
+            outputLanguage: source.outputLanguage,
+            targets: [],
+            contextSourcePolicy: source.contextSourcePolicy ?? fallback.contextSourcePolicy,
+            enhancementsSelection: source.enhancementsSelection ?? fallback.enhancementsSelection,
+            isDefault: true
+        )
     }
 
     private func deduplicatedNormalizedBundleIdentifiers(_ identifiers: [String]) -> [String] {

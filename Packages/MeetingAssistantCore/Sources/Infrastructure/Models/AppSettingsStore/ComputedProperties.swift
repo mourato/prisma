@@ -5,6 +5,27 @@ import MeetingAssistantCoreDomain
 // MARK: - Computed Properties
 
 public extension AppSettingsStore {
+    func currentDefaultDictationStyle() -> DictationStyle {
+        Self.defaultDictationStyle(
+            contextAwarenessEnabled: contextAwarenessEnabled,
+            includeClipboard: contextAwarenessIncludeClipboard,
+            includeWindowOCR: contextAwarenessIncludeWindowOCR,
+            includeAccessibilityText: contextAwarenessIncludeAccessibilityText,
+            redactSensitiveData: contextAwarenessRedactSensitiveData,
+            dictationSelection: enhancementsDictationAISelection
+        )
+    }
+
+    func effectiveDictationStyle(bundleIdentifier: String?, activeURL: URL?) -> DictationStyle {
+        if let matchedStyle = dictationStyles.first(where: {
+            !$0.isDefault && $0.matches(bundleIdentifier: bundleIdentifier, activeURL: activeURL)
+        }) {
+            return matchedStyle
+        }
+
+        return dictationStyles.first(where: \.isDefault) ?? currentDefaultDictationStyle()
+    }
+
     /// Indicates whether the Markdown targets list has been explicitly configured.
     var hasConfiguredMarkdownTargets: Bool {
         UserDefaults.standard.object(forKey: Keys.markdownTargetBundleIdentifiers) != nil

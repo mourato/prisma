@@ -175,16 +175,10 @@ public final class PostProcessingConfigurationProvider {
         settings: AppSettingsStore,
         dictationContext: DictationContextSnapshot
     ) -> DictationStyle? {
-        guard dictationContext.bundleIdentifier != nil || dictationContext.activeURL != nil else {
-            return nil
-        }
-
-        return settings.dictationStyles.first {
-            $0.matches(
-                bundleIdentifier: dictationContext.bundleIdentifier,
-                activeURL: dictationContext.activeURL
-            )
-        }
+        settings.effectiveDictationStyle(
+            bundleIdentifier: dictationContext.bundleIdentifier,
+            activeURL: dictationContext.activeURL
+        )
     }
 
     public func effectiveCustomPromptInstructionsForDictation(

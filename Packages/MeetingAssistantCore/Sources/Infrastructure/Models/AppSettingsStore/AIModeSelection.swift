@@ -187,6 +187,29 @@ public extension AppSettingsStore {
         return enhancementsAPIKeyInternal(for: siblingEnhancementsMode(for: mode))
     }
 
+    func enhancementsAPIKey(for selection: EnhancementsAISelection) -> String? {
+        let selectedRegistration = enhancementsRegistration(for: selection.registrationID)
+
+        if let registrationID = selection.registrationID,
+           let registrationKey = try? KeychainManager.retrieveAPIKey(for: registrationID)
+        {
+            let trimmed = registrationKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return trimmed
+            }
+        }
+
+        let providerForFallback = selectedRegistration?.provider ?? selection.provider
+        if let providerKey = try? KeychainManager.retrieveAPIKey(for: providerForFallback) {
+            let trimmed = providerKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return trimmed
+            }
+        }
+
+        return nil
+    }
+
     private func enhancementsAPIKeyInternal(for mode: IntelligenceKernelMode) -> String? {
         let selection = enhancementsSelection(for: mode)
         let selectedRegistration = enhancementsRegistration(for: selection.registrationID)
@@ -383,8 +406,15 @@ public extension AppSettingsStore {
         return siblingConfig
     }
 
+    func resolvedEnhancementsAIConfiguration(for selection: EnhancementsAISelection) -> AIConfiguration {
+        resolveEnhancementsAIConfigurationInternal(for: selection)
+    }
+
     private func resolveEnhancementsAIConfigurationInternal(for mode: IntelligenceKernelMode) -> AIConfiguration {
-        let selection = enhancementsSelection(for: mode)
+        resolveEnhancementsAIConfigurationInternal(for: enhancementsSelection(for: mode))
+    }
+
+    private func resolveEnhancementsAIConfigurationInternal(for selection: EnhancementsAISelection) -> AIConfiguration {
         let registration = enhancementsRegistration(for: selection.registrationID)
         let provider = registration?.provider ?? selection.provider
         let baseURL: String = if let registration {
@@ -451,13 +481,36 @@ public extension AppSettingsStore {
         return nil
     }
 
+    func enhancementsInferenceReadinessIssue(
+        for selection: EnhancementsAISelection,
+        apiKeyExists: ((AIProvider) -> Bool)?,
+        registrationAPIKeyExists: ((UUID) -> Bool)? = nil
+    ) -> EnhancementsInferenceReadinessIssue? {
+        checkEnhancementsInferenceReadiness(
+            for: selection,
+            apiKeyExists: apiKeyExists,
+            registrationAPIKeyExists: registrationAPIKeyExists
+        )
+    }
+
     private func checkEnhancementsInferenceReadiness(
         for mode: IntelligenceKernelMode,
         apiKeyExists: ((AIProvider) -> Bool)?,
         registrationAPIKeyExists: ((UUID) -> Bool)? = nil
     ) -> EnhancementsInferenceReadinessIssue? {
-        let config = resolvedEnhancementsAIConfiguration(for: mode)
-        let selection = enhancementsSelection(for: mode)
+        checkEnhancementsInferenceReadiness(
+            for: enhancementsSelection(for: mode),
+            apiKeyExists: apiKeyExists,
+            registrationAPIKeyExists: registrationAPIKeyExists
+        )
+    }
+
+    private func checkEnhancementsInferenceReadiness(
+        for selection: EnhancementsAISelection,
+        apiKeyExists: ((AIProvider) -> Bool)?,
+        registrationAPIKeyExists: ((UUID) -> Bool)? = nil
+    ) -> EnhancementsInferenceReadinessIssue? {
+        let config = resolvedEnhancementsAIConfiguration(for: selection)
         let selectedRegistration = enhancementsRegistration(for: selection.registrationID)
         let provider = selectedRegistration?.provider ?? selection.provider
         let hasKey: Bool = if let registrationID = selectedRegistration?.id {

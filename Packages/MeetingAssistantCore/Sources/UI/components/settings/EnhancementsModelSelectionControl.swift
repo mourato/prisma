@@ -37,7 +37,6 @@ public struct EnhancementsModelSelectionControl: View {
     private let target: EnhancementsModelSelectionTarget
     @ObservedObject private var viewModel: AISettingsViewModel
     private let settings: AppSettingsStore
-    @State private var isShowingModelSelection = false
 
     public init(
         target: EnhancementsModelSelectionTarget,
@@ -50,56 +49,20 @@ public struct EnhancementsModelSelectionControl: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(target.titleKey.localized)
-                .font(.subheadline)
-                .fontWeight(.medium)
-
-            Text(target.subtitleKey.localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 8) {
-                Button(selectionSummary) {
-                    isShowingModelSelection = true
-                }
-                .buttonStyle(.bordered)
-                .disabled(viewModel.isLoadingEnhancementsProviderModels || viewModel.enhancementsProviderModels.isEmpty)
-
-                Button {
-                    viewModel.refreshEnhancementsProviderModelsManually()
-                } label: {
-                    if viewModel.isLoadingEnhancementsProviderModels {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .fontWeight(.medium)
-                    }
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("settings.ai.model_refresh".localized)
-                .disabled(viewModel.isLoadingEnhancementsProviderModels)
-            }
-
-            if viewModel.enhancementsProviderModels.isEmpty, !viewModel.isLoadingEnhancementsProviderModels {
-                Text("settings.enhancements.model_selector.empty".localized)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-        }
+        EnhancementsModelPicker(
+            title: target.titleKey.localized,
+            subtitle: target.subtitleKey.localized,
+            selection: selection,
+            options: viewModel.enhancementsProviderModels,
+            isLoadingOptions: viewModel.isLoadingEnhancementsProviderModels,
+            providerDisplayName: settings.enhancementsProviderDisplayName(for:),
+            onRefresh: {
+                _ = viewModel.refreshEnhancementsProviderModelsManually()
+            },
+            onSelect: selectOption
+        )
         .onAppear {
-            viewModel.refreshEnhancementsProviderModelsManually()
-        }
-        .sheet(isPresented: $isShowingModelSelection) {
-            EnhancementsModelSelectionSheet(
-                options: viewModel.enhancementsProviderModels,
-                isSelected: isSelectedOption,
-                onSelect: selectOption,
-                onCancel: {
-                    isShowingModelSelection = false
-                }
-            )
+            _ = viewModel.refreshEnhancementsProviderModelsManually()
         }
     }
 
@@ -110,26 +73,6 @@ public struct EnhancementsModelSelectionControl: View {
         case .dictation:
             settings.enhancementsDictationAISelection
         }
-    }
-
-    private var selectionSummary: String {
-        let providerName = settings.enhancementsProviderDisplayName(for: selection)
-        let model = selection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !model.isEmpty else {
-            return "settings.enhancements.provider_models.summary.no_model".localized(with: providerName)
-        }
-        return "settings.enhancements.provider_models.summary".localized(with: providerName, model)
-    }
-
-    private func isSelectedOption(_ option: EnhancementsProviderModelOption) -> Bool {
-        if let selectedRegistrationID = selection.registrationID,
-           let optionRegistrationID = option.registrationID
-        {
-            return selectedRegistrationID == optionRegistrationID
-                && selection.selectedModel == option.modelID
-        }
-
-        return selection.provider == option.provider && selection.selectedModel == option.modelID
     }
 
     private func selectOption(_ option: EnhancementsProviderModelOption) {
@@ -146,6 +89,112 @@ public struct EnhancementsModelSelectionControl: View {
                 for: target.mode
             )
         }
-        isShowingModelSelection = false
+    }
+}
+
+public struct EnhancementsModelPicker: View {
+    private let title: String
+    private let subtitle: String
+    private let selection: EnhancementsAISelection
+    private let options: [EnhancementsProviderModelOption]
+    private let isLoadingOptions: Bool
+    private let providerDisplayName: (EnhancementsAISelection) -> String
+    private let onRefresh: () -> Void
+    private let onSelect: (EnhancementsProviderModelOption) -> Void
+
+    @State private var isShowingModelSelection = false
+
+    public init(
+        title: String,
+        subtitle: String,
+        selection: EnhancementsAISelection,
+        options: [EnhancementsProviderModelOption],
+        isLoadingOptions: Bool,
+        providerDisplayName: @escaping (EnhancementsAISelection) -> String,
+        onRefresh: @escaping () -> Void,
+        onSelect: @escaping (EnhancementsProviderModelOption) -> Void
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.selection = selection
+        self.options = options
+        self.isLoadingOptions = isLoadingOptions
+        self.providerDisplayName = providerDisplayName
+        self.onRefresh = onRefresh
+        self.onSelect = onSelect
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 8) {
+                Button(selectionSummary) {
+                    isShowingModelSelection = true
+                }
+                .buttonStyle(.bordered)
+                .disabled(isLoadingOptions || options.isEmpty)
+
+                Button {
+                    onRefresh()
+                } label: {
+                    if isLoadingOptions {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                            .fontWeight(.medium)
+                    }
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("settings.ai.model_refresh".localized)
+                .disabled(isLoadingOptions)
+            }
+
+            if options.isEmpty, !isLoadingOptions {
+                Text("settings.enhancements.model_selector.empty".localized)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .sheet(isPresented: $isShowingModelSelection) {
+            EnhancementsModelSelectionSheet(
+                options: options,
+                isSelected: isSelectedOption,
+                onSelect: { option in
+                    onSelect(option)
+                    isShowingModelSelection = false
+                },
+                onCancel: {
+                    isShowingModelSelection = false
+                }
+            )
+        }
+    }
+
+    private var selectionSummary: String {
+        let providerName = providerDisplayName(selection)
+        let model = selection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !model.isEmpty else {
+            return "settings.enhancements.provider_models.summary.no_model".localized(with: providerName)
+        }
+        return "settings.enhancements.provider_models.summary".localized(with: providerName, model)
+    }
+
+    private func isSelectedOption(_ option: EnhancementsProviderModelOption) -> Bool {
+        if let selectedRegistrationID = selection.registrationID,
+           let optionRegistrationID = option.registrationID
+        {
+            return selectedRegistrationID == optionRegistrationID
+                && selection.selectedModel == option.modelID
+        }
+
+        return selection.provider == option.provider && selection.selectedModel == option.modelID
     }
 }

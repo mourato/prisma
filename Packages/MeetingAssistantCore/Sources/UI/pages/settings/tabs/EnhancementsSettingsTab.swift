@@ -1,5 +1,3 @@
-import AppKit
-import CoreGraphics
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -12,6 +10,12 @@ public enum EnhancementsSettingsRoute: Hashable {
     case systemGuidelines
 }
 
+public enum EnhancementsSettingsContent: Sendable {
+    case all
+    case protectedApps
+    case postProcessing
+}
+
 // MARK: - AI Settings Tab
 
 /// Tab for configuring AI post-processing settings.
@@ -19,17 +23,16 @@ public struct EnhancementsSettingsTab: View {
     @StateObject private var postProcessingViewModel: PostProcessingSettingsViewModel
     @StateObject private var sensitiveAppsViewModel: InstalledAppsSelectionViewModel
     @Binding private var navigationState: SettingsSubpageNavigationState<EnhancementsSettingsRoute>
-    @State private var supportStatus: TextContextSupportStatus = .unknown
-    @State private var hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
     @State private var systemGuidelinesDraft = ""
     @State private var showAppSearchSheet = false
-    private let supportChecker = TextContextSupportChecker()
     private let showsHeader: Bool
+    private let content: EnhancementsSettingsContent
 
     public init(
         settings: AppSettingsStore = .shared,
         navigationState: Binding<SettingsSubpageNavigationState<EnhancementsSettingsRoute>> = .constant(SettingsSubpageNavigationState()),
-        showsHeader: Bool = true
+        showsHeader: Bool = true,
+        content: EnhancementsSettingsContent = .all
     ) {
         _postProcessingViewModel = StateObject(wrappedValue: PostProcessingSettingsViewModel(settings: settings))
         _sensitiveAppsViewModel = StateObject(
@@ -43,6 +46,7 @@ public struct EnhancementsSettingsTab: View {
         )
         _navigationState = navigationState
         self.showsHeader = showsHeader
+        self.content = content
     }
 
     public var body: some View {
@@ -62,14 +66,31 @@ public struct EnhancementsSettingsTab: View {
         SettingsScrollableContent {
             if showsHeader {
                 SettingsSectionHeader(
-                    title: "settings.section.ai".localized,
+                    title: headerTitle,
                     description: "settings.text_context.description".localized
                 )
             }
 
-            protectSensitiveAppsSection
-            contextAwarenessSection
-            mainSection
+            switch content {
+            case .all:
+                protectSensitiveAppsSection
+                mainSection
+            case .protectedApps:
+                protectSensitiveAppsSection
+            case .postProcessing:
+                mainSection
+            }
+        }
+    }
+
+    private var headerTitle: String {
+        switch content {
+        case .all:
+            "settings.section.ai".localized
+        case .protectedApps:
+            "settings.context_awareness.protect_sensitive_apps".localized
+        case .postProcessing:
+            "settings.post_processing.title".localized
         }
     }
 
@@ -86,55 +107,6 @@ public struct EnhancementsSettingsTab: View {
                 accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized
             ) {
                 navigationState.open(.systemGuidelines)
-            }
-        }
-    }
-
-    private var contextAwarenessSection: some View {
-        DSGroup("settings.context_awareness.title".localized, icon: "text.viewfinder") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.itemSpacing) {
-                DSToggleRow(
-                    "settings.context_awareness.enabled".localized,
-                    description: "settings.context_awareness.enabled_desc".localized,
-                    isOn: $postProcessingViewModel.settings.contextAwarenessEnabled
-                )
-
-                if postProcessingViewModel.settings.contextAwarenessEnabled {
-                    DSToggleRow(
-                        "settings.context_awareness.accessibility_text".localized,
-                        description: "settings.context_awareness.accessibility_text_desc".localized,
-                        isOn: $postProcessingViewModel.settings.contextAwarenessIncludeAccessibilityText
-                    )
-
-                    if postProcessingViewModel.settings.contextAwarenessIncludeAccessibilityText {
-                        contextAwarenessSupportStatus
-                    }
-
-                    Divider()
-
-                    DSToggleRow(
-                        "settings.context_awareness.clipboard".localized,
-                        description: "settings.context_awareness.clipboard_desc".localized,
-                        isOn: $postProcessingViewModel.settings.contextAwarenessIncludeClipboard
-                    )
-
-                    DSToggleRow(
-                        "settings.context_awareness.window_ocr".localized,
-                        description: "settings.context_awareness.window_ocr_desc".localized,
-                        isOn: $postProcessingViewModel.settings.contextAwarenessIncludeWindowOCR
-                    )
-
-                    if postProcessingViewModel.settings.contextAwarenessIncludeWindowOCR {
-                        screenRecordingSupportStatus
-                    }
-
-                    DSToggleRow(
-                        "settings.context_awareness.redact_sensitive_data".localized,
-                        description: "settings.context_awareness.redact_sensitive_data_desc".localized,
-                        isOn: $postProcessingViewModel.settings.contextAwarenessRedactSensitiveData
-                    )
-
-                }
             }
         }
     }
@@ -165,66 +137,6 @@ public struct EnhancementsSettingsTab: View {
                 addButtonKey: "settings.context_awareness.excluded_apps_add"
             )
         }
-    }
-
-    private var contextAwarenessSupportStatus: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            switch supportStatus {
-            case .permissionDenied:
-                DSCallout(
-                    kind: .warning,
-                    title: "settings.context_awareness.permission_title".localized,
-                    message: "settings.context_awareness.permission_desc".localized
-                )
-
-                HStack(spacing: 8) {
-                    Button("permissions.request".localized) {
-                        AccessibilityPermissionService.requestPermission()
-                        Task { await refreshSupportStatus() }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.regular)
-
-                    Button("permissions.configure".localized) {
-                        AccessibilityPermissionService.openSystemSettings()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.regular)
-                }
-
-            case .noActiveApp, .supported, .unknown, .noFocusedElement, .unsupported:
-                EmptyView()
-            }
-        }
-        .task { await refreshSupportStatus() }
-    }
-
-    private var screenRecordingSupportStatus: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if !hasScreenRecordingPermission {
-                DSCallout(
-                    kind: .warning,
-                    title: "settings.context_awareness.screen_permission_title".localized,
-                    message: "settings.context_awareness.screen_permission_desc".localized
-                )
-
-                HStack(spacing: 8) {
-                    Button("permissions.request".localized) {
-                        CGRequestScreenCaptureAccess()
-                        refreshScreenRecordingPermission()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.regular)
-
-                    Button("permissions.configure".localized) {
-                        openScreenRecordingSettings()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.regular)
-                }
-            }
-        }
-        .task { refreshScreenRecordingPermission() }
     }
 
     private var systemGuidelinesPage: some View {
@@ -277,21 +189,6 @@ public struct EnhancementsSettingsTab: View {
         postProcessingViewModel.handleSaveSystemPrompt(systemGuidelinesDraft)
     }
 
-    @MainActor
-    private func refreshSupportStatus() async {
-        supportStatus = await supportChecker.checkSupport()
-    }
-
-    private func refreshScreenRecordingPermission() {
-        hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
-    }
-
-    private func openScreenRecordingSettings() {
-        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") else {
-            return
-        }
-        NSWorkspace.shared.open(url)
-    }
 }
 
 private extension View {

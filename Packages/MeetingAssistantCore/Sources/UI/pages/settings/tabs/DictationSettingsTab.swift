@@ -6,8 +6,9 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public enum DictationSettingsRoute: Hashable {
+public enum DictationSettingsRoute: Hashable, Sendable {
     case modes
+    case postProcessing
     case userPrompts
 }
 
@@ -19,8 +20,6 @@ public struct DictationSettingsTab: View {
     @StateObject private var viewModel: GeneralSettingsViewModel
     @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
     @StateObject private var serviceViewModel: ServiceSettingsViewModel
-    @StateObject private var aiSettingsViewModel: AISettingsViewModel
-    private let settings: AppSettingsStore
 
     public init(
         settings: AppSettingsStore = .shared,
@@ -29,8 +28,6 @@ public struct DictationSettingsTab: View {
         _navigationState = navigationState
         _viewModel = StateObject(wrappedValue: GeneralSettingsViewModel(settingsStore: settings))
         _serviceViewModel = StateObject(wrappedValue: ServiceSettingsViewModel(settings: settings))
-        _aiSettingsViewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
-        self.settings = settings
     }
 
     public var body: some View {
@@ -40,6 +37,8 @@ public struct DictationSettingsTab: View {
                 rootPage
             case .some(.modes):
                 StylesSettingsTab()
+            case .some(.postProcessing):
+                EnhancementsSettingsTab(content: .postProcessing)
             case .some(.userPrompts):
                 UserPromptsSettingsTab()
             }
@@ -88,6 +87,14 @@ public struct DictationSettingsTab: View {
                 ) {
                     navigationState.open(.userPrompts)
                 }
+
+                SettingsListDrillDownButtonRow(
+                    title: "settings.post_processing.title".localized,
+                    subtitle: "settings.post_processing.description".localized,
+                    accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized
+                ) {
+                    navigationState.open(.postProcessing)
+                }
             }
 
             SettingsListGroup("settings.dictation.text_handling".localized, icon: "cpu") {
@@ -116,14 +123,6 @@ public struct DictationSettingsTab: View {
             }
 
             ServiceTranscriptionProviderSection(viewModel: serviceViewModel)
-
-            DSGroup("settings.dictation.post_processing_model".localized, icon: "sparkles") {
-                EnhancementsModelSelectionControl(
-                    target: .dictation,
-                    viewModel: aiSettingsViewModel,
-                    settings: settings
-                )
-            }
         }
     }
 }

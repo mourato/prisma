@@ -19,7 +19,20 @@ public extension AppSettingsStore {
     }
 
     /// Default list of dictation styles.
-    static let defaultDictationStyles: [DictationStyle] = []
+    static let defaultDictationModeID = UUID(uuidString: "00000000-0000-0000-0000-000000000020")!
+
+    static var defaultDictationStyles: [DictationStyle] {
+        [
+            defaultDictationStyle(
+                contextAwarenessEnabled: false,
+                includeClipboard: false,
+                includeWindowOCR: false,
+                includeAccessibilityText: true,
+                redactSensitiveData: true,
+                dictationSelection: .default
+            ),
+        ]
+    }
 
     /// Default list of websites that should force Markdown formatting for dictation.
     static let defaultMarkdownWebTargets: [WebContextTarget] = []

@@ -205,7 +205,7 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
     }
 }
 
-public struct EnhancementsAISelection: Codable, Equatable, Sendable {
+public struct EnhancementsAISelection: Codable, Equatable, Hashable, Sendable {
     public var provider: AIProvider
     public var selectedModel: String
     public var registrationID: UUID?

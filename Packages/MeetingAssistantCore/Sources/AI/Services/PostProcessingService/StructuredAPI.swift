@@ -8,6 +8,7 @@ extension PostProcessingService {
         let transcription: String
         let prompt: PostProcessingPrompt
         let mode: IntelligenceKernelMode
+        let selectionOverride: EnhancementsAISelection?
         let systemPromptOverride: String?
         let requestProfile: RequestProfile
         let requestConfig: AIConfiguration
@@ -65,8 +66,42 @@ extension PostProcessingService {
         mode: IntelligenceKernelMode,
         systemPromptOverride: String?
     ) async throws -> DomainPostProcessingResult {
+        try await processTranscriptionStructured(
+            transcription,
+            with: prompt,
+            mode: mode,
+            selectionOverride: nil,
+            systemPromptOverride: systemPromptOverride
+        )
+    }
+
+    public func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection
+    ) async throws -> DomainPostProcessingResult {
+        try await processTranscriptionStructured(
+            transcription,
+            with: prompt,
+            mode: mode,
+            selectionOverride: Optional(selectionOverride),
+            systemPromptOverride: nil
+        )
+    }
+
+    private func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection?,
+        systemPromptOverride: String?
+    ) async throws -> DomainPostProcessingResult {
         _ = try validateInput(transcription)
-        guard settings.isEnhancementsInferenceReady(for: mode) else {
+        let readinessIssue = selectionOverride.map {
+            settings.enhancementsInferenceReadinessIssue(for: $0, apiKeyExists: nil)
+        } ?? settings.enhancementsInferenceReadinessIssue(for: mode, apiKeyExists: nil)
+        guard readinessIssue == nil else {
             throw unavailableConfigurationError(
                 mode: mode,
                 message: "Structured post-processing blocked: enhancements configuration not ready"
@@ -77,6 +112,7 @@ extension PostProcessingService {
             transcription: transcription,
             prompt: prompt,
             mode: mode,
+            selectionOverride: selectionOverride,
             systemPromptOverride: systemPromptOverride
         )
 
@@ -96,8 +132,10 @@ extension PostProcessingService {
                 transcription: context.transcription,
                 prompt: context.prompt,
                 mode: context.mode,
+                selectionOverride: context.selectionOverride,
                 systemPromptOverride: context.systemPromptOverride,
                 requestProfile: context.requestProfile,
+                requestConfig: context.requestConfig,
                 traceContext: context.traceContext
             )
 
@@ -128,10 +166,13 @@ extension PostProcessingService {
         transcription: String,
         prompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection?,
         systemPromptOverride: String?
     ) -> StructuredRequestContext {
         let requestProfile = profile(for: mode, prefersStructuredPipeline: true)
-        let requestConfig = settings.resolvedEnhancementsAIConfiguration(for: mode)
+        let requestConfig = selectionOverride.map {
+            settings.resolvedEnhancementsAIConfiguration(for: $0)
+        } ?? settings.resolvedEnhancementsAIConfiguration(for: mode)
         let traceContext = makeTraceContext(
             mode: mode,
             provider: requestConfig.provider,
@@ -144,6 +185,7 @@ extension PostProcessingService {
             transcription: transcription,
             prompt: prompt,
             mode: mode,
+            selectionOverride: selectionOverride,
             systemPromptOverride: systemPromptOverride,
             requestProfile: requestProfile,
             requestConfig: requestConfig,
@@ -157,6 +199,7 @@ extension PostProcessingService {
             context.transcription,
             with: context.prompt,
             mode: context.mode,
+            selectionOverride: context.selectionOverride,
             systemPromptOverride: context.systemPromptOverride
         )
         let fallbackSummary = summaryFallbackBuilder.build(
@@ -212,8 +255,10 @@ extension PostProcessingService {
                 transcription: context.transcription,
                 prompt: fallbackPrompt,
                 mode: context.mode,
+                selectionOverride: context.selectionOverride,
                 systemPromptOverride: nil,
                 requestProfile: fallbackProfile,
+                requestConfig: context.requestConfig,
                 traceContext: fallbackTraceContext
             )
             let mergedContextMetadata = TranscriptionOutputSanitizer.extractContextMetadata(

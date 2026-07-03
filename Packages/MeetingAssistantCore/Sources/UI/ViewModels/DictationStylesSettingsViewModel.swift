@@ -12,6 +12,9 @@ public struct DictationStyleEditorDraft: Equatable, Sendable {
     public var replaceBasePrompt: Bool
     public var outputLanguage: DictationOutputLanguage
     public var targets: [DictationStyleTarget]
+    public var contextSourcePolicy: DictationContextSourcePolicy?
+    public var enhancementsSelection: EnhancementsAISelection?
+    public var isDefault: Bool
 
     public init(
         id: UUID? = nil,
@@ -21,7 +24,10 @@ public struct DictationStyleEditorDraft: Equatable, Sendable {
         forceMarkdownOutput: Bool,
         replaceBasePrompt: Bool,
         outputLanguage: DictationOutputLanguage,
-        targets: [DictationStyleTarget]
+        targets: [DictationStyleTarget],
+        contextSourcePolicy: DictationContextSourcePolicy?,
+        enhancementsSelection: EnhancementsAISelection?,
+        isDefault: Bool
     ) {
         self.id = id
         self.name = name
@@ -31,6 +37,9 @@ public struct DictationStyleEditorDraft: Equatable, Sendable {
         self.replaceBasePrompt = replaceBasePrompt
         self.outputLanguage = outputLanguage
         self.targets = targets
+        self.contextSourcePolicy = contextSourcePolicy
+        self.enhancementsSelection = enhancementsSelection
+        self.isDefault = isDefault
     }
 }
 
@@ -66,7 +75,10 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
             forceMarkdownOutput: true,
             replaceBasePrompt: false,
             outputLanguage: .original,
-            targets: []
+            targets: [],
+            contextSourcePolicy: settings.currentDefaultDictationStyle().contextSourcePolicy,
+            enhancementsSelection: settings.enhancementsDictationAISelection,
+            isDefault: false
         )
         showEditor = true
         ensureAppCatalogLoaded()
@@ -81,7 +93,10 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
             forceMarkdownOutput: style.forceMarkdownOutput,
             replaceBasePrompt: style.replaceBasePrompt,
             outputLanguage: style.outputLanguage,
-            targets: style.targets
+            targets: style.targets,
+            contextSourcePolicy: style.contextSourcePolicy,
+            enhancementsSelection: style.enhancementsSelection,
+            isDefault: style.isDefault
         )
         showEditor = true
         ensureAppCatalogLoaded()
@@ -101,7 +116,10 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
             forceMarkdownOutput: draft.forceMarkdownOutput,
             replaceBasePrompt: draft.replaceBasePrompt,
             outputLanguage: draft.outputLanguage,
-            targets: Self.normalizedTargets(draft.targets)
+            targets: draft.isDefault ? [] : Self.normalizedTargets(draft.targets),
+            contextSourcePolicy: draft.contextSourcePolicy,
+            enhancementsSelection: draft.enhancementsSelection,
+            isDefault: draft.isDefault
         )
 
         var updatedStyles = settings.dictationStyles
@@ -156,6 +174,10 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
         }
 
         return nil
+    }
+
+    public func enhancementsProviderDisplayName(for selection: EnhancementsAISelection) -> String {
+        settings.enhancementsProviderDisplayName(for: selection)
     }
 
     private static func normalizedTargets(_ targets: [DictationStyleTarget]) -> [DictationStyleTarget] {

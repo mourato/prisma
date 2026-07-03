@@ -10,6 +10,11 @@ extension RecordingManager {
     ) async -> (context: String?, items: [TranscriptionContextItem]) {
         let settings = AppSettingsStore.shared
         let activeTabURL = activeBrowserURL(for: meeting.appBundleIdentifier)?.absoluteString
+        let contextSourcePolicy = effectiveContextSourcePolicy(
+            for: meeting,
+            settings: settings,
+            activeTabURL: activeTabURL
+        )
         let calendarContext = meeting.supportsMeetingConversation
             ? meeting.linkedCalendarEvent.map(calendarContextBlock(for:))
             : nil
@@ -20,6 +25,7 @@ extension RecordingManager {
             activeTabURL: activeTabURL,
             calendarContext: calendarContext,
             isDictationMode: isDictationMode(for: meeting),
+            contextSourcePolicy: contextSourcePolicy,
             includeWindowOCR: includeWindowOCR
         )
     }
@@ -72,6 +78,13 @@ extension RecordingManager {
     ) async -> PostProcessingContextCaptureResult {
         let settings = AppSettingsStore.shared
         let activeTabURL = activeBrowserURL(for: meeting.appBundleIdentifier)?.absoluteString
+        let activeURL = activeTabURL.flatMap(URL.init(string:))
+        let contextSourcePolicy = meeting.capturePurpose == .dictation
+            ? settings.effectiveDictationStyle(
+                bundleIdentifier: meeting.appBundleIdentifier,
+                activeURL: activeURL
+            ).contextSourcePolicy
+            : nil
         let calendarContext = meeting.supportsMeetingConversation
             ? meeting.linkedCalendarEvent.map(calendarContextBlock(for:))
             : nil
@@ -82,6 +95,7 @@ extension RecordingManager {
             activeTabURL: activeTabURL,
             calendarContext: calendarContext,
             isDictationMode: isDictationMode(for: meeting),
+            contextSourcePolicy: contextSourcePolicy,
             includeWindowOCR: includeWindowOCR,
             timeoutNanoseconds: Constants.startContextCaptureTimeout
         )
@@ -91,7 +105,20 @@ extension RecordingManager {
         postStartWindowOCRCaptureTask?.cancel()
 
         let settings = AppSettingsStore.shared
-        guard settings.contextAwarenessEnabled, settings.contextAwarenessIncludeWindowOCR else {
+        guard let meeting = currentMeeting else {
+            postStartWindowOCRCaptureTask = nil
+            return
+        }
+
+        let activeTabURL = activeBrowserURL(for: meeting.appBundleIdentifier)?.absoluteString
+        let contextSourcePolicy = effectiveContextSourcePolicy(
+            for: meeting,
+            settings: settings,
+            activeTabURL: activeTabURL
+        )
+        let contextAwarenessEnabled = contextSourcePolicy?.isEnabled ?? settings.contextAwarenessEnabled
+        let includeWindowOCR = contextSourcePolicy?.includeWindowOCR ?? settings.contextAwarenessIncludeWindowOCR
+        guard contextAwarenessEnabled, includeWindowOCR else {
             postStartWindowOCRCaptureTask = nil
             return
         }
@@ -136,6 +163,19 @@ extension RecordingManager {
                 extra: ["meetingID": meetingID.uuidString]
             )
         }
+    }
+
+    private func effectiveContextSourcePolicy(
+        for meeting: Meeting,
+        settings: AppSettingsStore,
+        activeTabURL: String?
+    ) -> DictationContextSourcePolicy? {
+        guard meeting.capturePurpose == .dictation else { return nil }
+
+        return settings.effectiveDictationStyle(
+            bundleIdentifier: meeting.appBundleIdentifier,
+            activeURL: activeTabURL.flatMap(URL.init(string:))
+        ).contextSourcePolicy
     }
 
     private func appendContextBlock(_ block: String, to context: inout String?) {

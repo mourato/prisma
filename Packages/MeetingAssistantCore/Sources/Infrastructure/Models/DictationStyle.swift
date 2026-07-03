@@ -1,5 +1,27 @@
 import Foundation
 
+public struct DictationContextSourcePolicy: Codable, Hashable, Sendable {
+    public var isEnabled: Bool
+    public var includeClipboard: Bool
+    public var includeWindowOCR: Bool
+    public var includeAccessibilityText: Bool
+    public var redactSensitiveData: Bool
+
+    public init(
+        isEnabled: Bool,
+        includeClipboard: Bool,
+        includeWindowOCR: Bool,
+        includeAccessibilityText: Bool,
+        redactSensitiveData: Bool
+    ) {
+        self.isEnabled = isEnabled
+        self.includeClipboard = includeClipboard
+        self.includeWindowOCR = includeWindowOCR
+        self.includeAccessibilityText = includeAccessibilityText
+        self.redactSensitiveData = redactSensitiveData
+    }
+}
+
 public enum DictationStyleTarget: Hashable, Codable, Sendable {
     case app(bundleIdentifier: String)
     case website(url: String)
@@ -86,6 +108,20 @@ public enum DictationStyleTarget: Hashable, Codable, Sendable {
 }
 
 public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case iconSymbol
+        case promptInstructions
+        case forceMarkdownOutput
+        case replaceBasePrompt
+        case outputLanguage
+        case targets
+        case contextSourcePolicy
+        case enhancementsSelection
+        case isDefault
+    }
+
     public let id: UUID
     public var name: String
     public var iconSymbol: String
@@ -94,6 +130,9 @@ public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
     public var replaceBasePrompt: Bool
     public var outputLanguage: DictationOutputLanguage
     public var targets: [DictationStyleTarget]
+    public var contextSourcePolicy: DictationContextSourcePolicy?
+    public var enhancementsSelection: EnhancementsAISelection?
+    public var isDefault: Bool
 
     public init(
         id: UUID = UUID(),
@@ -103,7 +142,10 @@ public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
         forceMarkdownOutput: Bool,
         replaceBasePrompt: Bool,
         outputLanguage: DictationOutputLanguage = .original,
-        targets: [DictationStyleTarget]
+        targets: [DictationStyleTarget],
+        contextSourcePolicy: DictationContextSourcePolicy? = nil,
+        enhancementsSelection: EnhancementsAISelection? = nil,
+        isDefault: Bool = false
     ) {
         self.id = id
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -113,6 +155,27 @@ public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
         self.replaceBasePrompt = replaceBasePrompt
         self.outputLanguage = outputLanguage
         self.targets = targets
+        self.contextSourcePolicy = contextSourcePolicy
+        self.enhancementsSelection = enhancementsSelection
+        self.isDefault = isDefault
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try container.decodeIfPresent(String.self, forKey: .name)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        iconSymbol = try container.decodeIfPresent(String.self, forKey: .iconSymbol)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? "textformat"
+        promptInstructions = try container.decodeIfPresent(String.self, forKey: .promptInstructions)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        forceMarkdownOutput = try container.decodeIfPresent(Bool.self, forKey: .forceMarkdownOutput) ?? false
+        replaceBasePrompt = try container.decodeIfPresent(Bool.self, forKey: .replaceBasePrompt) ?? false
+        outputLanguage = try container.decodeIfPresent(DictationOutputLanguage.self, forKey: .outputLanguage) ?? .original
+        targets = try container.decodeIfPresent([DictationStyleTarget].self, forKey: .targets) ?? []
+        contextSourcePolicy = try container.decodeIfPresent(DictationContextSourcePolicy.self, forKey: .contextSourcePolicy)
+        enhancementsSelection = try container.decodeIfPresent(EnhancementsAISelection.self, forKey: .enhancementsSelection)
+        isDefault = try container.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false
     }
 
     var normalizedName: String {
@@ -133,6 +196,7 @@ public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
     }
 
     public func matches(bundleIdentifier: String?, activeURL: URL?) -> Bool {
-        targets.contains { $0.matches(bundleIdentifier: bundleIdentifier, activeURL: activeURL) }
+        guard !isDefault else { return false }
+        return targets.contains { $0.matches(bundleIdentifier: bundleIdentifier, activeURL: activeURL) }
     }
 }

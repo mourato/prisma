@@ -3,24 +3,14 @@ import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 
-extension PostProcessingService {
-    struct LegacyRequestContext {
-        let transcription: String
-        let prompt: PostProcessingPrompt
-        let mode: IntelligenceKernelMode
-        let systemPromptOverride: String?
-        let requestProfile: RequestProfile
-        let requestConfig: AIConfiguration
-        let traceContext: RequestTraceContext
-        let startedAt: Date
-    }
+public extension PostProcessingService {
 
     // MARK: - Public API (Legacy String)
 
     /// Processes a transcription using the currently selected prompt.
     /// - Parameter transcription: The raw transcription text.
     /// - Returns: The processed text from the AI.
-    public func processTranscription(_ transcription: String) async throws -> String {
+    func processTranscription(_ transcription: String) async throws -> String {
         guard settings.postProcessingEnabled else {
             AppLogger.info("Post-processing disabled, skipping", category: .transcriptionEngine)
             return transcription
@@ -38,7 +28,7 @@ extension PostProcessingService {
     ///   - transcription: The raw transcription text.
     ///   - prompt: The prompt to use for processing.
     /// - Returns: The processed text from the AI.
-    public func processTranscription(
+    func processTranscription(
         _ transcription: String,
         with prompt: PostProcessingPrompt
     ) async throws -> String {
@@ -50,7 +40,7 @@ extension PostProcessingService {
         )
     }
 
-    public func processTranscription(
+    func processTranscription(
         _ transcription: String,
         with prompt: PostProcessingPrompt,
         systemPromptOverride: String?
@@ -63,14 +53,63 @@ extension PostProcessingService {
         )
     }
 
-    public func processTranscription(
+    func processTranscription(
         _ transcription: String,
         with prompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode,
         systemPromptOverride: String?
     ) async throws -> String {
+        try await processTranscription(
+            transcription,
+            with: prompt,
+            mode: mode,
+            selectionOverride: nil,
+            systemPromptOverride: systemPromptOverride
+        )
+    }
+
+    func processTranscription(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection,
+        systemPromptOverride: String?
+    ) async throws -> String {
+        try await processTranscription(
+            transcription,
+            with: prompt,
+            mode: mode,
+            selectionOverride: Optional(selectionOverride),
+            systemPromptOverride: systemPromptOverride
+        )
+    }
+}
+
+extension PostProcessingService {
+    struct LegacyRequestContext {
+        let transcription: String
+        let prompt: PostProcessingPrompt
+        let mode: IntelligenceKernelMode
+        let selectionOverride: EnhancementsAISelection?
+        let systemPromptOverride: String?
+        let requestProfile: RequestProfile
+        let requestConfig: AIConfiguration
+        let traceContext: RequestTraceContext
+        let startedAt: Date
+    }
+
+    func processTranscription(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection?,
+        systemPromptOverride: String?
+    ) async throws -> String {
         _ = try validateInput(transcription)
-        guard settings.isEnhancementsInferenceReady(for: mode) else {
+        let readinessIssue = selectionOverride.map {
+            settings.enhancementsInferenceReadinessIssue(for: $0, apiKeyExists: nil)
+        } ?? settings.enhancementsInferenceReadinessIssue(for: mode, apiKeyExists: nil)
+        guard readinessIssue == nil else {
             throw unavailableConfigurationError(
                 mode: mode,
                 message: "Post-processing blocked: enhancements configuration not ready"
@@ -81,6 +120,7 @@ extension PostProcessingService {
             transcription: transcription,
             prompt: prompt,
             mode: mode,
+            selectionOverride: selectionOverride,
             systemPromptOverride: systemPromptOverride
         )
 
@@ -92,57 +132,60 @@ extension PostProcessingService {
         }
 
         do {
-            let result = try await sendToAI(
-                transcription: context.transcription,
-                prompt: context.prompt,
-                mode: context.mode,
-                systemPromptOverride: context.systemPromptOverride,
-                requestProfile: context.requestProfile,
-                traceContext: context.traceContext
-            )
-            let mergedContextMetadata = TranscriptionOutputSanitizer.extractContextMetadata(
-                fromPromptInput: context.transcription
-            )
-            let fallbackText = TranscriptionOutputSanitizer.stripPromptMetadata(from: context.transcription)
-            let sanitizedResult = TranscriptionOutputSanitizer.sanitize(
-                processedContent: result,
-                contextMetadata: mergedContextMetadata
-            )
-
-            if sanitizedResult.contextLeakDetected {
-                AppLogger.warning(
-                    "Post-processing output discarded due to context leakage; using raw transcription fallback",
-                    category: .transcriptionEngine
-                )
-                return fallbackText.isEmpty ? context.transcription : fallbackText
-            }
-
-            if sanitizedResult.removedReservedBlocks {
-                AppLogger.warning(
-                    "Post-processing output sanitized after reserved metadata block detection",
-                    category: .transcriptionEngine
-                )
-            }
-
-            logRequestSuccess(message: "Post-processing completed", context: context.traceContext, startedAt: context.startedAt)
-            if let sanitizedText = sanitizedResult.text, !sanitizedText.isEmpty {
-                return sanitizedText
-            }
-
-            return fallbackText.isEmpty ? context.transcription : fallbackText
+            return try await performLegacyAIRequest(context: context)
         } catch {
             return try await handleLegacyFailure(context: context, error: error)
         }
+    }
+
+    private func performLegacyAIRequest(context: LegacyRequestContext) async throws -> String {
+        let result = try await sendToAI(
+            transcription: context.transcription,
+            prompt: context.prompt,
+            mode: context.mode,
+            selectionOverride: context.selectionOverride,
+            systemPromptOverride: context.systemPromptOverride,
+            requestProfile: context.requestProfile,
+            requestConfig: context.requestConfig,
+            traceContext: context.traceContext
+        )
+        let fallbackText = TranscriptionOutputSanitizer.stripPromptMetadata(from: context.transcription)
+        let sanitizedResult = TranscriptionOutputSanitizer.sanitize(
+            processedContent: result,
+            contextMetadata: TranscriptionOutputSanitizer.extractContextMetadata(fromPromptInput: context.transcription)
+        )
+
+        if sanitizedResult.contextLeakDetected {
+            AppLogger.warning(
+                "Post-processing output discarded due to context leakage; using raw transcription fallback",
+                category: .transcriptionEngine
+            )
+            return fallbackText.isEmpty ? context.transcription : fallbackText
+        }
+
+        if sanitizedResult.removedReservedBlocks {
+            AppLogger.warning(
+                "Post-processing output sanitized after reserved metadata block detection",
+                category: .transcriptionEngine
+            )
+        }
+
+        logRequestSuccess(message: "Post-processing completed", context: context.traceContext, startedAt: context.startedAt)
+        return sanitizedResult.text.flatMap { $0.isEmpty ? nil : $0 }
+            ?? (fallbackText.isEmpty ? context.transcription : fallbackText)
     }
 
     private func makeLegacyRequestContext(
         transcription: String,
         prompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection?,
         systemPromptOverride: String?
     ) -> LegacyRequestContext {
         let requestProfile = profile(for: mode, prefersStructuredPipeline: false)
-        let requestConfig = settings.resolvedEnhancementsAIConfiguration(for: mode)
+        let requestConfig = selectionOverride.map {
+            settings.resolvedEnhancementsAIConfiguration(for: $0)
+        } ?? settings.resolvedEnhancementsAIConfiguration(for: mode)
         let traceContext = makeTraceContext(
             mode: mode,
             provider: requestConfig.provider,
@@ -155,6 +198,7 @@ extension PostProcessingService {
             transcription: transcription,
             prompt: prompt,
             mode: mode,
+            selectionOverride: selectionOverride,
             systemPromptOverride: systemPromptOverride,
             requestProfile: requestProfile,
             requestConfig: requestConfig,
@@ -202,8 +246,10 @@ extension PostProcessingService {
                 transcription: context.transcription,
                 prompt: fallbackPrompt,
                 mode: context.mode,
+                selectionOverride: context.selectionOverride,
                 systemPromptOverride: nil,
                 requestProfile: fallbackProfile,
+                requestConfig: context.requestConfig,
                 traceContext: fallbackTraceContext
             )
         } catch {

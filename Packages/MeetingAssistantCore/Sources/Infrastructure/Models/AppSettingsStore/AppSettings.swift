@@ -615,7 +615,10 @@ public class AppSettingsStore: ObservableObject {
     /// Style-based dictation overrides for prompt, formatting, and language behavior.
     @Published public var dictationStyles: [DictationStyle] {
         didSet {
-            let normalizedStyles = Self.normalizedDictationStyles(dictationStyles)
+            let normalizedStyles = Self.normalizedDictationStyles(
+                dictationStyles,
+                defaultStyle: currentDefaultDictationStyle()
+            )
             if normalizedStyles != dictationStyles {
                 dictationStyles = normalizedStyles
                 return
@@ -833,7 +836,10 @@ public class AppSettingsStore: ObservableObject {
         contextAwarenessRedactSensitiveData = ctx.contextAwarenessRedactSensitiveData
         contextAwarenessExcludedBundleIDs = ctx.contextAwarenessExcludedBundleIDs
 
-        let dict = Self.loadDictationRulesAndWebTargets()
+        let dict = Self.loadDictationRulesAndWebTargets(
+            contextAwareness: ctx,
+            dictationSelection: ai.enhancementsDictationAISelection
+        )
         markdownTargetBundleIdentifiers = dict.markdownTargetBundleIdentifiers
         dictationAppRules = dict.dictationAppRules
         dictationStyles = dict.dictationStyles

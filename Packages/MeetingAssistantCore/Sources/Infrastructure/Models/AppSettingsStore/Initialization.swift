@@ -470,11 +470,26 @@ extension AppSettingsStore {
     }
 
     /// Loads dictation rules and web targets.
-    static func loadDictationRulesAndWebTargets() -> DictationRulesAndWebTargetsValues {
-        DictationRulesAndWebTargetsValues(
+    static func loadDictationRulesAndWebTargets(
+        contextAwareness: ContextAwarenessSettingsValues,
+        dictationSelection: EnhancementsAISelection
+    ) -> DictationRulesAndWebTargetsValues {
+        let defaultDictationStyle = defaultDictationStyle(
+            contextAwarenessEnabled: contextAwareness.contextAwarenessEnabled,
+            includeClipboard: contextAwareness.contextAwarenessIncludeClipboard,
+            includeWindowOCR: contextAwareness.contextAwarenessIncludeWindowOCR,
+            includeAccessibilityText: contextAwareness.contextAwarenessIncludeAccessibilityText,
+            redactSensitiveData: contextAwareness.contextAwarenessRedactSensitiveData,
+            dictationSelection: dictationSelection
+        )
+
+        return DictationRulesAndWebTargetsValues(
             markdownTargetBundleIdentifiers: loadDecoded([String].self, forKey: Keys.markdownTargetBundleIdentifiers) ?? defaultMarkdownTargetBundleIdentifiers,
             dictationAppRules: normalizedDictationAppRules(loadDecoded([DictationAppRule].self, forKey: Keys.dictationAppRules) ?? defaultDictationAppRules),
-            dictationStyles: normalizedDictationStyles(loadDecoded([DictationStyle].self, forKey: Keys.dictationStyles) ?? defaultDictationStyles),
+            dictationStyles: normalizedDictationStyles(
+                loadDecoded([DictationStyle].self, forKey: Keys.dictationStyles) ?? defaultDictationStyles,
+                defaultStyle: defaultDictationStyle
+            ),
             vocabularyReplacementRules: normalizedVocabularyReplacementRules(loadDecoded([VocabularyReplacementRule].self, forKey: Keys.vocabularyReplacementRules) ?? []),
             markdownWebTargets: loadDecoded([WebContextTarget].self, forKey: Keys.markdownWebTargets) ?? defaultMarkdownWebTargets,
             webTargetBrowserBundleIdentifiers: loadDecoded([String].self, forKey: Keys.webTargetBrowserBundleIdentifiers) ?? defaultWebTargetBrowserBundleIdentifiers,

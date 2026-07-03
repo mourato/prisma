@@ -4,10 +4,12 @@ import SwiftUI
 
 public struct StylesSettingsTab: View {
     @StateObject private var viewModel: DictationStylesSettingsViewModel
+    @StateObject private var aiSettingsViewModel: AISettingsViewModel
     @State private var selectedStyleID: UUID?
 
     public init(settings: AppSettingsStore = .shared) {
         _viewModel = StateObject(wrappedValue: DictationStylesSettingsViewModel(settings: settings))
+        _aiSettingsViewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
     }
 
     public var body: some View {
@@ -43,6 +45,12 @@ public struct StylesSettingsTab: View {
                     onFindConflictingStyleName: { target, styleID in
                         viewModel.styleNameConflicting(with: target, excluding: styleID)
                     },
+                    modelOptions: aiSettingsViewModel.enhancementsProviderModels,
+                    isLoadingModelOptions: aiSettingsViewModel.isLoadingEnhancementsProviderModels,
+                    onRefreshModelOptions: {
+                        _ = aiSettingsViewModel.refreshEnhancementsProviderModelsManually()
+                    },
+                    providerDisplayName: viewModel.enhancementsProviderDisplayName(for:),
                     onSave: viewModel.saveStyle,
                     onCancel: viewModel.dismissEditor
                 )

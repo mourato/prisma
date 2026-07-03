@@ -9,8 +9,10 @@ extension PostProcessingService {
         let transcription: String
         let originalPrompt: PostProcessingPrompt
         let mode: IntelligenceKernelMode
+        let selectionOverride: EnhancementsAISelection?
         let systemPromptOverride: String?
         let timeoutSeconds: TimeInterval
+        let requestConfig: AIConfiguration
         let traceContext: RequestTraceContext
         let attempt: Int
     }
@@ -21,8 +23,10 @@ extension PostProcessingService {
         transcription: String,
         prompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection?,
         systemPromptOverride: String?,
         requestProfile: RequestProfile,
+        requestConfig: AIConfiguration,
         traceContext: RequestTraceContext
     ) async throws -> String {
         var lastError: Error?
@@ -35,8 +39,10 @@ extension PostProcessingService {
                         transcription: transcription,
                         prompt: prompt,
                         mode: mode,
+                        selectionOverride: selectionOverride,
                         systemPromptOverride: systemPromptOverride,
                         timeoutSeconds: requestProfile.timeoutSeconds,
+                        requestConfig: requestConfig,
                         traceContext: traceContext,
                         attempt: attempt + 1
                     )
@@ -63,8 +69,10 @@ extension PostProcessingService {
         transcription: String,
         prompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection?,
         systemPromptOverride: String?,
         requestProfile: RequestProfile,
+        requestConfig: AIConfiguration,
         traceContext: RequestTraceContext
     ) async throws -> DomainPostProcessingResult {
         var lastError: Error?
@@ -78,8 +86,10 @@ extension PostProcessingService {
                         transcription: transcription,
                         prompt: structuredPrompt,
                         mode: mode,
+                        selectionOverride: selectionOverride,
                         systemPromptOverride: systemPromptOverride,
                         timeoutSeconds: requestProfile.timeoutSeconds,
+                        requestConfig: requestConfig,
                         traceContext: traceContext,
                         attempt: attempt + 1
                     )
@@ -94,8 +104,10 @@ extension PostProcessingService {
                     transcription: transcription,
                     prompt: prompt,
                     mode: mode,
+                    selectionOverride: selectionOverride,
                     systemPromptOverride: systemPromptOverride,
                     requestProfile: requestProfile,
+                    requestConfig: requestConfig,
                     traceContext: traceContext,
                     attempt: attempt + 1
                 )
@@ -153,9 +165,11 @@ extension PostProcessingService {
         return try await performCustomAIRequest(
             context: CustomProviderRequestContext(
                 mode: context.mode,
+                selectionOverride: context.selectionOverride,
                 systemPrompt: systemPrompt,
                 userContent: userPrompt,
                 timeoutSeconds: context.timeoutSeconds,
+                requestConfig: context.requestConfig,
                 traceContext: context.traceContext,
                 attempt: context.attempt
             )
@@ -167,8 +181,10 @@ extension PostProcessingService {
         transcription: String,
         prompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode,
+        selectionOverride: EnhancementsAISelection?,
         systemPromptOverride: String?,
         requestProfile: RequestProfile,
+        requestConfig: AIConfiguration,
         traceContext: RequestTraceContext,
         attempt: Int
     ) async throws -> DomainPostProcessingResult {
@@ -185,8 +201,10 @@ extension PostProcessingService {
                    transcription: transcription,
                    originalPrompt: prompt,
                    mode: mode,
+                   selectionOverride: selectionOverride,
                    systemPromptOverride: systemPromptOverride,
                    timeoutSeconds: requestProfile.timeoutSeconds,
+                   requestConfig: requestConfig,
                    traceContext: traceContext,
                    attempt: attempt
                )
