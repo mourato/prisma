@@ -13,22 +13,33 @@ public struct GeneralSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
     @StateObject private var recordingCancelShortcutViewModel = RecordingCancelShortcutSettingsViewModel()
     @State private var shortcutDoubleTapIntervalInput = ""
-    @State private var autoDeletePeriodDaysInput = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let showsHeader: Bool
     private let headerTitleKey: String
     private let headerDescriptionKey: String
+    private let openModels: (() -> Void)?
+    private let openDictionary: (() -> Void)?
+    private let openSound: (() -> Void)?
+    private let openProtectedApps: (() -> Void)?
     private let openPermissions: (() -> Void)?
 
     public init(
         showsHeader: Bool = true,
         headerTitleKey: String = "settings.general.title",
         headerDescriptionKey: String = "settings.general.language_desc",
+        openModels: (() -> Void)? = nil,
+        openDictionary: (() -> Void)? = nil,
+        openSound: (() -> Void)? = nil,
+        openProtectedApps: (() -> Void)? = nil,
         openPermissions: (() -> Void)? = nil
     ) {
         self.showsHeader = showsHeader
         self.headerTitleKey = headerTitleKey
         self.headerDescriptionKey = headerDescriptionKey
+        self.openModels = openModels
+        self.openDictionary = openDictionary
+        self.openSound = openSound
+        self.openProtectedApps = openProtectedApps
         self.openPermissions = openPermissions
     }
 
@@ -40,6 +51,8 @@ public struct GeneralSettingsTab: View {
                     description: headerDescriptionKey.localized
                 )
             }
+
+            systemDrilldownsSection
 
             // Application Behavior
             SettingsListGroup("settings.general.app_behavior".localized, icon: "app.badge") {
@@ -123,63 +136,20 @@ public struct GeneralSettingsTab: View {
 
             recordingIndicatorSection
 
-            // Storage
-            DSGroup("settings.general.storage".localized, icon: "folder.fill") {
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        DSToggleRow(
-                            "settings.general.auto_delete".localized,
-                            description: "settings.general.auto_delete_desc".localized,
-                            isOn: $viewModel.autoDeleteTranscriptions.animated()
-                        )
+            storageSection
 
-                        if viewModel.autoDeleteTranscriptions {
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    Text("settings.general.keep_for".localized)
-                                        .font(.body)
-
-                                    Spacer()
-
-                                    HStack(spacing: 8) {
-                                        TextField("", text: $autoDeletePeriodDaysInput)
-                                            .textFieldStyle(.roundedBorder)
-                                            .multilineTextAlignment(.trailing)
-                                            .frame(width: 84)
-                                            .onChange(of: autoDeletePeriodDaysInput) { _, newValue in
-                                                applyAutoDeletePeriodDaysInput(newValue)
-                                            }
-                                            .onSubmit {
-                                                syncAutoDeletePeriodDaysInputFromModel()
-                                            }
-
-                                        Text("settings.general.days".localized)
-                                            .font(.body)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                                .padding(.leading, AppDesignSystem.Layout.indentation)
-
-                                Button {
-                                    viewModel.performCleanup()
-                                } label: {
-                                    Text(String(
-                                        format: "settings.storage.cleanup_now".localized,
-                                        viewModel.autoDeletePeriodDays
-                                    ))
-                                }
-                                .buttonStyle(.bordered)
-                                .disabled(viewModel.cleanupInProgress)
-                                .padding(.leading, AppDesignSystem.Layout.indentation)
-                                .padding(.top, AppDesignSystem.Layout.smallPadding)
-                            }
-                            .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
-                        }
-                    }
+            if let openProtectedApps, openModels == nil, openDictionary == nil, openSound == nil {
+                SettingsListGroup("settings.context_awareness.protect_sensitive_apps".localized, icon: "lock.shield") {
+                    SettingsListDrillDownButtonRow(
+                        title: "settings.context_awareness.protect_sensitive_apps".localized,
+                        subtitle: "settings.context_awareness.protect_sensitive_apps_desc".localized,
+                        accessibilityHint: "settings.context_awareness.protect_sensitive_apps".localized,
+                        action: openProtectedApps
+                    )
                 }
             }
 
-            if let openPermissions {
+            if let openPermissions, openModels == nil, openDictionary == nil, openSound == nil {
                 SettingsListGroup("settings.section.permissions".localized, icon: "checkmark.shield") {
                     SettingsListDrillDownButtonRow(
                         title: "settings.section.permissions".localized,
@@ -219,7 +189,53 @@ public struct GeneralSettingsTab: View {
         }
         .onAppear {
             syncShortcutDoubleTapIntervalInputFromModel()
-            syncAutoDeletePeriodDaysInputFromModel()
+            normalizeStorageRetentionSelection()
+        }
+    }
+
+    @ViewBuilder
+    private var systemDrilldownsSection: some View {
+        if let openModels, let openDictionary, let openSound, let openPermissions {
+            SettingsListGroup("settings.section.settings".localized, icon: "gearshape.2") {
+                SettingsListDrillDownButtonRow(
+                    title: "settings.section.models".localized,
+                    subtitle: "settings.models.description".localized,
+                    accessibilityHint: "settings.section.models".localized,
+                    action: openModels
+                )
+
+                SettingsListDrillDownButtonRow(
+                    title: "settings.section.vocabulary".localized,
+                    subtitle: "settings.vocabulary.description".localized,
+                    accessibilityHint: "settings.section.vocabulary".localized,
+                    action: openDictionary
+                )
+
+                SettingsListDrillDownButtonRow(
+                    title: "settings.section.audio".localized,
+                    subtitle: "settings.general.audio_devices_desc".localized,
+                    accessibilityHint: "settings.section.audio".localized,
+                    action: openSound
+                )
+
+                SettingsListDrillDownButtonRow(
+                    title: "settings.section.permissions".localized,
+                    subtitle: "settings.permissions.description".localized,
+                    accessibilityHint: "settings.system.permissions.accessibility_hint".localized,
+                    action: openPermissions
+                )
+            }
+        }
+
+        if let openProtectedApps, openModels != nil {
+            SettingsListGroup("settings.context_awareness.protect_sensitive_apps".localized, icon: "lock.shield") {
+                SettingsListDrillDownButtonRow(
+                    title: "settings.context_awareness.protect_sensitive_apps".localized,
+                    subtitle: "settings.context_awareness.protect_sensitive_apps_desc".localized,
+                    accessibilityHint: "settings.context_awareness.protect_sensitive_apps".localized,
+                    action: openProtectedApps
+                )
+            }
         }
     }
 
@@ -283,6 +299,70 @@ public struct GeneralSettingsTab: View {
         }
     }
 
+    private var storageSection: some View {
+        DSGroup("settings.general.storage".localized, icon: "folder.fill") {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .center, spacing: 12) {
+                    SettingsTitleWithPopover(
+                        title: "settings.general.auto_delete".localized,
+                        helperMessage: "settings.general.auto_delete_desc".localized
+                    )
+
+                    Spacer()
+
+                    Picker("", selection: storageRetentionBinding) {
+                        ForEach(StorageRetentionOption.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: AppDesignSystem.Layout.smallPickerWidth)
+                }
+
+                HStack {
+                    Button {
+                        viewModel.performCleanup()
+                    } label: {
+                        Text(cleanupNowTitle)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!viewModel.autoDeleteTranscriptions || viewModel.cleanupInProgress)
+
+                    Spacer()
+                }
+            }
+        }
+    }
+
+    private var storageRetentionBinding: Binding<StorageRetentionOption> {
+        Binding(
+            get: {
+                StorageRetentionOption(
+                    autoDeleteEnabled: viewModel.autoDeleteTranscriptions,
+                    days: viewModel.autoDeletePeriodDays
+                )
+            },
+            set: { option in
+                viewModel.autoDeleteTranscriptions = option.days != nil
+                if let days = option.days {
+                    viewModel.autoDeletePeriodDays = days
+                }
+            }
+        )
+    }
+
+    private var cleanupNowTitle: String {
+        guard viewModel.autoDeleteTranscriptions else {
+            return "settings.storage.cleanup_now_disabled".localized
+        }
+
+        return String(
+            format: "settings.storage.cleanup_now".localized,
+            viewModel.autoDeletePeriodDays
+        )
+    }
+
     private func applyShortcutDoubleTapIntervalInput(_ rawValue: String) {
         let digitsOnly = rawValue.filter(\.isNumber)
         if digitsOnly != rawValue {
@@ -305,25 +385,59 @@ public struct GeneralSettingsTab: View {
         shortcutDoubleTapIntervalInput = "\(Int(viewModel.shortcutDoubleTapIntervalMilliseconds))"
     }
 
-    private func applyAutoDeletePeriodDaysInput(_ rawValue: String) {
-        let digitsOnly = rawValue.filter(\.isNumber)
-        if digitsOnly != rawValue {
-            autoDeletePeriodDaysInput = digitsOnly
+    private func normalizeStorageRetentionSelection() {
+        guard viewModel.autoDeleteTranscriptions else { return }
+        guard StorageRetentionOption.supports(days: viewModel.autoDeletePeriodDays) else {
+            viewModel.autoDeletePeriodDays = StorageRetentionOption.oneMonth.rawValue
+            return
+        }
+    }
+}
+
+private enum StorageRetentionOption: Int, CaseIterable, Identifiable {
+    case oneWeek = 7
+    case twoWeeks = 14
+    case oneMonth = 30
+    case threeMonths = 90
+    case sixMonths = 180
+    case disabled = 0
+
+    var id: Int {
+        rawValue
+    }
+
+    init(autoDeleteEnabled: Bool, days: Int) {
+        guard autoDeleteEnabled else {
+            self = .disabled
             return
         }
 
-        guard !digitsOnly.isEmpty, let value = Int(digitsOnly) else { return }
-        let clampedValue = min(max(value, 1), 365)
-
-        viewModel.autoDeletePeriodDays = clampedValue
-        let normalizedValue = "\(clampedValue)"
-        if autoDeletePeriodDaysInput != normalizedValue {
-            autoDeletePeriodDaysInput = normalizedValue
-        }
+        self = Self.allCases.first { $0.days == days } ?? .oneMonth
     }
 
-    private func syncAutoDeletePeriodDaysInputFromModel() {
-        autoDeletePeriodDaysInput = "\(viewModel.autoDeletePeriodDays)"
+    static func supports(days: Int) -> Bool {
+        allCases.contains { $0.days == days }
+    }
+
+    var days: Int? {
+        self == .disabled ? nil : rawValue
+    }
+
+    var title: String {
+        switch self {
+        case .oneWeek:
+            "settings.storage.retention.one_week".localized
+        case .twoWeeks:
+            "settings.storage.retention.two_weeks".localized
+        case .oneMonth:
+            "settings.storage.retention.one_month".localized
+        case .threeMonths:
+            "settings.storage.retention.three_months".localized
+        case .sixMonths:
+            "settings.storage.retention.six_months".localized
+        case .disabled:
+            "settings.storage.retention.disabled".localized
+        }
     }
 }
 

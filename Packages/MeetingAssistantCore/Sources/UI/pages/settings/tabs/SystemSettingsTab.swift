@@ -3,7 +3,11 @@ import SwiftUI
 
 public enum SystemSettingsRoute: Hashable, Sendable {
     case root
+    case models
+    case dictionary
+    case sound
     case permissions
+    case protectedApps
 }
 
 public struct SystemSettingsTab: View {
@@ -25,12 +29,24 @@ public struct SystemSettingsTab: View {
         case .root:
             GeneralSettingsTab(
                 showsHeader: true,
-                headerTitleKey: "settings.section.system",
+                headerTitleKey: "settings.section.settings",
                 headerDescriptionKey: "settings.system.description",
+                openModels: { route = .models },
+                openDictionary: { route = .dictionary },
+                openSound: { route = .sound },
+                openProtectedApps: { route = .protectedApps },
                 openPermissions: { route = .permissions }
             )
+        case .models:
+            ModelsSettingsTab()
+        case .dictionary:
+            VocabularySettingsTab()
+        case .sound:
+            AudioSettingsTab()
         case .permissions:
             PermissionsSettingsTab()
+        case .protectedApps:
+            EnhancementsSettingsTab(content: .protectedApps)
         }
     }
 }

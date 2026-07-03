@@ -3,15 +3,18 @@ import MeetingAssistantCoreCommon
 public struct SettingsDestination: Equatable, Sendable {
     public let section: SettingsSection
     public let activityRoute: ActivitySettingsRoute?
+    public let dictationRoute: DictationSettingsRoute?
     public let systemRoute: SystemSettingsRoute?
 
     public init(
         section: SettingsSection,
         activityRoute: ActivitySettingsRoute? = nil,
+        dictationRoute: DictationSettingsRoute? = nil,
         systemRoute: SystemSettingsRoute? = nil
     ) {
         self.section = section
         self.activityRoute = activityRoute
+        self.dictationRoute = dictationRoute
         self.systemRoute = systemRoute
     }
 }
@@ -48,9 +51,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     ]
 
     public static let settingsSections: [SettingsSection] = [
-        .intelligence,
         .system,
-        .audio,
     ]
 
     public static var visibleSections: [SettingsSection] {
@@ -60,17 +61,15 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
             .meetings,
             .assistant,
             .integrations,
-            .intelligence,
             .system,
-            .audio,
         ]
     }
 
     public var isLegacyRedirect: Bool {
         switch self {
-        case .metrics, .transcriptions, .models, .enhancements, .vocabulary, .permissions, .general:
+        case .metrics, .transcriptions, .models, .enhancements, .vocabulary, .permissions, .general, .intelligence, .audio:
             true
-        case .activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system, .audio:
+        case .activity, .dictation, .meetings, .assistant, .integrations, .system:
             false
         }
     }
@@ -85,13 +84,21 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
             SettingsDestination(section: .activity, activityRoute: .modelPerformance)
         case .transcriptions:
             SettingsDestination(section: .activity, activityRoute: .history)
-        case .models, .enhancements, .vocabulary:
-            SettingsDestination(section: .intelligence)
+        case .models:
+            SettingsDestination(section: .system, systemRoute: .models)
+        case .vocabulary:
+            SettingsDestination(section: .system, systemRoute: .dictionary)
+        case .enhancements:
+            SettingsDestination(section: .dictation, dictationRoute: .postProcessing)
         case .permissions:
             SettingsDestination(section: .system, systemRoute: .permissions)
         case .general:
             SettingsDestination(section: .system)
-        case .activity, .dictation, .meetings, .assistant, .integrations, .intelligence, .system, .audio:
+        case .audio:
+            SettingsDestination(section: .system, systemRoute: .sound)
+        case .intelligence:
+            SettingsDestination(section: .system, systemRoute: .models)
+        case .activity, .dictation, .meetings, .assistant, .integrations, .system:
             SettingsDestination(section: self)
         }
     }
@@ -120,7 +127,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .permissions: "settings.section.permissions".localized
         case .activity: "settings.section.activity".localized
         case .intelligence: "settings.section.intelligence".localized
-        case .system: "settings.section.system".localized
+        case .system: "settings.section.settings".localized
         }
     }
 

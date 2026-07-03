@@ -22,12 +22,10 @@
 "settings.activity.model_performance.subtitle" = "Compare tentativas de transcrição e pós-processamento dos modelos.";
 "settings.activity.more_insights.subtitle" = "Explore análises de calendário, apps e atividade.";
 "settings.section.intelligence" = "Inteligência";
-"settings.intelligence.description" = "Configure modelos, limpeza por IA, fontes de contexto e regras de substituição do dicionário.";
-"settings.section.system" = "Sistema";
+"settings.section.settings" = "Ajustes";
 "settings.system.description" = "Gerencie comportamento do app, opções de interface, armazenamento e permissões obrigatórias.";
 "settings.system.permissions.accessibility_hint" = "Abre status de permissões e orientações de configuração.";
 "settings.sidebar.workflows" = "Prisma";
-"settings.sidebar.configuration" = "Configuração";
 
 /* Metrics Dashboard */
 "metrics.title" = "Dashboard";
@@ -119,7 +117,6 @@
 "settings.general.storage" = "Armazenamento";
 "settings.general.auto_delete" = "Ativar limite de retenção de gravações";
 "settings.general.auto_delete_desc" = "Limita por quanto tempo as gravações são mantidas em disco. Os dados da dashboard e do histórico permanecem disponíveis após a limpeza de áudio.";
-"settings.general.days_format" = "%d dias";
 
 "settings.general.transcript_delivery" = "Entrega da Transcrição";
 "settings.general.auto_copy_transcription" = "Copiar transcrições automaticamente para a área de transferência";
@@ -203,12 +200,17 @@
 "settings.dictation.user_prompts.title" = "Prompts do usuário";
 "settings.dictation.user_prompts.description" = "Crie e gerencie prompts personalizados para o pós-processamento de ditados.";
 "settings.dictation.user_prompts.accessibility_hint" = "Abre as configurações de prompts do usuário.";
-"settings.general.days" = "Dias";
-"settings.general.keep_for" = "Manter por";
 "settings.general.theme_color" = "Cor do Tema";
 "settings.general.appearance" = "Aparência";
 "settings.general.app_behavior" = "Comportamento do App";
 "settings.storage.cleanup_now" = "Limpar áudios com mais de %d dias";
+"settings.storage.cleanup_now_disabled" = "Limpeza desativada";
+"settings.storage.retention.one_week" = "1 semana";
+"settings.storage.retention.two_weeks" = "2 semanas";
+"settings.storage.retention.one_month" = "1 mês";
+"settings.storage.retention.three_months" = "3 meses";
+"settings.storage.retention.six_months" = "6 meses";
+"settings.storage.retention.disabled" = "Desativado";
 "settings.storage.cleanup_success" = "Limpeza concluída com sucesso.";
 "settings.storage.cleanup_confirm_title" = "Limpar armazenamento";
 "settings.storage.cleanup_confirm_message" = "Isso irá excluir arquivos de armazenamento do disco:\n\nArquivos de áudio: %d (%@)\nCache local de IA: %d (%@)\n\nOs dados da dashboard e do histórico serão preservados.";
@@ -443,6 +445,8 @@
 "settings.styles.editor.markdown_output" = "Forçar saída em Markdown";
 "settings.styles.editor.output_language" = "Forçar tradução";
 "settings.styles.editor.replace_base_prompt" = "Substituir prompt base do ditado";
+"settings.styles.editor.context_sources" = "Fontes de Contexto";
+"settings.styles.editor.default_mode_hint" = "O modo padrão se aplica quando nenhum modo de app ou site combina.";
 "settings.styles.editor.targets" = "Alvos";
 "settings.styles.editor.targets_hint" = "Cada alvo pode pertencer a apenas um estilo.";
 "settings.styles.editor.app_search" = "Busque apps instalados por nome ou bundle identifier";

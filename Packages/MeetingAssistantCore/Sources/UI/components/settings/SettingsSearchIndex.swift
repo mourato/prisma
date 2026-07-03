@@ -77,6 +77,14 @@ enum SettingsSearchIndex {
             return SettingsSection.integrations.destination
         }
 
+        if protectedAppsKeys.contains(key) {
+            return SettingsDestination(section: .system, systemRoute: .protectedApps)
+        }
+
+        if modeOwnedContextKeys.contains(key) {
+            return SettingsSection.dictation.destination
+        }
+
         if key.hasPrefix("settings.general.") {
             return SettingsSection.general.destination
         }
@@ -156,29 +164,28 @@ enum SettingsSearchIndex {
         .init(prefix: "settings.styles.", section: .dictation),
         .init(prefix: "settings.service.model", section: .meetings),
         .init(prefix: "settings.service.diarization_model_name", section: .meetings),
-        .init(prefix: "settings.service.", section: .intelligence),
+        .init(prefix: "settings.service.", section: .models),
         .init(prefix: "transcription.qa.", section: .transcriptions),
-        .init(prefix: "settings.intelligence.", section: .intelligence),
-        .init(prefix: "settings.section.models", section: .intelligence),
-        .init(prefix: "settings.models.", section: .intelligence),
-        .init(prefix: "settings.section.vocabulary", section: .intelligence),
-        .init(prefix: "settings.vocabulary.", section: .intelligence),
-        .init(prefix: "settings.section.ai", section: .intelligence),
-        .init(prefix: "settings.context_awareness.", section: .intelligence),
-        .init(prefix: "settings.text_context.", section: .intelligence),
-        .init(prefix: "settings.post_processing.", section: .intelligence),
+        .init(prefix: "settings.section.models", section: .models),
+        .init(prefix: "settings.models.", section: .models),
+        .init(prefix: "settings.section.vocabulary", section: .vocabulary),
+        .init(prefix: "settings.vocabulary.", section: .vocabulary),
+        .init(prefix: "settings.section.ai", section: .enhancements),
+        .init(prefix: "settings.context_awareness.", section: .system),
+        .init(prefix: "settings.text_context.", section: .system),
+        .init(prefix: "settings.post_processing.", section: .enhancements),
         .init(prefix: "settings.enhancements.meeting_intelligence_model", section: .meetings),
         .init(prefix: "settings.enhancements.qa_enabled_desc", section: .meetings),
         .init(prefix: "settings.enhancements.selector.meeting.", section: .meetings),
         .init(prefix: "settings.enhancements.selector.dictation.", section: .dictation),
-        .init(prefix: "settings.enhancements.provider_models.", section: .intelligence),
-        .init(prefix: "settings.enhancements.provider.", section: .intelligence),
-        .init(prefix: "settings.enhancements.providers.", section: .intelligence),
-        .init(prefix: "settings.enhancements.badge.", section: .intelligence),
-        .init(prefix: "settings.enhancements.model_selector.", section: .intelligence),
-        .init(prefix: "settings.enhancements.test_and_save", section: .intelligence),
-        .init(prefix: "settings.enhancements.", section: .intelligence),
-        .init(prefix: "prompt.instructions_hint", section: .intelligence),
+        .init(prefix: "settings.enhancements.provider_models.", section: .models),
+        .init(prefix: "settings.enhancements.provider.", section: .models),
+        .init(prefix: "settings.enhancements.providers.", section: .models),
+        .init(prefix: "settings.enhancements.badge.", section: .models),
+        .init(prefix: "settings.enhancements.model_selector.", section: .models),
+        .init(prefix: "settings.enhancements.test_and_save", section: .models),
+        .init(prefix: "settings.enhancements.", section: .models),
+        .init(prefix: "prompt.instructions_hint", section: .enhancements),
         .init(prefix: "settings.section.audio", section: .audio),
         .init(prefix: "settings.section.permissions", section: .permissions),
         .init(prefix: "settings.system.", section: .system),
@@ -188,6 +195,29 @@ enum SettingsSearchIndex {
 
     private static let exactMappings: [String: SettingsSection] = [
         "settings.section.metrics": .metrics,
+    ]
+
+    private static let modeOwnedContextKeys: Set<String> = [
+        "settings.context_awareness.accessibility_text",
+        "settings.context_awareness.accessibility_text_desc",
+        "settings.context_awareness.clipboard",
+        "settings.context_awareness.clipboard_desc",
+        "settings.context_awareness.enabled",
+        "settings.context_awareness.enabled_desc",
+        "settings.context_awareness.redact_sensitive_data",
+        "settings.context_awareness.redact_sensitive_data_desc",
+        "settings.context_awareness.window_ocr",
+        "settings.context_awareness.window_ocr_desc",
+        "settings.styles.editor.context_sources",
+    ]
+
+    private static let protectedAppsKeys: Set<String> = [
+        "settings.context_awareness.always_excluded_badge",
+        "settings.context_awareness.excluded_apps_add",
+        "settings.context_awareness.excluded_apps_empty",
+        "settings.context_awareness.excluded_apps_remove",
+        "settings.context_awareness.protect_sensitive_apps",
+        "settings.context_awareness.protect_sensitive_apps_desc",
     ]
 
     private static let meetingCapabilityKeys: Set<String> = [

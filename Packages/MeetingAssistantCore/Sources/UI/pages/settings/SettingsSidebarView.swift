@@ -19,30 +19,48 @@ struct SettingsSidebarView: View {
     }
 
     private var sectionsList: some View {
-        List(selection: sectionSelectionBinding) {
-            Section("settings.sidebar.workflows".localized) {
-                ForEach(SettingsSection.primarySections) { section in
-                    NavigationLink(value: section) {
-                        sidebarLabel(for: section)
+        VStack(spacing: 0) {
+            List(selection: sectionSelectionBinding) {
+                Section("settings.sidebar.workflows".localized) {
+                    ForEach(SettingsSection.primarySections) { section in
+                        NavigationLink(value: section) {
+                            sidebarLabel(for: section)
+                        }
                     }
                 }
             }
+            .listStyle(.sidebar)
+            .settingsScrollEdgeEffect()
 
-            Section("settings.sidebar.configuration".localized) {
-                ForEach(SettingsSection.settingsSections) { section in
-                    NavigationLink(value: section) {
-                        sidebarLabel(for: section)
-                    }
-                }
+            Spacer(minLength: 0)
+
+            Divider()
+
+            Button {
+                onSelectDestination(SettingsSection.system.destination)
+            } label: {
+                sidebarLabel(for: .system)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(bottomSettingsBackground)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
         }
-        .listStyle(.sidebar)
-        .settingsScrollEdgeEffect()
         .searchable(
             text: $searchText,
             placement: .sidebar,
             prompt: "settings.search.placeholder".localized
         )
+    }
+
+    private var bottomSettingsBackground: some ShapeStyle {
+        selectedSection == .system
+            ? AnyShapeStyle(AppDesignSystem.Colors.subtleFill2)
+            : AnyShapeStyle(Color.clear)
     }
 
     private var hasActiveSearch: Bool {

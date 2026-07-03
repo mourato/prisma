@@ -41,8 +41,6 @@ public struct SettingsView: View {
     @State private var meetingNavigationState = MeetingSettingsNavigationState()
     @State private var dictationNavigationState = SettingsSubpageNavigationState<DictationSettingsRoute>()
     @State private var enhancementsNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
-    @State private var intelligenceRoute: IntelligenceSettingsRoute = .models
-    @State private var intelligenceTextContextNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
     @State private var systemRoute: SystemSettingsRoute = .root
     @State private var columnVisibility: NavigationSplitViewVisibility
     @StateObject private var navigationService = NavigationService.shared
@@ -394,8 +392,6 @@ private extension SettingsView {
             _ = dictationNavigationState.goBack()
         case .enhancements where enhancementsNavigationState.canGoBack:
             _ = enhancementsNavigationState.goBack()
-        case .intelligence where canNavigateIntelligenceTextContextBack:
-            _ = intelligenceTextContextNavigationState.goBack()
         case .system where systemRoute != .root:
             systemRoute = .root
         default:
@@ -413,8 +409,6 @@ private extension SettingsView {
             _ = dictationNavigationState.goForward()
         case .enhancements where enhancementsNavigationState.canGoForward:
             _ = enhancementsNavigationState.goForward()
-        case .intelligence where canNavigateIntelligenceTextContextForward:
-            _ = intelligenceTextContextNavigationState.goForward()
         default:
             break
         }
@@ -426,6 +420,13 @@ private extension SettingsView {
         }
         selectedSection = destination.section
         activityNavigationState.apply(destination.activityRoute)
+        if destination.section == .dictation {
+            if let dictationRoute = destination.dictationRoute {
+                dictationNavigationState.open(dictationRoute)
+            } else {
+                dictationNavigationState = SettingsSubpageNavigationState()
+            }
+        }
         if destination.section == .system {
             systemRoute = destination.systemRoute ?? .root
         }
@@ -470,8 +471,6 @@ private extension SettingsView {
             dictationNavigationState.canGoBack
         case .enhancements:
             enhancementsNavigationState.canGoBack
-        case .intelligence:
-            canNavigateIntelligenceTextContextBack
         case .system:
             systemRoute != .root
         default:
@@ -489,19 +488,9 @@ private extension SettingsView {
             dictationNavigationState.canGoForward
         case .enhancements:
             enhancementsNavigationState.canGoForward
-        case .intelligence:
-            canNavigateIntelligenceTextContextForward
         default:
             false
         }
-    }
-
-    private var canNavigateIntelligenceTextContextBack: Bool {
-        intelligenceRoute == .textContext && intelligenceTextContextNavigationState.canGoBack
-    }
-
-    private var canNavigateIntelligenceTextContextForward: Bool {
-        intelligenceRoute == .textContext && intelligenceTextContextNavigationState.canGoForward
     }
 
     @MainActor
@@ -525,7 +514,7 @@ private extension SettingsView {
         case .integrations:
             IntegrationsSettingsTab()
         case .audio:
-            AudioSettingsTab()
+            SystemSettingsTab(route: .constant(.sound))
         case .transcriptions:
             TranscriptionsSettingsTab(
                 searchText: $transcriptionsSearchText,
@@ -541,10 +530,7 @@ private extension SettingsView {
                 transcriptionsSearchText: $transcriptionsSearchText
             )
         case .intelligence:
-            IntelligenceSettingsTab(
-                route: $intelligenceRoute,
-                textContextNavigationState: $intelligenceTextContextNavigationState
-            )
+            SystemSettingsTab(route: .constant(.models))
         case .system:
             SystemSettingsTab(route: $systemRoute)
         }

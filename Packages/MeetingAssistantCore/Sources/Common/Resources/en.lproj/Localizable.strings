@@ -22,12 +22,10 @@
 "settings.activity.model_performance.subtitle" = "Compare transcription and post-processing model attempts.";
 "settings.activity.more_insights.subtitle" = "Explore calendar, app, and activity analytics.";
 "settings.section.intelligence" = "Intelligence";
-"settings.intelligence.description" = "Configure model setup, AI cleanup, context sources, and dictionary replacement rules.";
-"settings.section.system" = "System";
+"settings.section.settings" = "Settings";
 "settings.system.description" = "Manage app behavior, interface options, storage, and required permissions.";
 "settings.system.permissions.accessibility_hint" = "Opens permission status and setup guidance.";
 "settings.sidebar.workflows" = "Prisma";
-"settings.sidebar.configuration" = "Settings";
 
 /* Metrics Dashboard */
 "metrics.title" = "Dashboard";
@@ -118,7 +116,6 @@
 "settings.general.storage" = "Storage";
 "settings.general.auto_delete" = "Enable recording retention limit";
 "settings.general.auto_delete_desc" = "Limits how long recordings are kept on disk. Dashboard and history data remain available even after audio cleanup.";
-"settings.general.days_format" = "%d days";
 
 "settings.general.transcript_delivery" = "Transcript Delivery";
 "settings.general.auto_copy_transcription" = "Auto-copy transcriptions to clipboard";
@@ -202,12 +199,17 @@
 "settings.dictation.user_prompts.title" = "User prompts";
 "settings.dictation.user_prompts.description" = "Create and manage custom prompts for dictation post-processing.";
 "settings.dictation.user_prompts.accessibility_hint" = "Opens user prompts settings.";
-"settings.general.days" = "Days";
-"settings.general.keep_for" = "Keep for";
 "settings.general.theme_color" = "Theme Color";
 "settings.general.appearance" = "Appearance";
 "settings.general.app_behavior" = "App Behavior";
 "settings.storage.cleanup_now" = "Clean up audio older than %d days";
+"settings.storage.cleanup_now_disabled" = "Cleanup disabled";
+"settings.storage.retention.one_week" = "1 week";
+"settings.storage.retention.two_weeks" = "2 weeks";
+"settings.storage.retention.one_month" = "1 month";
+"settings.storage.retention.three_months" = "3 months";
+"settings.storage.retention.six_months" = "6 months";
+"settings.storage.retention.disabled" = "Disabled";
 "settings.storage.cleanup_success" = "Cleanup completed successfully.";
 "settings.storage.cleanup_confirm_title" = "Clean up storage";
 "settings.storage.cleanup_confirm_message" = "This will delete storage files from disk:\n\nAudio files: %d (%@)\nLocal AI cache: %d (%@)\n\nDashboard and history data will be preserved.";
@@ -442,6 +444,8 @@
 "settings.styles.editor.markdown_output" = "Force Markdown Output";
 "settings.styles.editor.output_language" = "Force Translation";
 "settings.styles.editor.replace_base_prompt" = "Replace base dictation prompt";
+"settings.styles.editor.context_sources" = "Context Sources";
+"settings.styles.editor.default_mode_hint" = "The default mode applies when no app or website mode matches.";
 "settings.styles.editor.targets" = "Targets";
 "settings.styles.editor.targets_hint" = "A target can belong to only one style.";
 "settings.styles.editor.app_search" = "Search installed apps by name or bundle identifier";

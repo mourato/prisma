@@ -21,7 +21,7 @@ final class SettingsSearchIndexTests: XCTestCase {
         let results = SettingsSearchIndex.results(for: audioTitle)
 
         XCTAssertFalse(results.isEmpty)
-        XCTAssertTrue(results.contains(where: { $0.section == .audio }))
+        XCTAssertTrue(results.contains(where: { $0.section == .system }))
         XCTAssertTrue(results.allSatisfy { !$0.title.isEmpty && !$0.detail.isEmpty })
     }
 
@@ -61,22 +61,22 @@ final class SettingsSearchIndexTests: XCTestCase {
         XCTAssertEqual(section, .meetings)
     }
 
-    func testSectionMappingRoutesAIProviderSetupToIntelligenceSection() {
+    func testSectionMappingRoutesAIProviderSetupToSettingsSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.enhancements.provider_models.title")
 
-        XCTAssertEqual(section, .intelligence)
+        XCTAssertEqual(section, .system)
     }
 
     func testSectionMappingRoutesGeneralAudioFormatToAudioSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.general.audio_format")
 
-        XCTAssertEqual(section, .audio)
+        XCTAssertEqual(section, .system)
     }
 
     func testSectionMappingRoutesAudioDeviceKeyToAudioSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.general.audio_devices")
 
-        XCTAssertEqual(section, .audio)
+        XCTAssertEqual(section, .system)
     }
 
     func testEverySearchableKeyMapsToASection() {
@@ -88,53 +88,54 @@ final class SettingsSearchIndexTests: XCTestCase {
         }
     }
 
-    func testTextContextDescriptionKeyRoutesToIntelligenceSection() {
+    func testTextContextDescriptionKeyRoutesToSettingsSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.text_context.description")
-        XCTAssertEqual(section, .intelligence)
+        XCTAssertEqual(section, .system)
     }
 
-    func testProtectedAppsQueryRoutesToIntelligenceSection() {
-        assertLocalizedQuery("settings.context_awareness.protect_sensitive_apps", routesTo: .intelligence)
+    func testProtectedAppsQueryRoutesToSettingsSection() {
+        assertLocalizedQuery("settings.context_awareness.protect_sensitive_apps", routesTo: .system)
     }
 
-    func testQueryModelsRoutesToIntelligenceSection() {
-        assertLocalizedQuery("settings.section.models", routesTo: .intelligence)
+    func testQueryModelsRoutesToSettingsSection() {
+        assertLocalizedQuery("settings.section.models", routesTo: .system)
     }
 
-    func testQueryTextRoutesToIntelligenceSection() {
-        assertLocalizedQuery("settings.section.ai", routesTo: .intelligence)
+    func testQueryTextRoutesToDictationSection() {
+        assertLocalizedQuery("settings.section.ai", routesTo: .dictation)
     }
 
-    func testQueryContextRoutesToIntelligenceSection() {
-        assertLocalizedQuery("settings.context_awareness.title", routesTo: .intelligence)
+    func testQueryContextSourcesRoutesToDictationSection() {
+        assertLocalizedQuery("settings.styles.editor.context_sources", routesTo: .dictation)
+        assertLocalizedQuery("settings.context_awareness.enabled", routesTo: .dictation)
     }
 
-    func testQueryDictionaryRoutesToIntelligenceSection() {
-        assertLocalizedQuery("settings.section.vocabulary", routesTo: .intelligence)
+    func testQueryDictionaryRoutesToSettingsSection() {
+        assertLocalizedQuery("settings.section.vocabulary", routesTo: .system)
     }
 
-    func testReplacementRulesKeyRoutesToIntelligenceSection() {
+    func testReplacementRulesKeyRoutesToSettingsSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.vocabulary.replacement_rules")
-        XCTAssertEqual(section, .intelligence)
+        XCTAssertEqual(section, .system)
     }
 
-    func testQueryReplacementRulesRoutesToIntelligenceSection() {
-        assertLocalizedQuery("settings.vocabulary.replacement_rules", routesTo: .intelligence)
+    func testQueryReplacementRulesRoutesToSettingsSection() {
+        assertLocalizedQuery("settings.vocabulary.replacement_rules", routesTo: .system)
     }
 
-    func testSectionForKeyModelsLabelRoutesToIntelligence() {
+    func testSectionForKeyModelsLabelRoutesToSettings() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.section.models")
-        XCTAssertEqual(section, .intelligence)
+        XCTAssertEqual(section, .system)
     }
 
-    func testSectionForKeyAILabelRoutesToIntelligence() {
+    func testSectionForKeyAILabelRoutesToDictation() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.section.ai")
-        XCTAssertEqual(section, .intelligence)
+        XCTAssertEqual(section, .dictation)
     }
 
-    func testSectionForKeyVocabularyLabelRoutesToIntelligence() {
+    func testSectionForKeyVocabularyLabelRoutesToSettings() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.section.vocabulary")
-        XCTAssertEqual(section, .intelligence)
+        XCTAssertEqual(section, .system)
     }
 
     func testRecordingIndicatorSectionRoutesToSystem() {
@@ -152,11 +153,11 @@ final class SettingsSearchIndexTests: XCTestCase {
         XCTAssertEqual(destination, SettingsDestination(section: .system, systemRoute: .permissions))
     }
 
-    func testModelHubKeysRouteToIntelligenceSection() {
+    func testModelHubKeysRouteToSettingsSection() {
         let aiSection = SettingsSearchIndex.section(forLocalizationKey: "settings.models.ai_provider_models")
-        XCTAssertEqual(aiSection, .intelligence)
+        XCTAssertEqual(aiSection, .system)
         let transcriptionSection = SettingsSearchIndex.section(forLocalizationKey: "settings.models.transcription_models")
-        XCTAssertEqual(transcriptionSection, .intelligence)
+        XCTAssertEqual(transcriptionSection, .system)
     }
 
     func testHistoryKeysPreserveActivityHistoryDestination() {
@@ -171,8 +172,8 @@ final class SettingsSearchIndexTests: XCTestCase {
         XCTAssertEqual(destination, SettingsDestination(section: .activity, activityRoute: .modelPerformance))
     }
 
-    func testQueryTranscriptionModelsReturnsIntelligenceSection() {
-        assertLocalizedQuery("settings.models.transcription_models", routesTo: .intelligence)
+    func testQueryTranscriptionModelsReturnsSettingsSection() {
+        assertLocalizedQuery("settings.models.transcription_models", routesTo: .system)
     }
 
     func testEmptyQueryReturnsNoResults() {
