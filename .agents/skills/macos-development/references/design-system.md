@@ -10,6 +10,9 @@ extension Color {
     // Use semantic colors that adapt to light/dark mode
     static let background = Color(NSColor.windowBackgroundColor)
     static let secondaryBackground = Color(NSColor.controlBackgroundColor)
+    // underPageBackgroundColor is intended for document/page underlays
+    // (text pages, spreadsheet backgrounds), not for nested surfaces
+    // inside cards or grouped containers.
     static let tertiaryBackground = Color(NSColor.underPageBackgroundColor)
 
     // Text

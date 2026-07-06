@@ -239,6 +239,35 @@ DSGroup("Prompt editor", icon: "terminal.fill") {
 }
 ```
 
+#### Background hierarchy in DSGroup
+
+`DSGroup` wraps content in `DSCard(style: .settings)`, which already provides the surface background (`.regularMaterial` or `settingsCardBackground(.subtle)` = `controlBackgroundColor`). **Content inside DSGroup must not add its own `.background()` modifier** — it inherits the card background.
+
+```swift
+// ✅ CORRECT — Content inherits DSGroup background
+DSGroup("Leaderboard", icon: "list.number") {
+    VStack(spacing: 0) {
+        header
+        rows
+    }
+}
+
+// ❌ WRONG — Inner background stacks on top of card background,
+//     creating visual density and reducing contrast
+DSGroup("Leaderboard", icon: "list.number") {
+    VStack(spacing: 0) {
+        header
+        rows
+    }
+    .background(
+        AppDesignSystem.Colors.settingsCardBackground(intensity: .regular),
+        in: RoundedRectangle(cornerRadius: 12)
+    )
+}
+```
+
+If sub-grouping is genuinely needed, use a separate `DSGroup`; do not stack `settingsCardBackground(.regular)` on top of `settingsCardBackground(.subtle)`.
+
 ### Toggle vs Checkbox
 
 **Always use toggles (switches) instead of checkboxes** when there is no separate "Save" button:
