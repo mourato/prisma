@@ -115,7 +115,7 @@ struct SettingsSidebarView: View {
                 .frame(width: 20, height: 20)
 
             Text(section.title)
-                .font(.system(size: AppDesignSystem.Layout.sidebarLabelFontSize, weight: .regular))
+                .font(.system(size: AppDesignSystem.Layout.sidebarLabelFontSize, weight: .semibold))
                 .lineLimit(1)
         }
         .padding(.vertical, 2)
