@@ -20,14 +20,28 @@ struct SettingsSidebarView: View {
 
     private var sectionsList: some View {
         VStack(spacing: 0) {
-            List(selection: sectionSelectionBinding) {
-                ForEach(SettingsSection.primarySections) { section in
-                    NavigationLink(value: section) {
-                        sidebarLabel(for: section)
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(SettingsSection.primarySections) { section in
+                        Button {
+                            onSelectDestination(section.destination)
+                        } label: {
+                            sidebarLabel(for: section)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            selectedSection == section
+                                ? AnyShapeStyle(AppDesignSystem.Colors.subtleFill)
+                                : AnyShapeStyle(Color.clear)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
                     }
                 }
+                .padding(.horizontal, 4)
             }
-            .listStyle(.sidebar)
             .settingsScrollEdgeEffect()
 
             Spacer(minLength: 0)
@@ -55,7 +69,7 @@ struct SettingsSidebarView: View {
 
     private var bottomSettingsBackground: some ShapeStyle {
         selectedSection == .system
-            ? AnyShapeStyle(AppDesignSystem.Colors.subtleFill2)
+            ? AnyShapeStyle(AppDesignSystem.Colors.subtleFill)
             : AnyShapeStyle(Color.clear)
     }
 
@@ -149,12 +163,4 @@ struct SettingsSidebarView: View {
         .padding(.vertical, 3)
     }
 
-    private var sectionSelectionBinding: Binding<SettingsSection> {
-        Binding(
-            get: { selectedSection },
-            set: { newSection in
-                onSelectDestination(newSection.destination)
-            }
-        )
-    }
 }
