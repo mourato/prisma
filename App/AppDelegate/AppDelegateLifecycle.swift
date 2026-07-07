@@ -44,8 +44,19 @@ extension AppDelegate {
 
         localModelResidencyCoordinator.startMonitoring()
 
-        // Set initial activation policy based on user settings
+        // Set initial appearance and dock visibility based on user settings
+        applyAppearance(settingsStore.appearanceMode)
         applyDockVisibility(settingsStore.showInDock)
+
+        // Observe appearance changes
+        settingsStore.$appearanceMode
+            .dropFirst()
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] mode in
+                self?.applyAppearance(mode)
+            }
+            .store(in: &cancellables)
 
         // Observe changes to dock visibility setting
         dockObserver = settingsStore.$showInDock
@@ -155,8 +166,19 @@ extension AppDelegate {
 
         localModelResidencyCoordinator.startMonitoring()
 
-        // Set initial activation policy based on user settings
+        // Set initial appearance and dock visibility based on user settings
+        applyAppearance(settingsStore.appearanceMode)
         applyDockVisibility(settingsStore.showInDock)
+
+        // Observe appearance changes
+        settingsStore.$appearanceMode
+            .dropFirst()
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] mode in
+                self?.applyAppearance(mode)
+            }
+            .store(in: &cancellables)
 
         // Observe changes to dock visibility setting
         dockObserver = settingsStore.$showInDock

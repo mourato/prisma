@@ -75,6 +75,7 @@ extension AppSettingsStore {
         static let autoDeleteTranscriptions = "autoDeleteTranscriptions"
         static let autoDeletePeriodDays = "autoDeletePeriodDays"
         static let appAccentColor = "appAccentColor"
+        static let appearanceMode = "appearanceMode"
         // Sound Feedback
         static let soundFeedbackEnabled = "soundFeedbackEnabled"
         static let recordingStartSound = "recordingStartSound"

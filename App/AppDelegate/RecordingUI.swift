@@ -179,4 +179,17 @@ extension AppDelegate {
         NSApp.setActivationPolicy(policy)
         logger.info("Activation policy set to: \(showInDock ? "regular (dock)" : "accessory (menu bar only)")")
     }
+
+    /// Applies the appearance mode by setting the app's global appearance.
+    /// - Parameter mode: The desired appearance mode (light, dark, or system).
+    func applyAppearance(_ mode: AppearanceMode) {
+        switch mode {
+        case .light:
+            NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark:
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+        case .system:
+            NSApp.appearance = nil
+        }
+    }
 }

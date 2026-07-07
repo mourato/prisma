@@ -202,6 +202,26 @@ public enum RecordingIndicatorAnimationSpeed: String, CaseIterable, Codable, Sen
     }
 }
 
+// MARK: - Appearance Mode
+
+/// Controls the app's color scheme appearance.
+public enum AppearanceMode: String, CaseIterable, Codable, Sendable {
+    case light
+    case system
+    case dark
+
+    public var displayName: String {
+        switch self {
+        case .light:
+            "settings.general.appearance.light".localized
+        case .system:
+            "settings.general.appearance.system".localized
+        case .dark:
+            "settings.general.appearance.dark".localized
+        }
+    }
+}
+
 // MARK: - App Theme Configuration
 
 /// Available colors for the application's accent theme.

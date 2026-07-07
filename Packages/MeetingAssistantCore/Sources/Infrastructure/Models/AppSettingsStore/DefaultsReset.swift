@@ -74,6 +74,7 @@ public extension AppSettingsStore {
         autoDeleteTranscriptions = false
         autoDeletePeriodDays = 30
         appAccentColor = .system
+        appearanceMode = .system
         soundFeedbackEnabled = false
         recordingStartSound = .pop
         recordingStopSound = .glass

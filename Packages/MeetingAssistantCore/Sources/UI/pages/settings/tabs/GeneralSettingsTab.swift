@@ -132,6 +132,23 @@ public struct GeneralSettingsTab: View {
                     .labelsHidden()
                     .pickerStyle(.menu)
                 }
+
+                HStack {
+                    Text("settings.general.appearance.theme".localized)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+
+                    Spacer()
+
+                    Picker("", selection: $viewModel.appearanceMode) {
+                        ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(width: 260)
+                }
             }
 
             recordingIndicatorSection

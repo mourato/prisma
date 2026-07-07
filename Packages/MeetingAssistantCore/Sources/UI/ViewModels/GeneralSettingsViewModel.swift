@@ -181,6 +181,12 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var appearanceMode: AppearanceMode {
+        didSet {
+            settingsStore.appearanceMode = appearanceMode
+        }
+    }
+
     @Published public var launchAtLogin: Bool {
         didSet {
             // Avoid infinite loop if we revert the state
@@ -253,6 +259,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         recordingStartSound = settingsStore.recordingStartSound
         recordingStopSound = settingsStore.recordingStopSound
         showInDock = settingsStore.showInDock
+        appearanceMode = settingsStore.appearanceMode
         launchAtLogin = settingsStore.launchAtLogin
 
         setupDeviceObservation()

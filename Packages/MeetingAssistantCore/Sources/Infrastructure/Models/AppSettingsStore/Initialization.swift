@@ -511,6 +511,7 @@ extension AppSettingsStore {
         let autoDeleteTranscriptions: Bool
         let autoDeletePeriodDays: Int
         let appAccentColor: AppThemeColor
+        let appearanceMode: AppearanceMode
         let soundFeedbackEnabled: Bool
         let recordingStartSound: SoundFeedbackSound
         let recordingStopSound: SoundFeedbackSound
@@ -530,6 +531,7 @@ extension AppSettingsStore {
 
         let rawDays = UserDefaults.standard.object(forKey: Keys.autoDeletePeriodDays) as? Int
         let rawAccentColor = UserDefaults.standard.string(forKey: Keys.appAccentColor)
+        let rawAppearanceMode = UserDefaults.standard.string(forKey: Keys.appearanceMode)
 
         let rawStartSound = UserDefaults.standard.string(forKey: Keys.recordingStartSound)
         let rawStopSound = UserDefaults.standard.string(forKey: Keys.recordingStopSound)
@@ -546,6 +548,7 @@ extension AppSettingsStore {
             autoDeleteTranscriptions: UserDefaults.standard.bool(forKey: Keys.autoDeleteTranscriptions),
             autoDeletePeriodDays: rawDays ?? 30,
             appAccentColor: rawAccentColor.flatMap { AppThemeColor(rawValue: $0) } ?? .system,
+            appearanceMode: rawAppearanceMode.flatMap { AppearanceMode(rawValue: $0) } ?? .system,
             soundFeedbackEnabled: UserDefaults.standard.bool(forKey: Keys.soundFeedbackEnabled),
             recordingStartSound: rawStartSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .pop,
             recordingStopSound: rawStopSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .glass,

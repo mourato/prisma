@@ -721,6 +721,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(showInDock, forKey: Keys.showInDock) }
     }
 
+    /// Preferred appearance mode (light, dark, or system).
+    @Published public var appearanceMode: AppearanceMode {
+        didSet { UserDefaults.standard.set(appearanceMode.rawValue, forKey: Keys.appearanceMode) }
+    }
+
     /// Whether the user has completed the onboarding flow.
     @Published public var hasCompletedOnboarding: Bool {
         didSet { UserDefaults.standard.set(hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding) }
@@ -861,6 +866,7 @@ public class AppSettingsStore: ObservableObject {
         autoDeleteTranscriptions = uiSettings.autoDeleteTranscriptions
         autoDeletePeriodDays = uiSettings.autoDeletePeriodDays
         appAccentColor = uiSettings.appAccentColor
+        appearanceMode = uiSettings.appearanceMode
         soundFeedbackEnabled = uiSettings.soundFeedbackEnabled
         recordingStartSound = uiSettings.recordingStartSound
         recordingStopSound = uiSettings.recordingStopSound
