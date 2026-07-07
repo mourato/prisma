@@ -21,7 +21,7 @@ struct SettingsSidebarView: View {
     private var sectionsList: some View {
         VStack(spacing: 0) {
             ScrollView {
-                LazyVStack(spacing: 12) {
+                LazyVStack(spacing: 6) {
                     ForEach(SettingsSection.primarySections) { section in
                         Button {
                             onSelectDestination(section.destination)

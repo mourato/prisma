@@ -18,8 +18,13 @@ public struct SettingsWindowBackground: View {
             if AppDesignSystem.Accessibility.reduceTransparency {
                 AppDesignSystem.Colors.windowBackground
             } else {
-                Rectangle()
-                    .fill(.regularMaterial)
+                ZStack {
+                    VisualEffectView(
+                        material: .sidebar,
+                        blendingMode: .withinWindow
+                    )
+                    AppDesignSystem.Colors.windowBackground.opacity(0.50)
+                }
             }
         @unknown default:
             AppDesignSystem.Colors.windowBackground
