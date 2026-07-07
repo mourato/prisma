@@ -21,11 +21,9 @@ struct SettingsSidebarView: View {
     private var sectionsList: some View {
         VStack(spacing: 0) {
             List(selection: sectionSelectionBinding) {
-                Section("settings.sidebar.workflows".localized) {
-                    ForEach(SettingsSection.primarySections) { section in
-                        NavigationLink(value: section) {
-                            sidebarLabel(for: section)
-                        }
+                ForEach(SettingsSection.primarySections) { section in
+                    NavigationLink(value: section) {
+                        sidebarLabel(for: section)
                     }
                 }
             }
@@ -111,11 +109,11 @@ struct SettingsSidebarView: View {
             Image(systemName: section.icon)
                 .symbolRenderingMode(.monochrome)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppDesignSystem.Colors.accent)
                 .frame(width: 20, height: 20)
 
             Text(section.title)
-                .font(.system(size: AppDesignSystem.Layout.sidebarLabelFontSize, weight: .semibold))
+                .font(.system(size: AppDesignSystem.Layout.sidebarLabelFontSize, weight: .medium))
                 .lineLimit(1)
         }
         .padding(.vertical, 2)

@@ -19,8 +19,7 @@ public struct SettingsWindowBackground: View {
                 AppDesignSystem.Colors.windowBackground
             } else {
                 Rectangle()
-                    .fill(.windowBackground)
-                    .background(.windowBackground)
+                    .fill(.regularMaterial)
             }
         @unknown default:
             AppDesignSystem.Colors.windowBackground
