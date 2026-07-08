@@ -62,6 +62,8 @@ public extension RecordingManager {
         requestedAt: Date,
         triggerLabel: String
     ) async {
+        cancelAutomaticMeetingRecordingConfirmation()
+
         guard !isRecording else {
             AppLogger.info("Attempted to start recording but already recording", category: .recordingManager)
             return

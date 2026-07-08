@@ -71,6 +71,7 @@ public extension AppSettingsStore {
         recordingIndicatorStyle = .mini
         recordingIndicatorPosition = .bottom
         recordingIndicatorAnimationSpeed = .normal
+        automaticMeetingRecordingConfirmationDelay = .seconds3
         autoDeleteTranscriptions = false
         autoDeletePeriodDays = 30
         appAccentColor = .system

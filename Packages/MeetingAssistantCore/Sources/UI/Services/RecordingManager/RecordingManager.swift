@@ -44,6 +44,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public var dictationSessionOutputLanguageOverride: DictationOutputLanguage?
     @Published public var postProcessingReadinessWarningIssue: EnhancementsInferenceReadinessIssue?
     @Published public var postProcessingReadinessWarningMode: IntelligenceKernelMode?
+    @Published public internal(set) var automaticMeetingRecordingConfirmation: AutomaticMeetingRecordingConfirmation?
 
     // MARK: - Protocol Publishers
 
@@ -111,6 +112,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     var cancellables = Set<AnyCancellable>()
     var automaticMeetingRecordingCancellable: AnyCancellable?
+    var automaticMeetingRecordingConfirmationTask: Task<Void, Never>?
     var statusCheckTask: Task<Void, Never>?
     var isStartOperationInFlight = false
     var postStartContextCaptureTask: Task<Void, Never>?

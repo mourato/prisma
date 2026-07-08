@@ -38,6 +38,60 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
         XCTAssertEqual(widthWithTimer - widthWithoutTimer, expectedDelta, accuracy: 0.001)
     }
 
+    func testAutomaticMeetingConfirmationWidthUsesDedicatedBudget() {
+        let renderState = RecordingIndicatorRenderState(
+            mode: .confirmingAutomaticMeetingStart(
+                deadline: Date(timeIntervalSinceReferenceDate: 9),
+                duration: 9
+            ),
+            kind: .meeting
+        )
+        let layout = RecordingIndicatorOverlayLayout(
+            showsPromptSelector: false,
+            showsLanguageSelector: false,
+            showsMeetingTimer: false
+        )
+
+        let width = FloatingRecordingIndicatorViewUtilities.mainPillWidth(
+            for: .classic,
+            renderState: renderState,
+            layout: layout,
+            expanded: false
+        )
+
+        XCTAssertEqual(
+            width,
+            FloatingRecordingIndicatorViewUtilities.confirmationPillWidth(for: .classic),
+            accuracy: 0.001
+        )
+    }
+
+    func testSuperAutomaticMeetingConfirmationWidthUsesSameBudget() {
+        let renderState = RecordingIndicatorRenderState(
+            mode: .confirmingAutomaticMeetingStart(
+                deadline: Date(timeIntervalSinceReferenceDate: 9),
+                duration: 9
+            ),
+            kind: .meeting
+        )
+        let layout = RecordingIndicatorOverlayLayout(
+            showsPromptSelector: true,
+            showsLanguageSelector: true,
+            showsMeetingTimer: true
+        )
+
+        let width = FloatingRecordingIndicatorViewUtilities.superCardWidth(
+            layout: layout,
+            renderState: renderState
+        )
+
+        XCTAssertEqual(
+            width,
+            FloatingRecordingIndicatorViewUtilities.confirmationPillWidth(for: .super),
+            accuracy: 0.001
+        )
+    }
+
     func testProcessingClusterWidth_IsIndependentFromRecordingKind() {
         let size: FloatingRecordingIndicatorView.IndicatorSize = .classic
         let processingRenderState = RecordingIndicatorRenderState(mode: .processing, kind: .meeting)

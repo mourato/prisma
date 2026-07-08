@@ -45,6 +45,7 @@ extension AppDelegate {
         isAssistantRecording: Bool,
         isStarting: Bool,
         isProcessing: Bool,
+        automaticMeetingConfirmation: AutomaticMeetingRecordingConfirmation?,
         capturePurpose: CapturePurpose?,
         recordingSource: RecordingSource,
         meetingType: MeetingType? = nil
@@ -70,6 +71,15 @@ extension AppDelegate {
             meetingType: meetingType,
             isAssistantRecording: isAssistantRecording
         )
+        let confirmationState = automaticMeetingConfirmation.map { confirmation in
+            RecordingIndicatorRenderState(
+                mode: .confirmingAutomaticMeetingStart(
+                    deadline: confirmation.deadline,
+                    duration: confirmation.duration
+                ),
+                kind: .meeting
+            )
+        }
 
         if isRecording {
             if isAssistantRecording {
@@ -91,6 +101,16 @@ extension AppDelegate {
             }
         } else if isStarting {
             floatingIndicatorController.show(renderState: startingState)
+        } else if let confirmationState {
+            floatingIndicatorController.show(
+                renderState: confirmationState,
+                onStop: {},
+                onCancel: { [weak self] in
+                    Task { @MainActor [weak self] in
+                        self?.recordingManager.cancelAutomaticMeetingRecordingConfirmation()
+                    }
+                }
+            )
         } else if isProcessing {
             floatingIndicatorController.show(renderState: processingState)
         } else if recordingManager.isTranscribing || recordingManager.isForegroundTranscribing {

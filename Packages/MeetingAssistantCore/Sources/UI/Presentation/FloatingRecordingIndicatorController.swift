@@ -11,6 +11,7 @@ import SwiftUI
 /// Mode for the floating indicator.
 public enum FloatingRecordingIndicatorMode: Sendable, Equatable {
     case starting
+    case confirmingAutomaticMeetingStart(deadline: Date, duration: TimeInterval)
     case recording
     case processing
     case error(message: String)
@@ -383,7 +384,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     private func updateMode(_ mode: FloatingRecordingIndicatorMode) {
         switch mode {
-        case .starting:
+        case .starting, .confirmingAutomaticMeetingStart:
             audioMonitor.stopMonitoring()
         case .recording:
             audioMonitor.stopMonitoring()
@@ -402,7 +403,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         switch mode {
         case .error:
             return Constants.panelHeightClassic
-        case .starting, .recording, .processing:
+        case .starting, .confirmingAutomaticMeetingStart, .recording, .processing:
             switch style {
             case .classic:
                 return Constants.panelHeightClassic
@@ -430,7 +431,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         switch renderState.mode {
         case .error:
             return Constants.panelWidthError
-        case .starting, .recording, .processing:
+        case .starting, .confirmingAutomaticMeetingStart, .recording, .processing:
             let layout = RecordingIndicatorOverlayLayout.resolve(
                 renderState: renderState,
                 settingsStore: settingsStore
@@ -510,7 +511,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         switch mode {
         case .error:
             true
-        case .starting, .recording, .processing:
+        case .starting, .confirmingAutomaticMeetingStart, .recording, .processing:
             settingsStore.recordingIndicatorEnabled && settingsStore.recordingIndicatorStyle != .none
         }
     }

@@ -508,6 +508,7 @@ extension AppSettingsStore {
         let recordingIndicatorStyle: RecordingIndicatorStyle
         let recordingIndicatorPosition: RecordingIndicatorPosition
         let recordingIndicatorAnimationSpeed: RecordingIndicatorAnimationSpeed
+        let automaticMeetingRecordingConfirmationDelay: AutomaticMeetingRecordingConfirmationDelay
         let autoDeleteTranscriptions: Bool
         let autoDeletePeriodDays: Int
         let appAccentColor: AppThemeColor
@@ -528,6 +529,9 @@ extension AppSettingsStore {
         let rawIndicatorStyle = UserDefaults.standard.string(forKey: Keys.recordingIndicatorStyle)
         let rawIndicatorPosition = UserDefaults.standard.string(forKey: Keys.recordingIndicatorPosition)
         let rawIndicatorAnimationSpeed = UserDefaults.standard.string(forKey: Keys.recordingIndicatorAnimationSpeed)
+        let rawConfirmationDelay = UserDefaults.standard.object(
+            forKey: Keys.automaticMeetingRecordingConfirmationDelay
+        ) as? Int
 
         let rawDays = UserDefaults.standard.object(forKey: Keys.autoDeletePeriodDays) as? Int
         let rawAccentColor = UserDefaults.standard.string(forKey: Keys.appAccentColor)
@@ -545,6 +549,8 @@ extension AppSettingsStore {
             recordingIndicatorStyle: rawIndicatorStyle.flatMap { RecordingIndicatorStyle(rawValue: $0) } ?? .mini,
             recordingIndicatorPosition: rawIndicatorPosition.flatMap { RecordingIndicatorPosition(rawValue: $0) } ?? .bottom,
             recordingIndicatorAnimationSpeed: rawIndicatorAnimationSpeed.flatMap { RecordingIndicatorAnimationSpeed(rawValue: $0) } ?? .normal,
+            automaticMeetingRecordingConfirmationDelay: rawConfirmationDelay
+                .flatMap { AutomaticMeetingRecordingConfirmationDelay(rawValue: $0) } ?? .seconds3,
             autoDeleteTranscriptions: UserDefaults.standard.bool(forKey: Keys.autoDeleteTranscriptions),
             autoDeletePeriodDays: rawDays ?? 30,
             appAccentColor: rawAccentColor.flatMap { AppThemeColor(rawValue: $0) } ?? .system,
