@@ -404,7 +404,7 @@ public struct FloatingRecordingIndicatorView: View {
                         at: context.date
                     )
                     Text(durationText)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(Font(FloatingRecordingIndicatorViewUtilities.timerFont(for: currentIndicatorSize)))
                         .monospacedDigit()
                         .contentTransition(.numericText())
                         .frame(
@@ -422,7 +422,7 @@ public struct FloatingRecordingIndicatorView: View {
                     at: Date()
                 )
                 Text(durationText)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(Font(FloatingRecordingIndicatorViewUtilities.timerFont(for: currentIndicatorSize)))
                     .monospacedDigit()
                     .contentTransition(.numericText())
                     .frame(

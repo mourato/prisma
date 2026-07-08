@@ -1,9 +1,39 @@
 @testable import MeetingAssistantCore
 @testable import MeetingAssistantCoreUI
+import AppKit
 import XCTest
 
 @MainActor
 final class FloatingRecordingIndicatorWidthTests: XCTestCase {
+    func testFormatRecordingDuration_UsesHoursAfterOneHour() {
+        let start = Date(timeIntervalSinceReferenceDate: 0)
+        let current = Date(timeIntervalSinceReferenceDate: 3_661)
+
+        XCTAssertEqual(
+            FloatingRecordingIndicatorViewUtilities.formatRecordingDuration(startTime: start, at: current),
+            "01:01:01"
+        )
+    }
+
+    func testTimerReservedWidthFitsHourDurationSample() {
+        for size in [
+            FloatingRecordingIndicatorView.IndicatorSize.classic,
+            .mini,
+            .super,
+        ] {
+            let sampleWidth = ceil(
+                ("00:00:00" as NSString).size(
+                    withAttributes: [.font: FloatingRecordingIndicatorViewUtilities.timerFont(for: size)]
+                ).width
+            )
+
+            XCTAssertGreaterThanOrEqual(
+                FloatingRecordingIndicatorViewUtilities.timerReservedWidth(for: size),
+                sampleWidth
+            )
+        }
+    }
+
     func testMeetingTimerDividerWidthContributionMatchesLayoutBudget() {
         let size: FloatingRecordingIndicatorView.IndicatorSize = .classic
         let renderState = RecordingIndicatorRenderState(mode: .recording, kind: .meeting)
@@ -34,6 +64,35 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
         let expectedDelta = FloatingRecordingIndicatorViewUtilities.dividerWidth
             + FloatingRecordingIndicatorViewUtilities.timerReservedWidth(for: size)
             + (FloatingRecordingIndicatorViewUtilities.contentSpacing(for: size) * 2)
+
+        XCTAssertEqual(widthWithTimer - widthWithoutTimer, expectedDelta, accuracy: 0.001)
+    }
+
+    func testSuperFooterLeadingWidthIncludesHourSafeTimerBudget() {
+        let renderState = RecordingIndicatorRenderState(mode: .recording, kind: .meeting)
+        let layoutWithTimer = RecordingIndicatorOverlayLayout(
+            showsPromptSelector: false,
+            showsLanguageSelector: false,
+            showsMeetingTimer: true
+        )
+        let layoutWithoutTimer = RecordingIndicatorOverlayLayout(
+            showsPromptSelector: false,
+            showsLanguageSelector: false,
+            showsMeetingTimer: false
+        )
+
+        let expectedDelta = FloatingRecordingIndicatorViewUtilities.superFooterChipWidth(
+            for: FloatingRecordingIndicatorViewUtilities.timerReservedWidth(for: .super)
+        ) + FloatingRecordingIndicatorViewUtilities.superFooterSpacing()
+
+        let widthWithTimer = FloatingRecordingIndicatorViewUtilities.superFooterLeadingWidth(
+            layout: layoutWithTimer,
+            renderState: renderState
+        )
+        let widthWithoutTimer = FloatingRecordingIndicatorViewUtilities.superFooterLeadingWidth(
+            layout: layoutWithoutTimer,
+            renderState: renderState
+        )
 
         XCTAssertEqual(widthWithTimer - widthWithoutTimer, expectedDelta, accuracy: 0.001)
     }
