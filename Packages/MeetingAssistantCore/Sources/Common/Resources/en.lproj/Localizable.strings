@@ -25,7 +25,6 @@
 "settings.section.settings" = "Settings";
 "settings.system.description" = "Manage app behavior, interface options, storage, and required permissions.";
 "settings.system.permissions.accessibility_hint" = "Opens permission status and setup guidance.";
-"settings.sidebar.workflows" = "Prisma";
 
 /* Metrics Dashboard */
 "metrics.title" = "Dashboard";

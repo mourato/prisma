@@ -185,6 +185,7 @@ Performance hygiene:
 - Surface explicit loading/empty/success/warning states in dynamic settings blocks.
 - Keep destructive actions visually separated from neutral actions.
 - Pair row title/description semantics for VoiceOver and include clear accessibility hints.
+- Settings sidebar page-changing items should share one button row style, including the bottom Settings destination. Do not mix `NavigationLink` sidebar rows with custom buttons for equivalent page navigation.
 
 ### Design System
 

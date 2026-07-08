@@ -20,34 +20,16 @@ struct SettingsSidebarView: View {
 
     private var sectionsList: some View {
         VStack(spacing: 0) {
-            List(selection: sectionSelectionBinding) {
-                Section("settings.sidebar.workflows".localized) {
-                    ForEach(SettingsSection.primarySections) { section in
-                        NavigationLink(value: section) {
-                            sidebarLabel(for: section)
-                        }
-                    }
+            VStack(spacing: 0) {
+                ForEach(SettingsSection.primarySections) { section in
+                    sidebarNavigationButton(for: section)
                 }
             }
-            .listStyle(.sidebar)
-            .settingsScrollEdgeEffect()
 
             Spacer(minLength: 0)
 
-            Button {
-                onSelectDestination(SettingsSection.system.destination)
-            } label: {
-                sidebarLabel(for: .system)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(bottomSettingsBackground)
-            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
-            .padding(.horizontal, 8)
-            .padding(.bottom, 8)
-            .accessibilityAddTraits(selectedSection == .system ? .isSelected : [])
+            sidebarNavigationButton(for: .system)
+                .padding(.bottom, 8)
         }
         .searchable(
             text: $searchText,
@@ -56,8 +38,24 @@ struct SettingsSidebarView: View {
         )
     }
 
-    private var bottomSettingsBackground: some ShapeStyle {
-        selectedSection == .system
+    private func sidebarNavigationButton(for section: SettingsSection) -> some View {
+        Button {
+            onSelectDestination(section.destination)
+        } label: {
+            sidebarLabel(for: section)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(sidebarButtonBackground(for: section))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+        .padding(.horizontal, 8)
+        .accessibilityAddTraits(selectedSection == section ? .isSelected : [])
+    }
+
+    private func sidebarButtonBackground(for section: SettingsSection) -> some ShapeStyle {
+        selectedSection == section
             ? AnyShapeStyle(AppDesignSystem.Colors.subtleFill)
             : AnyShapeStyle(Color.clear)
     }
@@ -150,15 +148,6 @@ struct SettingsSidebarView: View {
             }
         }
         .padding(.vertical, 3)
-    }
-
-    private var sectionSelectionBinding: Binding<SettingsSection> {
-        Binding(
-            get: { selectedSection },
-            set: { newSection in
-                onSelectDestination(newSection.destination)
-            }
-        )
     }
 
 }
