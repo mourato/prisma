@@ -76,7 +76,8 @@ Whenever a new localization key is introduced in source code via `"key".localize
 1. Add the key to `en.lproj/Localizable.strings` with the English value.
 2. Add the key to `pt.lproj/Localizable.strings` with the Portuguese translation.
 3. Keep locale files symmetric — no key should exist in only one language.
-4. Verify symmetry before merge — grep both locale files for the new key to confirm.
+4. Keep the source usage, locale entries, and focused test coverage in the same commit/slice. Do not land UI code that temporarily renders raw localization keys.
+5. Verify with `LocalizationKeyIntegrityTests` or a tighter focused check before merge.
 
 This requirement applies regardless of risk level (Fast or Full lane). A missing registration is a defect, not a deferrable item.
 

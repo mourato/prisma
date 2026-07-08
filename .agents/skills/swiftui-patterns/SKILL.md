@@ -185,7 +185,8 @@ Performance hygiene:
 - Surface explicit loading/empty/success/warning states in dynamic settings blocks.
 - Keep destructive actions visually separated from neutral actions.
 - Pair row title/description semantics for VoiceOver and include clear accessibility hints.
-- Settings sidebar page-changing items should share one button row style, including the bottom Settings destination. Do not mix `NavigationLink` sidebar rows with custom buttons for equivalent page navigation.
+- Settings sidebar page-changing items should share one row style, including the bottom System destination. Do not mix `NavigationLink` sidebar rows with custom buttons for equivalent page navigation.
+- Do not switch `SettingsSidebarView` between `List`, `ScrollView`, and hand-rolled stacks as visual churn. Change the container only for a concrete accessibility, keyboard, search, or layout reason, and keep the row style/search behavior covered in the same slice.
 
 ### Design System
 
@@ -394,6 +395,7 @@ HStack(spacing: 0) {
 2. Split complex control anatomy by responsibility: controller bridge, display token, chip row, and domain key-code model should not live in one SwiftUI view.
 3. Keep settings tabs as composition roots. Move reusable behavior into components or view models once a tab starts mixing unrelated concerns.
 4. When extracting tabs/components, update previews, settings search entries, and localized strings in the same slice.
+5. Keep settings-sidebar container changes atomic with their tests or preview evidence; avoid a custom-sidebar detour unless native behavior cannot satisfy the requirement.
 
 ## 2026-07-01 Progression Drill
 

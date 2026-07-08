@@ -99,3 +99,4 @@ Use this sequence:
 2. Require legacy deep links/search routes to resolve before moving visible content so navigation feels stable during sidebar reduction.
 3. For consolidated pages, standardize internal navigation and avoid a different subnavigation pattern for each destination.
 4. After grouping pages, audit visible copy again; old child-tab descriptions often become redundant under the new parent label.
+5. For settings-sidebar polish, preserve native macOS behavior first. A custom sidebar container needs an explicit interaction reason and same-slice verification for selection, search, keyboard, and VoiceOver behavior.
