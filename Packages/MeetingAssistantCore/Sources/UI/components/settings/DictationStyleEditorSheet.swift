@@ -132,13 +132,11 @@ public struct DictationStyleEditorSheet: View {
 
                     Spacer()
 
-                    Picker("settings.styles.editor.output_language".localized, selection: $outputLanguage) {
+                    DSMenuPicker("settings.styles.editor.output_language".localized, selection: $outputLanguage) {
                         ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
                             Text(language.displayName).tag(language)
                         }
                     }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
                 }
 
                 DSGroup("settings.styles.editor.context_sources".localized, icon: "text.viewfinder") {

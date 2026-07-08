@@ -124,13 +124,11 @@ public struct GeneralSettingsTab: View {
 
                     Spacer()
 
-                    Picker("", selection: $viewModel.selectedLanguage) {
+                    DSMenuPicker(selection: $viewModel.selectedLanguage) {
                         ForEach(AppLanguage.allCases, id: \.self) { language in
                             Text(language.displayName).tag(language)
                         }
                     }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
                 }
 
                 HStack {
@@ -327,14 +325,11 @@ public struct GeneralSettingsTab: View {
 
                     Spacer()
 
-                    Picker("", selection: storageRetentionBinding) {
+                    DSMenuPicker(selection: storageRetentionBinding, width: AppDesignSystem.Layout.smallPickerWidth) {
                         ForEach(StorageRetentionOption.allCases) { option in
                             Text(option.title).tag(option)
                         }
                     }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                    .frame(width: AppDesignSystem.Layout.smallPickerWidth)
                 }
 
                 HStack {

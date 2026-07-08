@@ -25,8 +25,7 @@ public struct ServiceMeetingTranscriptionSection: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 100, alignment: .leading)
 
-                    Picker(
-                        "",
+                    DSMenuPicker(
                         selection: Binding(
                             get: { viewModel.selectedMeetingLocalModel },
                             set: { viewModel.updateMeetingLocalModel($0) }
@@ -36,7 +35,6 @@ public struct ServiceMeetingTranscriptionSection: View {
                             Text(localModel.displayName).tag(localModel.model)
                         }
                     }
-                    .pickerStyle(.menu)
                 }
 
                 if viewModel.shouldShowMeetingDiarizationAutoDisableWarning {

@@ -72,13 +72,11 @@ public struct AudioSettingsTab: View {
 
                     Spacer()
 
-                    Picker("", selection: $viewModel.audioFormat) {
+                    DSMenuPicker(selection: $viewModel.audioFormat) {
                         ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
                             Text(format.displayName).tag(format)
                         }
                     }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
                 }
             }
 
@@ -105,15 +103,12 @@ public struct AudioSettingsTab: View {
 
                         Spacer()
 
-                        Picker("", selection: $viewModel.recordingMediaHandlingMode) {
+                        DSMenuPicker(selection: $viewModel.recordingMediaHandlingMode, width: AppDesignSystem.Layout.smallPickerWidth) {
                             ForEach(AppSettingsStore.RecordingMediaHandlingMode.allCases, id: \.self) { mode in
                                 Text(mode.displayNameKey.localized)
                                     .tag(mode)
                             }
                         }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
-                        .frame(width: AppDesignSystem.Layout.smallPickerWidth)
                     }
 
                     if viewModel.usesDuckingControls {
@@ -213,14 +208,11 @@ public struct AudioSettingsTab: View {
 
             Spacer()
 
-            Picker("", selection: selection) {
+            DSMenuPicker(selection: selection, width: AppDesignSystem.Layout.smallPickerWidth) {
                 ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
                     Text(sound.displayName).tag(sound)
                 }
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(width: AppDesignSystem.Layout.smallPickerWidth)
 
             Button {
                 previewSound(selection.wrappedValue)

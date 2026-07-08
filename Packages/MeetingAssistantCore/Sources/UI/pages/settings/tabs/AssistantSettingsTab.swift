@@ -157,13 +157,11 @@ public struct AssistantSettingsTab: View {
 
                         Spacer()
 
-                        Picker("", selection: borderWidthSelection) {
+                        DSMenuPicker(selection: borderWidthSelection) {
                             ForEach(AssistantShortcutSettingsViewModel.borderWidthOptions, id: \.self) { option in
                                 Text("\(Int(option)) pt").tag(option)
                             }
                         }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
 
                     }
                 } else {

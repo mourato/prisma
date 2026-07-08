@@ -15,10 +15,10 @@ public enum AppVersion {
     // MARK: - Hardcoded Constants (Update these when releasing)
 
     /// Hardcoded version string - update this when releasing a new version
-    private static let hardcodedVersion = "0.7.7"
+    private static let hardcodedVersion = "0.7.8"
 
     /// Hardcoded build number - update this when creating a new build
-    private static let hardcodedBuild = "84"
+    private static let hardcodedBuild = "85"
 
     // MARK: - Public API
 

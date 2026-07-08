@@ -171,24 +171,7 @@ public struct ServiceSettingsContent: View {
                 }
             }
 
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text("settings.service.transcription_provider.model".localized)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 100, alignment: .leading)
-
-                Picker(
-                    "",
-                    selection: Binding(
-                        get: { provider.selectedModelID },
-                        set: { viewModel.updateCloudProviderModel($0, for: provider.provider) }
-                    )
-                ) {
-                    ForEach(provider.availableModelIDs, id: \.self) { modelID in
-                        Text(viewModel.displayName(forModelID: modelID)).tag(modelID)
-                    }
-                }
-                .pickerStyle(.menu)
-            }
+            cloudProviderModelRow(provider)
 
             if provider.provider == .elevenLabs, !provider.isReady {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -260,6 +243,7 @@ public struct ServiceSettingsContent: View {
         }
         .padding(14)
     }
+
     private var runtimeSection: some View {
         DSGroup("settings.models.runtime.title".localized, icon: "cpu") {
             VStack(alignment: .leading, spacing: 12) {
@@ -269,7 +253,7 @@ public struct ServiceSettingsContent: View {
                         .frame(width: 160, alignment: .leading)
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Picker(
+                        DSMenuPicker(
                             "settings.service.model_residency_timeout".localized,
                             selection: Binding(
                                 get: { viewModel.modelResidencyTimeout },
@@ -280,8 +264,6 @@ public struct ServiceSettingsContent: View {
                                 Text(option.displayName).tag(option)
                             }
                         }
-                        .pickerStyle(.menu)
-                        .labelsHidden()
 
                         Text("settings.service.model_residency_timeout.help".localized)
                             .font(.caption2)
@@ -321,7 +303,9 @@ public struct ServiceSettingsContent: View {
 
                 Spacer()
 
-                Button(action: { viewModel.testConnection() }) {
+                Button {
+                    viewModel.testConnection()
+                } label: {
                     if viewModel.transcriptionStatus == .testing {
                         ProgressView().controlSize(.small)
                     } else {
@@ -330,6 +314,25 @@ public struct ServiceSettingsContent: View {
                 }
                 .buttonStyle(.bordered)
                 .disabled(viewModel.transcriptionStatus == .testing)
+            }
+        }
+    }
+
+    private func cloudProviderModelRow(_ provider: ServiceSettingsViewModel.CloudProviderDescriptor) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text("settings.service.transcription_provider.model".localized)
+                .foregroundStyle(.secondary)
+                .frame(width: 100, alignment: .leading)
+
+            DSMenuPicker(
+                selection: Binding(
+                    get: { provider.selectedModelID },
+                    set: { viewModel.updateCloudProviderModel($0, for: provider.provider) }
+                )
+            ) {
+                ForEach(provider.availableModelIDs, id: \.self) { modelID in
+                    Text(viewModel.displayName(forModelID: modelID)).tag(modelID)
+                }
             }
         }
     }

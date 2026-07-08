@@ -50,17 +50,14 @@ public struct DSShortcutControlsRow: View {
             Spacer()
 
             if let activationMode {
-                Picker("", selection: activationMode) {
+                DSMenuPicker(selection: activationMode, width: activationPickerWidth) {
                     ForEach(ShortcutActivationMode.allCases, id: \.self) { mode in
                         Text(mode.localizedName).tag(mode)
                     }
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .frame(width: activationPickerWidth)
             }
 
-            Picker("", selection: selectedPresetKey) {
+            DSMenuPicker(selection: selectedPresetKey, width: presetPickerWidth) {
                 ForEach(PresetShortcutKey.allCases, id: \.self) { key in
                     if let icon = key.icon {
                         Label(key.displayName, systemImage: icon).tag(key)
@@ -69,9 +66,6 @@ public struct DSShortcutControlsRow: View {
                     }
                 }
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(width: presetPickerWidth)
         }
     }
 }

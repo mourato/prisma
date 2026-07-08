@@ -54,8 +54,7 @@ public struct ServiceTranscriptionProviderSection: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 100, alignment: .leading)
 
-                    Picker(
-                        "",
+                    DSMenuPicker(
                         selection: Binding(
                             get: { viewModel.selectedInputLanguageHintRawValue },
                             set: { viewModel.updateTranscriptionInputLanguageHint(rawValue: $0) }
@@ -65,7 +64,6 @@ public struct ServiceTranscriptionProviderSection: View {
                             Text(hint.displayName).tag(hint.rawValue)
                         }
                     }
-                    .pickerStyle(.menu)
                 }
 
                 Text("settings.service.transcription_provider.input_language.help".localized)

@@ -72,7 +72,6 @@ public struct SettingsView: View {
                 legacyHeader: detailNavigationBar,
                 usesToolbarChrome: usesToolbarChrome
             ))
-            .tint(AppDesignSystem.Colors.accent)
         }
         .navigationSplitViewStyle(.balanced)
         .navigationTitle(settingsNavigationTitle)

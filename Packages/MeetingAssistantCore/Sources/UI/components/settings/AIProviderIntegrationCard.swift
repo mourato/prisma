@@ -87,13 +87,11 @@ public struct AIProviderIntegrationCard: View {
                     }
                 }
 
-                Picker("", selection: $viewModel.settings.aiConfiguration.provider) {
+                DSMenuPicker(selection: $viewModel.settings.aiConfiguration.provider) {
                     ForEach(AIProvider.allCases, id: \.self) { provider in
                         Text(provider.displayName).tag(provider)
                     }
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
                 .fixedSize()
                 .onChange(of: viewModel.settings.aiConfiguration.provider) { _, newProvider in
                     if newProvider != .custom {
@@ -139,7 +137,7 @@ public struct AIProviderIntegrationCard: View {
                         .disabled(viewModel.isLoadingModels || viewModel.connectionStatus == .testing)
                     }
 
-                    Picker("", selection: selectedModelBinding) {
+                    DSMenuPicker(selection: selectedModelBinding) {
                         if viewModel.isLoadingModels {
                             Text("settings.ai.loading".localized).tag("")
                         } else if viewModel.availableModels.isEmpty {
@@ -151,8 +149,6 @@ public struct AIProviderIntegrationCard: View {
                             }
                         }
                     }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
                     .disabled(viewModel.isLoadingModels || viewModel.availableModels.isEmpty)
                 }
             }

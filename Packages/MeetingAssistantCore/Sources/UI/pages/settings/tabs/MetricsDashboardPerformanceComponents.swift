@@ -217,13 +217,11 @@ private struct MetricsDashboardPerformanceLeaderboardSection: View {
 
                     Spacer()
 
-                    Picker("metrics.performance.sort.title".localized, selection: $sort) {
+                    DSMenuPicker("metrics.performance.sort.title".localized, selection: $sort) {
                         ForEach(LeaderboardSort.allCases, id: \.self) { option in
                             Text(option.displayName).tag(option)
                         }
                     }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
                 }
 
                 if entries.isEmpty {
@@ -450,10 +448,7 @@ private struct MetricsDashboardFilterPicker<SelectionValue: Hashable, Content: V
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Picker("", selection: $selection, content: content)
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            DSMenuPicker(selection: $selection, maxWidth: .infinity, alignment: .leading, content: content)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

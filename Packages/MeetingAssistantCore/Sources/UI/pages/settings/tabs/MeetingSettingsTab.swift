@@ -179,15 +179,13 @@ public struct MeetingSettingsTab: View {
                                 helperMessage: "settings.meetings.notes_typography.desc".localized
                             )
                             Spacer()
-                            Picker("", selection: $meetingViewModel.settings.meetingNotesFontFamilyKey) {
+                            DSMenuPicker(selection: $meetingViewModel.settings.meetingNotesFontFamilyKey) {
                                 Text("settings.meetings.notes_typography.font_system".localized)
                                     .tag(MeetingNotesTypographyDefaults.systemFontFamilyKey)
                                 ForEach(availableMeetingNotesFontFamilies, id: \.self) { family in
                                     Text(family).tag(family)
                                 }
                             }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
                         }
 
                         Divider()
@@ -195,13 +193,11 @@ public struct MeetingSettingsTab: View {
                         HStack {
                             Text("settings.meetings.notes_typography.font_size".localized)
                             Spacer()
-                            Picker("", selection: $meetingViewModel.settings.meetingNotesFontSize) {
+                            DSMenuPicker(selection: $meetingViewModel.settings.meetingNotesFontSize) {
                                 ForEach(MeetingNotesTypographyDefaults.supportedFontSizes, id: \.self) { size in
                                     Text("\(Int(size))").tag(size)
                                 }
                             }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
                         }
                     }
                 }
@@ -362,13 +358,11 @@ public struct MeetingSettingsTab: View {
                                 helperMessage: "settings.meetings.export_safety_policy_desc".localized
                             )
                             Spacer()
-                            Picker("", selection: $meetingViewModel.settings.summaryExportSafetyPolicyLevel) {
+                            DSMenuPicker(selection: $meetingViewModel.settings.summaryExportSafetyPolicyLevel) {
                                 ForEach(SummaryExportSafetyPolicyLevel.allCases, id: \.self) { level in
                                     Text(exportSafetyPolicyLabel(level)).tag(level)
                                 }
                             }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
                         }
 
                         if meetingViewModel.settings.summaryExportFolder == nil {
@@ -430,14 +424,12 @@ public struct MeetingSettingsTab: View {
                             helperMessage: "settings.meetings.summary_output_language_desc".localized
                         )
                         Spacer()
-                        Picker("", selection: $meetingViewModel.settings.meetingSummaryOutputLanguage) {
+                        DSMenuPicker(selection: $meetingViewModel.settings.meetingSummaryOutputLanguage) {
                             ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
                                 Text(meetingSummaryOutputLanguageLabel(language))
                                     .tag(language)
                             }
                         }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
                     }
 
                     Divider()

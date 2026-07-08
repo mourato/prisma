@@ -336,13 +336,11 @@ private struct MetricsDashboardFiltersSection: View {
 
                 Spacer()
 
-                Picker("", selection: $viewModel.dateFilter) {
+                DSMenuPicker(selection: $viewModel.dateFilter) {
                     ForEach(DateFilter.allCases, id: \.self) { filter in
                         Text(filter.displayName).tag(filter)
                     }
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
             }
         }
     }
