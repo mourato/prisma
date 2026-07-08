@@ -214,7 +214,7 @@ private struct MetricsDashboardPerformanceLeaderboardSection: View {
 
                     Spacer()
 
-                    DSMenuSelect(
+                    MetricsDashboardFilterMenu(
                         selection: $sort,
                         options: LeaderboardSort.allCases,
                         displayName: \.displayName
@@ -446,7 +446,7 @@ private struct MetricsDashboardFilterPicker<SelectionValue: Hashable>: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            DSMenuSelect(
+            MetricsDashboardFilterMenu(
                 selection: $selection,
                 options: options,
                 maxWidth: .infinity,

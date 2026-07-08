@@ -197,7 +197,7 @@ Use the project's Design System tokens/components to keep UI consistent and DRY:
 - Rows and controls: `DSToggleRow`, `SettingsListDrillDownButtonRow`, `SettingsDrillDownListRow`, `DSCallout`, `DSBadge`, `DSModifierShortcutEditor`, `DSThemePicker`
 - Always evaluate reusing/extending these components before introducing custom wrappers in feature views.
 - Keyboard shortcut registration sections should use `MAShortcutSettingsSection` (instead of duplicating section layout). Keep a single consolidated helper affordance for shortcut context plus optional external remap guidance; do not stack multiple adjacent info popovers or repeat the same warning inline in each settings tab.
-- In Settings, use `DSMenuPicker` for simple native `.menu` pickers and `DSMenuSelect` for field-like menu controls such as filters and shortcut selectors. Do not tint neutral menu controls with `.secondary`; it reads as disabled. Do not apply `AppDesignSystem.Colors.accent` as a broad container tint; keep accent scoped to primary actions, selection, status, and intentional highlights.
+- In Settings, use native picker anatomy (`DSMenuPicker` or direct `Picker` with `.pickerStyle(.menu)`) for ordinary menu-value controls. Do not tint neutral menu controls with `.secondary`; it reads as disabled. Do not apply `AppDesignSystem.Colors.accent` as a broad container tint; keep accent scoped to primary actions, selection, status, and intentional highlights. Field-like custom menu controls are not generic Settings controls; keep them local to dense dashboard/filter surfaces when native pickers do not fit the layout.
 
 #### Settings list groups
 

@@ -53,6 +53,13 @@ honor its STOP conditions, and update your row when done.
 - Not audited: full runtime screenshot QA, complete provider credential UX, all localization tone, release/build infra, and audio capture internals beyond automatic meeting start wiring.
 - Reuse decision: extend `DictationStyle`, `AppSettingsStore`, `PostProcessingConfigurationProvider`, `ContextAwarenessCaptureOptions`, `SettingsSubpageNavigationState`, `SettingsListGroup`, `SettingsDrillDownListRow`, `SettingsSection`, `SettingsSearchIndex`, `GeneralSettingsViewModel`, and existing settings tests. Do not create a parallel modes subsystem, provider picker, or settings router.
 
+## 2026-07-08 Native Settings Controls Scope
+
+- Effort: plan-focused follow-up after comparing Prisma's current menu-picker implementation with VoiceInk `v2.0-beta.2` at commit `ba32144`.
+- Audited: VoiceInk beta `SettingsView` native `Form`/`LabeledContent` picker patterns, VoiceInk action-menu styling, Prisma `DSMenuPicker`, `DSMenuSelect`, `DSShortcutControlsRow`, `SettingsListGroup`, dashboard filter menu controls, and representative Settings tabs.
+- Not audited: sidebar styling or navigation, full runtime screenshot QA, complete accessibility pass, all non-settings app surfaces, release/build infra, and business logic behind shortcuts/recording/transcription.
+- Reuse decision: extend/reuse `SettingsListGroup` and `DSMenuPicker` for ordinary settings rows. Treat `DSMenuSelect` as removable or dashboard/filter-specific, not a generic Settings picker. Do not replace Prisma's settings shell with `Form` and do not touch the sidebar in this phase.
+
 ## Findings
 
 | # | Finding | Category | Impact | Effort | Risk | Evidence |
@@ -104,6 +111,7 @@ honor its STOP conditions, and update your row when done.
 | 021 | Move context and model controls into modes | P1 | L | 020 | DONE |
 | 022 | Collapse Intelligence, Sound, and System into Settings | P1 | L | 021 | DONE |
 | 023 | Modernize storage retention controls | P2 | M | 022 | DONE |
+| 024 | Align Settings controls with native VoiceInk beta patterns | P1 | M | - | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -123,6 +131,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - 020 establishes the persisted mode/default-mode contract; 021 must not move global controls into modes before that contract exists.
 - 022 depends on 021 because Intelligence can only be removed after context-source and dictation-model controls have a new home.
 - 023 depends on 022 because storage lives under the renamed Settings destination in the requested final IA.
+- 024 can run independently after the menu-picker visual correction work because it is scoped to control anatomy and component policy. It must not modify sidebar files.
 
 ## Committee review notes
 
@@ -131,6 +140,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - 021: Moved context-source and dictation model controls into the mode editor, removed the old global controls from Dictation/Text Context, and wired the effective dictation mode into context capture and post-processing model selection. Cold review fixed search routing for mode-owned context keys and deferred OCR mode-policy gating. Verification: `swift test --package-path Packages/MeetingAssistantCore --filter 'AppSettingsDictationStylesTests|SettingsSearchIndexTests'` passed.
 - 022: Removed the visible Intelligence host, redirected legacy Models/Dictionary/Sound destinations into the renamed Settings section, moved post-processing under Dictation, moved Protected Apps under Settings, pinned Settings at the bottom of the sidebar, and deleted the unused Intelligence tab. Verification: `swift test --package-path Packages/MeetingAssistantCore --filter 'SettingsSectionTests|SettingsSearchIndexTests'` passed.
 - 023: Replaced storage retention's toggle/free-form days field with a fixed picker for 1 week, 2 weeks, 1 month, 3 months, 6 months, or disabled, and made cleanup-now follow the selected retention state. Cold review removed stale free-form storage keys and normalizes unsupported persisted day values to 1 month. Verification: `swift test --package-path Packages/MeetingAssistantCore --filter 'SettingsSearchIndexTests|SettingsSectionTests'` passed.
+- 024: Removed `DSMenuSelect` from the generic design system, returned shortcut settings controls to native `DSMenuPicker`, and kept the custom field-like menu only as `MetricsDashboardFilterMenu` for dense dashboard filters. Thermo review simplified the dashboard menu API and naming before final validation. Verification: `make preview-check`, `make guidance-check`, `make build-agent`, `git diff --check`, focused `swiftformat --lint`, and focused `swiftlint lint` passed for touched files. `make scope-check`/`make build-test` still fail on the known unrelated `MetricsDashboardViewModelTests` baseline; isolated rerun confirms the same four tests fail.
 
 ## Findings considered and rejected
 
@@ -149,3 +159,5 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - Keep Activity's segmented control and merely restyle it: rejected because the requested visual correction is drill-down navigation matching Dictation, not different tab chrome.
 - Reuse `isAssistantIntegrationsEnabled` as the Assistant-wide toggle: rejected because Assistant can exist without third-party integrations; the two capabilities need separate state.
 - Keep Sound hidden inside System: rejected because the requested correction restores Sound as a sidebar destination and removes System's segmented control.
+- Copy VoiceInk beta Settings wholesale into Prisma: rejected because Prisma already has `SettingsListGroup`, `SettingsScrollableContent`, localization/search contracts, and a different settings shell. Adopt the native control anatomy, not the entire implementation.
+- Keep `DSMenuSelect` as the generic Settings picker default: rejected because VoiceInk beta uses native pickers for ordinary Settings values and reserves `Menu` customization for action menus or specialized surfaces.

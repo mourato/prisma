@@ -336,7 +336,7 @@ private struct MetricsDashboardFiltersSection: View {
 
                 Spacer()
 
-                DSMenuSelect(
+                MetricsDashboardFilterMenu(
                     selection: $viewModel.dateFilter,
                     options: DateFilter.allCases,
                     displayName: \.displayName
