@@ -11,6 +11,27 @@ public extension AppSettingsStore {
         static let launchAtLogin = "launchAtLogin"
     }
 
+    enum AutomaticMeetingRecordingConfirmationDelay: Int, CaseIterable, Codable, Sendable {
+        case seconds3 = 3
+        case seconds6 = 6
+        case seconds9 = 9
+
+        public var localizedTitle: String {
+            switch self {
+            case .seconds3:
+                "settings.general.auto_start_confirmation_delay.3".localized
+            case .seconds6:
+                "settings.general.auto_start_confirmation_delay.6".localized
+            case .seconds9:
+                "settings.general.auto_start_confirmation_delay.9".localized
+            }
+        }
+
+        public var timeInterval: TimeInterval {
+            TimeInterval(rawValue)
+        }
+    }
+
     /// Configured path for saving recordings.
     /// If empty or invalid, services should fallback to the default Application Support directory.
     var recordingsDirectory: String {

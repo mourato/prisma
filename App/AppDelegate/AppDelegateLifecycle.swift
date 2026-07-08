@@ -283,6 +283,7 @@ extension AppDelegate {
             assistantVoiceCommandService.$isProcessing.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.currentMeetingPublisher.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.$isMeetingNotesPanelVisible.map { _ in () }.eraseToAnyPublisher(),
+            recordingManager.$automaticMeetingRecordingConfirmation.map { _ in () }.eraseToAnyPublisher(),
             settingsStore.$cancelRecordingShortcutDefinition.map { _ in () }.eraseToAnyPublisher(),
             settingsStore.$isMeetingTranscriptionEnabled.map { _ in () }.eraseToAnyPublisher(),
             settingsStore.$isAssistantEnabled.map { _ in () }.eraseToAnyPublisher(),
@@ -333,6 +334,7 @@ extension AppDelegate {
         let isTranscribing = recordingManager.isForegroundTranscribing
         let isAssistantRecording = assistantVoiceCommandService.isRecording
         let isAssistantProcessing = assistantVoiceCommandService.isProcessing
+        let automaticMeetingConfirmation = recordingManager.automaticMeetingRecordingConfirmation
         let isProcessing = isTranscribing || isAssistantProcessing
         let currentMeetingType = recordingManager.currentMeeting?.type
         let isAssistantOwnedOverlayVisible = floatingIndicatorController.isVisible && {
@@ -364,6 +366,7 @@ extension AppDelegate {
             isTranscribing: isTranscribing,
             isAssistantRecording: isAssistantRecording,
             isAssistantProcessing: isAssistantProcessing,
+            automaticMeetingRecordingConfirmation: automaticMeetingConfirmation,
             meetingTypeRawValue: currentMeetingType?.rawValue,
             isMeetingNotesPanelVisible: recordingManager.isMeetingNotesPanelVisible
         )
@@ -385,6 +388,7 @@ extension AppDelegate {
                 isAssistantRecording: isAssistantRecording,
                 isStarting: isStarting,
                 isProcessing: isProcessing,
+                automaticMeetingConfirmation: automaticMeetingConfirmation,
                 capturePurpose: recordingManager.currentCapturePurpose,
                 recordingSource: recordingManager.recordingSource,
                 meetingType: currentMeetingType

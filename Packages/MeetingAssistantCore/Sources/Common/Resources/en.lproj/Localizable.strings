@@ -100,6 +100,10 @@
 "settings.general.title" = "General";
 "settings.general.recording" = "Recording";
 "settings.general.auto_start" = "Automatically start recording when meeting is detected";
+"settings.general.auto_start_confirmation_delay" = "Confirmation delay";
+"settings.general.auto_start_confirmation_delay.3" = "3 seconds";
+"settings.general.auto_start_confirmation_delay.6" = "6 seconds";
+"settings.general.auto_start_confirmation_delay.9" = "9 seconds";
 "settings.general.show_settings_on_launch" = "Show settings window on app launch";
 "settings.general.shortcut_double_tap_interval" = "Shortcut double-tap interval";
 "settings.general.shortcut_double_tap_interval_desc" = "Defines the maximum time between taps for double-tap shortcuts across the app.";
@@ -1104,6 +1108,8 @@
 "recording_indicator.silence_warning" = "No microphone audio detected";
 "recording_indicator.stop.help" = "Stop and transcribe";
 "recording_indicator.cancel.help" = "Cancel and discard";
+"recording_indicator.auto_meeting_confirmation.countdown" = "Meeting recording starting in %d seconds";
+"recording_indicator.auto_meeting_confirmation.cancel.help" = "Cancel automatic meeting recording";
 "recording_indicator.super.stop" = "Stop";
 "recording_indicator.super.cancel" = "Cancel";
 "recording_indicator.super.stop.help" = "Stop and transcribe (Space)";

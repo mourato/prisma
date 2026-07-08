@@ -60,6 +60,17 @@ public struct FloatingRecordingIndicatorView: View {
         switch renderState.mode {
         case .error:
             errorView
+        case .confirmingAutomaticMeetingStart:
+            switch style {
+            case .classic:
+                confirmationPill(size: .classic)
+            case .mini:
+                confirmationPill(size: .mini)
+            case .super:
+                confirmationPill(size: .super)
+            case .none:
+                EmptyView()
+            }
         case .starting, .recording, .processing:
             switch style {
             case .classic:
@@ -225,6 +236,13 @@ public struct FloatingRecordingIndicatorView: View {
         return false
     }
 
+    private var confirmationTiming: (deadline: Date, duration: TimeInterval)? {
+        if case let .confirmingAutomaticMeetingStart(deadline, duration) = renderState.mode {
+            return (deadline, duration)
+        }
+        return nil
+    }
+
     private var overlayLayout: RecordingIndicatorOverlayLayout {
         RecordingIndicatorOverlayLayout.resolve(renderState: renderState, settingsStore: settingsStore)
     }
@@ -272,6 +290,15 @@ public struct FloatingRecordingIndicatorView: View {
             return nil
         }
         return message
+    }
+
+    private func confirmationPill(size: IndicatorSize) -> some View {
+        AutoMeetingConfirmationPill(
+            size: size,
+            timing: confirmationTiming,
+            isAnimationActive: isAnimationActive,
+            onCancel: onCancel
+        )
     }
 
     private var usesMeetingPromptSource: Bool {

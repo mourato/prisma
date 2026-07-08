@@ -686,6 +686,16 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Delay before automatic meeting recording starts after a meeting candidate is detected.
+    @Published public var automaticMeetingRecordingConfirmationDelay: AutomaticMeetingRecordingConfirmationDelay {
+        didSet {
+            UserDefaults.standard.set(
+                automaticMeetingRecordingConfirmationDelay.rawValue,
+                forKey: Keys.automaticMeetingRecordingConfirmationDelay
+            )
+        }
+    }
+
     /// Whether retention limit for old recordings on disk is enabled.
     @Published public var autoDeleteTranscriptions: Bool {
         didSet { UserDefaults.standard.set(autoDeleteTranscriptions, forKey: Keys.autoDeleteTranscriptions) }
@@ -863,6 +873,7 @@ public class AppSettingsStore: ObservableObject {
         recordingIndicatorStyle = uiSettings.recordingIndicatorStyle
         recordingIndicatorPosition = uiSettings.recordingIndicatorPosition
         recordingIndicatorAnimationSpeed = uiSettings.recordingIndicatorAnimationSpeed
+        automaticMeetingRecordingConfirmationDelay = uiSettings.automaticMeetingRecordingConfirmationDelay
         autoDeleteTranscriptions = uiSettings.autoDeleteTranscriptions
         autoDeletePeriodDays = uiSettings.autoDeletePeriodDays
         appAccentColor = uiSettings.appAccentColor

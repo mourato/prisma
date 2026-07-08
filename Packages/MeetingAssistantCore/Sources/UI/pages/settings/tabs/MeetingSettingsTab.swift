@@ -140,6 +140,17 @@ public struct MeetingSettingsTab: View {
                         isOn: $meetingViewModel.settings.autoStartRecording
                     )
 
+                    HStack {
+                        Text("settings.general.auto_start_confirmation_delay".localized)
+                        Spacer()
+                        DSMenuPicker(selection: $meetingViewModel.settings.automaticMeetingRecordingConfirmationDelay) {
+                            ForEach(AppSettingsStore.AutomaticMeetingRecordingConfirmationDelay.allCases, id: \.self) { delay in
+                                Text(delay.localizedTitle)
+                                    .tag(delay)
+                            }
+                        }
+                    }
+
                     SettingsListDrillDownButtonRow(
                         title: "settings.meetings.monitoring_access.button".localized,
                         subtitle: "settings.meetings.monitoring_access.desc".localized,

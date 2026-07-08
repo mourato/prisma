@@ -161,9 +161,37 @@ enum FloatingRecordingIndicatorViewUtilities {
 
     static let actionButtonSize: CGFloat = 28
     static let dividerWidth: CGFloat = 1
+    private static let confirmationSampleSeconds = 9
 
     static func mainContentMode(for renderState: RecordingIndicatorRenderState) -> MainContentMode {
         renderState.mode == .processing ? .processingStatus : .waveform
+    }
+
+    static func confirmationFont(for size: FloatingRecordingIndicatorView.IndicatorSize) -> NSFont {
+        switch size {
+        case .classic, .super:
+            .systemFont(ofSize: 13, weight: .semibold)
+        case .mini:
+            .systemFont(ofSize: 12, weight: .semibold)
+        }
+    }
+
+    static func confirmationMessageWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
+        let sample = "recording_indicator.auto_meeting_confirmation.countdown".localized(
+            with: confirmationSampleSeconds
+        ) as NSString
+        return ceil(sample.size(withAttributes: [.font: confirmationFont(for: size)]).width)
+    }
+
+    static func confirmationPillWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
+        let elementWidths = [
+            AppDesignSystem.Layout.recordingIndicatorDotSize,
+            confirmationMessageWidth(for: size),
+            actionButtonSize,
+        ]
+        return (horizontalPadding(for: size, expanded: false) * 2)
+            + elementWidths.reduce(0, +)
+            + (CGFloat(elementWidths.count - 1) * contentSpacing(for: size))
     }
 
     static func controlHeight(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
@@ -348,6 +376,10 @@ enum FloatingRecordingIndicatorViewUtilities {
         expanded: Bool,
         processingSnapshot: RecordingIndicatorProcessingSnapshot? = nil
     ) -> CGFloat {
+        if case .confirmingAutomaticMeetingStart = renderState.mode {
+            return confirmationPillWidth(for: size)
+        }
+
         var elementWidths: [CGFloat] = [
             clusterWidth(for: size, renderState: renderState, processingSnapshot: processingSnapshot),
         ]
@@ -544,7 +576,11 @@ enum FloatingRecordingIndicatorViewUtilities {
         renderState: RecordingIndicatorRenderState,
         processingSnapshot: RecordingIndicatorProcessingSnapshot? = nil
     ) -> CGFloat {
-        max(
+        if case .confirmingAutomaticMeetingStart = renderState.mode {
+            return confirmationPillWidth(for: .super)
+        }
+
+        return max(
             superBodyWidth(renderState: renderState, processingSnapshot: processingSnapshot),
             superFooterWidth(layout: layout, renderState: renderState)
         )
@@ -556,6 +592,10 @@ enum FloatingRecordingIndicatorViewUtilities {
     ) -> CGFloat {
         let baseHeight = (AppDesignSystem.Layout.recordingIndicatorSuperVerticalPadding * 2)
             + waveformHeight(for: .super)
+
+        if case .confirmingAutomaticMeetingStart = renderState.mode {
+            return baseHeight
+        }
 
         guard superShowsFooter(layout: layout, renderState: renderState) else {
             return baseHeight

@@ -490,6 +490,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let isTranscribing: Bool
         let isAssistantRecording: Bool
         let isAssistantProcessing: Bool
+        let automaticMeetingRecordingConfirmation: AutomaticMeetingRecordingConfirmation?
         let meetingTypeRawValue: String?
         let isMeetingNotesPanelVisible: Bool
     }
