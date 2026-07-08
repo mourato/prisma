@@ -220,6 +220,17 @@ public enum AppearanceMode: String, CaseIterable, Codable, Sendable {
             "settings.general.appearance.dark".localized
         }
     }
+
+    public var nsAppearanceName: NSAppearance.Name? {
+        switch self {
+        case .light:
+            .aqua
+        case .system:
+            nil
+        case .dark:
+            .darkAqua
+        }
+    }
 }
 
 // MARK: - App Theme Configuration

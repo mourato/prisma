@@ -30,19 +30,10 @@ extension AppDelegate {
     }
 
     func applyAppearance(_ mode: AppearanceMode) {
-        NSApp.appearance = mode.nsAppearance
-    }
-}
-
-private extension AppearanceMode {
-    var nsAppearance: NSAppearance? {
-        switch self {
-        case .light:
-            NSAppearance(named: .aqua)
-        case .dark:
-            NSAppearance(named: .darkAqua)
-        case .system:
-            nil
+        if let appearanceName = mode.nsAppearanceName {
+            NSApp.appearance = NSAppearance(named: appearanceName)
+        } else {
+            NSApp.appearance = nil
         }
     }
 }
