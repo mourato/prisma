@@ -242,14 +242,12 @@ enum FloatingRecordingIndicatorViewUtilities {
     }
 
     static func timerReservedWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
-        switch size {
-        case .classic:
-            56
-        case .mini:
-            48
-        case .super:
-            56
-        }
+        let sample = "00:00:00" as NSString
+        return ceil(sample.size(withAttributes: [.font: timerFont(for: size)]).width)
+    }
+
+    static func timerFont(for size: FloatingRecordingIndicatorView.IndicatorSize) -> NSFont {
+        .monospacedDigitSystemFont(ofSize: 13, weight: .medium)
     }
 
     static func processingProgressReservedWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {

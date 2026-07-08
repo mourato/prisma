@@ -120,7 +120,7 @@ honor its STOP conditions, and update your row when done.
 | 023 | Modernize storage retention controls | P2 | M | 022 | DONE |
 | 024 | Align Settings controls with native VoiceInk beta patterns | P1 | M | - | DONE |
 | 025 | Add automatic meeting recording confirmation countdown | P1 | M | - | DONE |
-| 026 | Fix recording duration width for long meetings | P1 | S | 025 for merge-order stability only | TODO |
+| 026 | Fix recording duration width for long meetings | P1 | S | 025 for merge-order stability only | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
