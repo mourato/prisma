@@ -195,6 +195,7 @@
 "settings.dictation.modes.title" = "Modes";
 "settings.dictation.modes.description" = "Define reusable modes and bind them to multiple apps and websites.";
 "settings.dictation.modes.accessibility_hint" = "Opens reusable dictation modes for apps and websites.";
+"settings.dictation.modes.default_name" = "Default";
 "settings.dictation.user_prompts.title" = "User prompts";
 "settings.dictation.user_prompts.description" = "Create and manage custom prompts for dictation post-processing.";
 "settings.dictation.user_prompts.accessibility_hint" = "Opens user prompts settings.";
@@ -1241,6 +1242,7 @@
 
 /* Onboarding */
 "onboarding.welcome.title" = "Welcome to Prisma";
+"onboarding.title" = "Prisma";
 "onboarding.welcome.subtitle" = "Transcribe your meetings locally with AI-powered intelligence.";
 "onboarding.welcome.button" = "Get Started";
 
