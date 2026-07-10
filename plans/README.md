@@ -95,6 +95,13 @@ honor its STOP conditions, and update your row when done.
 - Not audited: Swift source implementation, runtime app behavior, CI internals, Makefile target implementations, security-sensitive Keychain behavior, persistence schema, audio pipeline internals, and all reference assets under every skill.
 - Reuse decision: plan two further consolidations only where the routing overhead is larger than the specialization value: `task-lifecycle` + `quality-assurance` + `git-workflow` into `delivery-workflow`, and `debugging-strategies` + `observability-diagnostics` into `debugging-diagnostics`. Keep `testing-xctest`, `thermo-nuclear-code-quality-review`, `architecture`, `swift-conventions`, `code-quality`, `documentation`, `project-standards`, and domain-specialist skills separate.
 
+## 2026-07-10 Agent Delivery Workflow Optimization Scope
+
+- Effort: standard, focused on Prisma task-delivery latency, test/lint timing, hook behavior, and token cost for AI agents.
+- Audited: `AGENTS.md`, `README.md`, `Makefile`, `scripts/hooks/pre-commit`, `scripts/hooks/pre-push`, `scripts/scope-check.sh`, `scripts/lint.sh`, `scripts/run-build-and-test.sh`, `scripts/lib/agent-output.sh`, `.agents/skills/delivery-workflow/SKILL.md`, and `.agents/docs/build-and-test.md`.
+- Not audited: Swift source behavior, CI workflow runtime, actual wall-clock benchmark runs, GitHub Actions logs, release signing internals, full test-suite health, and non-delivery product skills.
+- Reuse decision: optimize the existing `scope-check`, `*-agent`, hook, and lint surfaces instead of introducing a second validation framework. Keep tests out of pre-commit by default, use staged lint/format as the cheap commit gate, and use compact scoped validation for push/agent workflows.
+
 ## Findings
 
 | # | Finding | Category | Impact | Effort | Risk | Evidence |
@@ -154,6 +161,7 @@ honor its STOP conditions, and update your row when done.
 | 029 | Make thermo-nuclear review the default code-review skill | P1 | M | - | DONE |
 | 030 | Consolidate delivery workflow guidance into one skill | P1 | M | - | DONE |
 | 031 | Consolidate debugging and diagnostic signal guidance | P2 | S | - | DONE |
+| 032 | Optimize agent delivery gates for compact staged validation | P1 | M | - | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -181,6 +189,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - 029 can run independently after 028. It is documentation/guidance-only and must not modify app source. It should make `thermo-nuclear-code-quality-review` the default review skill and remove `code-review` after migrating findings format, severity, and technical checklist coverage.
 - 030 can run independently after 029. It is documentation/guidance-only and should merge the delivery mechanics currently split across `task-lifecycle`, `quality-assurance`, and `git-workflow` while keeping `testing-xctest` and `thermo-nuclear-code-quality-review` separate.
 - 031 can run independently after 029, but if queued with 030, run 030 first to reduce reference churn in routing/index files. It is documentation/guidance-only and should merge investigation method and diagnostic-signal guidance while preserving privacy-safe logging/redaction rules.
+- 032 can run independently after 030 because it relies on `delivery-workflow` as the single owner of lane, hook, validation, and evidence guidance. It should not move tests to pre-commit; it should make staged lint/format cheap and push validation compact for agents.
 
 ## Committee review notes
 
@@ -217,3 +226,5 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - Merge `documentation` and `project-standards`: rejected because DocC/API documentation work and AGENTS/skill-governance policy are distinct enough to keep separate.
 - Merge `architecture`, `swift-conventions`, and `code-quality`: rejected because architecture boundaries, Swift/lint idioms, and language-agnostic simplification each have a clear owner and different triggers.
 - Merge `keychain-security`, `data-persistence`, `audio-realtime`, `swift-concurrency-expert`, or `intelligence-kernel` into broader skills: rejected because these are specialist high-risk domains where extra routing cost is lower than the cost of diluted guidance.
+- Run tests before every commit by default: rejected because Prisma already has scoped push gates and agent-mode validation; default per-commit tests would increase latency/token cost. Keep pre-commit to staged lint/format and run tests before push/merge or when targeted proof is needed.
+- Add a second validation framework for agents: rejected because `scope-check`, `*-agent` targets, and `AGENT_*` output already exist; the gap is default routing and hook/guidance alignment, not missing infrastructure.
