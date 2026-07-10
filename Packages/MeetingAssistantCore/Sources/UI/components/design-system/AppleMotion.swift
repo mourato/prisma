@@ -1,0 +1,77 @@
+import SwiftUI
+
+public enum AppleMotion {
+    public enum SpringKind: Equatable, Sendable {
+        case `default`
+        case interactive
+        case press
+    }
+
+    public struct SpringSpec: Equatable, Sendable {
+        public let response: Double
+        public let dampingFraction: Double
+    }
+
+    public enum TransitionStyle: Equatable, Sendable {
+        case opacity
+        case moveAndOpacity(edge: Edge)
+    }
+
+    public static let defaultSpringSpec = SpringSpec(response: 0.35, dampingFraction: 1.0)
+    public static let interactiveSpringSpec = SpringSpec(response: 0.3, dampingFraction: 0.85)
+    public static let pressSpringSpec = SpringSpec(response: 0.15, dampingFraction: 1.0)
+
+    public static var defaultSpring: Animation {
+        animation(for: defaultSpringSpec)
+    }
+
+    public static var interactiveSpring: Animation {
+        animation(for: interactiveSpringSpec)
+    }
+
+    public static var pressSpring: Animation {
+        animation(for: pressSpringSpec)
+    }
+
+    public static var reduceMotionFade: Animation {
+        .easeInOut(duration: 0.2)
+    }
+
+    public static func springSpec(for kind: SpringKind) -> SpringSpec {
+        switch kind {
+        case .default:
+            defaultSpringSpec
+        case .interactive:
+            interactiveSpringSpec
+        case .press:
+            pressSpringSpec
+        }
+    }
+
+    public static func animation(reduceMotion: Bool, kind: SpringKind = .default) -> Animation {
+        reduceMotion ? reduceMotionFade : animation(for: springSpec(for: kind))
+    }
+
+    public static func transitionStyle(
+        reduceMotion: Bool,
+        edge: Edge = .top
+    ) -> TransitionStyle {
+        reduceMotion ? .opacity : .moveAndOpacity(edge: edge)
+    }
+
+    public static func transition(
+        reduceMotion: Bool,
+        edge: Edge = .top
+    ) -> AnyTransition {
+        switch transitionStyle(reduceMotion: reduceMotion, edge: edge) {
+        case .opacity:
+            .opacity
+        case let .moveAndOpacity(edge):
+            .move(edge: edge).combined(with: .opacity)
+        }
+    }
+
+    private static func animation(for spec: SpringSpec) -> Animation {
+        .spring(response: spec.response, dampingFraction: spec.dampingFraction)
+    }
+}

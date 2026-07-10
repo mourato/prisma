@@ -129,11 +129,37 @@ public enum AppDesignSystem {
         }
 
         public static var settingsMaterialCard: Color {
-            Color(nsColor: .controlBackgroundColor).opacity(0.58)
+            settingsMaterialCardFill(reduceTransparency: false)
         }
 
         public static var settingsMaterialStroke: Color {
-            separator.opacity(0.36)
+            settingsMaterialCardStroke(increaseContrast: Accessibility.increaseContrast)
+        }
+
+        public static func settingsMaterialCardFill(
+            reduceTransparency: Bool,
+            intensity: AppDesignSystem.SettingsSurfaceIntensity = .subtle
+        ) -> Color {
+            if reduceTransparency {
+                return settingsCardBackground(intensity: intensity)
+            }
+
+            switch intensity {
+            case .subtle:
+                return Color(nsColor: .controlBackgroundColor).opacity(0.58)
+            case .regular:
+                return Color(nsColor: .controlBackgroundColor).opacity(0.68)
+            case .strong:
+                return Color(nsColor: .textBackgroundColor).opacity(0.74)
+            }
+        }
+
+        public static func settingsMaterialCardStroke(increaseContrast: Bool) -> Color {
+            separator.opacity(increaseContrast ? 0.62 : 0.36)
+        }
+
+        public static func settingsTitleBarBottomTreatment(increaseContrast: Bool) -> Color {
+            separator.opacity(increaseContrast ? 0.78 : 0.42)
         }
 
         public static var glassBackground: Color {

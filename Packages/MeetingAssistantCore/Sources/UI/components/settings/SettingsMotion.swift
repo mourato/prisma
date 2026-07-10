@@ -1,17 +1,16 @@
 import SwiftUI
 
 enum SettingsMotion {
-    static let sectionDuration: Double = 0.18
     static var sectionAnimation: Animation {
-        .easeInOut(duration: sectionDuration)
+        AppleMotion.defaultSpring
     }
 
     static func sectionTransition(reduceMotion: Bool = false) -> AnyTransition {
-        reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity)
+        AppleMotion.transition(reduceMotion: reduceMotion, edge: .top)
     }
 
-    static func sectionAnimation(reduceMotion: Bool) -> Animation? {
-        reduceMotion ? nil : sectionAnimation
+    static func sectionAnimation(reduceMotion: Bool) -> Animation {
+        AppleMotion.animation(reduceMotion: reduceMotion, kind: .default)
     }
 }
 
@@ -22,17 +21,12 @@ extension Binding {
 }
 
 extension View {
-    @ViewBuilder
     func settingsAnimated(
         reduceMotion: Bool,
         animation: Animation = SettingsMotion.sectionAnimation,
         value: some Equatable
     ) -> some View {
-        if reduceMotion {
-            self
-        } else {
-            self.animation(animation, value: value)
-        }
+        self.animation(reduceMotion ? AppleMotion.reduceMotionFade : animation, value: value)
     }
 
     @ViewBuilder
