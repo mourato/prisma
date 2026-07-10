@@ -16,7 +16,7 @@ Use this skill as the canonical owner for cross-cutting debugging methodology in
 ## Scope Boundaries
 
 - Use this skill for cross-cutting investigation methodology when root cause is unknown.
-- Use `../swiftui-patterns/SKILL.md` once a SwiftUI rendering/update/layout issue has a clear structural fix.
+- Use `../macos-app-engineering/SKILL.md` once a SwiftUI rendering/update/layout issue has a clear structural fix.
 - Use `../audio-realtime/SKILL.md` for render-thread and low-latency audio defects once the failing path is confirmed.
 - Use `../swift-concurrency-expert/SKILL.md` for concrete actor-isolation or `Sendable` diagnostics.
 
@@ -94,7 +94,7 @@ make build-agent
 
 - `../audio-realtime/SKILL.md`
 - `../swift-concurrency-expert/SKILL.md`
-- `../swiftui-patterns/SKILL.md`
+- `../macos-app-engineering/SKILL.md`
 - `../observability-diagnostics/SKILL.md`
 
 ## References

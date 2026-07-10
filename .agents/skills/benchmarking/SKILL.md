@@ -17,7 +17,7 @@ Use this skill whenever the user mentions a known reference project (VoiceInk, F
 
 - Use this skill to identify, classify, locate, and consult reference projects for benchmarking.
 - Delegate to `../architecture/SKILL.md` when the focus is analyzing and adopting specific architecture patterns from a reference.
-- Delegate to `../swiftui-patterns/SKILL.md` or `../native-app-designer/SKILL.md` when the focus is UI/UX pattern extraction.
+- Delegate to `../macos-app-engineering/SKILL.md` when the focus is UI/UX pattern extraction or macOS UI implementation.
 - Delegate to `../audio-realtime/SKILL.md` when the focus is audio pipeline analysis.
 - This skill does not implement changes — it directs agents to the right reference code and context.
 
@@ -138,13 +138,12 @@ This skill activates on any of these mentions (case-insensitive partial match):
 ## Related Skills
 
 - `../architecture/SKILL.md` — when analyzing same-domain architecture patterns
-- `../swiftui-patterns/SKILL.md` — when studying reference UI implementations
+- `../macos-app-engineering/SKILL.md` — when studying reference UI implementations or UI/UX decisions
 - `../audio-realtime/SKILL.md` — when studying reference audio pipelines
 - `../code-review/SKILL.md` — when reviewing changes inspired by references
-- `../native-app-designer/SKILL.md` — when UI/UX benchmarking leads to design decisions
 
 ## References
 
 - `../architecture/SKILL.md`
 - `../code-review/SKILL.md`
-- `../native-app-designer/SKILL.md`
+- `../macos-app-engineering/SKILL.md`

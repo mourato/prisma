@@ -146,7 +146,7 @@ Follow this pattern for consistent naming:
 ## Related Skills
 
 - `../accessibility-audit/SKILL.md`
-- `../swiftui-patterns/SKILL.md`
+- `../macos-app-engineering/SKILL.md`
 
 ## 2026-07-01 Progression Drill
 

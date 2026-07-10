@@ -74,6 +74,13 @@ honor its STOP conditions, and update your row when done.
 - Not audited: full accessibility pass, runtime screenshot QA, non-settings app surfaces, settings sidebar/navigation taxonomy, provider/model selection, protected-app exclusion behavior, and prompt assembly internals.
 - Reuse decision: extend existing SwiftUI checkbox style or a minimal local row for deferred-save booleans, extend `DictationContextSourcePolicy` with backward-compatible source-derived gating, and reuse existing context capture services/tests. Do not create a new settings framework or preserve a second global context toggle.
 
+## 2026-07-10 macOS UI Skill Consolidation Scope
+
+- Effort: plan-focused follow-up for reducing overlapping Prisma agent skills around macOS UI/app work.
+- Audited: `native-app-designer`, `swiftui-patterns`, `macos-development`, `preview-coverage`, `accessibility-audit`, `localization`, `menubar`, `code-quality`, `swift-conventions`, `.agents/SKILLS_INDEX.md`, `.agents/docs/skill-routing.md`, `AGENTS.md`, and `README.md`.
+- Not audited: source-code implementation, runtime UI behavior, Swift test coverage, Makefile target implementation, CI internals, release/build infra, and broad non-UI skills beyond boundary checks.
+- Reuse decision: consolidate ordinary macOS UI/app guidance into one new `macos-app-engineering` skill while keeping `accessibility-audit`, `localization`, `menubar`, `code-quality`, `swift-conventions`, `code-review`, `thermo-nuclear-code-quality-review`, `quality-assurance`, and `task-lifecycle` separate. Do not merge code-quality and Swift conventions in this pass.
+
 ## Findings
 
 | # | Finding | Category | Impact | Effort | Risk | Evidence |
@@ -129,6 +136,7 @@ honor its STOP conditions, and update your row when done.
 | 025 | Add automatic meeting recording confirmation countdown | P1 | M | - | DONE |
 | 026 | Fix recording duration width for long meetings | P1 | S | 025 for merge-order stability only | DONE |
 | 027 | Replace deferred-save switches and remove the Context Resources gate | P1 | M | - | DONE |
+| 028 | Consolidate macOS UI guidance into one primary skill | P1 | M | - | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -152,6 +160,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - 025 should keep `MeetingDetector` as a detector and put countdown ownership in `RecordingManager`; this avoids splitting automatic-recording state across detector, app lifecycle, and UI.
 - 026 is functionally independent but should run after 025 if both are queued together because both may touch recording-indicator sizing utilities and tests.
 - 027 can run independently. It must preserve legacy context-source behavior during decoding while removing the user-facing global context gate from save-backed mode editing.
+- 028 can run independently. It is documentation/guidance-only and must not modify app source. It should consolidate `native-app-designer`, `swiftui-patterns`, `macos-development`, and `preview-coverage` into `macos-app-engineering` while preserving specialist skills for accessibility, localization, menu bar behavior, code quality, Swift conventions, QA, task lifecycle, and review.
 
 ## Committee review notes
 
@@ -182,3 +191,4 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - Keep Sound hidden inside System: rejected because the requested correction restores Sound as a sidebar destination and removes System's segmented control.
 - Copy VoiceInk beta Settings wholesale into Prisma: rejected because Prisma already has `SettingsListGroup`, `SettingsScrollableContent`, localization/search contracts, and a different settings shell. Adopt the native control anatomy, not the entire implementation.
 - Keep `DSMenuSelect` as the generic Settings picker default: rejected because VoiceInk beta uses native pickers for ordinary Settings values and reserves `Menu` customization for action menus or specialized surfaces.
+- Merge `code-quality` and `swift-conventions` as part of plan 028: rejected for this pass because their current boundary is already clear and the primary overlap problem is in macOS UI/app guidance.

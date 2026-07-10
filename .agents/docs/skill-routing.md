@@ -6,9 +6,9 @@ When working on Prisma, multiple skills may be relevant to a task. This guide pr
 
 When uncertain which skill to use, apply this priority order:
 
-1. **`macos-development`** — canonical macOS and Swift implementation guidance
+1. **`macos-app-engineering`** — canonical macOS UI/app implementation guidance
 2. **`task-lifecycle`** — source of truth for risk lane and lifecycle phases
-3. **`native-app-designer`** — primary UI and UX direction
+3. **`accessibility-audit` / `localization` / `menubar`** — specialist UI escalation when their scope is primary
 4. **`swift-concurrency-expert`** — Swift 6.2 concurrency remediation
 5. **`debugging-strategies`** — cross-cutting investigation when the failing subsystem is not yet proven
 
@@ -32,7 +32,7 @@ When inspecting code outside this repository, use this source order:
 - Dependency injection
 - Cross-module ownership
 
-**Complementary:** `macos-development`
+**Complementary:** `macos-app-engineering` when architecture changes affect UI/app implementation details
 
 **Example:** "Refactor meeting post-processing into a separate module" → `architecture`
 
@@ -40,27 +40,28 @@ When inspecting code outside this repository, use this source order:
 
 ### UI/UX and Interaction Work
 
-**Start here:** `native-app-designer`
-- Define visual and motion direction
-- Set UX acceptance criteria
-- Analyze interface quality
+**Start here:** `macos-app-engineering`
+- Define UX acceptance criteria
+- Implement SwiftUI/AppKit structure
+- Apply Settings/design-system patterns
+- Add or update previews
 
-**Then (if needed):** `swiftui-patterns` → `macos-development` → `menubar`
+**Then (if needed):** `accessibility-audit`, `localization`, `menubar`, `debugging-strategies`, or `swift-concurrency-expert`
 
-**Example:** "Design the meeting recording UI" → `native-app-designer`
+**Example:** "Design the meeting recording UI" → `macos-app-engineering`
 
 ---
 
 ### SwiftUI Performance Issues
 
-**Primary:** `swiftui-patterns`
+**Primary:** `macos-app-engineering`
 - Janky scrolling
 - Layout thrash
 - Excessive view updates
 
 **Complementary:** `debugging-strategies` when the root cause is unclear
 
-**Example:** "Scrolling in recording list is janky" → `swiftui-patterns` plus `debugging-strategies` if reproduction/diagnosis is needed
+**Example:** "Scrolling in recording list is janky" → `macos-app-engineering` plus `debugging-strategies` if reproduction/diagnosis is needed
 
 ---
 
@@ -186,7 +187,7 @@ Use `code-review` for review output; it always includes `thermo-nuclear-code-qua
 - NSMenu and NSPopover behavior
 - Non-activating overlays
 
-**Complementary:** `native-app-designer`, `macos-development`
+**Complementary:** `macos-app-engineering`
 
 **Example:** "Implement menu-bar popover for recording controls" → `menubar`
 
@@ -220,12 +221,10 @@ Use `code-review` for review output; it always includes `thermo-nuclear-code-qua
 | `documentation` | `.agents/skills/documentation/SKILL.md` | DocC and API docs |
 | `git-workflow` | `.agents/skills/git-workflow/SKILL.md` | Prisma branch, commit, PR, merge, cleanup, and gh body-file mechanics |
 | `intelligence-kernel` | `.agents/skills/intelligence-kernel/SKILL.md` | Kernel modes and summary benchmark gates |
-| `macos-development` | `.agents/skills/macos-development/SKILL.md` | Canonical macOS and Swift guidance |
+| `macos-app-engineering` | `.agents/skills/macos-app-engineering/SKILL.md` | macOS UI/app implementation, SwiftUI, AppKit bridging, Settings UI, previews |
 | `menubar` | `.agents/skills/menubar/SKILL.md` | Menu bar, popover, and floating-panel behavior |
-| `native-app-designer` | `.agents/skills/native-app-designer/SKILL.md` | UI and UX direction |
 | `observability-diagnostics` | `.agents/skills/observability-diagnostics/SKILL.md` | Logs, telemetry, redaction, diagnostic signatures |
 | `quality-assurance` | `.agents/skills/quality-assurance/SKILL.md` | Verification gates and command policy |
 | `task-lifecycle` | `.agents/skills/task-lifecycle/SKILL.md` | Risk classification and lifecycle policy |
 | `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest code structure, mocks, async tests |
 | `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/SKILL.md` | Swift 6.2 actor isolation and Sendable fixes |
-| `swiftui-patterns` | `.agents/skills/swiftui-patterns/SKILL.md` | View composition, state management, motion implementation, and SwiftUI performance hygiene |

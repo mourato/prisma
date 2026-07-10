@@ -73,6 +73,5 @@ Review these areas first when the task touches accessibility-sensitive UI:
 ## Related Skills
 
 - `../localization/SKILL.md`
-- `../native-app-designer/SKILL.md`
 - `../menubar/SKILL.md`
-- `../menubar/SKILL.md`
+- `../macos-app-engineering/SKILL.md`

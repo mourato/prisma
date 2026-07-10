@@ -20,16 +20,13 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 | `intelligence-kernel` | `.agents/skills/intelligence-kernel/` | Canonical summary schema, intelligence kernel modes, trust flags, summary benchmark gates |
 | `keychain-security` | `.agents/skills/keychain-security/` | Store secret in Keychain, retrieve API keys securely, delete credential, harden KeychainManager usage |
 | `localization` | `.agents/skills/localization/` | Localize UI text, update Localizable.strings, improve accessible copy, remove orphaned locale keys |
-| `macos-development` | `.agents/skills/macos-development/` | Implement macOS features, integrate SwiftUI with AppKit, fix macOS lifecycle issues, platform-specific patterns |
+| `macos-app-engineering` | `.agents/skills/macos-app-engineering/` | macOS UI/app implementation, SwiftUI views, AppKit bridging, Settings UI, design-system components, preview coverage, and platform lifecycle |
 | `menubar` | `.agents/skills/menubar/` | Build menu-bar behavior, configure NSStatusItem, implement popover, manage non-activating overlays |
-| `native-app-designer` | `.agents/skills/native-app-designer/` | Primary for UI/UX: design or redesign macOS/iOS interfaces, improve UX, analyze UI quality, define visual and motion direction |
 | `observability-diagnostics` | `.agents/skills/observability-diagnostics/` | Standardize logging, telemetry, redaction, diagnostic signatures, and metric correlation |
-| `preview-coverage` | `.agents/skills/preview-coverage/` | Add SwiftUI previews, verify preview state coverage, ensure all views have #Preview |
 | `project-standards` | `.agents/skills/project-standards/` | Update AGENTS.md, document project policy, track known limitations, align repository standards |
 | `quality-assurance` | `.agents/skills/quality-assurance/` | Define verification gates, select validation commands, and run quality checks before merge |
 | `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/` | Primary for concurrency issues: fix Swift concurrency errors, resolve actor isolation, remediate Sendable diagnostics, upgrade Swift 6.2 |
 | `swift-conventions` | `.agents/skills/swift-conventions/` | Apply Swift style conventions, improve type safety, refactor API naming, organize Swift modules |
-| `swiftui-patterns` | `.agents/skills/swiftui-patterns/` | Build SwiftUI views, improve state management, refactor SwiftUI layouts, use design system components |
 | `task-lifecycle` | `.agents/skills/task-lifecycle/` | Run task lifecycle, classify risk lane, prepare implementation workflow, enforce pre-merge gates |
 | `testing-xctest` | `.agents/skills/testing-xctest/` | Write XCTest code, structure async and `@MainActor` tests, build mocks/fakes/spies, and keep test suites maintainable |
 | `thermo-nuclear-code-quality-review` | `.agents/skills/thermo-nuclear-code-quality-review/` | Run the strictest maintainability review for abstraction quality, giant files, and spaghetti-condition growth |
@@ -41,12 +38,11 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 ### By Problem Type
 
 **UI/UX and Interfaces**
-- First: `native-app-designer`
-- Then: `swiftui-patterns` → `macos-development` → `menubar`
-- Audit accessibility-sensitive UI with `accessibility-audit`
+- First: `macos-app-engineering`
+- Escalate to `accessibility-audit`, `localization`, `menubar`, `debugging-strategies`, or `swift-concurrency-expert` when the task is specifically in that specialist scope
 
 **Performance Issues**
-- SwiftUI rendering: `swiftui-patterns` for view structure, then `debugging-strategies` if root cause is unclear
+- SwiftUI rendering: `macos-app-engineering` for view structure, then `debugging-strategies` if root cause is unclear
 - Audio capture/processing: `audio-realtime`
 - Logging and telemetry quality: `observability-diagnostics`
 
@@ -80,8 +76,7 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 - Accessibility audit and keyboard/focus review: `accessibility-audit`
 
 **Platform-Specific (macOS)**
-- General macOS/Swift guidance: `macos-development`
-- Native UI/UX direction: `native-app-designer`
+- General macOS UI/app guidance: `macos-app-engineering`
 - Menu bar UI: `menubar`
 
 
@@ -104,7 +99,7 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 ## Skill Dependencies
 
 - `accessibility-audit` → `localization` (copy and keys stay localizable)
-- `swiftui-patterns` → `native-app-designer` (UX direction first)
+- `macos-app-engineering` → `accessibility-audit` / `localization` / `menubar` (specialist escalation only)
 - `quality-assurance` → `testing-xctest` (general QA → XCTest specifics)
 - `observability-diagnostics` → `debugging-strategies` (diagnostic data supports investigation)
 - `code-review` → `thermo-nuclear-code-quality-review` (mandatory structural maintainability pass)
