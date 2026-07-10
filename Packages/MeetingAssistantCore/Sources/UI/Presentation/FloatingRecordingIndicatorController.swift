@@ -165,22 +165,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         updateContent()
         applyPanelGeometry(panel, deferIfPanelVisible: wasVisible)
 
-        if isRunningTests || prefersReducedMotion {
-            panel.alphaValue = 1
-            panel.orderFrontRegardless()
-        } else if !wasVisible {
-            // Show with fade-in animation
-            panel.alphaValue = 0
-            panel.orderFrontRegardless()
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.12
-                panel.animator().alphaValue = 1
-            }
-        } else {
-            // If panel is being reused after a previous hide animation, force it visible and on top.
-            panel.alphaValue = 1
-            panel.orderFrontRegardless()
-        }
+        presentPanel(panel, animated: !wasVisible)
 
     }
 
@@ -199,23 +184,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         // Stop monitoring audio levels
         audioMonitor.stopMonitoring()
 
-        if isRunningTests || prefersReducedMotion {
-            panelToHide.orderOut(nil)
-            panelToHide.alphaValue = 1
-        } else {
-            // Fade out animation
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.1
-                panelToHide.animator().alphaValue = 0
-            } completionHandler: { [weak self, weak panelToHide] in
-                Task { @MainActor [weak self, weak panelToHide] in
-                    guard let self, let panelToHide else { return }
-                    guard self.visibilityTransitionID == transitionID else { return }
-                    panelToHide.orderOut(nil)
-                    panelToHide.alphaValue = 1
-                }
-            }
-        }
+        dismissPanel(panelToHide, transitionID: transitionID)
 
         if let hostingView {
             hostingView.rootView = AnyView(EmptyView())
@@ -516,6 +485,49 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         }
     }
 
+    private func presentPanel(_ panel: NSPanel, animated: Bool) {
+        if isRunningTests || prefersReducedMotion || !animated {
+            panel.alphaValue = 1
+            panel.orderFrontRegardless()
+            return
+        }
+
+        panel.alphaValue = 0
+        panel.orderFrontRegardless()
+        animatePanelAlpha(panel, to: 1, duration: 0.12)
+    }
+
+    private func dismissPanel(_ panel: NSPanel, transitionID: UInt64) {
+        if isRunningTests || prefersReducedMotion {
+            panel.orderOut(nil)
+            panel.alphaValue = 1
+            return
+        }
+
+        animatePanelAlpha(panel, to: 0, duration: 0.1) { [weak self, weak panel] in
+            Task { @MainActor [weak self, weak panel] in
+                guard let self, let panel else { return }
+                guard visibilityTransitionID == transitionID else { return }
+                panel.orderOut(nil)
+                panel.alphaValue = 1
+            }
+        }
+    }
+
+    private func animatePanelAlpha(
+        _ panel: NSPanel,
+        to alphaValue: CGFloat,
+        duration: TimeInterval,
+        completion: (() -> Void)? = nil
+    ) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = duration
+            panel.animator().alphaValue = alphaValue
+        } completionHandler: {
+            completion?()
+        }
+    }
+
     private func panelContentSize(
         for style: RecordingIndicatorStyle,
         renderState: RecordingIndicatorRenderState
@@ -531,40 +543,46 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         deferredGeometryTask = nil
 
         if !deferIfPanelVisible {
-            let style = settingsStore.recordingIndicatorStyle
-            panel.setContentSize(panelContentSize(for: style, renderState: currentRenderState))
-            positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
+            applyPanelFrame(panel)
             return
         }
 
         deferredGeometryTask = Task { @MainActor [weak self, weak panel] in
             await Task.yield()
             guard let self, let panel else { return }
-            let style = settingsStore.recordingIndicatorStyle
-            panel.setContentSize(panelContentSize(for: style, renderState: currentRenderState))
-            positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
+            applyPanelFrame(panel)
             deferredGeometryTask = nil
         }
     }
 
-    private func positionPanel(_ panel: NSPanel, at position: RecordingIndicatorPosition) {
-        guard let screen = activeTargetScreen(for: panel) else { return }
+    private func applyPanelFrame(_ panel: NSPanel) {
+        let style = settingsStore.recordingIndicatorStyle
+        let contentSize = panelContentSize(for: style, renderState: currentRenderState)
+        guard let frame = panelFrame(for: panel, contentSize: contentSize, position: settingsStore.recordingIndicatorPosition) else {
+            return
+        }
 
+        panel.setFrame(frame, display: true)
+    }
+
+    private func panelFrame(
+        for panel: NSPanel,
+        contentSize: NSSize,
+        position: RecordingIndicatorPosition
+    ) -> NSRect? {
+        guard let screen = activeTargetScreen(for: panel) else { return nil }
         let screenFrame = screen.visibleFrame
-        let panelSize = panel.frame.size
 
-        // Center horizontally
-        let x = screenFrame.origin.x + (screenFrame.width - panelSize.width) / 2
+        let x = screenFrame.origin.x + (screenFrame.width - contentSize.width) / 2
 
-        // Position vertically based on setting
         let y: CGFloat = switch position {
         case .top:
-            screenFrame.origin.y + screenFrame.height - panelSize.height - Constants.screenPadding + Constants.panelShadowInset
+            screenFrame.origin.y + screenFrame.height - contentSize.height - Constants.screenPadding + Constants.panelShadowInset
         case .bottom:
             screenFrame.origin.y + Constants.screenPadding - Constants.panelShadowInset
         }
 
-        panel.setFrameOrigin(NSPoint(x: x, y: y))
+        return NSRect(origin: NSPoint(x: x, y: y), size: contentSize)
     }
 
     private func activeTargetScreen(for panel: NSPanel) -> NSScreen? {

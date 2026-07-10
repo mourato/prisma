@@ -11,24 +11,24 @@ import SwiftUI
 /// Floating indicator view that shows waveform during recording and a dedicated status during processing.
 public struct FloatingRecordingIndicatorView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
-    @ObservedObject private var recordingManager: RecordingManager
-    @ObservedObject private var settingsStore: AppSettingsStore
+    @ObservedObject var recordingManager: RecordingManager
+    @ObservedObject var settingsStore: AppSettingsStore
     private let navigationService = NavigationService.shared
     let style: RecordingIndicatorStyle
     let renderState: RecordingIndicatorRenderState
     let processingSnapshot: RecordingIndicatorProcessingSnapshot?
     let isAnimationActive: Bool
-    private let previewLanguageOverride: DictationOutputLanguage?
+    let previewLanguageOverride: DictationOutputLanguage?
     let onStop: @Sendable () -> Void
     let onCancel: @Sendable () -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isHovering = false
-    @State private var hoverCollapseTask: Task<Void, Never>?
-    @State private var isMainRegionHovered = false
-    @State private var isPromptRegionHovered = false
-    @State private var isPromptSessionArmed = false
-    @State private var isSilenceWarningDialogPresented = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @State var isHovering = false
+    @State var hoverCollapseTask: Task<Void, Never>?
+    @State var isMainRegionHovered = false
+    @State var isPromptRegionHovered = false
+    @State var isPromptSessionArmed = false
+    @State var isSilenceWarningDialogPresented = false
 
     // Removed IndicatorMetrics in favor of AppDesignSystem.Layout
 
@@ -123,12 +123,12 @@ public struct FloatingRecordingIndicatorView: View {
             VStack(spacing: 4) {
                 if let warningDescriptor = postProcessingWarningDescriptor {
                     postProcessingReadinessWarningOverlay(warningDescriptor)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .transition(warningOverlayTransition)
                 }
 
                 if isRecordingMode, audioMonitor.isSilenceWarningVisible {
                     silenceWarningOverlay
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .transition(warningOverlayTransition)
                 }
             }
             .padding(.top, 2)
@@ -158,7 +158,7 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     /// Warning overlay shown when microphone input appears silent.
-    private var silenceWarningOverlay: some View {
+    var silenceWarningOverlay: some View {
         RecordingSilenceWarningOverlay(
             isDialogPresented: $isSilenceWarningDialogPresented,
             onContinue: { audioMonitor.dismissSilenceWarning() },
@@ -173,7 +173,7 @@ public struct FloatingRecordingIndicatorView: View {
         )
     }
 
-    private func postProcessingReadinessWarningOverlay(
+    func postProcessingReadinessWarningOverlay(
         _ descriptor: RecordingIndicatorPostProcessingWarningDescriptor
     ) -> some View {
         RecordingPostProcessingWarningOverlay(descriptor: descriptor) { section in
@@ -215,7 +215,19 @@ public struct FloatingRecordingIndicatorView: View {
             )
     }
 
-    private var isRecordingMode: Bool {
+    var warningOverlayTransition: AnyTransition {
+        AppleMotion.transition(reduceMotion: reduceMotion, edge: .top)
+    }
+
+    func resetHoverState() {
+        hoverCollapseTask?.cancel()
+        hoverCollapseTask = nil
+        isMainRegionHovered = false
+        isPromptRegionHovered = false
+        isPromptSessionArmed = false
+    }
+
+    var isRecordingMode: Bool {
         if case .recording = renderState.mode {
             return true
         }
@@ -243,11 +255,11 @@ public struct FloatingRecordingIndicatorView: View {
         return nil
     }
 
-    private var overlayLayout: RecordingIndicatorOverlayLayout {
+    var overlayLayout: RecordingIndicatorOverlayLayout {
         RecordingIndicatorOverlayLayout.resolve(renderState: renderState, settingsStore: settingsStore)
     }
 
-    private var postProcessingWarningDescriptor: RecordingIndicatorPostProcessingWarningDescriptor? {
+    var postProcessingWarningDescriptor: RecordingIndicatorPostProcessingWarningDescriptor? {
         guard isRecordingMode || isProcessingMode else { return nil }
         guard settingsStore.postProcessingEnabled else { return nil }
         guard let issue = recordingManager.postProcessingReadinessWarningIssue,
@@ -301,11 +313,11 @@ public struct FloatingRecordingIndicatorView: View {
         )
     }
 
-    private var usesMeetingPromptSource: Bool {
+    var usesMeetingPromptSource: Bool {
         renderState.kind == .meeting
     }
 
-    private func recordingCluster(size: IndicatorSize) -> some View {
+    func recordingCluster(size: IndicatorSize) -> some View {
         let waveformMetrics = FloatingRecordingIndicatorViewUtilities.waveformMetrics(for: size)
 
         return HStack(spacing: FloatingRecordingIndicatorViewUtilities.contentSpacing(for: size)) {
@@ -347,7 +359,7 @@ public struct FloatingRecordingIndicatorView: View {
             ),
             alignment: .leading
         )
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: processingStageTitle)
+        .animation(AppleMotion.animation(reduceMotion: reduceMotion, kind: .default), value: processingStageTitle)
         .accessibilityLabel(processingAccessibilityLabel)
     }
 
@@ -375,7 +387,7 @@ public struct FloatingRecordingIndicatorView: View {
         }
     }
 
-    private var activeProcessingSnapshot: RecordingIndicatorProcessingSnapshot {
+    var activeProcessingSnapshot: RecordingIndicatorProcessingSnapshot {
         processingSnapshot
             ?? FloatingRecordingIndicatorViewUtilities.defaultProcessingSnapshot(for: renderState)
     }
@@ -437,122 +449,6 @@ public struct FloatingRecordingIndicatorView: View {
         }
         .animation(nil, value: isHovering)
         .accessibilityLabel("recording_indicator.duration".localized)
-    }
-
-    private func promptPickerControl(size: IndicatorSize) -> some View {
-        Menu {
-            Button {
-                applyPostProcessingSelection(nil)
-            } label: {
-                Label(
-                    "recording_indicator.prompt.none".localized,
-                    systemImage: "nosign"
-                )
-            }
-
-            Divider()
-
-            ForEach(promptPickerPrompts) { prompt in
-                Button {
-                    applyPostProcessingSelection(prompt.id)
-                } label: {
-                    Label(prompt.title, systemImage: prompt.icon)
-                }
-            }
-        } label: {
-            let promptIcon = FloatingRecordingIndicatorViewUtilities.promptIconImage(
-                symbolName: currentPromptIconName,
-                size: size
-            )
-            Image(nsImage: promptIcon)
-                .renderingMode(.original)
-                .frame(width: 20, height: 20)
-                .contentShape(Rectangle())
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .help("recording_indicator.prompt.help".localized)
-        .highPriorityGesture(TapGesture())
-    }
-
-    private func languagePickerControl(size: IndicatorSize) -> some View {
-        Menu {
-            ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
-                Button {
-                    recordingManager.setDictationSessionOutputLanguageOverride(language)
-                } label: {
-                    Text(language.displayName)
-                }
-            }
-        } label: {
-            let flagIcon = FloatingRecordingIndicatorViewUtilities.languageFlagImage(
-                currentDictationOutputLanguage.flagEmoji,
-                size: size
-            )
-            Image(nsImage: flagIcon)
-                .renderingMode(.original)
-                .resizable()
-                .interpolation(.high)
-                .scaledToFit()
-                .frame(width: 24, height: 24, alignment: .center)
-                .contentShape(Rectangle())
-                .accessibilityLabel(currentDictationOutputLanguage.localizedName)
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .help("settings.rules_per_app.language.title".localized)
-        .highPriorityGesture(TapGesture())
-    }
-
-    private var promptPickerPrompts: [PostProcessingPrompt] {
-        usesMeetingPromptSource ? settingsStore.meetingAvailablePrompts : settingsStore.dictationAvailablePrompts
-    }
-
-    private var currentPromptIconName: String {
-        if !usesMeetingPromptSource {
-            if settingsStore.isDictationPostProcessingDisabled {
-                return "nosign"
-            }
-            return (settingsStore.selectedDictationPrompt ?? .defaultPrompt).icon
-        }
-
-        if settingsStore.isMeetingPostProcessingDisabled {
-            return "nosign"
-        }
-
-        return settingsStore.selectedPrompt?.icon ?? "doc.text"
-    }
-
-    private var currentPromptTitle: String {
-        if !usesMeetingPromptSource {
-            if settingsStore.isDictationPostProcessingDisabled {
-                return "recording_indicator.prompt.none".localized
-            }
-            return (settingsStore.selectedDictationPrompt ?? .defaultPrompt).title
-        }
-
-        if settingsStore.isMeetingPostProcessingDisabled {
-            return "recording_indicator.prompt.none".localized
-        }
-
-        return settingsStore.selectedPrompt?.title ?? "recording_indicator.prompt.none".localized
-    }
-
-    private func applyPostProcessingSelection(_ promptId: UUID?) {
-        let selectionId = promptId ?? AppSettingsStore.noPostProcessingPromptId
-
-        if !usesMeetingPromptSource {
-            settingsStore.dictationSelectedPromptId = selectionId
-            return
-        }
-
-        // Meetings
-        settingsStore.meetingTypeAutoDetectEnabled = false
-        if recordingManager.currentMeeting?.type == .autodetect {
-            recordingManager.overrideCurrentMeetingType(.general)
-        }
-
-        settingsStore.selectedPromptId = selectionId
     }
 
     private var currentIndicatorSize: IndicatorSize {
@@ -627,609 +523,8 @@ public struct FloatingRecordingIndicatorView: View {
         }
     }
 
-    private var superIndicatorCard: some View {
-        VStack(spacing: 0) {
-            recordingCluster(size: .super)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.horizontal, AppDesignSystem.Layout.recordingIndicatorSuperHorizontalPadding)
-                .padding(.vertical, AppDesignSystem.Layout.recordingIndicatorSuperVerticalPadding)
-
-            if FloatingRecordingIndicatorViewUtilities.superShowsFooter(
-                layout: overlayLayout,
-                renderState: renderState
-            ) {
-                Rectangle()
-                    .fill(AppDesignSystem.Colors.overlayDivider)
-                    .frame(height: 1)
-
-                superFooter
-                    .padding(.horizontal, AppDesignSystem.Layout.recordingIndicatorSuperHorizontalPadding)
-                    .padding(.vertical, AppDesignSystem.Layout.recordingIndicatorSuperVerticalPadding / 2)
-            }
-        }
-        .frame(
-            width: FloatingRecordingIndicatorViewUtilities.superCardWidth(
-                layout: overlayLayout,
-                renderState: renderState,
-                processingSnapshot: activeProcessingSnapshot
-            )
-        )
-        .background(.ultraThinMaterial)
-        .background(AppDesignSystem.Colors.recordingIndicatorMaterialTint)
-        .overlay(
-            RoundedRectangle(
-                cornerRadius: AppDesignSystem.Layout.recordingIndicatorSuperCornerRadius,
-                style: .continuous
-            )
-            .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1.2)
-        )
-        .clipShape(
-            RoundedRectangle(
-                cornerRadius: AppDesignSystem.Layout.recordingIndicatorSuperCornerRadius,
-                style: .continuous
-            )
-        )
-        .contentShape(
-            RoundedRectangle(
-                cornerRadius: AppDesignSystem.Layout.recordingIndicatorSuperCornerRadius,
-                style: .continuous
-            )
-        )
-        .onDisappear {
-            hoverCollapseTask?.cancel()
-            hoverCollapseTask = nil
-            isMainRegionHovered = false
-            isPromptRegionHovered = false
-            isPromptSessionArmed = false
-        }
-        .overlay(alignment: .top) {
-            VStack(spacing: 4) {
-                if let warningDescriptor = postProcessingWarningDescriptor {
-                    postProcessingReadinessWarningOverlay(warningDescriptor)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-
-                if isRecordingMode, audioMonitor.isSilenceWarningVisible {
-                    silenceWarningOverlay
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-            }
-            .padding(.top, 2)
-        }
-        .shadow(
-            color: .black.opacity(0.15),
-            radius: AppDesignSystem.Layout.recordingIndicatorMainShadowRadius,
-            x: AppDesignSystem.Layout.shadowX,
-            y: AppDesignSystem.Layout.recordingIndicatorMainShadowY
-        )
-    }
-
-    private var superFooter: some View {
-        HStack(spacing: FloatingRecordingIndicatorViewUtilities.superFooterGroupSpacing()) {
-            if superFooterHasLeadingContent {
-                superFooterLeadingContent
-            }
-
-            Spacer(minLength: 0)
-
-            if isRecordingMode {
-                HStack(spacing: FloatingRecordingIndicatorViewUtilities.superFooterSpacing()) {
-                    superActionButton(kind: .stop)
-                    superActionButton(kind: .cancel)
-                }
-            }
-        }
-        .frame(height: AppDesignSystem.Layout.recordingIndicatorSuperFooterHeight)
-    }
-
-    private var superFooterHasLeadingContent: Bool {
-        overlayLayout.showsPromptSelector
-            || overlayLayout.showsLanguageSelector
-            || showsMeetingMicrophoneControl
-            || showsMeetingNotesControl
-    }
-
-    private var superFooterLeadingContent: some View {
-        HStack(spacing: FloatingRecordingIndicatorViewUtilities.superFooterSpacing()) {
-            if overlayLayout.showsPromptSelector {
-                promptFooterControl
-            }
-
-            if overlayLayout.showsLanguageSelector {
-                languageFooterControl
-            }
-
-            if showsMeetingMicrophoneControl {
-                superFooterIconControl(
-                    symbol: recordingManager.isMeetingMicrophoneEnabled ? "mic.fill" : "mic.slash.fill",
-                    helpKey: recordingManager.isMeetingMicrophoneEnabled
-                        ? "recording_indicator.microphone.enabled.help"
-                        : "recording_indicator.microphone.disabled.help",
-                    style: recordingManager.isMeetingMicrophoneEnabled ? .neutral : .warning
-                ) {
-                    Task {
-                        await recordingManager.toggleMeetingMicrophone()
-                    }
-                }
-            }
-
-            if showsMeetingNotesControl {
-                superFooterIconControl(
-                    symbol: recordingManager.isMeetingNotesPanelVisible ? "note.text" : "note.text.badge.plus",
-                    helpKey: recordingManager.isMeetingNotesPanelVisible
-                        ? "recording_indicator.meeting_notes.hide.help"
-                        : "recording_indicator.meeting_notes.show.help"
-                ) {
-                    Task { @MainActor in
-                        recordingManager.toggleMeetingNotesPanel()
-                    }
-                }
-            }
-        }
-    }
-
-    private var promptFooterControl: some View {
-        Menu {
-            Button {
-                applyPostProcessingSelection(nil)
-            } label: {
-                Label(
-                    "recording_indicator.prompt.none".localized,
-                    systemImage: "nosign"
-                )
-            }
-
-            Divider()
-
-            ForEach(promptPickerPrompts) { prompt in
-                Button {
-                    applyPostProcessingSelection(prompt.id)
-                } label: {
-                    Label(prompt.title, systemImage: prompt.icon)
-                }
-            }
-        } label: {
-            let promptIcon = FloatingRecordingIndicatorViewUtilities.promptIconImage(
-                symbolName: currentPromptIconName,
-                size: .super
-            )
-            superFooterChip {
-                HStack(spacing: 6) {
-                    Image(nsImage: promptIcon)
-                        .renderingMode(.original)
-                        .frame(width: 14, height: 14)
-
-                    Text(currentPromptTitle)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-                .frame(width: FloatingRecordingIndicatorViewUtilities.promptSize(for: .super), alignment: .leading)
-            }
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .help("recording_indicator.prompt.help".localized)
-        .highPriorityGesture(TapGesture())
-    }
-
-    private var languageFooterControl: some View {
-        Menu {
-            ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
-                Button {
-                    recordingManager.setDictationSessionOutputLanguageOverride(language)
-                } label: {
-                    Text(language.displayName)
-                }
-            }
-        } label: {
-            let flagIcon = FloatingRecordingIndicatorViewUtilities.languageFlagImage(
-                currentDictationOutputLanguage.flagEmoji,
-                size: .super
-            )
-            superFooterChip {
-                Image(nsImage: flagIcon)
-                    .renderingMode(.original)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 18, height: 18)
-                    .frame(width: FloatingRecordingIndicatorViewUtilities.superFooterIconWidth())
-            }
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .help("settings.rules_per_app.language.title".localized)
-        .highPriorityGesture(TapGesture())
-    }
-
-    private func superFooterIconControl(
-        symbol: String,
-        helpKey: String,
-        style: ActionIconButton.Style = .neutral,
-        action: @escaping @Sendable () -> Void
-    ) -> some View {
-        Button(action: action) {
-            superFooterChip {
-                Image(systemName: symbol)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(iconForegroundStyle(for: style))
-                    .frame(width: FloatingRecordingIndicatorViewUtilities.superFooterIconWidth())
-            }
-        }
-        .buttonStyle(.plain)
-        .help(helpKey.localized)
-    }
-
-    private func superActionButton(kind: SuperActionKind) -> some View {
-        let titleKey = switch kind {
-        case .stop:
-            "recording_indicator.super.stop"
-        case .cancel:
-            "recording_indicator.super.cancel"
-        }
-        let action = {
-            switch kind {
-            case .stop:
-                onStop()
-            case .cancel:
-                onCancel()
-            }
-        }
-
-        return Button(action: action) {
-            Label {
-                Text(titleKey.localized)
-                    .font(.system(size: 11, weight: .semibold))
-                    .lineLimit(1)
-            } icon: {
-                Image(systemName: kind == .stop ? "arrow.up" : "trash")
-                    .font(.system(size: 11, weight: .semibold))
-            }
-            .foregroundStyle(superActionForegroundColor(for: kind))
-            .padding(.horizontal, 12)
-            .frame(minWidth: FloatingRecordingIndicatorViewUtilities.superActionWidth(kind: kind))
-            .frame(height: 24)
-            .background(superActionBackground(for: kind))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(superActionBorderColor(for: kind), lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .help(
-            kind == .stop
-                ? "recording_indicator.super.stop.help".localized
-                : "recording_indicator.super.cancel.help".localized
-        )
-    }
-
-    private func superFooterChip(@ViewBuilder content: () -> some View) -> some View {
-        HStack(spacing: 0, content: content)
-            .padding(.horizontal, AppDesignSystem.Layout.recordingIndicatorSuperFooterChipHorizontalPadding)
-            .frame(height: FloatingRecordingIndicatorViewUtilities.superFooterChipHeight())
-            .background(Color.white.opacity(0.05))
-            .overlay(
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke.opacity(0.85), lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-    }
-
-    private func iconForegroundStyle(for style: ActionIconButton.Style) -> Color {
-        switch style {
-        case .neutral:
-            AppDesignSystem.Colors.overlayForegroundMuted
-        case .success:
-            AppDesignSystem.Colors.success
-        case .warning:
-            AppDesignSystem.Colors.error
-        }
-    }
-
-    private func superActionForegroundColor(for kind: SuperActionKind) -> Color {
-        switch kind {
-        case .stop:
-            .white
-        case .cancel:
-            AppDesignSystem.Colors.overlayForegroundMuted
-        }
-    }
-
-    private func superActionBackground(for kind: SuperActionKind) -> Color {
-        switch kind {
-        case .stop:
-            AppDesignSystem.Colors.success.opacity(0.82)
-        case .cancel:
-            Color.white.opacity(0.05)
-        }
-    }
-
-    private func superActionBorderColor(for kind: SuperActionKind) -> Color {
-        switch kind {
-        case .stop:
-            AppDesignSystem.Colors.success.opacity(0.9)
-        case .cancel:
-            AppDesignSystem.Colors.recordingIndicatorStroke.opacity(0.9)
-        }
-    }
-
-    private var showsMeetingMicrophoneControl: Bool {
-        renderState.kind == .meeting && isRecordingMode
-    }
-
-    private var showsMeetingNotesControl: Bool {
-        renderState.kind == .meeting && isRecordingMode
-    }
-
-    private var meetingMicrophoneControl: some View {
-        ActionIconButton(
-            symbol: recordingManager.isMeetingMicrophoneEnabled ? "mic.fill" : "mic.slash.fill",
-            helpKey: recordingManager.isMeetingMicrophoneEnabled
-                ? "recording_indicator.microphone.enabled.help"
-                : "recording_indicator.microphone.disabled.help",
-            keyboardShortcut: nil,
-            style: recordingManager.isMeetingMicrophoneEnabled ? .neutral : .warning
-        ) {
-            Task {
-                await recordingManager.toggleMeetingMicrophone()
-            }
-        }
-    }
-
-    private var meetingNotesControl: some View {
-        ActionIconButton(
-            symbol: recordingManager.isMeetingNotesPanelVisible ? "note.text" : "note.text.badge.plus",
-            helpKey: recordingManager.isMeetingNotesPanelVisible
-                ? "recording_indicator.meeting_notes.hide.help"
-                : "recording_indicator.meeting_notes.show.help",
-            keyboardShortcut: nil,
-            style: .neutral
-        ) {
-            Task { @MainActor in
-                recordingManager.toggleMeetingNotesPanel()
-            }
-        }
-    }
-
-    private func inlinePromptControl(size: IndicatorSize) -> some View {
-        promptPickerControl(size: size)
-            .frame(
-                width: FloatingRecordingIndicatorViewUtilities.promptSize(for: size),
-                height: FloatingRecordingIndicatorViewUtilities.controlHeight(for: size)
-            )
-    }
-
-    private func inlineLanguageControl(size: IndicatorSize) -> some View {
-        languagePickerControl(size: size)
-            .frame(
-                width: FloatingRecordingIndicatorViewUtilities.promptSize(for: size),
-                height: FloatingRecordingIndicatorViewUtilities.controlHeight(for: size)
-            )
-    }
-
-    private var usesInlineDictationSelectors: Bool {
-        renderState.kind == .dictation && (style == .classic || style == .mini)
-    }
-
-    private var showsInlinePromptSelector: Bool {
-        usesInlineDictationSelectors && isRecordingMode && isHovering && overlayLayout.showsPromptSelector
-    }
-
-    private var showsInlineLanguageSelector: Bool {
-        usesInlineDictationSelectors && isRecordingMode && isHovering && overlayLayout.showsLanguageSelector
-    }
-
-    private var showsExternalPromptSelector: Bool {
-        overlayLayout.showsPromptSelector && !usesInlineDictationSelectors
-    }
-
-    private var showsExternalLanguageSelector: Bool {
-        overlayLayout.showsLanguageSelector && !usesInlineDictationSelectors
-    }
-
-    private func promptSelectionPill(size: IndicatorSize) -> some View {
-        promptPickerControl(size: size)
-            .frame(
-                width: FloatingRecordingIndicatorViewUtilities.promptSize(for: size),
-                height: FloatingRecordingIndicatorViewUtilities.controlHeight(for: size)
-            )
-            .background(.ultraThinMaterial)
-            .background(AppDesignSystem.Colors.recordingIndicatorAuxiliaryBackground)
-            .overlay(
-                Capsule()
-                    .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
-            )
-            .clipShape(Capsule())
-            .onHover { hovering in
-                handlePromptRegionHover(hovering)
-            }
-    }
-
-    private func languageSelectionPill(size: IndicatorSize) -> some View {
-        languagePickerControl(size: size)
-            .frame(
-                width: FloatingRecordingIndicatorViewUtilities.promptSize(for: size),
-                height: FloatingRecordingIndicatorViewUtilities.controlHeight(for: size)
-            )
-            .background(.ultraThinMaterial)
-            .background(AppDesignSystem.Colors.recordingIndicatorAuxiliaryBackground)
-            .overlay(
-                Capsule()
-                    .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
-            )
-            .clipShape(Capsule())
-            .onHover { hovering in
-                handlePromptRegionHover(hovering)
-            }
-    }
-
-    private func handleMainRegionHover(_ hovering: Bool) {
-        guard isRecordingMode else { return }
-
-        isMainRegionHovered = hovering
-        if hovering {
-            isPromptSessionArmed = true
-            hoverCollapseTask?.cancel()
-            if reduceMotion {
-                isHovering = true
-            } else {
-                withAnimation(
-                    .spring(
-                        response: AppDesignSystem.Layout.recordingIndicatorHoverEnterResponse,
-                        dampingFraction: AppDesignSystem.Layout.recordingIndicatorHoverEnterDamping
-                    )
-                ) {
-                    isHovering = true
-                }
-            }
-            return
-        }
-
-        collapseAfterDelayIfNeeded()
-    }
-
-    private func handlePromptRegionHover(_ hovering: Bool) {
-        guard isRecordingMode else { return }
-
-        isPromptRegionHovered = hovering
-        if hovering, isPromptSessionArmed {
-            hoverCollapseTask?.cancel()
-            return
-        }
-
-        collapseAfterDelayIfNeeded()
-    }
-
-    private func collapseAfterDelayIfNeeded() {
-        guard isRecordingMode else { return }
-        guard !isMainRegionHovered else { return }
-        if isPromptRegionHovered, isPromptSessionArmed { return }
-        guard isHovering else { return }
-
-        hoverCollapseTask?.cancel()
-        hoverCollapseTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 110_000_000)
-            guard !Task.isCancelled else { return }
-            guard !isMainRegionHovered else { return }
-            if isPromptRegionHovered, isPromptSessionArmed { return }
-
-            if reduceMotion {
-                isHovering = false
-            } else {
-                withAnimation(
-                    .spring(
-                        response: AppDesignSystem.Layout.recordingIndicatorHoverExitResponse,
-                        dampingFraction: AppDesignSystem.Layout.recordingIndicatorHoverExitDamping
-                    )
-                ) {
-                    isHovering = false
-                }
-            }
-            isPromptSessionArmed = false
-        }
-    }
-
     private func controlSpacing(for size: IndicatorSize) -> CGFloat {
         FloatingRecordingIndicatorViewUtilities.controlSpacing(for: size)
     }
 
-    private var currentDictationOutputLanguage: DictationOutputLanguage {
-        if let previewLanguageOverride {
-            return previewLanguageOverride
-        }
-        return recordingManager.effectiveDictationOutputLanguageForCurrentRecording
-    }
-
-}
-
-#Preview("Classic - Ditado", traits: .sizeThatFitsLayout) {
-    let monitor = AudioLevelMonitor()
-    FloatingRecordingIndicatorView(
-        audioMonitor: monitor,
-        style: .classic,
-        renderState: RecordingIndicatorRenderState(mode: .recording, kind: .dictation),
-        previewLanguageOverride: .portuguese,
-        onStop: {},
-        onCancel: {}
-    )
-    .padding()
-    .frame(width: 520, height: 120)
-    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
-}
-
-#Preview("Classic - Assistente", traits: .sizeThatFitsLayout) {
-    let monitor = AudioLevelMonitor()
-    FloatingRecordingIndicatorView(
-        audioMonitor: monitor,
-        style: .classic,
-        renderState: RecordingIndicatorRenderState(mode: .recording, kind: .assistant),
-        previewLanguageOverride: .portuguese,
-        onStop: {},
-        onCancel: {}
-    )
-    .padding()
-    .frame(width: 520, height: 120)
-    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
-}
-
-#Preview("Classic - Reuniao", traits: .sizeThatFitsLayout) {
-    let monitor = AudioLevelMonitor()
-    FloatingRecordingIndicatorView(
-        audioMonitor: monitor,
-        style: .classic,
-        renderState: RecordingIndicatorRenderState(mode: .recording, kind: .meeting),
-        previewLanguageOverride: .portuguese,
-        onStop: {},
-        onCancel: {}
-    )
-    .padding()
-    .frame(width: 520, height: 120)
-    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
-}
-
-#Preview("Super - Ditado", traits: .sizeThatFitsLayout) {
-    let monitor = AudioLevelMonitor()
-    FloatingRecordingIndicatorView(
-        audioMonitor: monitor,
-        style: .super,
-        renderState: RecordingIndicatorRenderState(mode: .recording, kind: .dictation),
-        previewLanguageOverride: .portuguese,
-        onStop: {},
-        onCancel: {}
-    )
-    .padding()
-    .frame(width: 560, height: 180)
-    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
-}
-
-#Preview("Super - Assistente", traits: .sizeThatFitsLayout) {
-    let monitor = AudioLevelMonitor()
-    FloatingRecordingIndicatorView(
-        audioMonitor: monitor,
-        style: .super,
-        renderState: RecordingIndicatorRenderState(mode: .recording, kind: .assistant),
-        previewLanguageOverride: .portuguese,
-        onStop: {},
-        onCancel: {}
-    )
-    .padding()
-    .frame(width: 560, height: 180)
-    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
-}
-
-#Preview("Super - Reuniao", traits: .sizeThatFitsLayout) {
-    let monitor = AudioLevelMonitor()
-    FloatingRecordingIndicatorView(
-        audioMonitor: monitor,
-        style: .super,
-        renderState: RecordingIndicatorRenderState(mode: .recording, kind: .meeting),
-        previewLanguageOverride: .portuguese,
-        onStop: {},
-        onCancel: {}
-    )
-    .padding()
-    .frame(width: 640, height: 180)
-    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
 }
