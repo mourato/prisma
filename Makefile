@@ -326,8 +326,8 @@ ci-release-parity-self-signed:
 	@MA_RELEASE_SIGNING_MODE=self-signed ./scripts/ci-release-parity.sh --mode local --phase package-appcast --dry-run 0 --archive-path build/$(APP_PRODUCT_NAME).xcarchive --download-url-prefix "$(DOWNLOAD_URL_PREFIX)" $(if $(RELEASE_TAG),--release-tag $(RELEASE_TAG),)
 
 deliverable-gate:
-	@$(MAKE) build-test
 	@$(MAKE) lint
+	@$(MAKE) build-test
 	@$(MAKE) ci-release-parity
 # Documentation
 docs:

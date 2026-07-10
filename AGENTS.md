@@ -175,8 +175,8 @@ Rules:
 - Small slices, frequent scoped verification (targeted tests + narrow build first)
 - Run `make build-test` at key milestones (before push/merge, after large rebases, or when an escalation trigger fires mid-task)
 - **Before push/merge (hard gates, no exceptions):**
+  - `make lint` (mandatory for all Full-lane changes — fast-fail before build)
   - `make build-test`
-  - `make lint` (mandatory for all Full-lane changes)
 - **Code review:** Full thermo-nuclear semáforo review — every finding tagged 🔴 Critical (breaks a Hard Constraint, safety/data-integrity risk, structural regression, or blocks merge), 🟡 Medium (should fix before merge but not a hard blocker on its own), or 🟢 Minor (style/nit, fix opportunistically). Fix all 🔴 and 🟡 findings before merge; 🟢 findings may be deferred to a follow-up issue.
 
 ### Scoped Validation Intelligence (Mandatory During Iteration)
@@ -190,7 +190,7 @@ Use this decision order to keep feedback fast without sacrificing safety:
 
 `make scope-check` is the canonical command for steps 1-3 above during iteration.
 
-**`make preflight` (optional, not a lane gate):** comprehensive validation (build + test + lint + summary benchmark), recommended before release. It does not replace the lane merge gates above (Fast = `make scope-check`, Full = `make build-test` + `make lint`).
+**`make preflight` (optional, not a lane gate):** comprehensive validation (lint + build + test + summary benchmark), recommended before release. It does not replace the lane merge gates above (Fast = `make scope-check`, Full = `make lint` + `make build-test`).
 
 ### Definition of Done & Evidence
 
@@ -199,7 +199,7 @@ For every task, leave auditable evidence in the PR description, issue comment, o
 | Lane     | Required quality gates                                     | Required evidence                                                                                                                        |
 | -------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Fast** | Iteration scoped checks + `make scope-check`                 | Risk level, reusable-block decision (reuse/extend/create), scoped commands executed, escalation rationale (if any), test result summary  |
-| **Full** | Iteration scoped checks + `make build-test` + `make lint`     | Risk level, reusable-block decision, thermo-nuclear semáforo review outcome, scoped commands executed, escalation rationale (if any), test/build result summary |
+| **Full** | Iteration scoped checks + `make lint` + `make build-test`     | Risk level, reusable-block decision, thermo-nuclear semáforo review outcome, scoped commands executed, escalation rationale (if any), test/build result summary |
 
 ### PR & Merge Policy
 

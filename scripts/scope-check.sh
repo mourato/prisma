@@ -427,6 +427,17 @@ main() {
     echo "- Added lines vs HEAD: ${added_lines}"
     echo "- Candidate targeted tests: ${targeted_count}"
 
+    # Fast-fail: run lint first (cheap gate, catches style issues before build)
+    if [ "${code_relevant}" -eq 1 ]; then
+        echo "- Running lint gate..."
+        if [ "${AGENT_MODE}" -eq 1 ]; then
+            run_cmd "make lint-agent" || return $?
+        else
+            run_cmd "make lint" || return $?
+        fi
+        echo "  Lint passed."
+    fi
+
     if [ "${should_run_full}" -eq 1 ]; then
         echo "- Strategy: full gate (make build-test)"
         echo "- Full-gate reasons:"

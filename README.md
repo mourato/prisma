@@ -136,7 +136,7 @@ Run the deliverable gate to reduce CI surprises:
 make deliverable-gate
 ```
 
-This includes `make build-test`, `make lint`, and `make ci-release-parity`.
+This includes `make lint`, `make build-test`, and `make ci-release-parity` (lint runs first as a fast-fail gate).
 
 To enforce strict Xcode pin matching in automated runs:
 

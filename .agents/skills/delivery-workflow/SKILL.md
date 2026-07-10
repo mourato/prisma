@@ -74,8 +74,8 @@ Minimum expectation:
 - During development, run scoped checks continuously.
 - Reserve `make build-test` for milestone validation and mandatory merge gate.
 - Before push/merge, run:
+  - `make lint` (fast-fail before build)
   - `make build-test`
-  - `make lint`
 
 `make preflight` remains optional and does not replace lane merge gates.
 

@@ -26,9 +26,9 @@ if [ -z "$STAGED_FILES" ]; then
     exit 0
 fi
 
-# Lint/format checks are optional to avoid blocking commits.
-if [ "${RUN_LINT}" != "1" ]; then
-    echo "ℹ️  Lint/format checks skipped. Set RUN_LINT=1 to enable."
+# Lint/format checks run by default. Set SKIP_LINT=1 to bypass.
+if [ "${SKIP_LINT}" = "1" ]; then
+    echo "ℹ️  Lint/format checks skipped via SKIP_LINT=1."
     echo ""
     echo "🎉 Pre-commit checks passed!"
     exit 0

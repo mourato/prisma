@@ -163,8 +163,19 @@ run_test_agent() {
     make test-full-agent
 }
 
-if [ "${FAST_MODE}" -eq 1 ]; then
-    if ! make lint-agent; then
+run_parallel_lint_and_build_agent() {
+    local lint_status=0
+    local build_status=0
+
+    make lint-agent &
+    local lint_pid=$!
+    make build-agent &
+    local build_pid=$!
+
+    wait "${lint_pid}" || lint_status=$?
+    wait "${build_pid}" || build_status=$?
+
+    if [ "${lint_status}" -ne 0 ]; then
         SUMMARY="Preflight failed during lint"
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))
@@ -173,7 +184,7 @@ if [ "${FAST_MODE}" -eq 1 ]; then
         exit 1
     fi
 
-    if ! make build-agent; then
+    if [ "${build_status}" -ne 0 ]; then
         SUMMARY="Preflight failed during build"
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))
@@ -181,28 +192,15 @@ if [ "${FAST_MODE}" -eq 1 ]; then
         ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
         exit 1
     fi
+}
 
-    if ! run_test_agent; then
-        SUMMARY="Preflight failed during test"
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - START_TIME))
-        ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
-        ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
-        exit 1
-    fi
+if [ "${FAST_MODE}" -eq 1 ]; then
+    run_parallel_lint_and_build_agent
 else
-if ! make build-agent; then
-    SUMMARY="Preflight failed during build"
-    END_TIME=$(date +%s)
-    DURATION=$((END_TIME - START_TIME))
-    ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
-    ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
-    exit 1
-fi
+    run_parallel_lint_and_build_agent
 
-if [ "${STRICT_LINT_MODE}" -eq 1 ]; then
-    if ! make lint-agent; then
-        SUMMARY="Preflight failed during lint"
+    if ! MA_AGENT_MODE=1 ./scripts/run-summary-benchmark.sh "${BENCHMARK_ARG}" --agent; then
+        SUMMARY="Preflight failed during summary benchmark"
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))
         ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
@@ -218,27 +216,6 @@ if ! run_test_agent; then
     ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
     ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
     exit 1
-fi
-
-if [ "${STRICT_LINT_MODE}" -ne 1 ]; then
-    if ! make lint-agent; then
-        SUMMARY="Preflight failed during lint"
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - START_TIME))
-        ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
-        ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
-        exit 1
-    fi
-fi
-
-if ! MA_AGENT_MODE=1 ./scripts/run-summary-benchmark.sh "${BENCHMARK_ARG}" --agent; then
-    SUMMARY="Preflight failed during summary benchmark"
-    END_TIME=$(date +%s)
-    DURATION=$((END_TIME - START_TIME))
-    ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
-    ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
-    exit 1
-fi
 fi
 
 if [ "${FAST_MODE}" -eq 0 ] && [ "${STRICT_CONCURRENCY}" -eq 1 ]; then

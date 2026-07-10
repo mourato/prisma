@@ -7,7 +7,7 @@ This document provides comprehensive CLI and workflow reference for building, te
 Choose commands by lane:
 
 - Fast lane merge gate: `make scope-check`
-- Full lane merge gate: `make build-test` + `make lint`
+- Full lane merge gate: `make lint` + `make build-test`
 - Optional comprehensive validation: `make preflight`
 
 ## Primary Build/Test Commands
@@ -252,7 +252,7 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 
 **Before push/merge (mandatory):**
 - ✓ Fast lane: `make scope-check`
-- ✓ Full lane: `make build-test` + `make lint`
+- ✓ Full lane: `make lint` + `make build-test`
 - ✓ Guidance changes (`AGENTS.md`, `.agents/`, command docs): `make guidance-check`
 
 **Recommended before merge:**
