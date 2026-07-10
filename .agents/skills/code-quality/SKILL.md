@@ -80,7 +80,7 @@ Ask:
 ## 6. Tooling & Verification
 
 - Keep changes small and atomic to improve review quality.
-- Run the scoped checks required by `AGENTS.md` and `../quality-assurance/SKILL.md`.
+- Run the scoped checks required by `AGENTS.md` and `../delivery-workflow/SKILL.md`.
 - Use formatting/linting as verification, not as a substitute for structural simplification.
 
 ## Related Skills
@@ -88,14 +88,14 @@ Ask:
 - `../swift-conventions/SKILL.md`
 - `../thermo-nuclear-code-quality-review/SKILL.md`
 - `../architecture/SKILL.md`
-- `../quality-assurance/SKILL.md`
+- `../delivery-workflow/SKILL.md`
 
 ## References
 
 - `../swift-conventions/SKILL.md`
 - `../thermo-nuclear-code-quality-review/SKILL.md`
 - `../architecture/SKILL.md`
-- `../quality-assurance/SKILL.md`
+- `../delivery-workflow/SKILL.md`
 
 ## 2026-06-30 Progression Drill
 

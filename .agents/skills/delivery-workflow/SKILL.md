@@ -1,0 +1,206 @@
+---
+name: delivery-workflow
+description: This skill should be used when the user asks to classify risk, select a Prisma execution lane, choose validation commands, run quality checks, commit, prepare PRs, merge, or enforce pre-merge workflow.
+---
+
+# Delivery Workflow
+
+## Role
+
+Use this skill as the canonical owner for Prisma task delivery from risk classification through integration.
+
+- Own risk classification, Fast/Full lane selection, lifecycle sequencing, validation command mapping, Git mechanics, and evidence reporting.
+- Keep delivery work aligned with `AGENTS.md`, `Makefile`, repository hooks, and Conventional Commits.
+- Delegate implementation-specific testing and review details to specialist skills.
+
+## Scope Boundary
+
+Use this skill for:
+
+- classifying task risk and selecting Fast/Full lane
+- sequencing implementation work
+- choosing scoped validation and merge-gate commands
+- deciding when to escalate to full gates
+- branch, commit, PR, merge, push, and cleanup mechanics
+- reporting verification evidence and baseline failures
+
+Use specialist skills when the task is primarily about:
+
+- `../testing-xctest/SKILL.md` for XCTest structure, async tests, fakes, spies, and fixtures.
+- `../thermo-nuclear-code-quality-review/SKILL.md` for review findings, semaforo severity, approval bars, and strict structural maintainability review.
+- subsystem skills for domain-specific rules, such as audio, persistence, concurrency, security, UI, localization, or intelligence-kernel work.
+
+## When to Use
+
+Use this skill when a Prisma task needs risk classification, delivery sequencing, validation command selection, Git operations, PR/merge workflow, or pre-merge evidence.
+
+## Risk Classification
+
+Classify before implementation:
+
+| Risk | Use when | Lane |
+|---|---|---|
+| Low | Docs/comments only, localization updates, constrained non-functional refactor in one module | Fast |
+| Medium | Feature/bugfix in one subsystem, UI state behavior, public API change in one package | Full |
+| High | Audio, concurrency, persistence, security, cross-module architecture, build/release infra, large or broad deltas | Full |
+
+When uncertain, choose the higher risk. High triggers override Medium.
+
+## Lifecycle
+
+1. Identify scope and likely owner skills.
+2. Scan for reusable services, helpers, components, and patterns: `reuse -> extend -> create`.
+3. Clarify material ambiguity; state minor assumptions.
+4. Implement in small slices.
+5. Run targeted checks first, then narrow builds and relevant scope checks.
+6. Before push/merge, run the lane gate.
+7. Use `../thermo-nuclear-code-quality-review/SKILL.md` for review when review is required; Full lane requires semaforo review with the thermo structural bar.
+8. Fix Critical/Medium review findings, re-run required gates, then integrate and clean up.
+
+## Verification by Lane
+
+### Fast lane (Low risk)
+
+Minimum expectation:
+
+- Run staged lint/format checks or equivalent lightweight checks when relevant.
+- Run scoped checks first when the change could affect behavior.
+- Before push/merge, run `make scope-check`.
+
+### Full lane (Medium/High risk)
+
+Minimum expectation:
+
+- During development, run scoped checks continuously.
+- Reserve `make build-test` for milestone validation and mandatory merge gate.
+- Before push/merge, run:
+  - `make build-test`
+  - `make lint`
+
+`make preflight` remains optional and does not replace lane merge gates.
+
+## Scoped Validation
+
+Use this order during implementation:
+
+1. Targeted tests: `./scripts/run-tests.sh --suite dev --file <TestFile>` or `./scripts/run-tests.sh --suite dev --test <testName>`.
+2. Narrow build confidence: `make build-agent` or `make build`.
+3. Scope-specific checks: `make preview-check`, `make arch-check`, or `make guidance-check`.
+4. Full suite gate: `make build-test` when required by lane or escalation triggers.
+
+Canonical automation for this sequence: `make scope-check`.
+
+Escalate immediately to full suite (`make build-test`) when:
+
+- build/release/test infrastructure changes (`Makefile`, `scripts/`, `.github/workflows`, `Package.swift`, project config)
+- cross-module or public API changes
+- audio, persistence, concurrency, or security-sensitive paths
+- large change sets or low-confidence test mapping
+- scoped checks show flaky or inconsistent behavior
+
+Run these scope checks only when relevant:
+
+- `make arch-check` for architecture boundary, access-control, or import-rule changes.
+- `make preview-check` when adding or changing SwiftUI views.
+- `make guidance-check` when editing `AGENTS.md`, `.agents/`, command docs, routing docs, or referenced guidance.
+
+## Practical Command Set
+
+```bash
+# Core gates
+make scope-check
+make build-test
+make lint
+make preflight
+
+# Compact AI-agent mode
+make build-agent
+make test-agent
+make lint-agent
+make scope-check-agent
+make preflight-agent
+
+# Scope-specific checks
+make preview-check
+make arch-check
+make guidance-check
+
+# Targeted tests
+./scripts/run-tests.sh --suite dev --file <TestFile>
+./scripts/run-tests.sh --suite dev --test <testName>
+./scripts/run-tests.sh --agent
+```
+
+Compact-mode notes:
+
+- Full logs are written under `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`.
+- Scripts emit deterministic `AGENT_*` summary lines for pass/fail parsing.
+- Use compact mode for iteration; keep lane merge gates unchanged.
+
+## Git Workflow
+
+- Preserve unrelated worktree changes.
+- Use Conventional Commits: `<type>(<optional-scope>): <summary>`.
+- Keep commits atomic by intent: feature, fix, refactor, tests, docs, cleanup, review fix.
+- Keep version/build bumps out of functional commits. The pre-commit hook may run `scripts/hooks/first-commit-version-bump.sh`; use `SKIP_DAILY_VERSION_BUMP=1 git commit ...` for normal atomic commits, then make a separate `chore(release): bump version` commit when a release/version bump is actually intended.
+- Do not commit knowingly broken code.
+- Use PRs for non-trivial work unless the user explicitly chooses the direct local merge path.
+- Use `gh --body-file` patterns for multiline GitHub content.
+- Prefer non-interactive Git commands.
+- Avoid destructive commands unless the user explicitly requested them.
+- Stop before rewriting shared history unless the intent is explicit.
+
+Standard commands:
+
+```bash
+git status --short
+git diff --stat
+git add <files>
+SKIP_DAILY_VERSION_BUMP=1 git commit -m "<type>(<scope>): <summary>"
+git push origin <branch>
+```
+
+Use temporary files for multiline GitHub Markdown to avoid shell interpolation problems:
+
+```bash
+cat <<'EOF' >/tmp/prisma-gh-body.md
+## Summary
+- ...
+
+## Verification
+- ...
+EOF
+gh pr create --body-file /tmp/prisma-gh-body.md
+gh issue comment <id> --body-file /tmp/prisma-gh-body.md
+```
+
+## Evidence To Report
+
+Always report:
+
+- risk level and lane
+- reusable-block decision
+- commands run and result
+- review outcome when relevant
+- escalation rationale, if any
+- known baseline failures, if any
+
+## Hook and Troubleshooting Notes
+
+- Install hooks with `git config core.hooksPath scripts/hooks`.
+- `pre-commit` is optimized for speed and can run lightweight staged checks.
+- `pre-push` enforces scoped validation unless explicitly bypassed.
+- Emergency bypasses should be rare and followed by immediate remediation.
+- If tools are missing, install SwiftLint and SwiftFormat with `brew install swiftlint swiftformat`.
+
+## Related Skills
+
+- `../testing-xctest/SKILL.md`
+- `../thermo-nuclear-code-quality-review/SKILL.md`
+
+## References
+
+- `AGENTS.md`
+- `Makefile`
+- `scripts/lint.sh`
+- `scripts/run-tests.sh`

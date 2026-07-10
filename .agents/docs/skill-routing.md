@@ -7,7 +7,7 @@ When working on Prisma, multiple skills may be relevant to a task. This guide pr
 When uncertain which skill to use, apply this priority order:
 
 1. **`macos-app-engineering`** — canonical macOS UI/app implementation guidance
-2. **`task-lifecycle`** — source of truth for risk lane and lifecycle phases
+2. **`delivery-workflow`** — source of truth for risk lane, validation, Git, and delivery evidence
 3. **`accessibility-audit` / `localization` / `menubar`** — specialist UI escalation when their scope is primary
 4. **`swift-concurrency-expert`** — Swift 6.2 concurrency remediation
 5. **`debugging-strategies`** — cross-cutting investigation when the failing subsystem is not yet proven
@@ -142,7 +142,7 @@ Use `thermo-nuclear-code-quality-review` for review output, semaforo severity, a
 - Canonical summary schema and trust flags
 - Summary benchmark thresholds and enforcement
 
-**Complementary:** `data-persistence`, `quality-assurance`
+**Complementary:** `data-persistence`, `delivery-workflow`
 
 **Example:** "Adjust canonical summary confidence rules" → `intelligence-kernel`
 
@@ -157,9 +157,9 @@ Use `thermo-nuclear-code-quality-review` for review output, semaforo severity, a
 ---
 
 
-### Testing and Quality Assurance
+### Testing, Delivery, and Quality Gates
 
-**Verification policy and merge gates:** `quality-assurance`
+**Delivery workflow, verification policy, merge gates, and Git mechanics:** `delivery-workflow`
 
 **XCTest implementation details:** `testing-xctest`
 
@@ -217,14 +217,12 @@ Use `thermo-nuclear-code-quality-review` for review output, semaforo severity, a
 | `code-quality` | `.agents/skills/code-quality/SKILL.md` | Readability, refactoring |
 | `data-persistence` | `.agents/skills/data-persistence/SKILL.md` | Storage design, migrations |
 | `debugging-strategies` | `.agents/skills/debugging-strategies/SKILL.md` | Crash and flaky investigation |
+| `delivery-workflow` | `.agents/skills/delivery-workflow/SKILL.md` | Risk lanes, validation gates, Git workflow, PR/merge mechanics |
 | `documentation` | `.agents/skills/documentation/SKILL.md` | DocC and API docs |
-| `git-workflow` | `.agents/skills/git-workflow/SKILL.md` | Prisma branch, commit, PR, merge, cleanup, and gh body-file mechanics |
 | `intelligence-kernel` | `.agents/skills/intelligence-kernel/SKILL.md` | Kernel modes and summary benchmark gates |
 | `macos-app-engineering` | `.agents/skills/macos-app-engineering/SKILL.md` | macOS UI/app implementation, SwiftUI, AppKit bridging, Settings UI, previews |
 | `menubar` | `.agents/skills/menubar/SKILL.md` | Menu bar, popover, and floating-panel behavior |
 | `observability-diagnostics` | `.agents/skills/observability-diagnostics/SKILL.md` | Logs, telemetry, redaction, diagnostic signatures |
-| `quality-assurance` | `.agents/skills/quality-assurance/SKILL.md` | Verification gates and command policy |
-| `task-lifecycle` | `.agents/skills/task-lifecycle/SKILL.md` | Risk classification and lifecycle policy |
 | `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest code structure, mocks, async tests |
 | `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/SKILL.md` | Swift 6.2 actor isolation and Sendable fixes |
 | `thermo-nuclear-code-quality-review` | `.agents/skills/thermo-nuclear-code-quality-review/SKILL.md` | Default code review, PR audits, semaforo output, and strict maintainability analysis |

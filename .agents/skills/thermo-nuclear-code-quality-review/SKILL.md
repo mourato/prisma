@@ -18,8 +18,7 @@ Use this skill as Prisma's default code review owner and strictest maintainabili
 
 - This skill owns code review findings, severity framing, semaforo output, strict code-quality review prompts, and approval bars.
 - It does not replace `../code-quality/SKILL.md` for everyday readability/refactoring guidance.
-- Use `../task-lifecycle/SKILL.md` for deciding when review happens and which risk lane applies.
-- Use `../quality-assurance/SKILL.md` for validation commands and merge gates.
+- Use `../delivery-workflow/SKILL.md` for deciding when review happens, which risk lane applies, validation commands, and merge gates.
 - Use subsystem skills for domain-specific review details when a change touches specialized areas.
 
 ## When to Use

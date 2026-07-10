@@ -46,7 +46,7 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 - **GitHub**: Drive interactions through `gh` CLI (issues, PRs, comments); use `--body-file` for multiline content
 - **Broad context**: Use deepwiki for repository-wide perspective (optional if local context suffices)
 - **External code research priority**: When inspecting code from other projects, use this order: `MCP grep` (default) → `gh` CLI → deepwiki → web search (last resort)
-- **Command surface authority**: `Makefile` is the canonical command surface. `AGENTS.md` defines lane policy; `.agents/skills/quality-assurance/SKILL.md` maps that policy to concrete commands and must only reference real `Makefile` targets.
+- **Command surface authority**: `Makefile` is the canonical command surface. `AGENTS.md` defines lane policy; `.agents/skills/delivery-workflow/SKILL.md` maps that policy to concrete commands and must only reference real `Makefile` targets.
 - **Build & test**: See [Build and Test Reference](./.agents/docs/build-and-test.md)
 - **Distribution**: Use `make dmg` as the single DMG entrypoint; it auto-detects the configured local self-signed identity in keychain
 - **Skill routing**: See [Skill Routing Guide](./.agents/docs/skill-routing.md)

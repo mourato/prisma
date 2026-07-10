@@ -13,7 +13,7 @@ Operational guidance for the reusable intelligence kernel, canonical summary con
 
 - Use this skill for intelligence-kernel contracts, mode routing, trust flags, and benchmark gates.
 - Use `../data-persistence/SKILL.md` when the main concern is storage or migration rather than kernel behavior.
-- Use `../quality-assurance/SKILL.md` when the main concern is command selection and verification policy.
+- Use `../delivery-workflow/SKILL.md` when the main concern is command selection and verification policy.
 
 ## When to Use
 
@@ -91,7 +91,7 @@ Artifacts:
 
 - Cross-module API boundary decisions -> `../architecture/SKILL.md`
 - Persistence and migration impact -> `../data-persistence/SKILL.md`
-- Validation gates and test strategy -> `../quality-assurance/SKILL.md`
+- Validation gates and test strategy -> `../delivery-workflow/SKILL.md`
 
 ## 2026-03-04 Progression Drill
 

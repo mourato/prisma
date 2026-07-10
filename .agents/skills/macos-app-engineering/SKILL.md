@@ -30,7 +30,7 @@ Use specialist skills when the task is primarily about:
 - `../menubar/SKILL.md` for `NSStatusItem`, `NSMenu`, `NSPopover`, status menus, and non-activating floating-panel behavior.
 - `../debugging-strategies/SKILL.md` when jank, layout thrash, crashes, or flaky runtime behavior have an unclear root cause.
 - `../swift-concurrency-expert/SKILL.md` for actor-isolation and `Sendable` compiler diagnostics.
-- `../quality-assurance/SKILL.md` for validation lane policy and merge gates.
+- `../delivery-workflow/SKILL.md` for validation lane policy and merge gates.
 - `../code-quality/SKILL.md` for language-agnostic simplification/refactoring.
 - `../swift-conventions/SKILL.md` for Swift syntax, type-safety, lint-aligned style, and module conventions.
 
@@ -51,7 +51,7 @@ Use this skill when a task touches macOS UI/app behavior, including:
 2. **Scan reusable blocks** before creating new UI or platform helpers: reuse -> extend -> create.
 3. **Set the UX acceptance criteria** before editing layout: primary action clarity, native feel, visual rhythm, state feedback, accessibility awareness, and redundant-copy removal.
 4. **Implement in small slices** using existing design-system components and platform patterns.
-5. **Validate with focused checks**: `make preview-check` for SwiftUI view changes, `make guidance-check` for guidance changes, and lane-specific gates through `quality-assurance`.
+5. **Validate with focused checks**: `make preview-check` for SwiftUI view changes, `make guidance-check` for guidance changes, and lane-specific gates through `delivery-workflow`.
 
 ## UI/UX Direction
 
@@ -167,7 +167,7 @@ Lifecycle-sensitive UI changes must preserve these invariants:
 
 ## Verification
 
-Use the narrowest meaningful checks during iteration, then the lane gate required by `AGENTS.md` and `quality-assurance`.
+Use the narrowest meaningful checks during iteration, then the lane gate required by `AGENTS.md` and `delivery-workflow`.
 
 Common checks:
 
@@ -189,7 +189,7 @@ For lifecycle-sensitive UI changes, include one manual or automated note that co
 - `../menubar/SKILL.md`
 - `../debugging-strategies/SKILL.md`
 - `../swift-concurrency-expert/SKILL.md`
-- `../quality-assurance/SKILL.md`
+- `../delivery-workflow/SKILL.md`
 - `../code-quality/SKILL.md`
 - `../swift-conventions/SKILL.md`
 - `../architecture/SKILL.md`
