@@ -9,7 +9,6 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 | architecture | macOS/Swift Core | Canonical | Clean Architecture, module boundaries, DI | macos-app-engineering | Keep; clarify architecture-only scope |
 | audio-realtime | Runtime/Performance | Canonical | Low-latency audio pipeline and callback constraints | debugging-strategies | Keep; specialized runtime owner |
 | code-quality | Quality/Engineering Flow | Canonical (generic) | Readability and maintainability principles | swift-conventions | Keep; non-language-specific quality owner |
-| code-review | Quality/Engineering Flow | Canonical | Risk-first review ritual and findings format; always includes thermo-nuclear structural review | task-lifecycle, quality-assurance, thermo-nuclear-code-quality-review | Keep; review specialist |
 | data-persistence | Security/Data | Canonical | Repository, storage, migration, and synchronization strategy | architecture | Keep |
 | debugging-strategies | Runtime/Performance | Canonical (method) | Cross-cutting debugging methodology, including SwiftUI runtime symptoms when root cause is unknown | observability-diagnostics, macos-app-engineering | Keep; investigation owner |
 | documentation | Quality/Engineering Flow | Canonical | DocC, docs structure, and research patterns | project-standards | Keep |
@@ -25,16 +24,16 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 | quality-assurance | Quality/Engineering Flow | Canonical | Verification commands, scope checks, and merge gates | task-lifecycle, testing-xctest | Keep; command policy owner |
 | swift-concurrency-expert | Runtime/Performance | Canonical (Swift 6.2) | Concurrency diagnostics and remediation | — | Keep |
 | swift-conventions | macOS/Swift Core | Canonical (Swift language) | Swift-specific style, type safety, and module conventions | code-quality | Keep |
-| task-lifecycle | Quality/Engineering Flow | Canonical (macro flow) | Risk classification and lifecycle phase orchestration | git-workflow, quality-assurance, code-review | Keep; macro orchestrator |
+| task-lifecycle | Quality/Engineering Flow | Canonical (macro flow) | Risk classification and lifecycle phase orchestration | git-workflow, quality-assurance, thermo-nuclear-code-quality-review | Keep; macro orchestrator |
 | testing-xctest | Quality/Engineering Flow | Canonical | XCTest implementation patterns, async tests, `@MainActor`, mocks, fakes, and spies | quality-assurance | Keep; XCTest owner |
-| thermo-nuclear-code-quality-review | Quality/Engineering Flow | Specialist | Mandatory structural maintainability pass for code review; strict abstraction, large-file, and spaghetti-growth analysis | code-quality, code-review | Keep; harsh review mode |
+| thermo-nuclear-code-quality-review | Quality/Engineering Flow | Canonical | Default code review owner; semaforo findings, severity framing, strict abstraction, large-file, and spaghetti-growth analysis | code-quality, task-lifecycle, quality-assurance | Keep; default review mode |
 
 ## Grouping Summary
 
 1. macOS/Swift Core: `macos-app-engineering`, `architecture`, `swift-conventions`
 2. SwiftUI/UI/UX: `macos-app-engineering`, `menubar`, `accessibility-audit`
 3. Runtime/Performance: `swift-concurrency-expert`, `debugging-strategies`, `audio-realtime`, `observability-diagnostics`, `intelligence-kernel`
-4. Quality/Engineering Flow: `quality-assurance`, `testing-xctest`, `code-review`, `code-quality`, `task-lifecycle`, `project-standards`, `documentation`, `thermo-nuclear-code-quality-review`
+4. Quality/Engineering Flow: `quality-assurance`, `testing-xctest`, `code-quality`, `task-lifecycle`, `project-standards`, `documentation`, `thermo-nuclear-code-quality-review`
 5. Security/Data: `keychain-security`, `data-persistence`, `localization`
 6. Git/Collaboration: `git-workflow`
 7. Meta-skills: `improve`

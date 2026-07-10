@@ -140,10 +140,10 @@ This skill activates on any of these mentions (case-insensitive partial match):
 - `../architecture/SKILL.md` — when analyzing same-domain architecture patterns
 - `../macos-app-engineering/SKILL.md` — when studying reference UI implementations or UI/UX decisions
 - `../audio-realtime/SKILL.md` — when studying reference audio pipelines
-- `../code-review/SKILL.md` — when reviewing changes inspired by references
+- `../thermo-nuclear-code-quality-review/SKILL.md` — when reviewing changes inspired by references
 
 ## References
 
 - `../architecture/SKILL.md`
-- `../code-review/SKILL.md`
+- `../thermo-nuclear-code-quality-review/SKILL.md`
 - `../macos-app-engineering/SKILL.md`

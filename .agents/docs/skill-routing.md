@@ -92,7 +92,7 @@ When inspecting code outside this repository, use this source order:
 
 **Complementary:** `swift-conventions`
 
-Use `code-review` for review output; it always includes `thermo-nuclear-code-quality-review` for structural maintainability analysis.
+Use `thermo-nuclear-code-quality-review` for review output, semaforo severity, and strict structural maintainability analysis.
 
 **Example:** "Extract duplicate audio logic into a reusable service" → `code-quality`
 
@@ -215,7 +215,6 @@ Use `code-review` for review output; it always includes `thermo-nuclear-code-qua
 | `architecture` | `.agents/skills/architecture/SKILL.md` | Module boundaries, Clean Architecture, DI |
 | `audio-realtime` | `.agents/skills/audio-realtime/SKILL.md` | AVAudioSourceNode, ProcessTap, underruns |
 | `code-quality` | `.agents/skills/code-quality/SKILL.md` | Readability, refactoring |
-| `code-review` | `.agents/skills/code-review/SKILL.md` | Semáforo review with mandatory thermo-nuclear structural pass |
 | `data-persistence` | `.agents/skills/data-persistence/SKILL.md` | Storage design, migrations |
 | `debugging-strategies` | `.agents/skills/debugging-strategies/SKILL.md` | Crash and flaky investigation |
 | `documentation` | `.agents/skills/documentation/SKILL.md` | DocC and API docs |
@@ -228,3 +227,4 @@ Use `code-review` for review output; it always includes `thermo-nuclear-code-qua
 | `task-lifecycle` | `.agents/skills/task-lifecycle/SKILL.md` | Risk classification and lifecycle policy |
 | `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest code structure, mocks, async tests |
 | `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/SKILL.md` | Swift 6.2 actor isolation and Sendable fixes |
+| `thermo-nuclear-code-quality-review` | `.agents/skills/thermo-nuclear-code-quality-review/SKILL.md` | Default code review, PR audits, semaforo output, and strict maintainability analysis |

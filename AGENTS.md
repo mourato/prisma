@@ -177,7 +177,7 @@ Rules:
 - **Before push/merge (hard gates, no exceptions):**
   - `make build-test`
   - `make lint` (mandatory for all Full-lane changes)
-- **Code review:** Full semáforo review with the mandatory thermo-nuclear structural pass — every finding tagged 🔴 Critical (breaks a Hard Constraint, safety/data-integrity risk, structural regression, or blocks merge), 🟡 Medium (should fix before merge but not a hard blocker on its own), or 🟢 Minor (style/nit, fix opportunistically). Fix all 🔴 and 🟡 findings before merge; 🟢 findings may be deferred to a follow-up issue.
+- **Code review:** Full thermo-nuclear semáforo review — every finding tagged 🔴 Critical (breaks a Hard Constraint, safety/data-integrity risk, structural regression, or blocks merge), 🟡 Medium (should fix before merge but not a hard blocker on its own), or 🟢 Minor (style/nit, fix opportunistically). Fix all 🔴 and 🟡 findings before merge; 🟢 findings may be deferred to a follow-up issue.
 
 ### Scoped Validation Intelligence (Mandatory During Iteration)
 
@@ -199,7 +199,7 @@ For every task, leave auditable evidence in the PR description, issue comment, o
 | Lane     | Required quality gates                                     | Required evidence                                                                                                                        |
 | -------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Fast** | Iteration scoped checks + `make scope-check`                 | Risk level, reusable-block decision (reuse/extend/create), scoped commands executed, escalation rationale (if any), test result summary  |
-| **Full** | Iteration scoped checks + `make build-test` + `make lint`     | Risk level, reusable-block decision, semáforo review outcome including thermo-nuclear structural pass, scoped commands executed, escalation rationale (if any), test/build result summary |
+| **Full** | Iteration scoped checks + `make build-test` + `make lint`     | Risk level, reusable-block decision, thermo-nuclear semáforo review outcome, scoped commands executed, escalation rationale (if any), test/build result summary |
 
 ### PR & Merge Policy
 
@@ -298,7 +298,7 @@ If a task or agent deviates from a hard constraint, or an exception is genuinely
 - Did I run the right scoped checks during iteration, and the right lane gate at merge?
 - Have I recorded commands/results and assumptions as evidence?
 
-**Pass 2 — Structural (thermo-nuclear quality check, mandatory inside code review):**
+**Pass 2 — Structural (thermo-nuclear quality check, mandatory for code review):**
 - Is there a "code judo" move that would make this dramatically simpler?
 - Does this change improve or worsen the local architecture?
 - Did I add branching complexity where a better abstraction should exist?

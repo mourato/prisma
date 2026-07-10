@@ -81,6 +81,13 @@ honor its STOP conditions, and update your row when done.
 - Not audited: source-code implementation, runtime UI behavior, Swift test coverage, Makefile target implementation, CI internals, release/build infra, and broad non-UI skills beyond boundary checks.
 - Reuse decision: consolidate ordinary macOS UI/app guidance into one new `macos-app-engineering` skill while keeping `accessibility-audit`, `localization`, `menubar`, `code-quality`, `swift-conventions`, `code-review`, `thermo-nuclear-code-quality-review`, `quality-assurance`, and `task-lifecycle` separate. Do not merge code-quality and Swift conventions in this pass.
 
+## 2026-07-10 Code Review Skill Consolidation Scope
+
+- Effort: plan-focused follow-up for making the stricter thermo review style the default Prisma code-review flow.
+- Audited: `code-review`, `thermo-nuclear-code-quality-review`, `code-quality`, `task-lifecycle`, `quality-assurance`, `git-workflow`, `project-standards`, `benchmarking`, `.agents/SKILLS_INDEX.md`, `.agents/skills/SKILLS_TAXONOMY.md`, `.agents/docs/skill-routing.md`, and `AGENTS.md`.
+- Not audited: source-code implementation, runtime app behavior, Swift tests, CI internals, release/build infra, and domain-specialist review checklists beyond routing references.
+- Reuse decision: absorb the useful findings-format, severity, technical checklist, and semaforo output contract from `code-review` into `thermo-nuclear-code-quality-review`, then remove `code-review` as a separate skill. Keep `code-quality`, `task-lifecycle`, and `quality-assurance` separate.
+
 ## Findings
 
 | # | Finding | Category | Impact | Effort | Risk | Evidence |
@@ -137,6 +144,7 @@ honor its STOP conditions, and update your row when done.
 | 026 | Fix recording duration width for long meetings | P1 | S | 025 for merge-order stability only | DONE |
 | 027 | Replace deferred-save switches and remove the Context Resources gate | P1 | M | - | DONE |
 | 028 | Consolidate macOS UI guidance into one primary skill | P1 | M | - | DONE |
+| 029 | Make thermo-nuclear review the default code-review skill | P1 | M | - | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -161,6 +169,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - 026 is functionally independent but should run after 025 if both are queued together because both may touch recording-indicator sizing utilities and tests.
 - 027 can run independently. It must preserve legacy context-source behavior during decoding while removing the user-facing global context gate from save-backed mode editing.
 - 028 can run independently. It is documentation/guidance-only and must not modify app source. It should consolidate `native-app-designer`, `swiftui-patterns`, `macos-development`, and `preview-coverage` into `macos-app-engineering` while preserving specialist skills for accessibility, localization, menu bar behavior, code quality, Swift conventions, QA, task lifecycle, and review.
+- 029 can run independently after 028. It is documentation/guidance-only and must not modify app source. It should make `thermo-nuclear-code-quality-review` the default review skill and remove `code-review` after migrating findings format, severity, and technical checklist coverage.
 
 ## Committee review notes
 
@@ -192,3 +201,4 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - Copy VoiceInk beta Settings wholesale into Prisma: rejected because Prisma already has `SettingsListGroup`, `SettingsScrollableContent`, localization/search contracts, and a different settings shell. Adopt the native control anatomy, not the entire implementation.
 - Keep `DSMenuSelect` as the generic Settings picker default: rejected because VoiceInk beta uses native pickers for ordinary Settings values and reserves `Menu` customization for action menus or specialized surfaces.
 - Merge `code-quality` and `swift-conventions` as part of plan 028: rejected for this pass because their current boundary is already clear and the primary overlap problem is in macOS UI/app guidance.
+- Keep `code-review` as a thin wrapper around thermo: rejected because the user's requested direction is to make the thermo review tone/depth the default and absorb any useful output-format gaps into thermo.

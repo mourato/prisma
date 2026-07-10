@@ -18,7 +18,7 @@ Use this skill as the lightweight router for Prisma task execution.
 - This skill owns macro flow only.
 - Use `../quality-assurance/SKILL.md` for validation commands and escalation.
 - Use `../git-workflow/SKILL.md` for Git operations.
-- Use `../code-review/SKILL.md` for findings format; review includes the mandatory `../thermo-nuclear-code-quality-review/SKILL.md` pass.
+- Use `../thermo-nuclear-code-quality-review/SKILL.md` for findings format, semaforo severity, and strict structural review.
 
 ## When to Use
 
@@ -44,7 +44,7 @@ When uncertain, choose the higher risk. High triggers override Medium.
 4. Use `git-workflow` for branch/commit mechanics when the task needs a branch.
 5. Implement in small slices.
 6. Use `quality-assurance` for targeted checks, narrow builds, scope checks, and lane gates.
-7. Before push/merge, use `code-review`; Full lane requires semaforo review plus the mandatory thermo structural pass.
+7. Before push/merge, use `thermo-nuclear-code-quality-review`; Full lane requires semaforo review with the thermo structural bar.
 8. Fix Critical/Medium review findings, re-run required gates, then integrate and clean up.
 
 ## Lane Gates
@@ -67,5 +67,4 @@ Always report:
 
 - `../quality-assurance/SKILL.md`
 - `../git-workflow/SKILL.md`
-- `../code-review/SKILL.md`
 - `../thermo-nuclear-code-quality-review/SKILL.md`

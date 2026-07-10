@@ -1,29 +1,32 @@
 ---
 name: thermo-nuclear-code-quality-review
-description: Run an extremely strict maintainability review for abstraction quality, giant files, and spaghetti-condition growth. Use for a thermo-nuclear code quality review, thermonuclear review, deep code quality audit, or especially harsh maintainability review.
-disable-model-invocation: true
+description: Default Prisma code review skill. Use for "review this change", "do a code review", "audit this PR", "find risks before merge", thermo-nuclear review, deep code-quality audit, or especially strict maintainability review.
 ---
 
 # Thermo-Nuclear Code Quality Review
 
 ## Role
 
-Use this skill as the strictest maintainability review mode for structural quality, abstraction quality, large-file risk, and spaghetti-condition growth.
+Use this skill as Prisma's default code review owner and strictest maintainability review mode.
+
+- Own review findings, severity framing, semaforo output, and approval bar.
+- Own structural quality, abstraction quality, large-file risk, and spaghetti-condition analysis.
+- Cover correctness, regression risk, safety, privacy, performance, UX, testability, and missing verification.
+- Keep the review direct, demanding, and actionable.
 
 ## Scope Boundary
 
-- This skill owns unusually strict code-quality review prompts and approval bars.
-- This skill is the mandatory structural maintainability pass for every `../code-review/SKILL.md` review.
+- This skill owns code review findings, severity framing, semaforo output, strict code-quality review prompts, and approval bars.
 - It does not replace `../code-quality/SKILL.md` for everyday readability/refactoring guidance.
-- It does not own semáforo review formatting; use `../code-review/SKILL.md` for the final findings format and severity framing.
+- Use `../task-lifecycle/SKILL.md` for deciding when review happens and which risk lane applies.
+- Use `../quality-assurance/SKILL.md` for validation commands and merge gates.
+- Use subsystem skills for domain-specific review details when a change touches specialized areas.
 
 ## When to Use
 
-Use this skill when the user asks for a thermo-nuclear code quality review, thermonuclear review, deep code quality audit, or especially harsh maintainability review.
+Use this skill when the user asks to review a change, do a code review, audit a PR, find risks before merge, produce a semaforo/traffic-light findings report, run a thermo-nuclear review, perform a deep code-quality audit, or apply an especially strict maintainability review.
 
-Also use this skill whenever `../code-review/SKILL.md` is used. A normal "code review" in Prisma must include this structural pass.
-
-Use this skill for an unusually strict review focused on implementation quality, maintainability, abstraction quality, and codebase health.
+Use this skill for the default Prisma review flow. Normal code review should start here, not through a wrapper skill.
 
 Above all, this skill should push the reviewer to be **ambitious** about code structure. Do not merely identify local cleanup opportunities. Actively search for "code judo" moves: restructurings that preserve behavior while making the implementation dramatically simpler, smaller, more direct, and more elegant.
 
@@ -36,6 +39,30 @@ Start from this baseline:
 > Work to improve abstractions, modularity, reduce Spaghetti code, improve succinctness and legibility.
 > Be ambitious, if there is a clear path to improving the implementation that involves restructuring some of the codebase, go for it.
 > Be extremely thorough and rigorous. Measure twice, cut once.
+
+## Review Scope
+
+Before judging a change:
+
+- List commits and touched files.
+- Separate behavior changes from structural refactors.
+- Identify the affected subsystem and any specialist skill that should inform the review.
+- Check the verification evidence already provided by the author or agent.
+- Distinguish changed-path failures from known baseline noise.
+
+## Technical Checklist
+
+Review the change set for:
+
+- **Correctness and concurrency**: actor isolation, `@MainActor`, races, cancellation, ordering, impossible states, and stuck states.
+- **Security and privacy**: secrets, sensitive data, transcript/file-path leakage, permissions, redaction, and least privilege.
+- **Performance**: hot paths, allocations, repeated derived work, observation/Combine churn, async sequencing, and UI rendering cost.
+- **UX and product behavior**: settings placement, invalid states, predictable reset behavior, capability gating, feedback, and native interaction expectations.
+- **Maintainability**: duplication, cohesion, coupling, naming, abstraction quality, file size, and spaghetti-growth risk.
+- **Testability**: injection points, pure logic coverage, mocks/fakes, async tests, and missing regression tests.
+- **Localization and accessibility**: new UI strings use localization keys, removed strings clean up locale files, and interactive UI has meaningful accessibility labels/hints when relevant.
+- **Failure paths**: on error/cancel/retry, the system returns to a sane state.
+- **Logging**: logs avoid PII and use consistent severity/signatures.
 
 ## Non-Negotiable Additional Standards
 
@@ -168,7 +195,24 @@ Good phrases:
 - `i think there's a code-judo move here that makes this much simpler. can we reframe this so these branches disappear?`
 - `this refactor moves complexity around, but doesn't really delete it. is there a way to make the model itself simpler?`
 
-## Output Expectations
+## Output Contract
+
+Findings lead the response. Use a concise semaforo/traffic-light table when there are findings.
+
+Each finding should include:
+
+- severity
+- area
+- file/symbol reference
+- finding
+- impact
+- recommendation
+
+Severity:
+
+- **Critical**: crash risk, data loss, security/user harm, hard-constraint breach, structural regression, or merge blocker.
+- **Medium**: confusing behavior, maintainability debt, performance regression, missing test/verification, or should-fix-before-merge issue.
+- **Low**: optional clarity, style, or opportunistic refactor note.
 
 Prioritize findings in this order:
 
@@ -182,6 +226,17 @@ Prioritize findings in this order:
 
 Do not flood the review with low-value nits if there are larger structural issues.
 Prefer a smaller number of high-conviction comments over a long list of cosmetic notes.
+
+After findings, include open questions or assumptions when they materially affect review confidence. Keep summaries brief and secondary.
+
+## Review Workflow
+
+1. Inspect commits and touched files.
+2. Run the strict structural maintainability pass using the standards below.
+3. Run the technical/product/safety checklist above.
+4. Check validation evidence against the risk lane.
+5. Produce semaforo findings with file/symbol references.
+6. If the operator asked the reviewer to remediate findings, fix all Critical and Medium findings before merge; Low findings may be deferred when explicitly justified.
 
 ## Approval Bar
 

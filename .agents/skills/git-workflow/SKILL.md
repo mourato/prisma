@@ -18,7 +18,7 @@ Use this skill for Prisma-specific Git mechanics.
 
 - Use `../task-lifecycle/SKILL.md` for risk classification and lifecycle sequencing.
 - Use `../quality-assurance/SKILL.md` for concrete validation commands and merge gates.
-- Use `../code-review/SKILL.md` for review findings; it includes the mandatory structural pass.
+- Use `../thermo-nuclear-code-quality-review/SKILL.md` for review findings, semaforo severity, and strict structural review.
 
 ## When to Use
 
@@ -78,7 +78,6 @@ For rebase, cherry-pick, bisect, or reflog recovery, use standard Git commands d
 
 - `../task-lifecycle/SKILL.md`
 - `../quality-assurance/SKILL.md`
-- `../code-review/SKILL.md`
 - `../thermo-nuclear-code-quality-review/SKILL.md`
 
 ## References

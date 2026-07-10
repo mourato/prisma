@@ -152,7 +152,7 @@ Compact-mode notes:
 
 - `../task-lifecycle/SKILL.md`
 - `../testing-xctest/SKILL.md`
-- `../code-review/SKILL.md`
+- `../thermo-nuclear-code-quality-review/SKILL.md`
 
 ## Verification and Automation
 

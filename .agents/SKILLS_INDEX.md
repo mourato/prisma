@@ -11,7 +11,6 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 | `architecture` | `.agents/skills/architecture/` | Design module boundaries, apply Clean Architecture, refactor architecture, define dependency injection |
 | `audio-realtime` | `.agents/skills/audio-realtime/` | AVAudioSourceNode, AudioRecorder, ProcessTap, audio glitches, underruns, low-latency optimization |
 | `code-quality` | `.agents/skills/code-quality/` | Improve code readability, rename for clarity, refactor duplicated logic, apply clean code conventions |
-| `code-review` | `.agents/skills/code-review/` | Review changes, do semáforo review (🔴/🟡/🟢), audit PRs, find risks before merge; always includes thermo-nuclear structural analysis |
 | `data-persistence` | `.agents/skills/data-persistence/` | Store/load data, design repositories, plan migrations, implement synchronization |
 | `debugging-strategies` | `.agents/skills/debugging-strategies/` | Debug bugs, investigate crashes, analyze flaky behavior, trace unknown root causes |
 | `documentation` | `.agents/skills/documentation/` | Write/update documentation, add DocC comments, improve MARK organization, research API docs |
@@ -29,7 +28,7 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 | `swift-conventions` | `.agents/skills/swift-conventions/` | Apply Swift style conventions, improve type safety, refactor API naming, organize Swift modules |
 | `task-lifecycle` | `.agents/skills/task-lifecycle/` | Run task lifecycle, classify risk lane, prepare implementation workflow, enforce pre-merge gates |
 | `testing-xctest` | `.agents/skills/testing-xctest/` | Write XCTest code, structure async and `@MainActor` tests, build mocks/fakes/spies, and keep test suites maintainable |
-| `thermo-nuclear-code-quality-review` | `.agents/skills/thermo-nuclear-code-quality-review/` | Run the strictest maintainability review for abstraction quality, giant files, and spaghetti-condition growth |
+| `thermo-nuclear-code-quality-review` | `.agents/skills/thermo-nuclear-code-quality-review/` | Default code review skill: review changes, audit PRs, find risks before merge, produce semaforo findings, and run strict maintainability analysis |
 
 ---
 
@@ -53,7 +52,7 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 - Readability/refactoring: `code-quality`
 - Testing/mocks and test code structure: `testing-xctest`
 - Merge gates and verification policy: `quality-assurance`
-- Code review: `code-review`
+- Code review: `thermo-nuclear-code-quality-review`
 - Architecture boundaries: `architecture`
 
 **Security**
@@ -92,7 +91,7 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 - `task-lifecycle`: risk classification, lane selection, lifecycle sequencing
 - `quality-assurance`: validation strategy, command mapping, escalation to full gates
 - `git-workflow`: branch, commit, PR, and cleanup mechanics
-- `code-review`: findings format, severity framing, semáforo review output; always includes `thermo-nuclear-code-quality-review` for structural code analysis
+- `thermo-nuclear-code-quality-review`: review findings, severity framing, semaforo output, and strict structural maintainability analysis
 
 ---
 
@@ -102,5 +101,4 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 - `macos-app-engineering` → `accessibility-audit` / `localization` / `menubar` (specialist escalation only)
 - `quality-assurance` → `testing-xctest` (general QA → XCTest specifics)
 - `observability-diagnostics` → `debugging-strategies` (diagnostic data supports investigation)
-- `code-review` → `thermo-nuclear-code-quality-review` (mandatory structural maintainability pass)
-- `code-review` → other skills (review may escalate to specific domain)
+- `thermo-nuclear-code-quality-review` → `task-lifecycle` / `quality-assurance` / other skills (review may escalate to lane, validation, or subsystem specialists)

@@ -26,7 +26,7 @@ Practical rules for making implementation code simpler, more direct, and easier 
 
 - Use this skill for language-agnostic readability and maintainability principles.
 - Use `../swift-conventions/SKILL.md` when the task is specifically about Swift syntax, type-system idioms, or Swift API style.
-- Use `../thermo-nuclear-code-quality-review/SKILL.md` for code-review or audit mode, especially when approval bars, blockers, or structural findings are needed.
+- Use `../thermo-nuclear-code-quality-review/SKILL.md` for code review or audit mode, especially when approval bars, blockers, severity framing, or structural findings are needed.
 - Use `../architecture/SKILL.md` when the question is primarily about module boundaries, dependency direction, or Clean Architecture ownership.
 
 ## 1. Refactoring Posture
@@ -88,7 +88,6 @@ Ask:
 - `../swift-conventions/SKILL.md`
 - `../thermo-nuclear-code-quality-review/SKILL.md`
 - `../architecture/SKILL.md`
-- `../code-review/SKILL.md`
 - `../quality-assurance/SKILL.md`
 
 ## References
@@ -96,7 +95,6 @@ Ask:
 - `../swift-conventions/SKILL.md`
 - `../thermo-nuclear-code-quality-review/SKILL.md`
 - `../architecture/SKILL.md`
-- `../code-review/SKILL.md`
 - `../quality-assurance/SKILL.md`
 
 ## 2026-06-30 Progression Drill
