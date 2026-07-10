@@ -15,16 +15,6 @@ public struct PostProcessingContextCaptureResult: Sendable {
     }
 }
 
-struct PostProcessingContextCaptureRequest {
-    let meeting: Meeting
-    let settings: AppSettingsStore
-    let activeTabURL: String?
-    let calendarContext: String?
-    let isDictationMode: Bool
-    let contextSourcePolicy: DictationContextSourcePolicy?
-    let includeWindowOCR: Bool?
-}
-
 @MainActor
 public final class AssistantContextCaptureService {
     private let contextAwarenessService: any ContextAwarenessServiceProtocol
@@ -117,7 +107,33 @@ public final class AssistantContextCaptureService {
         return (context, items)
     }
 
-    func capturePostProcessingContextWithTimeout(
+    // Public compatibility surface; keep the existing call shape for external clients.
+    // swiftlint:disable:next function_parameter_count
+    public func capturePostProcessingContextWithTimeout(
+        for meeting: Meeting,
+        settings: AppSettingsStore,
+        activeTabURL: String?,
+        calendarContext: String?,
+        isDictationMode: Bool,
+        contextSourcePolicy: DictationContextSourcePolicy? = nil,
+        includeWindowOCR: Bool? = nil,
+        timeoutNanoseconds: UInt64
+    ) async -> PostProcessingContextCaptureResult {
+        await capturePostProcessingContextWithTimeout(
+            PostProcessingContextCaptureRequest(
+                meeting: meeting,
+                settings: settings,
+                activeTabURL: activeTabURL,
+                calendarContext: calendarContext,
+                isDictationMode: isDictationMode,
+                contextSourcePolicy: contextSourcePolicy,
+                includeWindowOCR: includeWindowOCR
+            ),
+            timeoutNanoseconds: timeoutNanoseconds
+        )
+    }
+
+    private func capturePostProcessingContextWithTimeout(
         _ request: PostProcessingContextCaptureRequest,
         timeoutNanoseconds: UInt64
     ) async -> PostProcessingContextCaptureResult {
@@ -251,20 +267,29 @@ public final class AssistantContextCaptureService {
         }
     }
 
+    private struct PostProcessingContextCaptureRequest {
+        let meeting: Meeting
+        let settings: AppSettingsStore
+        let activeTabURL: String?
+        let calendarContext: String?
+        let isDictationMode: Bool
+        let contextSourcePolicy: DictationContextSourcePolicy?
+        let includeWindowOCR: Bool?
+    }
+
     private func effectiveCaptureOptions(
         settings: AppSettingsStore,
         contextSourcePolicy: DictationContextSourcePolicy?,
         includeWindowOCR: Bool?
     ) -> EffectiveContextCaptureOptions {
-        let globalContextFallbackEnabled = contextSourcePolicy == nil ? settings.contextAwarenessEnabled : true
-        return EffectiveContextCaptureOptions(
+        EffectiveContextCaptureOptions(
             includeClipboard: contextSourcePolicy?.includeClipboard
-                ?? (globalContextFallbackEnabled && settings.contextAwarenessIncludeClipboard),
+                ?? settings.contextAwarenessIncludeClipboard,
             includeWindowOCR: includeWindowOCR
                 ?? contextSourcePolicy?.includeWindowOCR
-                ?? (globalContextFallbackEnabled && settings.contextAwarenessIncludeWindowOCR),
+                ?? settings.contextAwarenessIncludeWindowOCR,
             includeAccessibilityText: contextSourcePolicy?.includeAccessibilityText
-                ?? (globalContextFallbackEnabled && settings.contextAwarenessIncludeAccessibilityText),
+                ?? settings.contextAwarenessIncludeAccessibilityText,
             redactSensitiveData: contextSourcePolicy?.redactSensitiveData ?? settings.contextAwarenessRedactSensitiveData
         )
     }

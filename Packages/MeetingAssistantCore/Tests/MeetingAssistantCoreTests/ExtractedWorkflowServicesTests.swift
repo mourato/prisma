@@ -61,11 +61,25 @@ final class ExtractedWorkflowServicesTests: XCTestCase {
         XCTAssertEqual(result.title, "Design Review")
     }
 
-    func testAssistantContextCaptureService_ReturnsActiveTabWhenContextAwarenessDisabled() async {
+    func testAssistantContextCaptureService_GlobalDisabledStillUsesIndividualContextSources() async {
         settings.contextAwarenessEnabled = false
+        settings.contextAwarenessIncludeAccessibilityText = true
+        settings.contextAwarenessIncludeClipboard = false
+        settings.contextAwarenessIncludeWindowOCR = false
+        settings.contextAwarenessRedactSensitiveData = false
+        settings.contextAwarenessExcludedBundleIDs = []
 
+        let contextService = MockContextAwarenessService()
+        contextService.snapshot = ContextAwarenessSnapshot(
+            activeAppName: "Safari",
+            activeWindowTitle: nil,
+            activeAccessibilityText: "Visible text",
+            clipboardText: nil,
+            activeWindowOCRText: nil
+        )
+        contextService.context = "CONTEXT_METADATA\n- Focused UI text (Accessibility):\nVisible text"
         let service = AssistantContextCaptureService(
-            contextAwarenessService: MockContextAwarenessService(),
+            contextAwarenessService: contextService,
             textContextProvider: MockTextContextProvider(text: nil),
             textContextGuardrails: TextContextGuardrails(),
             textContextPolicy: .default,
@@ -81,9 +95,55 @@ final class ExtractedWorkflowServicesTests: XCTestCase {
             isDictationMode: false
         )
 
+        XCTAssertEqual(contextService.lastOptions?.includeAccessibilityText, true)
+        XCTAssertTrue(result.context?.contains("Visible text") == true)
+        XCTAssertEqual(
+            result.items.map(\.source),
+            [
+                TranscriptionContextItem.Source.activeApp,
+                .accessibilityText,
+                .activeTabURL,
+            ]
+        )
+    }
+
+    func testAssistantContextCaptureService_NoSelectedGlobalSourcesSkipsContextCapture() async {
+        settings.contextAwarenessEnabled = true
+        settings.contextAwarenessIncludeAccessibilityText = false
+        settings.contextAwarenessIncludeClipboard = false
+        settings.contextAwarenessIncludeWindowOCR = false
+        settings.contextAwarenessRedactSensitiveData = true
+        settings.contextAwarenessExcludedBundleIDs = []
+
+        let contextService = MockContextAwarenessService()
+        contextService.snapshot = ContextAwarenessSnapshot(
+            activeAppName: "Safari",
+            activeWindowTitle: "Draft",
+            activeAccessibilityText: "Visible text",
+            clipboardText: "Clipboard",
+            activeWindowOCRText: "OCR"
+        )
+        contextService.context = "CONTEXT_METADATA\n- Active app: Safari"
+        let service = AssistantContextCaptureService(
+            contextAwarenessService: contextService,
+            textContextProvider: MockTextContextProvider(text: "Focused draft"),
+            textContextGuardrails: TextContextGuardrails(),
+            textContextPolicy: .default,
+            isAccessibilityTrusted: { true },
+            requestAccessibilityPermission: {}
+        )
+
+        let result = await service.capturePostProcessingContext(
+            for: Meeting(app: .unknown, capturePurpose: .dictation),
+            settings: settings,
+            activeTabURL: nil,
+            calendarContext: nil,
+            isDictationMode: true
+        )
+
         XCTAssertNil(result.context)
-        XCTAssertEqual(result.items.map(\.source), [TranscriptionContextItem.Source.activeTabURL])
-        XCTAssertEqual(result.items.first?.text, "https://example.com")
+        XCTAssertEqual(result.items, [])
+        XCTAssertNil(contextService.lastOptions)
     }
 
     func testAssistantContextCaptureService_AppendsFocusedTextForDictationFallback() async {

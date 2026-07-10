@@ -120,8 +120,8 @@ public struct DictationStyleEditorSheet: View {
                         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
                 }
 
-                DSCheckboxRow("settings.styles.editor.markdown_output".localized, isOn: $forceMarkdownOutput)
-                DSCheckboxRow("settings.styles.editor.replace_base_prompt".localized, isOn: $replaceBasePrompt)
+                CheckboxRow("settings.styles.editor.markdown_output".localized, isOn: $forceMarkdownOutput)
+                CheckboxRow("settings.styles.editor.replace_base_prompt".localized, isOn: $replaceBasePrompt)
 
                 HStack(spacing: 12) {
                     Text("settings.styles.editor.output_language".localized)
@@ -244,10 +244,10 @@ public struct DictationStyleEditorSheet: View {
     private var contextResourcesSection: some View {
         DSGroup("settings.styles.editor.context_sources".localized, icon: "text.viewfinder") {
             VStack(alignment: .leading, spacing: 10) {
-                DSCheckboxRow("settings.context_awareness.accessibility_text".localized, isOn: $includeAccessibilityText)
-                DSCheckboxRow("settings.context_awareness.clipboard".localized, isOn: $includeClipboard)
-                DSCheckboxRow("settings.context_awareness.window_ocr".localized, isOn: $includeWindowOCR)
-                DSCheckboxRow("settings.context_awareness.redact_sensitive_data".localized, isOn: $redactSensitiveData)
+                CheckboxRow("settings.context_awareness.accessibility_text".localized, isOn: $includeAccessibilityText)
+                CheckboxRow("settings.context_awareness.clipboard".localized, isOn: $includeClipboard)
+                CheckboxRow("settings.context_awareness.window_ocr".localized, isOn: $includeWindowOCR)
+                CheckboxRow("settings.context_awareness.redact_sensitive_data".localized, isOn: $redactSensitiveData)
             }
         }
     }
@@ -462,7 +462,7 @@ public struct DictationStyleEditorSheet: View {
     }
 }
 
-private struct DSCheckboxRow: View {
+private struct CheckboxRow: View {
     private let title: String
     @Binding private var isOn: Bool
 
