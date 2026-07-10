@@ -52,23 +52,42 @@ public struct DSCard<Content: View>: View {
         case .settings:
             if reduceTransparency {
                 shape
-                    .fill(AppDesignSystem.Colors.settingsCardBackground(intensity: settingsSurfaceIntensity))
+                    .fill(
+                        AppDesignSystem.Colors.settingsMaterialCardFill(
+                            reduceTransparency: true,
+                            intensity: settingsSurfaceIntensity
+                        )
+                    )
                     .overlay {
-                        shape.stroke(AppDesignSystem.Colors.settingsCardStroke, lineWidth: 0.5)
+                        shape.stroke(settingsCardStroke, lineWidth: settingsCardStrokeWidth)
                     }
             } else {
                 shape
                     .fill(.regularMaterial)
                     .overlay {
-                        shape.fill(AppDesignSystem.Colors.settingsMaterialCard)
+                        shape.fill(
+                            AppDesignSystem.Colors.settingsMaterialCardFill(
+                                reduceTransparency: false,
+                                intensity: settingsSurfaceIntensity
+                            )
+                        )
                     }
                     .overlay {
-                        shape.stroke(AppDesignSystem.Colors.settingsCardStroke, lineWidth: 0.5)
+                        shape.stroke(settingsCardStroke, lineWidth: settingsCardStrokeWidth)
                     }
             }
         }
     }
 
+    private var settingsCardStroke: Color {
+        AppDesignSystem.Colors.settingsMaterialCardStroke(
+            increaseContrast: AppDesignSystem.Accessibility.increaseContrast
+        )
+    }
+
+    private var settingsCardStrokeWidth: CGFloat {
+        AppDesignSystem.Accessibility.increaseContrast ? 0.75 : 0.5
+    }
 }
 
 #Preview("DSCard") {

@@ -43,7 +43,11 @@ public struct SettingsTitleBarMaterialBackground: View {
         nativeTitleBarBackground
             .overlay(alignment: .bottom) {
                 Rectangle()
-                    .fill(AppDesignSystem.Colors.separator)
+                    .fill(
+                        AppDesignSystem.Colors.settingsTitleBarBottomTreatment(
+                            increaseContrast: AppDesignSystem.Accessibility.increaseContrast
+                        )
+                    )
                     .frame(height: 1)
             }
             .allowsHitTesting(false)

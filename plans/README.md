@@ -169,7 +169,7 @@ honor its STOP conditions, and update your row when done.
 | 030 | Consolidate delivery workflow guidance into one skill | P1 | M | - | DONE |
 | 031 | Consolidate debugging and diagnostic signal guidance | P2 | S | - | DONE |
 | 032 | Optimize agent delivery gates for compact staged validation | P1 | M | - | TODO |
-| 033 | Establish Apple-style motion and material foundation | P1 | M | - | TODO |
+| 033 | Establish Apple-style motion and material foundation | P1 | M | - | DONE |
 | 034 | Make the floating recording indicator structurally ready for fluid interaction | P1 | L | 033 | TODO |
 | 035 | Add immediate press feedback and direct-manipulation controls | P1 | M | 033 | TODO |
 | 036 | Normalize typography and scaled layout in core UI surfaces | P2 | M | 033 | TODO |
