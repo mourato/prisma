@@ -504,7 +504,10 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             return
         }
 
-        animatePanelAlpha(panel, to: 0, duration: 0.1) { [weak self, weak panel] in
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.1
+            panel.animator().alphaValue = 0
+        } completionHandler: { [weak self, weak panel] in
             Task { @MainActor [weak self, weak panel] in
                 guard let self, let panel else { return }
                 guard visibilityTransitionID == transitionID else { return }
@@ -517,14 +520,11 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private func animatePanelAlpha(
         _ panel: NSPanel,
         to alphaValue: CGFloat,
-        duration: TimeInterval,
-        completion: (() -> Void)? = nil
+        duration: TimeInterval
     ) {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = duration
             panel.animator().alphaValue = alphaValue
-        } completionHandler: {
-            completion?()
         }
     }
 
@@ -572,17 +572,18 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     ) -> NSRect? {
         guard let screen = activeTargetScreen(for: panel) else { return nil }
         let screenFrame = screen.visibleFrame
+        let frameSize = panel.frameRect(forContentRect: NSRect(origin: .zero, size: contentSize)).size
 
-        let x = screenFrame.origin.x + (screenFrame.width - contentSize.width) / 2
+        let x = screenFrame.origin.x + (screenFrame.width - frameSize.width) / 2
 
         let y: CGFloat = switch position {
         case .top:
-            screenFrame.origin.y + screenFrame.height - contentSize.height - Constants.screenPadding + Constants.panelShadowInset
+            screenFrame.origin.y + screenFrame.height - frameSize.height - Constants.screenPadding + Constants.panelShadowInset
         case .bottom:
             screenFrame.origin.y + Constants.screenPadding - Constants.panelShadowInset
         }
 
-        return NSRect(origin: NSPoint(x: x, y: y), size: contentSize)
+        return NSRect(origin: NSPoint(x: x, y: y), size: frameSize)
     }
 
     private func activeTargetScreen(for panel: NSPanel) -> NSScreen? {
