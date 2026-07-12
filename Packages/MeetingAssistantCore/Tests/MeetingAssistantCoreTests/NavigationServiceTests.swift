@@ -44,7 +44,7 @@ final class NavigationServiceTests: XCTestCase {
         XCTAssertEqual(NavigationService.shared.settingsSidebarToggleRequestID, initialValue + 1)
     }
 
-    func testSetSettingsSidebarVisiblePublishesCurrentState() {
+    func testSetSettingsSidebarVisibleUpdatesCurrentState() {
         resetNavigationService()
         NavigationService.shared.setSettingsSidebarVisible(false)
 

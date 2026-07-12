@@ -180,7 +180,7 @@ final class AppCommandRouter: ObservableObject {
 
 struct MeetingAssistantCommands: Commands {
     @ObservedObject private var commandRouter = AppCommandRouter.shared
-    @ObservedObject private var navigationService = NavigationService.shared
+    @State private var navigationService = NavigationService.shared
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {

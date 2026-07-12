@@ -1,6 +1,6 @@
 import AppKit
-import Combine
 import MeetingAssistantCoreCommon
+import Observation
 
 public enum RequestedActivitySubroute: Sendable {
     case history
@@ -8,13 +8,14 @@ public enum RequestedActivitySubroute: Sendable {
 
 /// Service to handle navigation and window management across the app.
 @MainActor
-public class NavigationService: ObservableObject {
+@Observable
+public final class NavigationService {
     public static let shared = NavigationService()
 
-    @Published public var requestedSettingsSection: String?
-    @Published public var requestedActivitySubroute: RequestedActivitySubroute?
-    @Published public private(set) var settingsSidebarToggleRequestID: UInt64 = 0
-    @Published public private(set) var isSettingsSidebarVisible = true
+    public var requestedSettingsSection: String?
+    public var requestedActivitySubroute: RequestedActivitySubroute?
+    public private(set) var settingsSidebarToggleRequestID: UInt64 = 0
+    public private(set) var isSettingsSidebarVisible = true
     private var openSettingsHandler: (@MainActor () -> Void)?
     private var openOnboardingHandler: (@MainActor () -> Void)?
     private var hasPendingOpenSettingsRequest = false

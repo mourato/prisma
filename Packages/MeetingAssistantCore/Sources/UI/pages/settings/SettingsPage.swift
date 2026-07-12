@@ -43,7 +43,7 @@ public struct SettingsView: View {
     @State private var enhancementsNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
     @State private var systemRoute: SystemSettingsRoute = .root
     @State private var columnVisibility: NavigationSplitViewVisibility
-    @StateObject private var navigationService = NavigationService.shared
+    @State private var navigationService = NavigationService.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @MainActor
@@ -98,14 +98,15 @@ public struct SettingsView: View {
         .onChange(of: columnVisibility) { _, newValue in
             persistSidebarVisibility(newValue)
         }
-        .onReceive(navigationService.$requestedSettingsSection.compactMap(\.self)) { sectionId in
+        .onChange(of: navigationService.requestedSettingsSection) { _, sectionId in
+            guard let sectionId else { return }
             if let destination = SettingsSection.resolvedDestination(for: sectionId) {
                 selectDestination(destination)
             }
             navigationService.requestedSettingsSection = nil
             consumePendingActivityRoute()
         }
-        .onReceive(navigationService.$settingsSidebarToggleRequestID.dropFirst()) { _ in
+        .onChange(of: navigationService.settingsSidebarToggleRequestID) { _, _ in
             toggleSidebar()
         }
     }
