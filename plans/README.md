@@ -168,7 +168,7 @@ honor its STOP conditions, and update your row when done.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001 | Push transcription-history filtering and limits into persistence | P1 | M | - | TODO |
+| 001 | Push transcription-history filtering and limits into persistence | P1 | M | - | DONE |
 | 002 | Benchmark-gate the Rust audio kernel pilot | P1 | M | - | TODO |
 | 003 | Decide imported-recording meeting behavior | P2 | M | 001 optional | TODO |
 | 004 | Reframe the settings sidebar around user workflows | P1 | S | - | DONE |

@@ -355,6 +355,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
     var loadTranscriptionsCallCount = 0
     var loadAllMetadataCallCount = 0
     var loadMetadataCallCount = 0
+    var metadataQueries: [TranscriptionMetadataQuery] = []
 
     /// Mock data for testing
     var mockTranscriptions: [Transcription] = []
@@ -398,6 +399,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
 
     func loadMetadata(matching query: TranscriptionMetadataQuery) async throws -> [TranscriptionMetadata] {
         loadMetadataCallCount += 1
+        metadataQueries.append(query)
         return allMetadata()
             .filter { metadata in
                 query.includeNonVisibleLifecycleStates || metadata.lifecycleState.isVisibleInHistory
@@ -434,7 +436,9 @@ class MockStorageService: StorageService, @unchecked Sendable {
                     : ""
                 return preview.contains(queryText) || appName.contains(queryText) || meetingTitle.contains(queryText)
             }
-            .sorted { $0.createdAt > $1.createdAt }
+            .sorted { query.sortNewestFirst ? $0.createdAt > $1.createdAt : $0.createdAt < $1.createdAt }
+            .prefix(query.limit.map { max($0, 0) } ?? Int.max)
+            .map { $0 }
     }
 
     func loadModelPerformanceAttempts(matching query: ModelPerformanceAttemptQuery) async throws -> [ModelPerformanceAttempt] {

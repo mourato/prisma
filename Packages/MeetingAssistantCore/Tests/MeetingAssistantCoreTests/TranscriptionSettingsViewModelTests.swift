@@ -109,8 +109,9 @@ extension TranscriptionSettingsViewModelTests {
         XCTAssertEqual(teamsMetadata?.duration ?? 0, 60, accuracy: 0.1)
         XCTAssertEqual(zoomMetadata?.appRawValue, MeetingApp.zoom.rawValue)
         XCTAssertEqual(zoomMetadata?.duration ?? 0, 120, accuracy: 0.1)
-        XCTAssertEqual(storage.loadAllMetadataCallCount, 1)
-        XCTAssertEqual(storage.loadMetadataCallCount, 0)
+        XCTAssertEqual(storage.loadAllMetadataCallCount, 0)
+        XCTAssertEqual(storage.loadMetadataCallCount, 1)
+        XCTAssertEqual(storage.metadataQueries.last?.limit, 250)
     }
 
     func testLoadTranscriptions_IncludesFailedEmptyHistoryItems() async {
@@ -137,6 +138,7 @@ extension TranscriptionSettingsViewModelTests {
         XCTAssertEqual(viewModel.transcriptions.count, 1)
         XCTAssertEqual(viewModel.transcriptions.first?.id, failedId)
         XCTAssertEqual(viewModel.transcriptions.first?.lifecycleState, .failed)
+        XCTAssertEqual(storage.loadMetadataCallCount, 1)
     }
 
     func testSelectTranscriptionLoadsFullData() async {
@@ -305,13 +307,64 @@ extension TranscriptionSettingsViewModelTests {
         ]
 
         await viewModel.loadTranscriptions()
-        XCTAssertEqual(storage.loadAllMetadataCallCount, 1)
 
         viewModel.sourceFilter = .dictations
         viewModel.searchText = "quick"
         viewModel.dateFilter = .allEntries
 
         XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
+        XCTAssertEqual(storage.loadAllMetadataCallCount, 0)
+        XCTAssertEqual(storage.loadMetadataCallCount, 1)
+        XCTAssertEqual(storage.metadataQueries.last?.sourceFilter, .all)
+        XCTAssertEqual(storage.metadataQueries.last?.dateFilter, .allEntries)
+        XCTAssertEqual(storage.metadataQueries.last?.searchText, "")
+    }
+
+    func testLoadTranscriptions_UsesRawAppFilterInMetadataQuery() async {
+        let zoom = Transcription(
+            id: UUID(),
+            meeting: Meeting(id: UUID(), app: .zoom, startTime: Date()),
+            segments: [],
+            text: "Zoom notes",
+            rawText: "Zoom notes"
+        )
+        let teams = Transcription(
+            id: UUID(),
+            meeting: Meeting(id: UUID(), app: .microsoftTeams, startTime: Date()),
+            segments: [],
+            text: "Teams notes",
+            rawText: "Teams notes"
+        )
+        storage.mockTranscriptions = [zoom, teams]
+        viewModel.appFilterId = "raw:\(MeetingApp.zoom.rawValue)"
+
+        await viewModel.loadTranscriptions()
+
+        XCTAssertEqual(viewModel.transcriptions.map(\.id), [zoom.id])
+        XCTAssertEqual(storage.loadMetadataCallCount, 1)
+        XCTAssertEqual(storage.loadAllMetadataCallCount, 0)
+        XCTAssertEqual(storage.metadataQueries.last?.appRawValue, MeetingApp.zoom.rawValue)
+    }
+
+    func testLoadTranscriptions_UsesUnboundedFallbackForBundleAppFilter() async {
+        let transcription = Transcription(
+            id: UUID(),
+            meeting: Meeting(
+                id: UUID(),
+                app: .zoom,
+                appBundleIdentifier: "com.example.zoom",
+                startTime: Date()
+            ),
+            segments: [],
+            text: "Zoom notes",
+            rawText: "Zoom notes"
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.appFilterId = "bundle:com.example.zoom"
+
+        await viewModel.loadTranscriptions()
+
+        XCTAssertEqual(viewModel.transcriptions.map(\.id), [transcription.id])
         XCTAssertEqual(storage.loadAllMetadataCallCount, 1)
         XCTAssertEqual(storage.loadMetadataCallCount, 0)
     }

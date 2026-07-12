@@ -29,6 +29,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         static let rawAppPrefix = "raw:"
         static let bundleAppPrefix = "bundle:"
         static let nameAppPrefix = "name:"
+        static let metadataLimit = 250
     }
 
     public struct QATurn: Identifiable, Hashable, Sendable {
@@ -213,7 +214,21 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         isLoading = true
         loadErrorMessage = nil
         do {
-            transcriptions = try await storage.loadAllMetadata().filter {
+            let metadata = if appFilterId.hasPrefix(FilterConstants.bundleAppPrefix)
+                || appFilterId.hasPrefix(FilterConstants.nameAppPrefix)
+            {
+                try await storage.loadAllMetadata()
+            } else {
+                try await storage.loadMetadata(matching: TranscriptionMetadataQuery(
+                    sourceFilter: .all,
+                    dateFilter: .allEntries,
+                    searchText: "",
+                    appRawValue: rawAppValueFilter,
+                    limit: FilterConstants.metadataLimit
+                ))
+            }
+
+            transcriptions = metadata.filter {
                 $0.lifecycleState == .failed || !($0.duration == 0 && $0.previewText.isEmpty)
             }
             if !appFilterOptions.contains(where: { $0.id == appFilterId }) {
@@ -228,6 +243,12 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             loadErrorMessage = "settings.transcriptions.error_load".localized
         }
         isLoading = false
+    }
+
+    private var rawAppValueFilter: String? {
+        guard appFilterId.hasPrefix(FilterConstants.rawAppPrefix) else { return nil }
+        let rawValue = String(appFilterId.dropFirst(FilterConstants.rawAppPrefix.count))
+        return rawValue.isEmpty ? nil : rawValue
     }
 
     public func loadFullTranscription(id: UUID) async {

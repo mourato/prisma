@@ -192,6 +192,40 @@ final class CoreDataRepositoryTests: XCTestCase {
         XCTAssertEqual(fetched?.segments.first?.text, "Hi")
     }
 
+    func testLoadMetadata_AppliesNewestSortAndLimit() async throws {
+        let storage = FileSystemStorageService(
+            honorsConfiguredRecordingDirectory: false,
+            coreDataStack: stack
+        )
+        let now = Date()
+
+        for offset in 0..<3 {
+            let meeting = MeetingEntity(
+                app: .zoom,
+                capturePurpose: .meeting,
+                startTime: now.addingTimeInterval(TimeInterval(-offset * 60))
+            )
+            try await meetingRepo.saveMeeting(meeting)
+
+            var configuration = TranscriptionEntity.Configuration(
+                text: "Transcription " + String(offset),
+                rawText: "Transcription " + String(offset)
+            )
+            configuration.createdAt = now.addingTimeInterval(TimeInterval(-offset * 60))
+            try await transcriptionRepo.saveTranscription(
+                TranscriptionEntity(meeting: meeting, config: configuration)
+            )
+        }
+
+        let results = try await storage.loadMetadata(
+            matching: TranscriptionMetadataQuery(limit: 2)
+        )
+
+        XCTAssertEqual(results.count, 2)
+        XCTAssertEqual(results.map { $0.previewText }, ["Transcription 0", "Transcription 1"])
+        XCTAssertGreaterThanOrEqual(results[0].createdAt, results[1].createdAt)
+    }
+
     func testSaveAndFetchTranscription_WithCanonicalSummary() async throws {
         // Given
         let meeting = MeetingEntity(app: .googleMeet)

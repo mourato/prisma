@@ -135,6 +135,10 @@ public extension FileSystemStorageService {
             request.fetchBatchSize = 100
             request.relationshipKeyPathsForPrefetching = ["meeting"]
             request.predicate = Self.buildMetadataPredicate(for: query)
+            request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: !query.sortNewestFirst)]
+            if let limit = query.limit {
+                request.fetchLimit = max(limit, 0)
+            }
 
             let results = try context.fetch(request)
             return results.map(Self.convertToMetadata)
@@ -431,6 +435,7 @@ public extension FileSystemStorageService {
         if !trimmedSearch.isEmpty {
             let searchPredicates = [
                 NSPredicate(format: "text CONTAINS[cd] %@", trimmedSearch),
+                NSPredicate(format: "meeting.title CONTAINS[cd] %@", trimmedSearch),
                 NSPredicate(format: "meeting.appDisplayName CONTAINS[cd] %@", trimmedSearch),
                 NSPredicate(format: "meeting.appRawValue CONTAINS[cd] %@", trimmedSearch),
             ]

@@ -161,12 +161,19 @@ public final class FileSystemStorageService: StorageService {
     let coreDataTranscriptionRepository: CoreDataTranscriptionStorageRepository
     let honorsConfiguredRecordingDirectory: Bool
 
-    public init(honorsConfiguredRecordingDirectory: Bool = !AppIdentity.isRunningTests) {
+    public convenience init(honorsConfiguredRecordingDirectory: Bool = !AppIdentity.isRunningTests) {
+        self.init(
+            honorsConfiguredRecordingDirectory: honorsConfiguredRecordingDirectory,
+            coreDataStack: .shared
+        )
+    }
+
+    public init(honorsConfiguredRecordingDirectory: Bool, coreDataStack: CoreDataStack) {
         self.honorsConfiguredRecordingDirectory = honorsConfiguredRecordingDirectory
         let baseDir = AppIdentity.appSupportBaseDirectory(fileManager: .default)
         defaultRecordingsDirectory = baseDir.appendingPathComponent("recordings", isDirectory: true)
         legacyTranscriptsDirectory = baseDir.appendingPathComponent("transcripts", isDirectory: true)
-        coreDataStack = .shared
+        self.coreDataStack = coreDataStack
         coreDataTranscriptionRepository = CoreDataTranscriptionStorageRepository(stack: coreDataStack)
 
         setupDirectories()

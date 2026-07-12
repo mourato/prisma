@@ -180,18 +180,24 @@ public struct TranscriptionMetadataQuery: Hashable, Sendable {
     public let searchText: String
     public let appRawValue: String?
     public let includeNonVisibleLifecycleStates: Bool
+    public let limit: Int?
+    public let sortNewestFirst: Bool
 
     public init(
         sourceFilter: RecordingSourceFilter = .all,
         dateFilter: DateFilter = .allEntries,
         searchText: String = "",
         appRawValue: String? = nil,
-        includeNonVisibleLifecycleStates: Bool = false
+        includeNonVisibleLifecycleStates: Bool = false,
+        limit: Int? = nil,
+        sortNewestFirst: Bool = true
     ) {
         self.sourceFilter = sourceFilter
         self.dateFilter = dateFilter
         self.searchText = searchText
         self.appRawValue = appRawValue
         self.includeNonVisibleLifecycleStates = includeNonVisibleLifecycleStates
+        self.limit = limit
+        self.sortNewestFirst = sortNewestFirst
     }
 }
