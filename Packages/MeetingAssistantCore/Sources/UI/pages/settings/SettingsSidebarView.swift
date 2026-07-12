@@ -46,10 +46,10 @@ struct SettingsSidebarView: View {
         } label: {
             sidebarLabel(for: section)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
         .background(sidebarButtonBackground(for: section))
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         .padding(.horizontal, 8)
