@@ -42,6 +42,31 @@ final class RustEnergyMeterKernelTests: XCTestCase {
         XCTAssertEqual(snapshot.barPowerDBLevels.count, 2)
     }
 
+    func testComputeRmsPeak_UsesUnsafeBufferWithoutChangingInputShape() throws {
+        let ffi = RustAudioKernelFFI(
+            versionImpl: { 1 },
+            computeRmsPeakImpl: { samples, count, outResult in
+                guard let samples, count == 3 else {
+                    return RustAudioKernelFFI.ResultCode.invalidArgument.rawValue
+                }
+                let pointer = outResult!.assumingMemoryBound(to: AKRmsPeakResult.self)
+                pointer.pointee = AKRmsPeakResult(
+                    rms_linear: samples[0],
+                    peak_linear: samples[count - 1]
+                )
+                return RustAudioKernelFFI.ResultCode.ok.rawValue
+            }
+        )
+
+        let samples: [Float] = [0.1, 0.2, 0.3]
+        let result = try XCTUnwrap(samples.withUnsafeBufferPointer { buffer in
+            ffi.computeRmsPeak(samples: buffer)
+        })
+
+        XCTAssertEqual(result.rmsLinear, 0.1, accuracy: 0.001)
+        XCTAssertEqual(result.peakLinear, 0.3, accuracy: 0.001)
+    }
+
     func testMakeMeterSnapshot_WhenFFIFails_FallsBackToSwift() throws {
         let buffer = try makeMonoBuffer(samples: [0.0, 1.0, 0.0, 0.5])
         let swiftSnapshot = try XCTUnwrap(
@@ -123,6 +148,48 @@ final class RustEnergyMeterKernelTests: XCTestCase {
         XCTAssertEqual(rustSnapshot.peakPowerDB, swiftSnapshot.peakPowerDB, accuracy: 0.001)
     }
 
+    func testPerformance_MeterSnapshot_SwiftBaseline() throws {
+        let buffer = try makeBenchmarkBuffer()
+
+        measure {
+            _ = SwiftEnergyMeterKernel.shared.makeMeterSnapshot(from: buffer, barCount: 16)
+        }
+    }
+
+    func testPerformance_MeterSnapshot_RustPilotInjectedNoCopy() throws {
+        let buffer = try makeBenchmarkBuffer()
+        let ffi = RustAudioKernelFFI(
+            versionImpl: { 1 },
+            computeRmsPeakImpl: { _, _, outResult in
+                let pointer = outResult!.assumingMemoryBound(to: AKRmsPeakResult.self)
+                pointer.pointee = AKRmsPeakResult(rms_linear: 0.5, peak_linear: 0.75)
+                return RustAudioKernelFFI.ResultCode.ok.rawValue
+            }
+        )
+        let kernel = RustEnergyMeterKernel(ffi: ffi)
+
+        measure {
+            _ = kernel.makeMeterSnapshot(from: buffer, barCount: 16)
+        }
+    }
+
+    func testPerformance_MeterSnapshot_RustPilotRealDylib() throws {
+        guard let dylibPath = resolveRustDylibPath() else {
+            throw XCTSkip("Rust dylib not staged; run build with MA_RUST_AUDIO_KERNELS_BUILD=on")
+        }
+        setenv("MA_RUST_AUDIO_KERNELS_DYLIB_PATH", dylibPath, 1)
+        guard let ffi = RustAudioKernelFFI.loadFromProcessSymbols() else {
+            throw XCTSkip("Rust dylib does not expose the expected FFI symbols")
+        }
+
+        let buffer = try makeBenchmarkBuffer()
+        let kernel = RustEnergyMeterKernel(ffi: ffi)
+
+        measure {
+            _ = kernel.makeMeterSnapshot(from: buffer, barCount: 16)
+        }
+    }
+
     private func makeMonoBuffer(samples: [Float], sampleRate: Double = 48_000) throws -> AVAudioPCMBuffer {
         let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1))
         let frameCount = AVAudioFrameCount(samples.count)
@@ -136,6 +203,13 @@ final class RustEnergyMeterKernelTests: XCTestCase {
             channelData[0][index] = sample
         }
         return buffer
+    }
+
+    private func makeBenchmarkBuffer() throws -> AVAudioPCMBuffer {
+        let samples = (0..<4_096).map { index in
+            sin(Float(index) * 0.013) * 0.8
+        }
+        return try makeMonoBuffer(samples: samples)
     }
 
     private func makeStereoBuffer(

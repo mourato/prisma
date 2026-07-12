@@ -69,11 +69,17 @@ struct RustAudioKernelFFI: @unchecked Sendable {
     func computeRmsPeak(samples: [Float]) -> RmsPeakResult? {
         guard !samples.isEmpty else { return nil }
 
+        return samples.withUnsafeBufferPointer { buffer in
+            computeRmsPeak(samples: buffer)
+        }
+    }
+
+    func computeRmsPeak(samples: UnsafeBufferPointer<Float>) -> RmsPeakResult? {
+        guard !samples.isEmpty else { return nil }
+
         var ffiResult = AKRmsPeakResult(rms_linear: 0, peak_linear: 0)
-        let ffiCode = samples.withUnsafeBufferPointer { buffer in
-            withUnsafeMutablePointer(to: &ffiResult) { resultPointer in
-                computeRmsPeakImpl(buffer.baseAddress, buffer.count, UnsafeMutableRawPointer(resultPointer))
-            }
+        let ffiCode = withUnsafeMutablePointer(to: &ffiResult) { resultPointer in
+            computeRmsPeakImpl(samples.baseAddress, samples.count, UnsafeMutableRawPointer(resultPointer))
         }
 
         guard ResultCode(rawValue: ffiCode) == .ok else {

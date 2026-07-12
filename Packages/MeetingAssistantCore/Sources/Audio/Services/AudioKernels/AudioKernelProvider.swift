@@ -139,13 +139,6 @@ struct RustEnergyMeterKernel: EnergyMeterKernel {
         let sampleRate = buffer.format.sampleRate
         guard channelCount > 0, frameLength > 0, sampleRate > 0 else { return nil }
 
-        let barPowerDBLevels = SwiftEnergyMeterKernel.makeBarPowerDBLevels(
-            channelData: channelData,
-            channelCount: channelCount,
-            frameLength: frameLength,
-            barCount: max(0, barCount)
-        )
-
         guard channelCount == 1 else {
             logRuntimePath(
                 .swiftFallback,
@@ -166,8 +159,8 @@ struct RustEnergyMeterKernel: EnergyMeterKernel {
             return SwiftEnergyMeterKernel.shared.makeMeterSnapshot(from: buffer, barCount: barCount)
         }
 
-        let samples = Array(UnsafeBufferPointer(start: channelData[0], count: frameLength))
-        guard let ffiResult = ffi.computeRmsPeak(samples: samples) else {
+        let sampleBuffer = UnsafeBufferPointer(start: channelData[0], count: frameLength)
+        guard let ffiResult = ffi.computeRmsPeak(samples: sampleBuffer) else {
             logRuntimePath(
                 .swiftFallback,
                 frameLength: frameLength,
@@ -186,6 +179,12 @@ struct RustEnergyMeterKernel: EnergyMeterKernel {
 
         let averagePowerDB = SwiftEnergyMeterKernel.powerDB(fromLinear: ffiResult.rmsLinear)
         let peakPowerDB = SwiftEnergyMeterKernel.powerDB(fromLinear: ffiResult.peakLinear)
+        let barPowerDBLevels = SwiftEnergyMeterKernel.makeBarPowerDBLevels(
+            channelData: channelData,
+            channelCount: channelCount,
+            frameLength: frameLength,
+            barCount: max(0, barCount)
+        )
 
         return AudioRecordingWorker.MeterSnapshot(
             averagePowerDB: averagePowerDB,
