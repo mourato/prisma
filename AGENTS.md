@@ -21,7 +21,7 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 ### WHAT: Tech Stack & Architecture
 
 - **Platform**: macOS 15+; current and upcoming platform work targets macOS 26 Tahoe while keeping macOS 15 compatibility.
-- **Swift**: Swift 6.2+ is the project policy target for new code; actual compiler/build settings remain the compatibility authority until the Swift 6.2 migration plan is completed.
+- **Swift**: Swift 6.2+ is the project baseline; the app/XPC targets, package tools, and `.swift-version` are aligned to Swift 6.2, with strict concurrency enabled and default actor isolation explicitly kept nonisolated.
 - **UI**: SwiftUI-first with AppKit integrations (`NSStatusItem`, non-activating overlays)
 - **Architecture**: Modular Swift Package (`MeetingAssistantCore` aggregates specialized internal targets)
 - **Canonical agent directory**: `.agents/` (skills, rules, docs, guides)
@@ -51,7 +51,7 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 - New asynchronous coordination uses structured concurrency and `Task.sleep(for:)`; use `DispatchQueue` only for framework callbacks or legacy integration points that cannot yet be expressed with async/await.
 - `Task.detached` requires a concrete justification because it discards inherited actor, priority, and task-local context.
 - AppKit remains appropriate for status items, panels, lifecycle, permissions, and platform capabilities that SwiftUI cannot express reliably.
-- Treat Swift 6.2 approachable-concurrency features as opt-in until the actual project language mode and actor-isolation settings are migrated; keep explicit actor boundaries and `Sendable` reasoning in the meantime.
+- Treat Swift 6.2 approachable-concurrency features as opt-in because the project default actor isolation remains nonisolated; keep explicit actor boundaries and `Sendable` reasoning in the meantime.
 
 ### HOW: Workflow & Tools
 

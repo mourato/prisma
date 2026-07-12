@@ -206,7 +206,7 @@ honor its STOP conditions, and update your row when done.
 | 036 | Normalize typography and scaled layout in core UI surfaces | P2 | M | 033 | DONE |
 | 037 | Refresh onboarding with scalable Apple-style layout and transitions | P2 | M | 033, 036 | DONE |
 | 038 | Define Swift 6.2 and macOS SwiftUI project standards | P1 | M | - | DONE |
-| 039 | Align the project with Swift 6.2 concurrency checks | P1 | L | 038 | TODO |
+| 039 | Align the project with Swift 6.2 concurrency checks | P1 | L | 038 | DONE |
 | 040 | Migrate UI state to Observation at stable boundaries | P1 | L | 039 | TODO |
 | 041 | Modernize SwiftUI interactions and accessibility semantics | P1 | M | 038 | TODO |
 | 042 | Decompose recording runtime hotspots without changing behavior | P1 | L | 039 | TODO |

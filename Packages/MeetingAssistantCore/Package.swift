@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 // Swift Package for MeetingAssistantCore library
 
 import CompilerPluginSupport
@@ -147,5 +147,6 @@ let package = Package(
                 .process("Resources"),
             ]
         ),
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )
