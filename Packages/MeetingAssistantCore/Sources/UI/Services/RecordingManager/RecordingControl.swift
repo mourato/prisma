@@ -573,7 +573,10 @@ public extension RecordingManager {
 
     /// Transcribe an externally recorded audio file.
     /// - Parameter audioURL: Path to the audio file (m4a, mp3, wav).
-    func transcribeExternalAudio(from audioURL: URL) async {
+    func transcribeExternalAudio(
+        from audioURL: URL,
+        capturePurpose: CapturePurpose = .dictation
+    ) async {
         guard !isTranscribing else {
             AppLogger.info("Already transcribing", category: .recordingManager)
             return
@@ -605,15 +608,17 @@ public extension RecordingManager {
         // Create meeting record for imported file
         let meeting = Meeting(
             app: .importedFile,
-            capturePurpose: .meeting,
+            capturePurpose: capturePurpose,
             title: audioURL.deletingPathExtension().lastPathComponent,
             audioFilePath: audioURL.path
         )
         currentMeeting = meeting
-        currentCapturePurpose = .meeting
-        activePostProcessingKernelMode = .meeting
+        currentCapturePurpose = capturePurpose
+        activePostProcessingKernelMode = capturePurpose == .dictation ? .dictation : .meeting
         isMeetingMicrophoneEnabled = false
-        refreshPostProcessingReadinessWarning(for: .meeting)
+        refreshPostProcessingReadinessWarning(
+            for: capturePurpose == .dictation ? .dictation : .meeting
+        )
 
         AppLogger.info(
             "Starting transcription for imported file",

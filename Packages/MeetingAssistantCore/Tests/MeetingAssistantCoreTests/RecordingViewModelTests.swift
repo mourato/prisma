@@ -78,4 +78,14 @@ final class RecordingViewModelTests: XCTestCase {
                 == mockService.transcriptionStatus.statusMessage
         )
     }
+
+    func testTranscribeFile_ForwardsExplicitCapturePurpose() async {
+        await viewModel.transcribeFile(
+            at: URL(fileURLWithPath: "/tmp/imported.wav"),
+            capturePurpose: .meeting
+        )
+
+        XCTAssertTrue(mockService.transcribeExternalAudioCalled)
+        XCTAssertEqual(mockService.lastCapturePurpose, .meeting)
+    }
 }

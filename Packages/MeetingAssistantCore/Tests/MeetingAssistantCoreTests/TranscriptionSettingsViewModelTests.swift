@@ -192,6 +192,7 @@ extension TranscriptionSettingsViewModelTests {
             meetingId: mockId2,
             appName: "Imported",
             appRawValue: MeetingApp.importedFile.rawValue,
+            capturePurpose: .meeting,
             appBundleIdentifier: nil,
             startTime: Date(),
             createdAt: Date(),
@@ -685,6 +686,44 @@ extension TranscriptionSettingsViewModelTests {
 
         XCTAssertEqual(meetingRepository.updatedMeetings.last?.capturePurpose, .dictation)
         XCTAssertEqual(meetingRepository.updatedMeetings.last?.app, .unknown)
+    }
+
+    func testImportedMeetingSupportsConversationAndCanBeRetaggedAsDictation() async throws {
+        let id = UUID()
+        let startTime = Date()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(
+                id: id,
+                app: .importedFile,
+                capturePurpose: .meeting,
+                title: "Imported call",
+                startTime: startTime,
+                endTime: startTime.addingTimeInterval(120)
+            ),
+            text: "Imported meeting",
+            rawText: "Imported meeting"
+        )
+        storage.mockTranscriptions = [transcription]
+        meetingRepository.meetingsByID[id] = MeetingEntity(
+            id: id,
+            app: .importedFile,
+            capturePurpose: .meeting,
+            title: "Imported call",
+            startTime: startTime,
+            endTime: startTime.addingTimeInterval(120)
+        )
+
+        await viewModel.loadTranscriptions()
+        let metadata = try XCTUnwrap(viewModel.transcriptions.first)
+
+        XCTAssertTrue(viewModel.canOpenMeetingConversation(for: metadata))
+
+        await viewModel.updateCapturePurpose(for: metadata, to: .dictation)
+
+        XCTAssertEqual(meetingRepository.updatedMeetings.last?.app, .importedFile)
+        XCTAssertEqual(meetingRepository.updatedMeetings.last?.capturePurpose, .dictation)
+        XCTAssertNil(meetingRepository.updatedMeetings.last?.title)
     }
 
     func testAppFilterOptionsIncludeUnknownAppsByDisplayName() {

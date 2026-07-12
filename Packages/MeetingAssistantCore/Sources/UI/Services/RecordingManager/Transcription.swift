@@ -530,7 +530,7 @@ extension RecordingManager {
         capturePurposeOverride: CapturePurpose? = nil
     ) -> Bool {
         if meeting.app == .importedFile {
-            return false
+            return (capturePurposeOverride ?? meeting.capturePurpose) == .meeting
         }
 
         if let capturePurposeOverride {

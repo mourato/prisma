@@ -20,11 +20,13 @@ public final class ImportAudioUseCase {
     /// - Parameters:
     ///   - sourceURL: URL do arquivo de áudio a importar
     ///   - meetingTitle: Título opcional para a reunião (padrão: nome do arquivo)
+    ///   - capturePurpose: Classificação explícita do conteúdo importado
     /// - Returns: Tupla com entidade de reunião criada e URL do arquivo copiado
     /// - Throws: ImportError se falhar na importação
     public func execute(
         sourceURL: URL,
-        meetingTitle: String? = nil
+        meetingTitle: String? = nil,
+        capturePurpose: CapturePurpose = .dictation
     ) async throws -> (meeting: MeetingEntity, audioFileURL: URL) {
         // Verificar se arquivo fonte existe
         guard audioFileRepository.audioFileExists(at: sourceURL) else {
@@ -34,6 +36,7 @@ public final class ImportAudioUseCase {
         // Criar reunião para arquivo importado
         let meeting = MeetingEntity(
             app: .importedFile,
+            capturePurpose: capturePurpose,
             title: meetingTitle ?? sourceURL.deletingPathExtension().lastPathComponent,
             startTime: Date() // Usar data atual como start time para arquivos importados
         )

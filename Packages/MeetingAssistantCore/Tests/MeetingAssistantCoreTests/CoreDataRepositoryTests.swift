@@ -100,6 +100,22 @@ final class CoreDataRepositoryTests: XCTestCase {
         XCTAssertNil(fetched?.preferredTitle)
     }
 
+    func testSaveMeeting_PreservesTitleForImportedMeeting() async throws {
+        let meeting = MeetingEntity(
+            app: .importedFile,
+            capturePurpose: .meeting,
+            title: "Imported planning call",
+            startTime: Date()
+        )
+
+        try await meetingRepo.saveMeeting(meeting)
+        let fetched = try await meetingRepo.fetchMeeting(by: meeting.id)
+
+        XCTAssertEqual(fetched?.capturePurpose, .meeting)
+        XCTAssertEqual(fetched?.preferredTitle, "Imported planning call")
+        XCTAssertTrue(fetched?.supportsMeetingConversation == true)
+    }
+
     func testSanitizeMeetingOnlyPresentationDataIfNeeded_CleansLegacyNonMeetingRows() async throws {
         let checkpointKey = "coredata.tests.non_meeting_sanitizer.\(UUID().uuidString)"
         UserDefaults.standard.removeObject(forKey: checkpointKey)

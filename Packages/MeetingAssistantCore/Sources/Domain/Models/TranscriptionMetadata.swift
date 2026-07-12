@@ -33,7 +33,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
 
     /// Whether meeting-only conversation features should be enabled.
     public var supportsMeetingConversation: Bool {
-        capturePurpose == .meeting && meetingApp != .importedFile
+        capturePurpose == .meeting
     }
 
     private enum CodingKeys: String, CodingKey {

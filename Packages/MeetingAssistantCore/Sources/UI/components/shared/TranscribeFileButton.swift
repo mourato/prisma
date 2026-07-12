@@ -1,3 +1,4 @@
+import AppKit
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -9,6 +10,8 @@ import SwiftUI
 /// Button component that opens a file picker for importing audio files to transcribe.
 public struct TranscribeFileButton: View {
     @ObservedObject private var viewModel: RecordingViewModel
+    @State private var pendingImportURL: URL?
+    @State private var isShowingImportPurposeDialog = false
 
     public init(viewModel: RecordingViewModel) {
         self.viewModel = viewModel
@@ -20,6 +23,21 @@ public struct TranscribeFileButton: View {
         }
         .buttonStyle(.bordered)
         .disabled(viewModel.isTranscribing)
+        .confirmationDialog(
+            "transcribe.import_audio.purpose.title".localized,
+            isPresented: $isShowingImportPurposeDialog,
+            titleVisibility: .visible
+        ) {
+            Button("transcribe.import_audio.purpose.meeting".localized) {
+                transcribePendingFile(as: .meeting)
+            }
+            Button("transcribe.import_audio.purpose.dictation".localized) {
+                transcribePendingFile(as: .dictation)
+            }
+            Button("common.cancel".localized, role: .cancel) {
+                pendingImportURL = nil
+            }
+        }
     }
 
     private func selectAndTranscribeFile() {
@@ -37,9 +55,17 @@ public struct TranscribeFileButton: View {
         panel.prompt = "transcribe.import_audio.panel.prompt".localized
 
         if panel.runModal() == .OK, let url = panel.url {
-            Task {
-                await viewModel.transcribeFile(at: url)
-            }
+            pendingImportURL = url
+            isShowingImportPurposeDialog = true
+        }
+    }
+
+    private func transcribePendingFile(as capturePurpose: CapturePurpose) {
+        guard let pendingImportURL else { return }
+        self.pendingImportURL = nil
+
+        Task {
+            await viewModel.transcribeFile(at: pendingImportURL, capturePurpose: capturePurpose)
         }
     }
 }

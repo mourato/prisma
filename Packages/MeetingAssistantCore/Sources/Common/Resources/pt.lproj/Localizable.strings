@@ -1016,6 +1016,9 @@
 "transcribe.import_audio" = "Importar Áudio";
 "transcribe.import_audio.panel.message" = "Selecione um arquivo de áudio para transcrever";
 "transcribe.import_audio.panel.prompt" = "Transcrever";
+"transcribe.import_audio.purpose.title" = "Como o Prisma deve classificar esta importação?";
+"transcribe.import_audio.purpose.meeting" = "Importar como gravação de reunião";
+"transcribe.import_audio.purpose.dictation" = "Importar como ditado ou nota de áudio";
 
 /* About */
 "about.title" = "Prisma";

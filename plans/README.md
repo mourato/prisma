@@ -170,7 +170,7 @@ honor its STOP conditions, and update your row when done.
 |------|-------|----------|--------|------------|--------|
 | 001 | Push transcription-history filtering and limits into persistence | P1 | M | - | DONE |
 | 002 | Benchmark-gate the Rust audio kernel pilot | P1 | M | - | DONE |
-| 003 | Decide imported-recording meeting behavior | P2 | M | 001 optional | TODO |
+| 003 | Decide imported-recording meeting behavior | P2 | M | 001 optional | DONE |
 | 004 | Reframe the settings sidebar around user workflows | P1 | S | - | DONE |
 | 005 | Make Text & Context a privacy-first cross-cutting settings page | P1 | M | 004 | DONE |
 | 006 | Clarify the Models page as the model hub | P1 | M | 004 | DONE |

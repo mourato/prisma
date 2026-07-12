@@ -99,7 +99,7 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
     }
 
     func testDeliver_WithImportedFile_DoesNotCopyToClipboard() {
-        let meeting = Meeting(app: .importedFile)
+        let meeting = Meeting(app: .importedFile, capturePurpose: .meeting)
         let transcription = Transcription(meeting: meeting, text: kImportedText, rawText: kImportedText)
         let settings = makeSettings(autoCopy: true, autoPaste: false)
 

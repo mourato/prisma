@@ -154,7 +154,7 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
     }
 
     public var supportsMeetingConversation: Bool {
-        capturePurpose == .meeting && app != .importedFile
+        capturePurpose == .meeting
     }
 
     public var preferredTitle: String? {

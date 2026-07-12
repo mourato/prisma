@@ -45,6 +45,35 @@ final class ImportAudioUseCaseMacroMockingTests: XCTestCase {
         XCTAssertEqual(savedMeetings.count, 1)
         XCTAssertEqual(updatedMeetings.count, 1)
         XCTAssertEqual(updatedMeetings.first?.id, savedMeetings.first?.id)
+        XCTAssertEqual(savedMeetings.first?.capturePurpose, .dictation)
+    }
+
+    func testExecute_AllowsExplicitMeetingPurpose() async throws {
+        let audioFileRepository = MeetingAssistantCoreDomain.MacroMockAudioFileRepository()
+        let meetingRepository = MeetingAssistantCoreDomain.MacroMockMeetingRepository()
+        let sourceURL = URL(fileURLWithPath: "/tmp/source.wav")
+        let destinationURL = URL(fileURLWithPath: "/tmp/dest.wav")
+
+        audioFileRepository.audioFileExistsHandler = { _ in true }
+        audioFileRepository.generateAudioFileURLHandler = { _ in destinationURL }
+        audioFileRepository.saveAudioFileHandler = { _, _ in }
+
+        var savedMeeting: MeetingEntity?
+        meetingRepository.saveMeetingHandler = { savedMeeting = $0 }
+        meetingRepository.updateMeetingHandler = { _ in }
+
+        let useCase = ImportAudioUseCase(
+            audioFileRepository: audioFileRepository,
+            meetingRepository: meetingRepository
+        )
+
+        let result = try await useCase.execute(
+            sourceURL: sourceURL,
+            capturePurpose: .meeting
+        )
+
+        XCTAssertEqual(result.meeting.capturePurpose, .meeting)
+        XCTAssertEqual(savedMeeting?.capturePurpose, .meeting)
     }
 
     func testExecuteCopyFailure_DeletesMeeting() async {

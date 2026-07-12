@@ -33,7 +33,7 @@ public protocol RecordingServiceProtocol: AnyObject {
     func stopRecording() async
     func toggleMeetingMicrophone() async
     func setMeetingMicrophoneEnabled(_ isEnabled: Bool) async
-    func transcribeExternalAudio(from audioURL: URL) async
+    func transcribeExternalAudio(from audioURL: URL, capturePurpose: CapturePurpose) async
     func checkPermission() async
     func checkPermission(for source: RecordingSource) async
     func requestPermission() async
@@ -42,4 +42,10 @@ public protocol RecordingServiceProtocol: AnyObject {
     func openPermissionSettings()
     func requestAccessibilityPermission()
     func openAccessibilitySettings()
+}
+
+public extension RecordingServiceProtocol {
+    func transcribeExternalAudio(from audioURL: URL) async {
+        await transcribeExternalAudio(from: audioURL, capturePurpose: .dictation)
+    }
 }

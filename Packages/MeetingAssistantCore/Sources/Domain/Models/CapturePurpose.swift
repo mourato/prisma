@@ -19,7 +19,7 @@ public enum CapturePurpose: String, CaseIterable, Codable, Sendable {
         case .unknown:
             .dictation
         case .importedFile:
-            .meeting
+            .dictation
         default:
             .meeting
         }
@@ -30,7 +30,7 @@ public enum CapturePurpose: String, CaseIterable, Codable, Sendable {
         case .unknown:
             .dictation
         case .importedFile:
-            .meeting
+            .dictation
         default:
             .meeting
         }

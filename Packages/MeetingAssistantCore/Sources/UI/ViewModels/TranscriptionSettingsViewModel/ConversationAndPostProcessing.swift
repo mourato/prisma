@@ -576,7 +576,6 @@ public extension TranscriptionSettingsViewModel {
 
     func updateCapturePurpose(for metadata: TranscriptionMetadata, to capturePurpose: CapturePurpose) async {
         let metadataApp = DomainMeetingApp(rawValue: metadata.appRawValue) ?? .unknown
-        guard metadataApp != .importedFile else { return }
 
         do {
             let existing = try await meetingRepository.fetchMeeting(by: metadata.meetingId)
@@ -591,7 +590,7 @@ public extension TranscriptionSettingsViewModel {
                 metadata: metadata,
                 app: targetApp,
                 capturePurpose: capturePurpose,
-                title: existing?.title ?? metadata.meetingTitle,
+                title: capturePurpose == .meeting ? existing?.title ?? metadata.meetingTitle : nil,
                 fallbackEndTime: endTime
             )
 

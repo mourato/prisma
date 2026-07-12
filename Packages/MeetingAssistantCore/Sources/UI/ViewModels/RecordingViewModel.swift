@@ -125,8 +125,8 @@ public class RecordingViewModel: ObservableObject {
 
     /// Import and transcribe an external audio file.
     /// - Parameter url: Path to the audio file (m4a, mp3, wav).
-    public func transcribeFile(at url: URL) async {
-        await recordingManager.transcribeExternalAudio(from: url)
+    public func transcribeFile(at url: URL, capturePurpose: CapturePurpose = .dictation) async {
+        await recordingManager.transcribeExternalAudio(from: url, capturePurpose: capturePurpose)
     }
 
     // MARK: - Private Methods

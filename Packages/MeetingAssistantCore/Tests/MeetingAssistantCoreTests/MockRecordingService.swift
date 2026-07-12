@@ -131,8 +131,9 @@ class MockRecordingService: RecordingServiceProtocol {
         openAccessibilitySettingsCalled = true
     }
 
-    func transcribeExternalAudio(from audioURL: URL) async {
+    func transcribeExternalAudio(from audioURL: URL, capturePurpose: CapturePurpose) async {
         transcribeExternalAudioCalled = true
+        lastCapturePurpose = capturePurpose
     }
 
     /// Test helper
