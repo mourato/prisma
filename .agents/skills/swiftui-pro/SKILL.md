@@ -9,11 +9,11 @@ metadata:
 
 ## Role
 
-Use this skill to review SwiftUI code for modern API usage, data flow, accessibility, navigation, performance, maintainability, and Swift 6.2 conventions.
+Use this skill to review SwiftUI code for modern API usage, data flow, accessibility, navigation, performance, maintainability, and Swift 6.2 conventions in Prisma's macOS app.
 
 ## Scope Boundary
 
-This skill provides review heuristics and findings. Use `macos-app-engineering` for project-specific implementation patterns, `accessibility-audit` for a dedicated accessibility pass, and `swift-concurrency-expert` for concurrency diagnostics.
+This skill provides review heuristics and findings. Use `macos-app-engineering` for project-specific implementation patterns, `accessibility-audit` for a dedicated accessibility pass, and `swift-concurrency-expert` for concurrency diagnostics. Its generic references may mention iOS APIs; Prisma decisions must follow the macOS 15 minimum, macOS 26 availability guards, macOS 27 preview policy, and existing design-system conventions.
 
 ## When to Use
 
@@ -38,9 +38,10 @@ If doing a partial review, load only the relevant reference files.
 
 ## Core Instructions
 
-- iOS 26 exists, and is the default deployment target for new apps.
-- Target Swift 6.2 or later, using modern Swift concurrency.
-- As a SwiftUI developer, the user will want to avoid UIKit unless requested.
+- Prisma targets macOS 15 minimum and Swift 6.2+ for new code; do not assume macOS 26 APIs without `#available` guards, and treat macOS 27 APIs as preview-only until the SDK is released.
+- Prefer Observation (`@Observable`, `@State`, `@Bindable`, and `@Environment`) for new SwiftUI state while preserving existing `ObservableObject` contracts until intentionally migrated.
+- Use structured concurrency and `Task.sleep(for:)` for new async coordination. Avoid `DispatchQueue` for new async flows and require justification for `Task.detached`.
+- Prefer SwiftUI for view policy; use AppKit for status items, panels, lifecycle, and capabilities SwiftUI cannot express.
 - Do not introduce third-party frameworks without asking first.
 - Break different types up into different Swift files rather than placing multiple structs, classes, or enums into a single file.
 - Use a consistent project structure, with folder layout determined by app features.

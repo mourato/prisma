@@ -9,7 +9,7 @@ Prefer to place standard fonts, sizes, colors, stack spacing, padding, rounding,
 
 - Never use `UIScreen.main.bounds` to read available space; prefer alternatives such as `containerRelativeFrame()`, or `visualEffect()` as appropriate, or (if there is no alternative) `GeometryReader`.
 - Prefer to avoid fixed frames for views unless content can fit neatly inside; this can cause problems across different device sizes, different Dynamic Type settings, and more. Giving frames some flexibility is usually preferred.
-- Apple’s minimum acceptable tap area for interactions on iOS is 44x44. Ensure this is strictly enforced.
+- For Prisma's macOS controls, preserve native control hit areas, keyboard focus, and pointer affordances. Apply 44x44 touch targets only when a cross-platform or touch-specific surface explicitly requires them; do not impose iOS sizing on dense macOS settings UI.
 
 
 ## Standard system styling
