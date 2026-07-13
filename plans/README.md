@@ -30,7 +30,7 @@ reason) | `REJECTED` (with a one-line rationale).
 | [055](055-harden-scoped-validation-artifacts.md) | Make scoped validation correct for committed diffs and safe under parallel agents | P1 | M | 032 | DONE |
 | [056](056-create-canonical-lane-runner.md) | Provide one canonical lane runner with safe evidence reuse | P1 | L | 055 | DONE |
 | [057](057-reduce-agent-guidance-context.md) | Reduce recurring agent context through an active ledger and routed skill references | P1 | M | - | DONE |
-| [058](058-build-global-agent-efficiency-evaluator.md) | Build a global agent-efficiency evaluator with model-attributed cost | P1 | L | - | TODO |
+| [058](058-build-global-agent-efficiency-evaluator.md) | Build a global agent-efficiency evaluator with model-attributed cost | P1 | L | - | BLOCKED (six-task controlled rerun lacks independent task/role/model attribution) |
 | [059](059-tune-global-agent-routing.md) | Tune global routing and root reasoning from controlled cost-quality evidence | P1 | M | 058 | TODO |
 | [060](060-evaluate-lean-tools-fast-implementer.md) | Evaluate a lean code profile and a Fast-lane implementer before enabling either | P2 | M | 058, 059 | TODO |
 
