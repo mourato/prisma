@@ -22,8 +22,12 @@
 
 - `AppSettings.swift:11` defines the large `AppSettingsStore` type and `:746` contains the oversized initializer.
 - The store is split into colocated extensions under `Infrastructure/Models/AppSettingsStore/`; reuse that structure.
-- `Transcription.swift:12` contains the oversized initialization/processing entry point; existing recording tests cover its public behavior.
+- The cited `Transcription.swift:12` hotspot no longer exists: plan 042 already decomposed `RecordingManager` and removed that file. No additional transcription extraction was appropriate in this plan.
 - Existing AppSettings tests cover defaults, decoding, provider/model selection, and recording settings.
+
+## Drift and scope decision
+
+The plan was written against commit `80ed5788`, before plan 042 completed the recording-runtime decomposition. The executable scope is therefore the current settings bootstrap only. The implementation keeps the public stored-property surface and direct assignment order intact, while moving the complete persisted-value loading/orchestration sequence into `Initialization.swift`. The initializer remains above the function warning threshold because its direct assignments are required to initialize the existing public storage without changing API shape or default precedence; this is the documented residual rationale.
 
 ## Commands you will need
 
@@ -39,8 +43,7 @@
 **In scope**:
 
 - `AppSettings.swift` and its existing colocated `AppSettingsStore` extensions.
-- The specific oversized initialization function in `Transcription.swift` and focused support files.
-- Existing AppSettings/transcription tests and new characterization tests.
+- Existing AppSettings tests and characterization coverage for the extracted bootstrap boundary.
 - `plans/README.md`
 
 **Out of scope**:
@@ -71,12 +74,21 @@ Run thermo review focused on persisted-state compatibility, initialization order
 
 ## Done criteria
 
-- [ ] AppSettings bootstrap and the cited transcription function are below serious lint thresholds or have a documented residual rationale.
-- [ ] Persisted keys/defaults/migrations are behaviorally unchanged.
-- [ ] Focused tests pass and cover the extracted boundaries.
-- [ ] Thermo review has no unresolved Critical/Medium findings.
-- [ ] Full gates are attempted and recorded.
-- [ ] `plans/README.md` status row updated.
+- [x] AppSettings bootstrap and the cited transcription function are below serious lint thresholds or have a documented residual rationale.
+- [x] Persisted keys/defaults/migrations are behaviorally unchanged.
+- [x] Focused tests pass and cover the extracted boundaries.
+- [x] Thermo review has no unresolved Critical/Medium findings.
+- [x] Full gates are attempted and recorded.
+- [x] `plans/README.md` status row updated.
+
+## Validation evidence — 2026-07-12
+
+- `swift test --package-path Packages/MeetingAssistantCore --filter 'AppSettingsStore.*Tests|GeneralSettings.*Tests|SettingsSearchIndexTests'`: 106 passed.
+- `swift test --package-path Packages/MeetingAssistantCore --filter 'TranscriptionSettingsViewModelTests|TranscribeAudioUseCase.*Tests|RecordingManagerTests'`: 88 executed, 82 passed, 6 known `RecordingManagerTests` readiness failures caused by shared settings/test isolation interference; the same failures reproduce in the existing sensitive lane and the affected tests pass when isolated.
+- `make build-agent`: passed.
+- `make lint`: non-blocking repository baseline; 366/503 files require formatting and 288 warnings. No new error is attributed to the touched files.
+- `make build-test`: build passed; 989 executed, 17 skipped, 973 passed, 16 known `MetricsDashboardViewModelTests` failures. CoreSimulator device-support warning is environmental.
+- Thermo review: no unresolved Critical/Medium findings. Residual risk is limited to preserving bootstrap read order and direct property assignment order; focused tests passed.
 
 ## STOP conditions
 

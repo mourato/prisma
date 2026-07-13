@@ -8,6 +8,7 @@ import SwiftUI
 
 /// Centralized settings manager using UserDefaults.
 @MainActor
+// swiftlint:disable:next type_body_length
 public class AppSettingsStore: ObservableObject {
     public static let shared = AppSettingsStore()
 
@@ -61,7 +62,7 @@ public class AppSettingsStore: ObservableObject {
         didSet {
             save(
                 enhancementsProviderSelectedModelsByRegistration,
-                forKey: Keys.enhancementsProviderSelectedModelsByRegistration
+                forKey: Keys.enhancementsProviderSelectedModelsByRegistration,
             )
         }
     }
@@ -82,7 +83,7 @@ public class AppSettingsStore: ObservableObject {
         didSet {
             UserDefaults.standard.set(
                 meetingTranscriptionLocalModel.rawValue,
-                forKey: Keys.meetingTranscriptionLocalModel
+                forKey: Keys.meetingTranscriptionLocalModel,
             )
         }
     }
@@ -149,7 +150,7 @@ public class AppSettingsStore: ObservableObject {
         didSet {
             UserDefaults.standard.set(
                 dictationStructuredPostProcessingEnabled,
-                forKey: Keys.dictationStructuredPostProcessingEnabled
+                forKey: Keys.dictationStructuredPostProcessingEnabled,
             )
         }
     }
@@ -197,7 +198,7 @@ public class AppSettingsStore: ObservableObject {
         didSet {
             UserDefaults.standard.set(
                 transcriptionInputLanguageHint.rawValue,
-                forKey: Keys.transcriptionInputLanguageHint
+                forKey: Keys.transcriptionInputLanguageHint,
             )
         }
     }
@@ -321,7 +322,7 @@ public class AppSettingsStore: ObservableObject {
         didSet {
             UserDefaults.standard.set(
                 shortcutDoubleTapIntervalMilliseconds,
-                forKey: Keys.shortcutDoubleTapIntervalMilliseconds
+                forKey: Keys.shortcutDoubleTapIntervalMilliseconds,
             )
         }
     }
@@ -396,7 +397,7 @@ public class AppSettingsStore: ObservableObject {
         didSet {
             UserDefaults.standard.set(
                 assistantShortcutActivationMode.rawValue,
-                forKey: Keys.assistantShortcutActivationMode
+                forKey: Keys.assistantShortcutActivationMode,
             )
         }
     }
@@ -603,7 +604,7 @@ public class AppSettingsStore: ObservableObject {
 
             let synchronizedBrowsers = synchronizedWebTargetBrowsers(
                 from: dictationAppRules,
-                legacyBrowsers: webTargetBrowserBundleIdentifiers
+                legacyBrowsers: webTargetBrowserBundleIdentifiers,
             )
 
             if synchronizedBrowsers != webTargetBrowserBundleIdentifiers {
@@ -617,7 +618,7 @@ public class AppSettingsStore: ObservableObject {
         didSet {
             let normalizedStyles = Self.normalizedDictationStyles(
                 dictationStyles,
-                defaultStyle: currentDefaultDictationStyle()
+                defaultStyle: currentDefaultDictationStyle(),
             )
             if normalizedStyles != dictationStyles {
                 dictationStyles = normalizedStyles
@@ -681,7 +682,7 @@ public class AppSettingsStore: ObservableObject {
         didSet {
             UserDefaults.standard.set(
                 recordingIndicatorAnimationSpeed.rawValue,
-                forKey: Keys.recordingIndicatorAnimationSpeed
+                forKey: Keys.recordingIndicatorAnimationSpeed,
             )
         }
     }
@@ -691,7 +692,7 @@ public class AppSettingsStore: ObservableObject {
         didSet {
             UserDefaults.standard.set(
                 automaticMeetingRecordingConfirmationDelay.rawValue,
-                forKey: Keys.automaticMeetingRecordingConfirmationDelay
+                forKey: Keys.automaticMeetingRecordingConfirmationDelay,
             )
         }
     }
@@ -743,9 +744,12 @@ public class AppSettingsStore: ObservableObject {
 
     // MARK: - Initialization
 
+    // The public stored-property surface requires direct assignment after loading grouped values.
+    // swiftlint:disable:next function_body_length
     private init() {
-        let context = Self.createInitializationContext()
-        let ai = Self.loadAIConfigurationValues(from: context)
+        let values = Self.loadInitializationValues()
+        let context = values.context
+        let ai = values.ai
         aiConfiguration = ai.aiConfiguration
         enhancementsAISelection = ai.enhancementsAISelection
         enhancementsDictationAISelection = ai.enhancementsDictationAISelection
@@ -756,7 +760,7 @@ public class AppSettingsStore: ObservableObject {
         transcriptionProviderSelectedModels = ai.transcriptionProviderSelectedModels
         meetingTranscriptionLocalModel = ai.meetingTranscriptionLocalModel
 
-        let postProcessing = Self.loadPostProcessingSettings()
+        let postProcessing = values.postProcessing
         systemPrompt = postProcessing.systemPrompt
         userPrompts = postProcessing.userPrompts
         dictationPrompts = postProcessing.dictationPrompts
@@ -772,14 +776,14 @@ public class AppSettingsStore: ObservableObject {
         dictationSelectedPromptId = postProcessing.dictationSelectedPromptId
         shouldMergeAudioFiles = postProcessing.shouldMergeAudioFiles
 
-        let capabilities = Self.loadCapabilitySettings()
+        let capabilities = values.capabilities
         (isMeetingTranscriptionEnabled, isAssistantEnabled, isAssistantIntegrationsEnabled) = (
             capabilities.isMeetingTranscriptionEnabled,
             capabilities.isAssistantEnabled,
-            capabilities.isAssistantIntegrationsEnabled
+            capabilities.isAssistantIntegrationsEnabled,
         )
 
-        let audioSettings = Self.loadAudioAndLanguageSettings()
+        let audioSettings = values.audio
         (selectedLanguage, audioDevicePriority) = (audioSettings.selectedLanguage, audioSettings.audioDevicePriority)
         useSystemDefaultInput = audioSettings.useSystemDefaultInput
         (microphoneWhenChargingUID, microphoneOnBatteryUID) = (audioSettings.microphoneWhenChargingUID, audioSettings.microphoneOnBatteryUID)
@@ -787,37 +791,31 @@ public class AppSettingsStore: ObservableObject {
         audioDuckingLevelPercent = audioSettings.audioDuckingLevelPercent
         autoIncreaseMicrophoneVolume = audioSettings.autoIncreaseMicrophoneVolume
         removeSilenceBeforeProcessing = audioSettings.removeSilenceBeforeProcessing
-        smartSpacingAndCapitalizationEnabled = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.smartSpacingAndCapitalizationEnabled,
-            defaultValue: true
-        )
-        smartParagraphsEnabled = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.smartParagraphsEnabled,
-            defaultValue: true
-        )
+        smartSpacingAndCapitalizationEnabled = values.smartSpacingAndCapitalizationEnabled
+        smartParagraphsEnabled = values.smartParagraphsEnabled
 
-        let shortcuts = Self.loadShortcutActivationSettings()
+        let shortcuts = values.shortcuts
         (shortcutActivationMode, dictationShortcutActivationMode) = (
             shortcuts.shortcutActivationMode,
-            shortcuts.dictationShortcutActivationMode
+            shortcuts.dictationShortcutActivationMode,
         )
         shortcutDoubleTapIntervalMilliseconds = shortcuts.shortcutDoubleTapIntervalMilliseconds
         useEscapeToCancelRecording = shortcuts.useEscapeToCancelRecording
         (selectedPresetKey, dictationSelectedPresetKey, meetingSelectedPresetKey) = (
             shortcuts.selectedPresetKey,
             shortcuts.dictationSelectedPresetKey,
-            shortcuts.meetingSelectedPresetKey
+            shortcuts.meetingSelectedPresetKey,
         )
         cancelRecordingShortcutDefinition = shortcuts.cancelRecordingShortcutDefinition
 
-        let gestures = Self.loadModifierShortcutGestures()
+        let gestures = values.gestures
         (dictationModifierShortcutGesture, assistantModifierShortcutGesture, meetingModifierShortcutGesture) = (
             gestures.dictation,
             gestures.assistant,
-            gestures.meeting
+            gestures.meeting,
         )
 
-        let assistant = Self.loadAssistantSettings(from: context)
+        let assistant = values.assistant
         assistantShortcutActivationMode = assistant.assistantShortcutActivationMode
         assistantUseEscapeToCancelRecording = assistant.assistantUseEscapeToCancelRecording
         assistantUseEnterToStopRecording = assistant.assistantUseEnterToStopRecording
@@ -826,7 +824,7 @@ public class AppSettingsStore: ObservableObject {
         assistantSelectedIntegrationId = assistant.assistantSelectedIntegrationId
         (assistantRaycastEnabled, assistantRaycastDeepLink) = (assistant.assistantRaycastEnabled, assistant.assistantRaycastDeepLink)
 
-        let meeting = Self.loadMeetingSummarySettings()
+        let meeting = values.meeting
         meetingTypeAutoDetectEnabled = meeting.meetingTypeAutoDetectEnabled
         meetingSummaryOutputLanguage = meeting.meetingSummaryOutputLanguage
         meetingPrompts = meeting.meetingPrompts
@@ -838,23 +836,20 @@ public class AppSettingsStore: ObservableObject {
         (meetingNotesFontFamilyKey, meetingNotesFontSize, meetingQnAEnabled) = (
             meeting.meetingNotesFontFamilyKey,
             meeting.meetingNotesFontSize,
-            meeting.meetingQnAEnabled
+            meeting.meetingQnAEnabled,
         )
 
-        let ctx = Self.loadContextAwarenessSettings(from: context)
+        let ctx = values.contextAwareness
         contextAwarenessEnabled = ctx.contextAwarenessEnabled
         (contextAwarenessIncludeClipboard, contextAwarenessIncludeWindowOCR) = (
             ctx.contextAwarenessIncludeClipboard,
-            ctx.contextAwarenessIncludeWindowOCR
+            ctx.contextAwarenessIncludeWindowOCR,
         )
         contextAwarenessIncludeAccessibilityText = ctx.contextAwarenessIncludeAccessibilityText
         contextAwarenessRedactSensitiveData = ctx.contextAwarenessRedactSensitiveData
         contextAwarenessExcludedBundleIDs = ctx.contextAwarenessExcludedBundleIDs
 
-        let dict = Self.loadDictationRulesAndWebTargets(
-            contextAwareness: ctx,
-            dictationSelection: ai.enhancementsDictationAISelection
-        )
+        let dict = values.dictation
         markdownTargetBundleIdentifiers = dict.markdownTargetBundleIdentifiers
         dictationAppRules = dict.dictationAppRules
         dictationStyles = dict.dictationStyles
@@ -864,7 +859,7 @@ public class AppSettingsStore: ObservableObject {
         monitoredMeetingBundleIdentifiers = dict.monitoredMeetingBundleIdentifiers
         webMeetingTargets = dict.webMeetingTargets
 
-        let uiSettings = Self.loadUIAndIndicatorSettings()
+        let uiSettings = values.ui
         assistantBorderColor = uiSettings.assistantBorderColor
         assistantBorderStyle = uiSettings.assistantBorderStyle
         assistantBorderWidth = uiSettings.assistantBorderWidth
@@ -882,7 +877,7 @@ public class AppSettingsStore: ObservableObject {
         recordingStartSound = uiSettings.recordingStartSound
         recordingStopSound = uiSettings.recordingStopSound
         showInDock = uiSettings.showInDock
-        hasCompletedOnboarding = UserDefaults.standard.bool(forKey: Keys.hasCompletedOnboarding)
+        hasCompletedOnboarding = values.hasCompletedOnboarding
 
         finalizeInitialization(context: context)
     }
