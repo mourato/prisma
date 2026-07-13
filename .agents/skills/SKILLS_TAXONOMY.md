@@ -14,7 +14,7 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 | debugging-diagnostics | Runtime/Performance | Canonical | Cross-cutting investigation methodology, logging structure, telemetry naming, redaction, failure signatures, and metrics correlation | macos-app-engineering, audio-realtime, swift-concurrency-expert | Keep; investigation and diagnostics owner |
 | delivery-workflow | Quality/Engineering Flow | Canonical | Risk classification, lifecycle sequencing, validation commands, merge gates, Git mechanics, and delivery evidence | testing-xctest, thermo-nuclear-code-quality-review | Keep; delivery owner |
 | documentation | Quality/Engineering Flow | Canonical | DocC, docs structure, and research patterns | project-standards | Keep |
-| improve | Meta-skills | Canonical | Read-only codebase audits, opportunity prioritization, roadmap advice, and handoff plan authoring | project-standards | Keep; advisory only |
+| improve | Meta-skills | Global canonical | Read-only codebase audits, opportunity prioritization, roadmap advice, execution-profile recommendations, and handoff plan authoring | project-standards | Keep global; project overlays via AGENTS |
 | intelligence-kernel | Runtime/Performance | Canonical | Canonical summary schema, trust flags, and summary benchmark gates | delivery-workflow, data-persistence | Keep |
 | keychain-security | Security/Data | Canonical (credentials) | Keychain credential persistence and APIs | — | Keep; credential owner |
 | localization | Security/Data | Canonical | Localization, locale-file hygiene, and accessible copy | accessibility-audit, macos-app-engineering | Keep; not a full accessibility owner |
@@ -25,7 +25,7 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 | swift-conventions | macOS/Swift Core | Canonical (Swift language) | Swift-specific style, type safety, and module conventions | code-quality | Keep |
 | swiftui-pro | SwiftUI/UI/UX | Specialist | SwiftUI API, data flow, navigation, accessibility, performance, and maintainability review | macos-app-engineering, apple-design, accessibility-audit, swift-concurrency-expert | Keep; SwiftUI review owner |
 | testing-xctest | Quality/Engineering Flow | Canonical | XCTest implementation patterns, async tests, `@MainActor`, mocks, fakes, and spies | delivery-workflow | Keep; XCTest owner |
-| thermo-nuclear-code-quality-review | Quality/Engineering Flow | Canonical | Default code review owner; semaforo findings, severity framing, strict abstraction, large-file, and spaghetti-growth analysis | code-quality, delivery-workflow | Keep; default review mode |
+| thermo-nuclear-code-quality-review | Quality/Engineering Flow | Global canonical | Default code review owner; semaforo findings, severity framing, strict abstraction, large-file, and spaghetti-growth analysis | code-quality, delivery-workflow | Keep global; Prisma profile project-only |
 
 ## Grouping Summary
 

@@ -138,9 +138,12 @@ def validate_path_references(markdown_file: Path, text: str) -> list[str]:
     return errors
 
 
-def parse_indexed_skills(index_path: Path) -> set[str]:
+def parse_indexed_skills(index_path: Path) -> tuple[set[str], set[str]]:
     text = index_path.read_text(encoding="utf-8")
-    return set(re.findall(r"`([^`]+)`\s+\|\s+`?\.agents/skills/", text))
+    rows = re.findall(r"^\|\s*`([^`]+)`\s+\|\s+`?([^|`]+)`?", text, re.MULTILINE)
+    indexed = {skill for skill, _location in rows}
+    global_skills = {skill for skill, location in rows if location.strip().startswith("global:")}
+    return indexed, global_skills
 
 
 def parse_taxonomy_skills(taxonomy_path: Path) -> set[str]:
@@ -159,7 +162,7 @@ def validate_skill_catalog() -> list[str]:
         for path in SKILLS_ROOT.iterdir()
         if path.is_dir() and (path / "SKILL.md").exists()
     )
-    indexed = parse_indexed_skills(SKILLS_INDEX)
+    indexed, global_skills = parse_indexed_skills(SKILLS_INDEX)
     taxonomy = parse_taxonomy_skills(SKILLS_TAXONOMY)
 
     for skill in skill_dirs:
@@ -168,9 +171,9 @@ def validate_skill_catalog() -> list[str]:
         if skill not in taxonomy:
             errors.append(f"Skill '{skill}' exists in .agents/skills but is missing from .agents/skills/SKILLS_TAXONOMY.md")
 
-    for skill in sorted(indexed - set(skill_dirs)):
+    for skill in sorted(indexed - set(skill_dirs) - global_skills):
         errors.append(f"Skill '{skill}' is indexed in .agents/SKILLS_INDEX.md but has no matching directory")
-    for skill in sorted(taxonomy - set(skill_dirs)):
+    for skill in sorted(taxonomy - set(skill_dirs) - global_skills):
         errors.append(f"Skill '{skill}' is listed in .agents/skills/SKILLS_TAXONOMY.md but has no matching directory")
 
     return errors

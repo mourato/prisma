@@ -50,7 +50,7 @@ Module ownership:
 When guidance conflicts, apply this order:
 
 1. This `AGENTS.md`.
-2. The relevant skill in `.agents/skills/`.
+2. The relevant project skill in `.agents/skills/` or global skill plus the project overlay named here.
 3. Reference documents, examples, and inline comments.
 
 Hard constraints in this file always override convenience or performance preferences. If a conflict remains material, stop and ask before implementing behavior.
@@ -96,6 +96,12 @@ Delegation policy:
 - Use `implementer-fast` only as an explicit opt-in for deterministic Low/Fast work in an isolated worktree. Medium/High work uses the normal implementer and Full lane.
 - Keep model identifiers and effort defaults in global Codex config or custom agent files, not project guidance.
 
+Plan execution policy:
+
+- Every implementation plan must include an `Execution profile` with its recommended implementer, risk/lane, parallelization, reviewer requirement, rationale, and escalation trigger.
+- Reclassify each plan against the live scope immediately before implementation; the root orchestrator may override the plan recommendation.
+- Use `implementer-fast` only for deterministic Low/Fast plans. Ambiguous, Medium, and High plans use the normal implementer and the applicable Full/review gates.
+
 During iteration, prefer:
 
 ```bash
@@ -124,7 +130,7 @@ Read [Build and Test Reference](./.agents/docs/build-and-test.md) for command de
 
 ## Skill and Information Routing
 
-Use the canonical skill for the task and no unrelated specialists. `macos-app-engineering` owns ordinary macOS UI/app implementation; `architecture`, `swift-concurrency-expert`, `audio-realtime`, `data-persistence`, `keychain-security`, `debugging-diagnostics`, `localization`, `testing-xctest`, `delivery-workflow`, `project-standards`, and `thermo-nuclear-code-quality-review` own their named domains.
+Use the canonical skill for the task and no unrelated specialists. Global `improve` owns read-only surveys and plan authoring. Global `thermo-nuclear-code-quality-review` owns review findings and approval framing; it must load [`Prisma Review Profile`](./.agents/docs/prisma-review-profile.md) for project-specific review lenses. `macos-app-engineering` owns ordinary macOS UI/app implementation; `architecture`, `swift-concurrency-expert`, `audio-realtime`, `data-persistence`, `keychain-security`, `debugging-diagnostics`, `localization`, `testing-xctest`, `delivery-workflow`, and `project-standards` own their named domains.
 
 The root session is the default orchestrator for simple and serial work. Broad delegation must have independently verifiable workstreams and remains subject to the isolated-worktree and one-writing-agent constraints above.
 

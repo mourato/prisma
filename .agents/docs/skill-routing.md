@@ -36,6 +36,20 @@ Delegation is not a default optimization: it must reduce uncertainty through
 independent workstreams. Do not encode model identifiers here; global Codex
 configuration and custom agent files own model and reasoning-effort choices.
 
+## Planning and Review Skills
+
+- Use global `improve` for read-only codebase surveys, prioritized findings,
+  roadmap analysis, and self-contained implementation plans.
+- Every plan must declare an `Execution profile`; reclassify it against the
+  live scope before implementation.
+- Use global `thermo-nuclear-code-quality-review` for strict review findings,
+  semaforo severity, and approval framing.
+- Load [`prisma-review-profile.md`](./prisma-review-profile.md) with the global
+  thermo skill for Swift, macOS, privacy, architecture, and Prisma-specific
+  maintainability rules.
+- Keep `delivery-workflow` as the owner of lanes, validation commands, Git
+  mechanics, and delivery evidence.
+
 ---
 
 ## Problem-Specific Routing
@@ -234,4 +248,4 @@ Use `thermo-nuclear-code-quality-review` for review output, semaforo severity, a
 | `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest code structure, mocks, async tests |
 | `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/SKILL.md` | Swift 6.2 actor isolation and Sendable fixes |
 | `swiftui-pro` | `.agents/skills/swiftui-pro/SKILL.md` | SwiftUI API, data flow, navigation, accessibility, performance, and maintainability review |
-| `thermo-nuclear-code-quality-review` | `.agents/skills/thermo-nuclear-code-quality-review/SKILL.md` | Default code review, PR audits, semaforo output, and strict maintainability analysis |
+| `thermo-nuclear-code-quality-review` | Global skill + `.agents/docs/prisma-review-profile.md` | Default code review, PR audits, semaforo output, and strict Prisma maintainability analysis |

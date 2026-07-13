@@ -27,7 +27,7 @@ Use this skill for:
 Use specialist skills when the task is primarily about:
 
 - `../testing-xctest/SKILL.md` for XCTest structure, async tests, fakes, spies, and fixtures.
-- `../thermo-nuclear-code-quality-review/SKILL.md` for review findings, semaforo severity, approval bars, and strict structural maintainability review.
+- Global `thermo-nuclear-code-quality-review` for review findings, semaforo severity, approval bars, and strict structural maintainability review.
 - subsystem skills for domain-specific rules, such as audio, persistence, concurrency, security, UI, localization, or intelligence-kernel work.
 
 ## When to Use
@@ -54,7 +54,7 @@ When uncertain, choose the higher risk. High triggers override Medium.
 4. Implement in small slices.
 5. Run targeted checks first, then narrow builds and relevant scope checks.
 6. Before push/merge, run the lane gate.
-7. Use `../thermo-nuclear-code-quality-review/SKILL.md` for review when review is required; Full lane requires semaforo review with the thermo structural bar.
+7. Use global `thermo-nuclear-code-quality-review` for review when review is required; Full lane requires semaforo review with the thermo structural bar.
 8. Fix Critical/Medium review findings, re-run required gates, then integrate and clean up.
 
 ## Verification by Lane
@@ -231,7 +231,7 @@ For Full lane work, Critical and Medium review findings block handoff until fixe
 ## Related Skills
 
 - `../testing-xctest/SKILL.md`
-- `../thermo-nuclear-code-quality-review/SKILL.md`
+- Global `thermo-nuclear-code-quality-review`
 
 ## References
 

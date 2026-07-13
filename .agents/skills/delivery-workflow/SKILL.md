@@ -83,7 +83,7 @@ task-specific material below:
 
 ## Related Skills
 
-- `../thermo-nuclear-code-quality-review/SKILL.md`
+- Global `thermo-nuclear-code-quality-review`
 - `../testing-xctest/SKILL.md`
 
 ## References
