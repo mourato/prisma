@@ -146,6 +146,20 @@ ma_agent_json_escape() {
     printf '%s' "${value}"
 }
 
+ma_agent_json_array() {
+    local item
+    local first=1
+    printf '['
+    for item in "$@"; do
+        if [ "${first}" -eq 0 ]; then
+            printf ','
+        fi
+        printf '"%s"' "$(ma_agent_json_escape "${item}")"
+        first=0
+    done
+    printf ']'
+}
+
 ma_agent_error_count() {
     local log_path="$1"
     local count
@@ -266,9 +280,17 @@ ma_agent_write_result_json() {
     local log_path="$5"
     local error_count="$6"
     local summary="$7"
+    local commands_json="${8:-}"
+    local decision_json="${9:-}"
+    if [ -z "${commands_json}" ]; then
+        commands_json="[]"
+    fi
+    if [ -z "${decision_json}" ]; then
+        decision_json="{}"
+    fi
 
     cat > "${result_path}" <<JSON
-{"step":"$(ma_agent_json_escape "${step}")","status":"$(ma_agent_json_escape "${status}")","durationSec":${duration_sec},"log":"$(ma_agent_json_escape "${log_path}")","errorCount":${error_count},"summary":"$(ma_agent_json_escape "${summary}")"}
+{"schemaVersion":2,"step":"$(ma_agent_json_escape "${step}")","status":"$(ma_agent_json_escape "${status}")","durationSec":${duration_sec},"log":"$(ma_agent_json_escape "${log_path}")","errorCount":${error_count},"commands":${commands_json},"decision":${decision_json},"summary":"$(ma_agent_json_escape "${summary}")"}
 JSON
 }
 

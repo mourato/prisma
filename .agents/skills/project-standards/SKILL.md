@@ -73,7 +73,14 @@ Rules:
 - **Branch Workflow**: Use the single-checkout feature-branch workflow defined in `AGENTS.md`.
 - **UI Quality Gate**: Run `make preview-check` when UI views are added/changed.
 
-## 5. Language
+## 5. Evolution and Ownership
+
+- Review project guidance at least every 90 days and whenever the Codex model/tooling, Makefile targets, scripts, module boundaries, or skill registry changes.
+- When guidance is unclear, report it as `agents-guidance-unclear`; when work or debt is pending, use `known-limitation` or `needs-review` as appropriate.
+- When a command, module boundary, skill owner, or validation rule changes, update `AGENTS.md`, the owning skill, and referenced docs in the same change.
+- Prefer deleting stale or duplicated guidance over adding another parallel policy. Keep one canonical owner for each rule and record intentional exceptions with scope, impact, rollback, and review date.
+
+## 6. Language
 
 - All documentation must be written in **English**.
 - All code comments must be written in **English**.

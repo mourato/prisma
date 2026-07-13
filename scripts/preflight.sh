@@ -2,10 +2,10 @@
 # =============================================================================
 # preflight.sh - Standard local pre-merge validation checks
 # =============================================================================
-# Runs the canonical quality gates in sequence:
-# 1) build
-# 2) test
-# 3) lint
+# Runs the canonical quality gates:
+# 1) build and lint in parallel
+# 2) tests
+# 3) optional strict-concurrency tests
 # 4) summary benchmark gate
 # =============================================================================
 
@@ -159,6 +159,20 @@ START_TIME=$(date +%s)
 
 SUMMARY="Preflight completed successfully"
 
+emit_preflight_failure() {
+    local failed_step="$1"
+    local summary="$2"
+    local end_time
+    local duration
+    end_time=$(date +%s)
+    duration=$((end_time - START_TIME))
+    local commands_json="[{\"name\":\"${failed_step}\",\"status\":\"FAIL\",\"durationSec\":${duration},\"log\":\"$(ma_agent_json_escape "${LOG_DIR}")\"}]"
+    local decision_json="{\"strategy\":\"preflight\",\"failedStep\":\"$(ma_agent_json_escape "${failed_step}")\"}"
+    ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${duration}" "${LOG_DIR}" 1 "${summary}" "${commands_json}" "${decision_json}"
+    ma_agent_emit_result "preflight" "FAIL" "${duration}" "${LOG_DIR}" 1 "${summary}" "${RESULT_PATH}"
+    exit 1
+}
+
 run_test_agent() {
     make test-full-agent
 }
@@ -176,67 +190,42 @@ run_parallel_lint_and_build_agent() {
     wait "${build_pid}" || build_status=$?
 
     if [ "${lint_status}" -ne 0 ]; then
-        SUMMARY="Preflight failed during lint"
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - START_TIME))
-        ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
-        ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
-        exit 1
+        emit_preflight_failure "lint" "Preflight failed during lint"
     fi
 
     if [ "${build_status}" -ne 0 ]; then
-        SUMMARY="Preflight failed during build"
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - START_TIME))
-        ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
-        ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
-        exit 1
+        emit_preflight_failure "build" "Preflight failed during build"
     fi
 }
 
-if [ "${FAST_MODE}" -eq 1 ]; then
-    run_parallel_lint_and_build_agent
-else
-    run_parallel_lint_and_build_agent
-
-    if ! MA_AGENT_MODE=1 ./scripts/run-summary-benchmark.sh "${BENCHMARK_ARG}" --agent; then
-        SUMMARY="Preflight failed during summary benchmark"
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - START_TIME))
-        ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
-        ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
-        exit 1
-    fi
-fi
+run_parallel_lint_and_build_agent
 
 if ! run_test_agent; then
-    SUMMARY="Preflight failed during test"
-    END_TIME=$(date +%s)
-    DURATION=$((END_TIME - START_TIME))
-    ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
-    ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
-    exit 1
+    emit_preflight_failure "test" "Preflight failed during test"
 fi
 
 if [ "${FAST_MODE}" -eq 0 ] && [ "${STRICT_CONCURRENCY}" -eq 1 ]; then
     echo "AGENT_NOTE=running strict concurrency gate"
     if ! MA_AGENT_MODE=1 ./scripts/run-tests.sh --strict --agent; then
-        SUMMARY="Preflight failed during strict concurrency test"
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - START_TIME))
-        ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
-        ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
-        exit 1
+        emit_preflight_failure "strict-concurrency" "Preflight failed during strict concurrency test"
     fi
 fi
 
 if [ "${FAST_MODE}" -eq 1 ] && [ "${STRICT_CONCURRENCY}" -eq 1 ]; then
     echo "AGENT_NOTE=running strict concurrency gate"
     if ! MA_AGENT_MODE=1 ./scripts/run-tests.sh --strict --agent; then
-        SUMMARY="Preflight failed during strict concurrency test"
+        emit_preflight_failure "strict-concurrency" "Preflight failed during strict concurrency test"
+    fi
+fi
+
+if [ "${FAST_MODE}" -eq 0 ]; then
+    if ! MA_AGENT_MODE=1 ./scripts/run-summary-benchmark.sh "${BENCHMARK_ARG}" --agent; then
+        SUMMARY="Preflight failed during summary benchmark"
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))
-        ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
+        COMMANDS_JSON="[{\"name\":\"summary-benchmark\",\"status\":\"FAIL\",\"durationSec\":${DURATION},\"log\":\"$(ma_agent_json_escape "${LOG_DIR}")\"}]"
+        DECISION_JSON="{\"strategy\":\"preflight\",\"failedStep\":\"summary-benchmark\"}"
+        ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${COMMANDS_JSON}" "${DECISION_JSON}"
         ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
         exit 1
     fi
@@ -248,5 +237,7 @@ fi
 
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
-ma_agent_write_result_json "${RESULT_PATH}" "preflight" "PASS" "${DURATION}" "${LOG_DIR}" 0 "${SUMMARY}"
+COMMANDS_JSON="[{\"name\":\"preflight\",\"status\":\"PASS\",\"durationSec\":${DURATION},\"log\":\"$(ma_agent_json_escape "${LOG_DIR}")\"}]"
+DECISION_JSON="{\"strategy\":\"preflight\",\"benchmark\":$([ "${FAST_MODE}" -eq 0 ] && echo true || echo false),\"strictConcurrency\":$([ "${STRICT_CONCURRENCY}" -eq 1 ] && echo true || echo false)}"
+ma_agent_write_result_json "${RESULT_PATH}" "preflight" "PASS" "${DURATION}" "${LOG_DIR}" 0 "${SUMMARY}" "${COMMANDS_JSON}" "${DECISION_JSON}"
 ma_agent_emit_result "preflight" "PASS" "${DURATION}" "${LOG_DIR}" 0 "${SUMMARY}" "${RESULT_PATH}"

@@ -31,8 +31,8 @@ VERBOSE=0
 QUIET=0
 STRICT=0
 AGENT_MODE=0
-SPECIFIC_TEST=""
-TEST_FILE=""
+SPECIFIC_TESTS=()
+TEST_FILES=()
 SUITE="${TEST_SUITE_DEFAULT}"
 HEARTBEAT_INTERVAL_SEC="${MA_SWIFT_TEST_HEARTBEAT_INTERVAL_SEC:-15}"
 PARALLEL_ENABLED=0
@@ -64,11 +64,11 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --test|-t)
-            SPECIFIC_TEST="$2"
+            SPECIFIC_TESTS+=("$2")
             shift 2
             ;;
         --file|-f)
-            TEST_FILE="$2"
+            TEST_FILES+=("$2")
             shift 2
             ;;
         --suite)
@@ -93,8 +93,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --quiet, -q      Run tests quietly (no output except final result)"
             echo "  --strict, -s     Run tests with strict concurrency checking"
             echo "  --agent          Emit compact machine-readable result lines"
-            echo "  --test, -t TEST  Run specific test (e.g., testInitialState)"
-            echo "  --file, -f FILE  Run tests from specific file (e.g., RecordingViewModelTests)"
+            echo "  --test, -t TEST  Run specific test (repeatable)"
+            echo "  --file, -f FILE  Run tests from specific file (repeatable)"
             echo "  --suite NAME     Suite to run: dev, full, smoke, perf, benchmark, sensitive, appkit"
             echo "  --parallel       Force parallel execution when the suite supports it"
             echo "  --no-parallel    Force serial execution"
@@ -189,14 +189,34 @@ esac
 TEST_ARGS=()
 TARGET_DESCRIPTION="${SUITE} suite"
 TARGET_LABEL="${SUITE}"
-if [ -n "${TEST_FILE}" ]; then
-    TEST_ARGS+=(--filter "${TEST_FILE}")
-    TARGET_DESCRIPTION="tests from file: ${TEST_FILE}"
-    TARGET_LABEL="${TEST_FILE}"
-elif [ -n "${SPECIFIC_TEST}" ]; then
-    TEST_ARGS+=(--filter "${SPECIFIC_TEST}")
-    TARGET_DESCRIPTION="specific test: ${SPECIFIC_TEST}"
-    TARGET_LABEL="${SPECIFIC_TEST}"
+regex_escape() {
+    printf '%s' "$1" | sed 's/[.[\*^$()+?{|\\]/\\&/g'
+}
+
+join_regex_values() {
+    local value
+    local escaped
+    local joined=""
+    for value in "$@"; do
+        escaped="$(regex_escape "${value}")"
+        if [ -n "${joined}" ]; then
+            joined+="|"
+        fi
+        joined+="${escaped}"
+    done
+    printf '%s' "${joined}"
+}
+
+if [ "${#TEST_FILES[@]}" -gt 0 ]; then
+    COMBINED_TEST_FILTER="$(join_regex_values "${TEST_FILES[@]}")"
+    TEST_ARGS+=(--filter "(${COMBINED_TEST_FILTER})")
+    TARGET_DESCRIPTION="tests from files: $(IFS=', '; echo "${TEST_FILES[*]}")"
+    TARGET_LABEL="${TEST_FILES[0]}"
+elif [ "${#SPECIFIC_TESTS[@]}" -gt 0 ]; then
+    COMBINED_TEST_FILTER="$(join_regex_values "${SPECIFIC_TESTS[@]}")"
+    TEST_ARGS+=(--filter "(${COMBINED_TEST_FILTER})")
+    TARGET_DESCRIPTION="specific tests: $(IFS=', '; echo "${SPECIFIC_TESTS[*]}")"
+    TARGET_LABEL="${SPECIFIC_TESTS[0]}"
 elif [ -n "${suite_filter_regex}" ]; then
     TEST_ARGS+=(--filter "${suite_filter_regex}")
 fi
@@ -213,7 +233,7 @@ if [ "${STRICT}" -eq 1 ]; then
     TEST_ARGS+=(-Xswiftc -strict-concurrency=complete)
 fi
 
-if [ "${PARALLEL_OVERRIDE_SET}" -eq 0 ] && [ -z "${TEST_FILE}" ] && [ -z "${SPECIFIC_TEST}" ] && [ "${suite_allows_parallel}" -eq 1 ]; then
+if [ "${PARALLEL_OVERRIDE_SET}" -eq 0 ] && [ "${#TEST_FILES[@]}" -eq 0 ] && [ "${#SPECIFIC_TESTS[@]}" -eq 0 ] && [ "${suite_allows_parallel}" -eq 1 ]; then
     PARALLEL_ENABLED=1
 fi
 
@@ -379,7 +399,17 @@ if [ "${AGENT_MODE}" -eq 1 ]; then
         ma_agent_failure_excerpt "${LOG_PATH}" "error:|fatal error:|Test Case .* failed|Test Suite .* failed|failed" 20 80
     fi
 
-    ma_agent_write_result_json "${RESULT_PATH}" "test" "${STATUS}" "${DURATION}" "${LOG_PATH}" "${ERROR_COUNT}" "${RESULT_LINE}"
+    TEST_FILES_JSON="[]"
+    TESTS_JSON="[]"
+    if [ "${#TEST_FILES[@]}" -gt 0 ]; then
+        TEST_FILES_JSON="$(ma_agent_json_array "${TEST_FILES[@]}")"
+    fi
+    if [ "${#SPECIFIC_TESTS[@]}" -gt 0 ]; then
+        TESTS_JSON="$(ma_agent_json_array "${SPECIFIC_TESTS[@]}")"
+    fi
+    DECISION_JSON="{\"strategy\":\"test\",\"suite\":\"$(ma_agent_json_escape "${SUITE}")\",\"targetedFiles\":${TEST_FILES_JSON},\"targetedTests\":${TESTS_JSON}}"
+    COMMANDS_JSON="[{\"name\":\"swift test\",\"status\":\"${STATUS}\",\"durationSec\":${DURATION},\"log\":\"$(ma_agent_json_escape "${LOG_PATH}")\"}]"
+    ma_agent_write_result_json "${RESULT_PATH}" "test" "${STATUS}" "${DURATION}" "${LOG_PATH}" "${ERROR_COUNT}" "${RESULT_LINE}" "${COMMANDS_JSON}" "${DECISION_JSON}"
     ma_agent_emit_result "test" "${STATUS}" "${DURATION}" "${LOG_PATH}" "${ERROR_COUNT}" "${RESULT_LINE}" "${RESULT_PATH}"
     exit "${EXIT_CODE}"
 fi
