@@ -97,9 +97,26 @@ if [[ "${AGENT_MODE}" -eq 1 ]]; then
         ERROR_COUNT=0
     fi
 
-    cat > "${RESULT_PATH}" <<JSON
-{"step":"summary-benchmark","status":"${STATUS}","durationSec":${DURATION},"log":"${LOG_PATH}","errorCount":${ERROR_COUNT},"summary":"${SUMMARY}"}
-JSON
+    python3 - "${RESULT_PATH}" "${STATUS}" "${DURATION}" "${LOG_PATH}" "${ERROR_COUNT}" "${SUMMARY}" "${MODE}" "${BENCHMARK_RESULT_PATH}" <<'PY'
+import json
+import sys
+
+result_path, status, duration, log_path, error_count, summary, mode, benchmark_result = sys.argv[1:]
+result = {
+    "schemaVersion": 2,
+    "step": "summary-benchmark",
+    "status": status,
+    "durationSec": int(duration),
+    "log": log_path,
+    "errorCount": int(error_count),
+    "commands": [{"name": "summary-benchmark", "status": status, "durationSec": int(duration), "log": log_path}],
+    "decision": {"strategy": mode, "benchmarkResult": benchmark_result},
+    "summary": summary,
+}
+with open(result_path, "w", encoding="utf-8") as handle:
+    json.dump(result, handle, separators=(",", ":"))
+    handle.write("\n")
+PY
 
     echo "AGENT_STEP=summary-benchmark"
     echo "AGENT_STATUS=${STATUS}"

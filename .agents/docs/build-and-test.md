@@ -254,6 +254,11 @@ Agents automatically capture build/test output and diagnostics.
 - `AGENT_SUMMARY` — human-readable summary
 - `AGENT_RESULT_JSON` — structured result
 
+Agent result files use `schemaVersion: 2` and contain the step status, duration,
+error count, executed command summaries, and validation decision. They contain
+log paths and metadata only; full logs remain on disk and prompts, transcripts,
+file contents, and secrets are never embedded in the JSON.
+
 On failure, scripts print compact excerpts to terminal while keeping full logs on disk.
 
 ## Minimum Verification Gates

@@ -80,6 +80,20 @@ Minimum expectation:
 
 `make preflight` remains optional and does not replace lane merge gates.
 
+### Evidence Contract
+
+Every handoff, commit, or PR must state:
+
+- risk level and selected lane;
+- reusable-block decision (`reuse`, `extend`, or `create`);
+- files or subsystem inspected;
+- commands executed and their results;
+- escalation rationale when a broader gate ran;
+- known baseline failures and whether they are in scope;
+- review outcome, including unresolved Minor findings when applicable.
+
+Fast lane evidence must include scoped checks and the final `make scope-check` result. Full lane evidence must include scoped iteration checks, `make lint`, `make build-test`, and the thermo-nuclear semaforo review. A dry-run is planning evidence only and never substitutes for the executed gate.
+
 ## Scoped Validation
 
 Use this order during implementation:
@@ -136,6 +150,7 @@ Compact-mode notes:
 
 - Full logs are written under `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`.
 - Scripts emit deterministic `AGENT_*` summary lines for pass/fail parsing.
+- `*.result.json` files use schema version 2 with command summaries and the selected validation decision; they contain metadata and log paths, never prompts, transcripts, file contents, or secrets.
 - Use compact mode for iteration; keep lane merge gates unchanged.
 
 Agent delivery sequence:
@@ -157,6 +172,7 @@ Tests are intentionally not run before every commit: staged lint/format is the c
 - Keep version/build bumps out of functional commits. The pre-commit hook may run `scripts/hooks/first-commit-version-bump.sh`; use `SKIP_DAILY_VERSION_BUMP=1 git commit ...` for normal atomic commits, then make a separate `chore(release): bump version` commit when a release/version bump is actually intended.
 - Do not commit knowingly broken code.
 - Use PRs for non-trivial work unless the user explicitly chooses the direct local merge path.
+- Prefer a GitHub PR with squash merge for non-trivial work. Use the direct local merge exception only when opening a PR is impractical, and record the rationale in the commit or a follow-up issue.
 - Use `gh --body-file` patterns for multiline GitHub content.
 - Prefer non-interactive Git commands.
 - Avoid destructive commands unless the user explicitly requested them.
@@ -186,6 +202,8 @@ gh pr create --body-file /tmp/prisma-gh-body.md
 gh issue comment <id> --body-file /tmp/prisma-gh-body.md
 ```
 
+PR descriptions should include a concise summary, scope/risk, validation commands and results, review findings, baseline failures, and rollback or follow-up notes when relevant. Never include secrets, full transcripts, or large raw logs.
+
 ## Evidence To Report
 
 Always report:
@@ -196,6 +214,8 @@ Always report:
 - review outcome when relevant
 - escalation rationale, if any
 - known baseline failures, if any
+
+For Full lane work, Critical and Medium review findings block handoff until fixed. Minor findings may be deferred only with an explicit follow-up note.
 
 ## Hook and Troubleshooting Notes
 

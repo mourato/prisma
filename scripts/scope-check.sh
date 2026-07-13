@@ -25,6 +25,7 @@ LOG_PATH="/tmp/ma-scope-check-$$.log"
 RESULT_PATH=""
 
 TMP_FILES=()
+TARGETED_TESTS_RESULT=()
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -336,6 +337,8 @@ main() {
     local should_run_intermediate=0
     local reason
     local test_identifier
+    local targeted_test_args=""
+    local quoted_test_identifier
     local file_path
     local module_name
 
@@ -427,6 +430,13 @@ main() {
     echo "- Added lines vs HEAD: ${added_lines}"
     echo "- Candidate targeted tests: ${targeted_count}"
 
+    while IFS= read -r test_identifier; do
+        [ -n "${test_identifier}" ] || continue
+        TARGETED_TESTS_RESULT+=("${test_identifier}")
+        quoted_test_identifier="$(printf '%q' "${test_identifier}")"
+        targeted_test_args+=" --file ${quoted_test_identifier}"
+    done < "${targeted_tests_file}"
+
     # Fast-fail: run lint first (cheap gate, catches style issues before build)
     if [ "${code_relevant}" -eq 1 ]; then
         echo "- Running lint gate..."
@@ -484,14 +494,13 @@ main() {
         echo "- Narrow build step skipped (--no-build)"
     fi
 
-    while IFS= read -r test_identifier; do
-        [ -n "${test_identifier}" ] || continue
+    if [ -n "${targeted_test_args}" ]; then
         if [ "${AGENT_MODE}" -eq 1 ]; then
-            run_cmd "./scripts/run-tests.sh --suite dev --file ${test_identifier} --agent" || return $?
+            run_cmd "./scripts/run-tests.sh --suite dev${targeted_test_args} --agent" || return $?
         else
-            run_cmd "./scripts/run-tests.sh --suite dev --file ${test_identifier}" || return $?
+            run_cmd "./scripts/run-tests.sh --suite dev${targeted_test_args}" || return $?
         fi
-    done < "${targeted_tests_file}"
+    fi
 
     return 0
 }
@@ -526,7 +535,13 @@ emit_agent_result() {
         fi
     fi
 
-    ma_agent_write_result_json "${RESULT_PATH}" "scope-check" "${status}" "${duration}" "${LOG_PATH}" "${error_count}" "${summary}"
+    targeted_tests_json="[]"
+    if [ "${#TARGETED_TESTS_RESULT[@]}" -gt 0 ]; then
+        targeted_tests_json="$(ma_agent_json_array "${TARGETED_TESTS_RESULT[@]}")"
+    fi
+    commands_json="[{\"name\":\"scope-check\",\"status\":\"${status}\",\"durationSec\":${duration},\"log\":\"$(ma_agent_json_escape "${LOG_PATH}")\"}]"
+    decision_json="{\"strategy\":\"scoped-validation\",\"targetedTests\":${targeted_tests_json}}"
+    ma_agent_write_result_json "${RESULT_PATH}" "scope-check" "${status}" "${duration}" "${LOG_PATH}" "${error_count}" "${summary}" "${commands_json}" "${decision_json}"
     ma_agent_emit_result "scope-check" "${status}" "${duration}" "${LOG_PATH}" "${error_count}" "${summary}" "${RESULT_PATH}"
 }
 
