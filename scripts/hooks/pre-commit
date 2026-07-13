@@ -8,6 +8,29 @@ DAILY_BUMP_SCRIPT="${PROJECT_ROOT}/scripts/hooks/first-commit-version-bump.sh"
 
 cd "${PROJECT_ROOT}"
 
+# GUI clients may provide a reduced PATH that does not include Homebrew's bin
+# directory. Resolve the installed tools explicitly so the hook behaves the
+# same from a terminal and from a desktop Git client.
+find_tool() {
+    local tool="$1"
+
+    if command -v "${tool}" &> /dev/null; then
+        command -v "${tool}"
+        return 0
+    fi
+
+    for candidate in \
+        "/opt/homebrew/bin/${tool}" \
+        "/usr/local/bin/${tool}"; do
+        if [ -x "${candidate}" ]; then
+            echo "${candidate}"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 # Auto-bump version on the first commit of the day.
 if [ -x "${DAILY_BUMP_SCRIPT}" ]; then
     "${DAILY_BUMP_SCRIPT}"
@@ -35,12 +58,14 @@ if [ "${SKIP_LINT}" = "1" ]; then
 fi
 
 # Required tools are part of the staged Swift gate.
-if ! command -v swiftformat &> /dev/null; then
+SWIFTFORMAT="$(find_tool swiftformat || true)"
+if [ -z "${SWIFTFORMAT}" ]; then
     echo "❌ SwiftFormat is required for staged Swift checks. Install with: brew install swiftformat"
     exit 1
 fi
 
-if ! command -v swiftlint &> /dev/null; then
+SWIFTLINT="$(find_tool swiftlint || true)"
+if [ -z "${SWIFTLINT}" ]; then
     echo "❌ SwiftLint is required for staged Swift checks. Install with: brew install swiftlint"
     exit 1
 fi
@@ -55,10 +80,8 @@ echo "1️⃣  Checking code formatting..."
 FORMAT_FAILED=0
 for file in $STAGED_FILES; do
     if [ -f "$file" ]; then
-        if command -v swiftformat &> /dev/null; then
-            if ! swiftformat --lint --config .swiftformat "$file" 2>/dev/null; then
-                FORMAT_FAILED=1
-            fi
+        if ! "${SWIFTFORMAT}" --lint --config .swiftformat "$file" 2>/dev/null; then
+            FORMAT_FAILED=1
         fi
     fi
 done
@@ -75,10 +98,8 @@ echo "2️⃣  Running SwiftLint..."
 LINT_FAILED=0
 for file in $STAGED_FILES; do
     if [ -f "$file" ]; then
-        if command -v swiftlint &> /dev/null; then
-            if ! swiftlint lint --config .swiftlint.yml --quiet "$file" 2>/dev/null; then
-                LINT_FAILED=1
-            fi
+        if ! "${SWIFTLINT}" lint --config .swiftlint.yml --quiet "$file" 2>/dev/null; then
+            LINT_FAILED=1
         fi
     fi
 done
