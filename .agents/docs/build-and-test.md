@@ -6,12 +6,11 @@ This document provides comprehensive CLI and workflow reference for building, te
 
 Choose commands by lane:
 
-- Fast lane merge gate: `make scope-check`
-- Full lane merge gate: `make lint-strict` + `make build-test`
+- Canonical Fast/Full/auto merge gate: `make validate-agent ARGS="--lane auto"`
 - Workflow fixture gate: `make workflow-test`
 - Optional comprehensive validation: `make preflight`
 
-Agent default loop: preview with `make scope-check-agent ARGS="--dry-run --base main"` when needed, run the smallest changed-path check, let the staged pre-commit hook enforce Swift lint/format, then let pre-push run compact scoped validation. Do not run tests before every commit by default; use targeted tests and the lane gates for behavioral confidence.
+Agent default loop: preview with `make validate-agent ARGS="--lane auto --dry-run --base main"` when needed, run the smallest changed-path check, let the staged pre-commit hook enforce Swift lint/format, then let pre-push run the compact canonical lane runner. Do not run tests before every commit by default; use targeted tests and the lane runner for final evidence.
 
 ## Primary Build/Test Commands
 
@@ -139,8 +138,8 @@ make test-ci-strict      # Strict xcodebuild parity mode
 | `make test-sensitive` | Audio/concurrency/persistence focus | High-risk subsystem checks |
 | `make test-appkit` | Overlay lifecycle coverage | AppKit-specific changes |
 | `make test-parity` | Xcode parity diagnostics | Build-system parity checks |
-| `make scope-check` | Smart scoped validation + escalation | Fast lane merge gate |
-| `make build-test` | Build + xcode test gate | Full lane merge gate |
+| `make scope-check` | Smart scoped validation + escalation | Iteration feedback |
+| `make validate-agent` | Fingerprinted Fast/Full/auto evidence | Merge gate |
 | `make preflight` | Build + test + lint + benchmark | Optional comprehensive pass |
 
 ### Run specific tests
@@ -156,8 +155,9 @@ make test-ci-strict      # Strict xcodebuild parity mode
 Use this sequence while implementing, then keep lane merge gates at the end:
 
 ```bash
-# Canonical smart command (auto-maps tests, escalates to full gate when needed)
+# Canonical smart command for iteration (auto-maps tests, escalates when needed)
 make scope-check
+make validate-agent ARGS="--lane auto"  # Canonical merge evidence
 
 # Fastest confidence pass
 make test-smoke
@@ -177,7 +177,7 @@ make arch-check
 For agent planning, preview the decision without running checks:
 
 ```bash
-make scope-check-agent ARGS="--dry-run --base main"
+make validate-agent ARGS="--lane auto --dry-run --base main"
 ```
 
 Escalate early to `make build-test` when touching build/test/release infrastructure, cross-module/public APIs, or high-risk paths (audio, persistence, concurrency, security), or when scoped checks are flaky/inconclusive.
@@ -265,13 +265,18 @@ error count, executed command summaries, and validation decision. They contain
 log paths and metadata only; full logs remain on disk and prompts, transcripts,
 file contents, and secrets are never embedded in the JSON.
 
+`validate-agent` adds a content-addressed fingerprint covering the requested and
+selected lane, base commit, working-tree content representation, gate inputs,
+toolchain identities, and runner schema. Only exact `PASS` evidence with
+existing child results and matching fingerprints can be reused. Use
+`--no-reuse` after flaky or inconclusive behavior; dry-run output is never proof.
+
 On failure, scripts print compact excerpts to terminal while keeping full logs on disk.
 
 ## Minimum Verification Gates
 
 **Before push/merge (mandatory):**
-- ✓ Fast lane: `make scope-check`
-- ✓ Full lane: `make lint-strict` + `make build-test`
+- ✓ Canonical lane: `make validate-agent ARGS="--lane auto"`
 - ✓ Guidance changes (`AGENTS.md`, `.agents/`, command docs): `make guidance-check`
 
 **Recommended before merge:**

@@ -79,13 +79,13 @@ Fast lane:
 
 - Use a feature branch and small implementation slices.
 - Run the smallest relevant changed-path checks.
-- Use `make scope-check` as the merge gate.
+- Use `make validate-agent ARGS="--lane fast"` as the merge gate.
 
 Full lane:
 
 - Use a new feature branch and atomic commits.
 - Run targeted checks and narrow builds during iteration.
-- Before push/merge, run `make lint-strict` and `make build-test`.
+- Before push/merge, run `make validate-agent ARGS="--lane full"`; it owns strict lint then build-test exactly once.
 - Changes to `scripts/`, `Makefile`, build/test infrastructure, or broad architecture require the full gate even when mapping appears narrow.
 - Full code review uses the thermo-nuclear semaforo: fix all Critical and Medium findings before merge.
 
@@ -99,7 +99,7 @@ make lint-agent
 make guidance-check
 ```
 
-Use targeted tests before narrow builds, and scope-specific checks only when relevant. The staged pre-commit hook performs SwiftFormat/SwiftLint without tests; the pre-push hook runs compact scoped validation. `SKIP_LINT=1` and `SKIP_TESTS=1` are emergency bypasses only. Use `make preflight-agent` or `make deliverable-gate` for release or high-confidence validation.
+Use targeted tests before narrow builds, and scope-specific checks only when relevant. The staged pre-commit hook performs SwiftFormat/SwiftLint without tests; the pre-push hook runs the compact canonical lane runner. `SKIP_LINT=1` and `SKIP_TESTS=1` are emergency bypasses only. Use `make preflight-agent` or `make deliverable-gate` for release or high-confidence validation.
 
 ## Canonical Commands and References
 
@@ -107,7 +107,7 @@ Use targeted tests before narrow builds, and scope-specific checks only when rel
 
 - `make build`, `make build-agent`, `make build-test`
 - `make test`, `make test-agent`, `make test-full`, `make test-smoke`
-- `make scope-check`, `make scope-check-agent`
+- `make scope-check`, `make scope-check-agent`, `make validate-agent`
 - `make lint`, `make lint-agent`, `make lint-strict`, `make lint-strict-agent`, `make lint-fix`
 - `make arch-check`, `make preview-check`, `make guidance-check`
 - `make preflight`, `make preflight-agent`, `make deliverable-gate`

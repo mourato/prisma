@@ -65,7 +65,7 @@ Minimum expectation:
 
 - Run staged lint/format checks or equivalent lightweight checks when relevant.
 - Run scoped checks first when the change could affect behavior.
-- Before push/merge, run `make scope-check`.
+- Before push/merge, run `make validate-agent ARGS="--lane fast"`.
 
 ### Full lane (Medium/High risk)
 
@@ -73,10 +73,8 @@ Minimum expectation:
 
 - During development, run scoped checks continuously.
 - Prefer compact `*-agent` commands during iteration; use `make scope-check-agent ARGS="--dry-run --base main"` as a planning preview when the gate is unclear.
-- Reserve `make build-test` for milestone validation and mandatory merge gate.
-- Before push/merge, run:
-  - `make lint-strict` (fast-fail before build)
-  - `make build-test`
+- Reserve direct `make build-test` for uncached milestone checks; final merge evidence is owned by `make validate-agent`.
+- Before push/merge, run `make validate-agent ARGS="--lane full"`; it runs strict lint then build-test once and emits the aggregate evidence.
 
 `make preflight` remains optional and does not replace lane merge gates.
 
@@ -92,7 +90,7 @@ Every handoff, commit, or PR must state:
 - known baseline failures and whether they are in scope;
 - review outcome, including unresolved Minor findings when applicable.
 
-Fast lane evidence must include scoped checks and the final `make scope-check` result. Full lane evidence must include scoped iteration checks, `make lint-strict`, `make build-test`, and the thermo-nuclear semaforo review. A dry-run is planning evidence only and never substitutes for the executed gate.
+Fast/Full lane evidence must include scoped iteration checks, the final `make validate-agent` aggregate and the thermo-nuclear semaforo review when required. A dry-run is planning evidence only and never substitutes for the executed gate.
 
 ## Scoped Validation
 
@@ -103,7 +101,7 @@ Use this order during implementation:
 3. Scope-specific checks: `make preview-check`, `make arch-check`, or `make guidance-check`.
 4. Full suite gate: `make build-test` when required by lane or escalation triggers.
 
-Canonical automation for this sequence: `make scope-check`.
+Canonical automation for iteration: `make scope-check`; canonical final evidence: `make validate-agent`.
 
 Escalate immediately to full suite (`make build-test`) when:
 
@@ -124,6 +122,7 @@ Run these scope checks only when relevant:
 ```bash
 # Core gates
 make scope-check
+make validate-agent ARGS="--lane auto"
 make build-test
 make lint
 make preflight
@@ -133,6 +132,7 @@ make build-agent
 make test-agent
 make lint-agent
 make scope-check-agent
+make validate-agent ARGS="--lane auto --agent"
 make workflow-test
 make preflight-agent
 
@@ -153,15 +153,16 @@ Compact-mode notes:
 - Scripts emit deterministic `AGENT_*` summary lines for pass/fail parsing.
 - `*.result.json` files use schema version 2 with command summaries and the selected validation decision; they contain metadata and log paths, never prompts, transcripts, file contents, or secrets.
 - `make workflow-test` runs disposable, deterministic fixtures for diff selection, risk thresholds, result schema, quoting, invalid refs, and concurrent artifact isolation without invoking Xcode.
+- `make validate-agent` is the canonical final lane runner. Its content-addressed PASS fingerprint covers source state, gate inputs, toolchain, base, lane, and runner schema; reuse fails closed when any child result is missing, corrupt, non-PASS, or mismatched. Use `--no-reuse` after flaky or inconclusive behavior.
 - Use compact mode for iteration; keep lane merge gates unchanged.
 
 Agent delivery sequence:
 
-1. Preview the scoped decision when needed with `make scope-check-agent ARGS="--dry-run --base main"`; this does not prove the change.
+1. Preview the lane decision when needed with `make validate-agent ARGS="--lane auto --dry-run --base main"`; this does not prove the change.
 2. Run the smallest meaningful changed-path check: targeted tests, `make build-agent`, `make preview-check`, `make arch-check`, or `make guidance-check`.
 3. Before commit, the staged pre-commit hook runs SwiftFormat and SwiftLint for staged Swift files. Run `make lint-fix` when it fails; `SKIP_LINT=1` is an explicit emergency bypass.
-4. Before push, the pre-push hook runs `make scope-check-agent ARGS="--base <default-branch>"`. Set `PUSH_CHECK_VERBOSE=1` for human-readable output; `SKIP_TESTS=1` remains an emergency bypass.
-5. Full-lane changes require `make lint-strict` and `make build-test`. `make lint-strict-agent` is the compact equivalent; advisory SwiftLint warnings remain visible in its report.
+4. Before push, the pre-push hook runs `make validate-agent ARGS="--lane auto --base <default-branch> --agent"`. Set `PUSH_CHECK_VERBOSE=1` for human-readable output; `SKIP_TESTS=1` remains an emergency bypass.
+5. Final Fast/Full evidence uses `make validate-agent`; `--no-reuse` is required after flaky or inconclusive behavior.
 6. Use `make preflight-agent` or `make deliverable-gate` for release or high-confidence validation.
 
 Tests are intentionally not run before every commit: staged lint/format is the cheap mechanical gate, while tests remain scoped to behavior and lane/risk requirements.

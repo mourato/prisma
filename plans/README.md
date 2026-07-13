@@ -256,7 +256,7 @@ honor its STOP conditions, and update your row when done.
 | 053 | Decide whether optional CloudKit sync fits Prisma's privacy boundary | P3 | L | 049 | DONE |
 | 054 | Retire the repository-wide Swift lint baseline and enable strict gating | P2 | M | 032 | DONE |
 | 055 | Make scoped validation correct for committed diffs and safe under parallel agents | P1 | M | 032 | DONE |
-| 056 | Provide one canonical lane runner with safe evidence reuse | P1 | L | 055 | TODO |
+| 056 | Provide one canonical lane runner with safe evidence reuse | P1 | L | 055 | DONE |
 | 057 | Reduce recurring agent context through an active ledger and routed skill references | P1 | M | - | TODO |
 | 058 | Build a global agent-efficiency evaluator with model-attributed cost | P1 | L | - | TODO |
 | 059 | Tune global routing and root reasoning from controlled cost-quality evidence | P1 | M | 058 | TODO |
