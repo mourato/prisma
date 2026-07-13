@@ -75,12 +75,22 @@ If the sandbox is unavailable or the CI cost/privacy trade-off is not acceptable
 
 ## Done criteria
 
-- [ ] A sandbox/no-sandbox decision is explicit.
-- [ ] No secret or personal transcript enters the repository or artifacts.
-- [ ] Fixture benchmarks remain deterministic and blocking where currently required.
-- [ ] Any implemented harness is opt-in and non-blocking.
-- [ ] Review and gates are recorded.
-- [ ] `plans/README.md` status row updated.
+- [x] A sandbox/no-sandbox decision is explicit.
+- [x] No secret or personal transcript enters the repository or artifacts.
+- [x] Fixture benchmarks remain deterministic and blocking where currently required.
+- [x] Any implemented harness is opt-in and non-blocking.
+- [x] Review and gates are recorded.
+- [x] `plans/README.md` status row updated.
+
+## Validation evidence — 2026-07-12
+
+- Added `.agents/reports/provider-drift-benchmark-design-2026-07-12.md`.
+- Decision: no controlled provider sandbox exists, so no live harness or CI workflow was added. Issue #107 remains open as a P3 prerequisite.
+- `make benchmark-summary`: passed in report-only mode; fixture baseline unchanged.
+- `make test-sensitive`: 114 executed, 17 skipped, 108 passed, 6 known `RecordingManagerTests` readiness failures; `StorageServiceSecurityTests` passed 7/7.
+- `make lint`: non-blocking repository baseline; 362/504 files require formatting and 288 warnings.
+- `make build-test`: build passed; 993 executed, 17 skipped, 977 passed, 16 known `MetricsDashboardViewModelTests` failures. CoreSimulator/service warnings are environmental.
+- Thermo/security review: no unresolved Critical/Medium findings. No credentials, provider output, user recordings, or personal transcript data were added.
 
 ## STOP conditions
 
