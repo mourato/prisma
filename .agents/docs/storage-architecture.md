@@ -112,7 +112,7 @@ API keys and tokens are stored through [`KeychainManager.swift`](../../Packages/
 
 Meeting history, transcript content, metadata, and audio are persisted locally in the app-support/Core Data and recording-file boundaries described above. The app may send content to an explicitly selected remote transcription or language-model provider as part of a configured execution path; that network behavior is separate from persistence and must not be described as local storage synchronization.
 
-There is currently no shipped CloudKit/iCloud synchronization, automatic backup, or cross-device history replication. CloudKit remains a product/privacy decision in plan 053. FRC/FTS and incremental-history changes remain measurement-gated follow-ups in issues #97 and #98; the current implementation uses bounded metadata queries and notification-driven reloads.
+There is currently no shipped CloudKit/iCloud synchronization, automatic backup, or cross-device history replication. The current decision is documented in [`cloudkit-boundary-decision-2026-07-12.md`](../reports/cloudkit-boundary-decision-2026-07-12.md): reject CloudKit for sensitive history, defer a narrow preference allowlist, and prioritize local export/import. FRC/FTS and incremental-history changes remain measurement-gated follow-ups in issues #97 and #98; the current implementation uses bounded metadata queries and notification-driven reloads.
 
 ## Change checklist
 

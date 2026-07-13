@@ -70,12 +70,21 @@ Run thermo/security review for any prototype. Record approved, deferred, or reje
 
 ## Done criteria
 
-- [ ] Syncable/prohibited/local-only data is explicit.
-- [ ] Privacy, conflict, deletion, opt-out, and migration behavior is defined.
-- [ ] Local-first guarantees remain intact.
-- [ ] No production CloudKit implementation was added during the spike.
-- [ ] Issue #54 contains the current decision and priority.
-- [ ] `plans/README.md` status row updated.
+- [x] Syncable/prohibited/local-only data is explicit.
+- [x] Privacy, conflict, deletion, opt-out, and migration behavior is defined.
+- [x] Local-first guarantees remain intact.
+- [x] No production CloudKit implementation was added during the spike.
+- [x] Issue #54 contains the current decision and priority.
+- [x] `plans/README.md` status row updated.
+
+## Validation evidence — 2026-07-12
+
+- Added `.agents/reports/cloudkit-boundary-decision-2026-07-12.md` and linked it from `.agents/docs/storage-architecture.md`.
+- Decision: reject CloudKit for sensitive history/audio/metadata/credentials; defer only a narrowly allowlisted non-sensitive preference experiment; prioritize local export/import.
+- `make test-sensitive`: 114 executed, 17 skipped, 108 passed, 6 known `RecordingManagerTests` readiness failures; `StorageServiceSecurityTests` passed 7/7.
+- `make arch-check`: passed.
+- `make build-agent`: passed on the unchanged source state; no prototype or production code was added.
+- Thermo/privacy review: no unresolved Critical/Medium findings. No entitlements, network sync, credentials, or remote state were added.
 
 ## STOP conditions
 
