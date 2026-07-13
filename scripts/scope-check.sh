@@ -27,6 +27,9 @@ DIFF_RANGE_LABEL="HEAD -> working tree"
 
 TMP_FILES=()
 TARGETED_TESTS_RESULT=()
+FULL_RISK_REASONS=()
+SELECTED_LANE="fast"
+DECISION_STRATEGY="scoped-validation"
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -454,6 +457,24 @@ main() {
         should_run_full=1
     fi
 
+    FULL_RISK_REASONS=()
+    if [ -s "${full_reasons_file}" ]; then
+        while IFS= read -r reason; do
+            [ -n "${reason}" ] || continue
+            FULL_RISK_REASONS+=("${reason}")
+        done < "${full_reasons_file}"
+    fi
+    if [ "${should_run_full}" -eq 1 ]; then
+        SELECTED_LANE="full"
+        DECISION_STRATEGY="full-gate"
+    elif [ "${should_run_intermediate}" -eq 1 ]; then
+        SELECTED_LANE="fast"
+        DECISION_STRATEGY="intermediate-gate"
+    else
+        SELECTED_LANE="fast"
+        DECISION_STRATEGY="scoped-validation"
+    fi
+
     echo "Scoped validation plan:"
     echo "- Changed files: $(wc -l < "${changed_file_list}" | tr -d ' ')"
     echo "- Source files changed: ${source_files_changed}"
@@ -569,8 +590,12 @@ emit_agent_result() {
     if [ "${#TARGETED_TESTS_RESULT[@]}" -gt 0 ]; then
         targeted_tests_json="$(ma_agent_json_array "${TARGETED_TESTS_RESULT[@]}")"
     fi
+    reasons_json="[]"
+    if [ "${#FULL_RISK_REASONS[@]}" -gt 0 ]; then
+        reasons_json="$(ma_agent_json_array "${FULL_RISK_REASONS[@]}")"
+    fi
     commands_json="[{\"name\":\"scope-check\",\"status\":\"${status}\",\"durationSec\":${duration},\"log\":\"$(ma_agent_json_escape "${LOG_PATH}")\"}]"
-    decision_json="{\"strategy\":\"scoped-validation\",\"targetedTests\":${targeted_tests_json}}"
+    decision_json="{\"strategy\":\"${DECISION_STRATEGY}\",\"selectedLane\":\"${SELECTED_LANE}\",\"fullRisk\":$([ "${SELECTED_LANE}" = "full" ] && echo true || echo false),\"reasons\":${reasons_json},\"targetedTests\":${targeted_tests_json},\"diffRange\":\"$(ma_agent_json_escape "${DIFF_RANGE_LABEL}")\"}"
     ma_agent_write_result_json "${RESULT_PATH}" "scope-check" "${status}" "${duration}" "${LOG_PATH}" "${error_count}" "${summary}" "${commands_json}" "${decision_json}"
     ma_agent_emit_result "scope-check" "${status}" "${duration}" "${LOG_PATH}" "${error_count}" "${summary}" "${RESULT_PATH}"
 }

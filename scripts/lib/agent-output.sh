@@ -306,15 +306,20 @@ ma_agent_write_result_json() {
     local summary="$7"
     local commands_json="${8:-}"
     local decision_json="${9:-}"
+    local validation_fingerprint="${10:-${MA_AGENT_VALIDATION_FINGERPRINT:-}}"
+    local fingerprint_json=""
     if [ -z "${commands_json}" ]; then
         commands_json="[]"
     fi
     if [ -z "${decision_json}" ]; then
         decision_json="{}"
     fi
+    if [ -n "${validation_fingerprint}" ]; then
+        fingerprint_json=",\"validationFingerprint\":\"$(ma_agent_json_escape "${validation_fingerprint}")\""
+    fi
 
     cat > "${result_path}" <<JSON
-{"schemaVersion":2,"step":"$(ma_agent_json_escape "${step}")","status":"$(ma_agent_json_escape "${status}")","durationSec":${duration_sec},"log":"$(ma_agent_json_escape "${log_path}")","errorCount":${error_count},"commands":${commands_json},"decision":${decision_json},"summary":"$(ma_agent_json_escape "${summary}")"}
+{"schemaVersion":2,"step":"$(ma_agent_json_escape "${step}")","status":"$(ma_agent_json_escape "${status}")","durationSec":${duration_sec},"log":"$(ma_agent_json_escape "${log_path}")","errorCount":${error_count},"commands":${commands_json},"decision":${decision_json}${fingerprint_json},"summary":"$(ma_agent_json_escape "${summary}")"}
 JSON
 }
 

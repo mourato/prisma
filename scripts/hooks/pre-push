@@ -16,7 +16,7 @@ if [ -z "${DEFAULT_BRANCH}" ]; then
 fi
 
 if [ "${PUSH_CHECK_VERBOSE:-0}" = "1" ]; then
-    make scope-check ARGS="--base ${DEFAULT_BRANCH}"
+    make validate-agent ARGS="--lane auto --base ${DEFAULT_BRANCH}"
 else
-    make scope-check-agent ARGS="--base ${DEFAULT_BRANCH}"
+    make validate-agent ARGS="--lane auto --base ${DEFAULT_BRANCH} --agent"
 fi
