@@ -31,8 +31,8 @@ reason) | `REJECTED` (with a one-line rationale).
 | [056](056-create-canonical-lane-runner.md) | Provide one canonical lane runner with safe evidence reuse | P1 | L | 055 | DONE |
 | [057](057-reduce-agent-guidance-context.md) | Reduce recurring agent context through an active ledger and routed skill references | P1 | M | - | DONE |
 | [058](058-build-global-agent-efficiency-evaluator.md) | Build a global agent-efficiency evaluator with model-attributed cost | P1 | L | - | BLOCKED (six-task controlled rerun lacks independent task/role/model attribution) |
-| [059](059-tune-global-agent-routing.md) | Tune global routing and root reasoning from controlled cost-quality evidence | P1 | M | 058 | TODO |
-| [060](060-evaluate-lean-tools-fast-implementer.md) | Evaluate a lean code profile and a Fast-lane implementer before enabling either | P2 | M | 058, 059 | TODO |
+| [059](059-tune-global-agent-routing.md) | Tune global routing and root reasoning from controlled cost-quality evidence | P1 | M | 058 | BLOCKED (waits for attributed quality/cost evidence from 058) |
+| [060](060-evaluate-lean-tools-fast-implementer.md) | Evaluate a lean code profile and a Fast-lane implementer before enabling either | P2 | M | 058, 059 | BLOCKED (waits for 058 and 059) |
 
 Plans 001–039 and 041–054 are completed or archived in the historical ledger;
 plan 040 remains active. The archive preserves the original audit scope,
