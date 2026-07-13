@@ -79,13 +79,13 @@ Run thermo review focused on Core Data context ownership, stale selection, activ
 
 ## Done criteria
 
-- [ ] Bounded query behavior is verified before measurement.
-- [ ] Deterministic fixtures cover query, mapping, and reload costs at multiple dataset sizes.
-- [ ] A measured decision exists for #97 and #98.
-- [ ] No FRC/FTS code was added without measured justification.
-- [ ] Focused tests, `make test-perf`, build, lint, and full gate are recorded.
-- [ ] Thermo review has no unresolved Critical/Medium findings.
-- [ ] `plans/README.md` status row updated.
+- [x] Bounded query behavior is verified before measurement.
+- [x] Deterministic fixtures cover query, mapping, and reload costs at multiple dataset sizes.
+- [x] A measured decision exists for #97 and #98.
+- [x] No FRC/FTS code was added without measured justification.
+- [x] Focused tests, `make test-perf`, build, lint, and full gate are recorded.
+- [x] Thermo review has no unresolved Critical/Medium findings.
+- [x] `plans/README.md` status row updated.
 
 ## STOP conditions
 
