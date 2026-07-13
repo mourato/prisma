@@ -114,6 +114,10 @@
 "settings.general.audio_format" = "Audio Format";
 "settings.general.merge_audio" = "Merge audio files after recording";
 "settings.general.launch_at_login" = "Launch at login";
+"settings.general.launch_at_login.error_title" = "Launch at login couldn't be updated";
+"settings.general.launch_at_login.registration_error" = "Prisma couldn't enable Launch at Login. Check System Settings > General > Login Items and make sure this copy of Prisma is allowed to run at login, then retry.";
+"settings.general.launch_at_login.unregistration_error" = "Prisma couldn't disable Launch at Login. Check System Settings > General > Login Items and remove or disable Prisma there, then retry.";
+"settings.general.launch_at_login.retry" = "Retry";
 
 /* Storage Settings */
 "settings.general.storage" = "Storage";

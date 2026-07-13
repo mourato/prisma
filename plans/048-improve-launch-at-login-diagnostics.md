@@ -74,12 +74,22 @@ Run `make lint` and `make build-test`, then record the final behavior in the iss
 
 ## Done criteria
 
-- [ ] Launch-at-login failures are visible and actionable.
-- [ ] Toggle state rolls back consistently on failure.
-- [ ] Tests do not require real signing or SMAppService registration.
-- [ ] Localization, preview, build, lint, and full gates pass.
-- [ ] Thermo review has no unresolved Critical/Medium findings.
-- [ ] `plans/README.md` status row updated.
+- [x] Launch-at-login failures are visible and actionable.
+- [x] Toggle state rolls back consistently on failure.
+- [x] Tests do not require real signing or SMAppService registration.
+- [x] Localization, preview, build, lint, and full gates pass.
+- [x] Thermo review has no unresolved Critical/Medium findings.
+- [x] `plans/README.md` status row updated.
+
+## Validation evidence — 2026-07-12
+
+- `swift test --package-path Packages/MeetingAssistantCore --filter 'GeneralSettings.*Tests|AppSettingsStoreCapabilityTests'`: 13 passed.
+- `swift test --package-path Packages/MeetingAssistantCore --filter 'LocalizationKeyIntegrityTests|GeneralSettings.*Tests|AppSettingsStoreCapabilityTests'`: 15 passed.
+- `make preview-check`: passed.
+- `make build-agent`: passed.
+- `make lint`: non-blocking repository baseline; 362/504 files require formatting and 288 warnings. The touched files have no new blocking violation.
+- `make build-test`: build passed; 993 executed, 17 skipped, 977 passed, 16 known `MetricsDashboardViewModelTests` failures. CoreSimulator device-support and service-availability messages are environmental.
+- Thermo/accessibility review: no unresolved Critical/Medium findings. The alert is localized in EN/PT, exposes only stable failure categories, preserves VoiceOver-readable title/message/actions, and provides retry plus rollback.
 
 ## STOP conditions
 

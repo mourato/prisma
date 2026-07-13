@@ -31,7 +31,7 @@ public struct GeneralSettingsTab: View {
         openDictionary: (() -> Void)? = nil,
         openSound: (() -> Void)? = nil,
         openProtectedApps: (() -> Void)? = nil,
-        openPermissions: (() -> Void)? = nil
+        openPermissions: (() -> Void)? = nil,
     ) {
         self.showsHeader = showsHeader
         self.headerTitleKey = headerTitleKey
@@ -48,7 +48,7 @@ public struct GeneralSettingsTab: View {
             if showsHeader {
                 SettingsSectionHeader(
                     title: headerTitleKey.localized,
-                    description: headerDescriptionKey.localized
+                    description: headerDescriptionKey.localized,
                 )
             }
 
@@ -58,24 +58,24 @@ public struct GeneralSettingsTab: View {
             SettingsListGroup("settings.general.app_behavior".localized, icon: "app.badge") {
                 DSToggleRow(
                     "settings.general.launch_at_login".localized,
-                    isOn: $viewModel.launchAtLogin
+                    isOn: $viewModel.launchAtLogin,
                 )
 
                 DSToggleRow(
                     "settings.general.show_in_dock".localized,
                     description: "settings.general.show_in_dock_desc".localized,
-                    isOn: $viewModel.showInDock
+                    isOn: $viewModel.showInDock,
                 )
 
                 DSToggleRow(
                     "settings.general.show_settings_on_launch".localized,
-                    isOn: $viewModel.showSettingsOnLaunch
+                    isOn: $viewModel.showSettingsOnLaunch,
                 )
 
                 HStack(alignment: .center, spacing: 12) {
                     SettingsTitleWithPopover(
                         title: "settings.general.shortcut_double_tap_interval".localized,
-                        helperMessage: "settings.general.shortcut_double_tap_interval_desc".localized
+                        helperMessage: "settings.general.shortcut_double_tap_interval_desc".localized,
                     )
 
                     Spacer()
@@ -101,7 +101,7 @@ public struct GeneralSettingsTab: View {
                 HStack(alignment: .top, spacing: 12) {
                     SettingsTitleWithPopover(
                         title: "settings.general.cancel_recording_shortcut".localized,
-                        helperMessage: "settings.general.cancel_recording_shortcut_desc".localized
+                        helperMessage: "settings.general.cancel_recording_shortcut_desc".localized,
                     )
 
                     Spacer()
@@ -110,7 +110,7 @@ public struct GeneralSettingsTab: View {
                         shortcut: $recordingCancelShortcutViewModel.cancelRecordingShortcutDefinition,
                         conflictMessage: recordingCancelShortcutViewModel.cancelRecordingShortcutConflictMessage,
                         showsTitle: false,
-                        maxInputWidth: AppDesignSystem.Layout.maxCompactTextFieldWidth
+                        maxInputWidth: AppDesignSystem.Layout.maxCompactTextFieldWidth,
                     )
                 }
             }
@@ -159,7 +159,7 @@ public struct GeneralSettingsTab: View {
                         title: "settings.context_awareness.protect_sensitive_apps".localized,
                         subtitle: "settings.context_awareness.protect_sensitive_apps_desc".localized,
                         accessibilityHint: "settings.context_awareness.protect_sensitive_apps".localized,
-                        action: openProtectedApps
+                        action: openProtectedApps,
                     )
                 }
             }
@@ -170,7 +170,7 @@ public struct GeneralSettingsTab: View {
                         title: "settings.section.permissions".localized,
                         subtitle: "settings.permissions.description".localized,
                         accessibilityHint: "settings.system.permissions.accessibility_hint".localized,
-                        action: openPermissions
+                        action: openPermissions,
                     )
                 }
             }
@@ -178,7 +178,7 @@ public struct GeneralSettingsTab: View {
         .confirmationDialog(
             "settings.storage.cleanup_confirm_title".localized,
             isPresented: $viewModel.showCleanupConfirmationDialog,
-            titleVisibility: .visible
+            titleVisibility: .visible,
         ) {
             Button("settings.storage.cleanup_confirm_delete".localized, role: .destructive) {
                 viewModel.confirmCleanup()
@@ -194,12 +194,27 @@ public struct GeneralSettingsTab: View {
         }
         .alert("common.error".localized, isPresented: Binding(
             get: { viewModel.cleanupError != nil },
-            set: { if !$0 { viewModel.cleanupError = nil } }
+            set: { if !$0 { viewModel.cleanupError = nil } },
         )) {
             Button("common.ok".localized, role: .cancel) {}
         } message: {
             if let error = viewModel.cleanupError {
                 Text(error)
+            }
+        }
+        .alert("settings.general.launch_at_login.error_title".localized, isPresented: Binding(
+            get: { viewModel.launchAtLoginError != nil },
+            set: { if !$0 { viewModel.dismissLaunchAtLoginError() } },
+        )) {
+            Button("settings.general.launch_at_login.retry".localized) {
+                viewModel.retryLaunchAtLogin()
+            }
+            Button("common.ok".localized, role: .cancel) {
+                viewModel.dismissLaunchAtLoginError()
+            }
+        } message: {
+            if let error = viewModel.launchAtLoginError {
+                Text(error.messageKey.localized)
             }
         }
         .onAppear {
@@ -216,28 +231,28 @@ public struct GeneralSettingsTab: View {
                     title: "settings.section.models".localized,
                     subtitle: "settings.models.description".localized,
                     accessibilityHint: "settings.section.models".localized,
-                    action: openModels
+                    action: openModels,
                 )
 
                 SettingsListDrillDownButtonRow(
                     title: "settings.section.vocabulary".localized,
                     subtitle: "settings.vocabulary.description".localized,
                     accessibilityHint: "settings.section.vocabulary".localized,
-                    action: openDictionary
+                    action: openDictionary,
                 )
 
                 SettingsListDrillDownButtonRow(
                     title: "settings.section.audio".localized,
                     subtitle: "settings.general.audio_devices_desc".localized,
                     accessibilityHint: "settings.section.audio".localized,
-                    action: openSound
+                    action: openSound,
                 )
 
                 SettingsListDrillDownButtonRow(
                     title: "settings.section.permissions".localized,
                     subtitle: "settings.permissions.description".localized,
                     accessibilityHint: "settings.system.permissions.accessibility_hint".localized,
-                    action: openPermissions
+                    action: openPermissions,
                 )
             }
         }
@@ -248,7 +263,7 @@ public struct GeneralSettingsTab: View {
                     title: "settings.context_awareness.protect_sensitive_apps".localized,
                     subtitle: "settings.context_awareness.protect_sensitive_apps_desc".localized,
                     accessibilityHint: "settings.context_awareness.protect_sensitive_apps".localized,
-                    action: openProtectedApps
+                    action: openProtectedApps,
                 )
             }
         }
@@ -259,7 +274,7 @@ public struct GeneralSettingsTab: View {
             DSToggleRow(
                 "settings.general.recording_indicator.enabled".localized,
                 description: "settings.general.recording_indicator.enabled_desc".localized,
-                isOn: $viewModel.recordingIndicatorEnabled.animated()
+                isOn: $viewModel.recordingIndicatorEnabled.animated(),
             )
 
             if viewModel.recordingIndicatorEnabled {
@@ -296,7 +311,7 @@ public struct GeneralSettingsTab: View {
                 HStack(spacing: 12) {
                     SettingsTitleWithPopover(
                         title: "settings.general.recording_indicator.animation_speed".localized,
-                        helperMessage: "settings.general.recording_indicator.animation_speed_desc".localized
+                        helperMessage: "settings.general.recording_indicator.animation_speed_desc".localized,
                     )
 
                     Spacer()
@@ -320,7 +335,7 @@ public struct GeneralSettingsTab: View {
                 HStack(alignment: .center, spacing: 12) {
                     SettingsTitleWithPopover(
                         title: "settings.general.auto_delete".localized,
-                        helperMessage: "settings.general.auto_delete_desc".localized
+                        helperMessage: "settings.general.auto_delete_desc".localized,
                     )
 
                     Spacer()
@@ -352,7 +367,7 @@ public struct GeneralSettingsTab: View {
             get: {
                 StorageRetentionOption(
                     autoDeleteEnabled: viewModel.autoDeleteTranscriptions,
-                    days: viewModel.autoDeletePeriodDays
+                    days: viewModel.autoDeletePeriodDays,
                 )
             },
             set: { option in
@@ -360,7 +375,7 @@ public struct GeneralSettingsTab: View {
                 if let days = option.days {
                     viewModel.autoDeletePeriodDays = days
                 }
-            }
+            },
         )
     }
 
@@ -371,7 +386,7 @@ public struct GeneralSettingsTab: View {
 
         return String(
             format: "settings.storage.cleanup_now".localized,
-            viewModel.autoDeletePeriodDays
+            viewModel.autoDeletePeriodDays,
         )
     }
 

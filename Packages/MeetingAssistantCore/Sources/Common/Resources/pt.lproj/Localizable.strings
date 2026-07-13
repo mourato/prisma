@@ -115,6 +115,10 @@
 "settings.general.audio_format" = "Formato de Áudio";
 "settings.general.merge_audio" = "Mesclar arquivos de áudio ao finalizar";
 "settings.general.launch_at_login" = "Iniciar ao fazer login";
+"settings.general.launch_at_login.error_title" = "Não foi possível atualizar o início automático";
+"settings.general.launch_at_login.registration_error" = "Não foi possível ativar o início automático do Prisma. Verifique Ajustes do Sistema > Geral > Itens de Início e permita que esta cópia do Prisma seja iniciada, depois tente novamente.";
+"settings.general.launch_at_login.unregistration_error" = "Não foi possível desativar o início automático do Prisma. Verifique Ajustes do Sistema > Geral > Itens de Início e remova ou desative o Prisma, depois tente novamente.";
+"settings.general.launch_at_login.retry" = "Tentar novamente";
 
 /* Storage Settings */
 "settings.general.storage" = "Armazenamento";

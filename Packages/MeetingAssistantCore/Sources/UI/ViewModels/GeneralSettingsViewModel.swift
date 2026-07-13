@@ -8,7 +8,6 @@ import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import os
-import ServiceManagement
 import SwiftUI
 
 @MainActor
@@ -16,6 +15,7 @@ public class GeneralSettingsViewModel: ObservableObject {
     private let settingsStore: AppSettingsStore
     private let storage: StorageService
     private let localAICacheMaintenance: LocalAICacheMaintenanceService
+    private let launchAtLoginService: any LaunchAtLoginService
 
     @Published public var autoStartRecording: Bool {
         didSet {
@@ -189,13 +189,17 @@ public class GeneralSettingsViewModel: ObservableObject {
 
     @Published public var launchAtLogin: Bool {
         didSet {
+            let previousValue = oldValue
+
             // Avoid infinite loop if we revert the state
             guard launchAtLogin != settingsStore.launchAtLogin else { return }
 
             settingsStore.launchAtLogin = launchAtLogin
-            updateLaunchAtLogin(launchAtLogin)
+            updateLaunchAtLogin(launchAtLogin, previousValue: previousValue)
         }
     }
+
+    @Published public private(set) var launchAtLoginError: LaunchAtLoginUpdateError?
 
     @Published public var microphoneWhenChargingUID: String? {
         didSet {
@@ -226,11 +230,13 @@ public class GeneralSettingsViewModel: ObservableObject {
     public init(
         settingsStore: AppSettingsStore = .shared,
         storage: StorageService = FileSystemStorageService.shared,
-        localAICacheMaintenance: LocalAICacheMaintenanceService = .shared
+        localAICacheMaintenance: LocalAICacheMaintenanceService = .shared,
+        launchAtLoginService: any LaunchAtLoginService = SystemLaunchAtLoginService(),
     ) {
         self.settingsStore = settingsStore
         self.storage = storage
         self.localAICacheMaintenance = localAICacheMaintenance
+        self.launchAtLoginService = launchAtLoginService
         autoStartRecording = settingsStore.autoStartRecording
         recordingsPath = settingsStore.recordingsDirectory
         audioFormat = settingsStore.audioFormat
@@ -261,6 +267,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         showInDock = settingsStore.showInDock
         appearanceMode = settingsStore.appearanceMode
         launchAtLogin = settingsStore.launchAtLogin
+        launchAtLoginError = nil
 
         setupDeviceObservation()
         rebuildAvailableDevices()
@@ -324,7 +331,7 @@ public class GeneralSettingsViewModel: ObservableObject {
             audioCount,
             audioSize,
             cacheCount,
-            cacheSize
+            cacheSize,
         )
     }
 
@@ -376,26 +383,36 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
-    private func updateLaunchAtLogin(_ enabled: Bool) {
-        let service = SMAppService.mainApp
+    private func updateLaunchAtLogin(_ enabled: Bool, previousValue: Bool) {
+        launchAtLoginError = nil
+
         do {
             if enabled {
-                if service.status != .enabled {
-                    try service.register()
+                if !launchAtLoginService.isEnabled {
+                    try launchAtLoginService.register()
                 }
-            } else {
-                if service.status == .enabled {
-                    try service.unregister()
-                }
+            } else if launchAtLoginService.isEnabled {
+                try launchAtLoginService.unregister()
             }
         } catch {
+            let failure: LaunchAtLoginUpdateError = enabled ? .registrationFailed : .unregistrationFailed
             Self.logger.error("Failed to update launch at login: \(error.localizedDescription)")
 
-            // Revert state on failure
-            DispatchQueue.main.async { [weak self] in
-                self?.launchAtLogin = !enabled
-            }
+            settingsStore.launchAtLogin = previousValue
+            launchAtLogin = previousValue
+            launchAtLoginError = failure
         }
+    }
+
+    public func retryLaunchAtLogin() {
+        guard let launchAtLoginError else { return }
+
+        self.launchAtLoginError = nil
+        launchAtLogin = launchAtLoginError.requestedValue
+    }
+
+    public func dismissLaunchAtLoginError() {
+        launchAtLoginError = nil
     }
 
     public func performCleanup() {
