@@ -43,10 +43,10 @@ final class SettingsSearchIndexTests: XCTestCase {
         XCTAssertEqual(section, .integrations)
     }
 
-    func testSectionMappingRoutesStylesKeysToDictationSection() {
+    func testSectionMappingRoutesStylesKeysToModesSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.styles.title")
 
-        XCTAssertEqual(section, .dictation)
+        XCTAssertEqual(section, .modes)
     }
 
     func testSectionMappingRoutesDictationModelSelectorToDictationSection() {
@@ -143,7 +143,7 @@ final class SettingsSearchIndexTests: XCTestCase {
         )
         XCTAssertEqual(
             SettingsSearchIndex.destination(forLocalizationKey: "settings.context_awareness.accessibility_text"),
-            SettingsSection.dictation.destination,
+            SettingsSection.modes.destination,
         )
     }
 
@@ -160,14 +160,14 @@ final class SettingsSearchIndexTests: XCTestCase {
         assertLocalizedQuery("settings.section.models", routesTo: .system)
     }
 
-    func testQueryTextRoutesToDictationSection() {
-        assertLocalizedQuery("settings.section.ai", routesTo: .dictation)
+    func testQueryTextRoutesToModesSection() {
+        assertLocalizedQuery("settings.section.ai", routesTo: .modes)
     }
 
-    func testQueryContextSourcesRoutesToDictationSection() {
-        assertLocalizedQuery("settings.styles.editor.context_sources", routesTo: .dictation)
-        assertLocalizedQuery("settings.context_awareness.accessibility_text", routesTo: .dictation)
-        assertLocalizedQuery("settings.context_awareness.clipboard", routesTo: .dictation)
+    func testQueryContextSourcesRoutesToModesSection() {
+        assertLocalizedQuery("settings.styles.editor.context_sources", routesTo: .modes)
+        assertLocalizedQuery("settings.context_awareness.accessibility_text", routesTo: .modes)
+        assertLocalizedQuery("settings.context_awareness.clipboard", routesTo: .modes)
     }
 
     func testQueryDictionaryRoutesToSettingsSection() {
@@ -188,9 +188,9 @@ final class SettingsSearchIndexTests: XCTestCase {
         XCTAssertEqual(section, .system)
     }
 
-    func testSectionForKeyAILabelRoutesToDictation() {
+    func testSectionForKeyAILabelRoutesToModes() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.section.ai")
-        XCTAssertEqual(section, .dictation)
+        XCTAssertEqual(section, .modes)
     }
 
     func testSectionForKeyVocabularyLabelRoutesToSettings() {

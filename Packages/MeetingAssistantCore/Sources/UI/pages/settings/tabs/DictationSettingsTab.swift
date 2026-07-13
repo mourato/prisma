@@ -34,12 +34,8 @@ public struct DictationSettingsTab: View {
         switch navigationState.currentRoute {
         case nil:
             rootPage
-        case .some(.modes):
-            StylesSettingsTab()
-        case .some(.postProcessing):
-            EnhancementsSettingsTab(content: .postProcessing)
-        case .some(.userPrompts):
-            UserPromptsSettingsTab()
+        case .some:
+            rootPage
         }
     }
 
@@ -68,32 +64,6 @@ public struct DictationSettingsTab: View {
                     }
                 },
             )
-
-            SettingsListGroup("settings.dictation.modes_and_prompts.title".localized, icon: "paintpalette") {
-                SettingsListDrillDownButtonRow(
-                    title: "settings.dictation.modes.title".localized,
-                    subtitle: "settings.dictation.modes.description".localized,
-                    accessibilityHint: "settings.dictation.modes.accessibility_hint".localized,
-                ) {
-                    navigationState.open(.modes)
-                }
-
-                SettingsListDrillDownButtonRow(
-                    title: "settings.dictation.user_prompts.title".localized,
-                    subtitle: "settings.dictation.user_prompts.description".localized,
-                    accessibilityHint: "settings.dictation.user_prompts.accessibility_hint".localized,
-                ) {
-                    navigationState.open(.userPrompts)
-                }
-
-                SettingsListDrillDownButtonRow(
-                    title: "settings.post_processing.title".localized,
-                    subtitle: "settings.post_processing.description".localized,
-                    accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized,
-                ) {
-                    navigationState.open(.postProcessing)
-                }
-            }
 
             SettingsListGroup("settings.dictation.text_handling".localized, icon: "cpu") {
                 DSToggleRow(

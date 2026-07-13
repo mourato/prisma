@@ -3,6 +3,7 @@
 "settings.section.metrics" = "Dashboard";
 "settings.section.general" = "Geral";
 "settings.section.dictation" = "Ditado";
+"settings.section.modes" = "Modos";
 "settings.section.meetings" = "Reuniões";
 "settings.section.audio" = "Som";
 "settings.section.transcriptions" = "Transcrições";
@@ -201,6 +202,7 @@
 "settings.meetings.web_targets.delete_confirm_message" = "Tem certeza que deseja excluir \"%@\"?";
 "settings.dictation.prompts" = "Prompts do usuário";
 "settings.dictation.modes_and_prompts.title" = "Modos e Prompts do usuário";
+"settings.modes.prompts.title" = "Prompts e pós-processamento";
 "settings.dictation.modes.title" = "Modos";
 "settings.dictation.modes.description" = "Defina modos reutilizáveis e associe-os a múltiplos apps e sites.";
 "settings.dictation.modes.accessibility_hint" = "Abre modos reutilizáveis de ditado para apps e sites.";

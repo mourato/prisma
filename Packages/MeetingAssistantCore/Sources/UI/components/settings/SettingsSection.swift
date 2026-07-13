@@ -4,17 +4,20 @@ public struct SettingsDestination: Equatable, Sendable {
     public let section: SettingsSection
     public let activityRoute: ActivitySettingsRoute?
     public let dictationRoute: DictationSettingsRoute?
+    public let modesRoute: ModesSettingsRoute?
     public let systemRoute: SystemSettingsRoute?
 
     public init(
         section: SettingsSection,
         activityRoute: ActivitySettingsRoute? = nil,
         dictationRoute: DictationSettingsRoute? = nil,
+        modesRoute: ModesSettingsRoute? = nil,
         systemRoute: SystemSettingsRoute? = nil,
     ) {
         self.section = section
         self.activityRoute = activityRoute
         self.dictationRoute = dictationRoute
+        self.modesRoute = modesRoute
         self.systemRoute = systemRoute
     }
 }
@@ -24,6 +27,7 @@ public struct SettingsDestination: Equatable, Sendable {
 public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     case metrics
     case dictation
+    case modes
     case assistant
     case integrations
     case meetings
@@ -45,6 +49,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     public static let primarySections: [SettingsSection] = [
         .activity,
         .dictation,
+        .modes,
         .meetings,
         .assistant,
         .integrations,
@@ -58,6 +63,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         [
             .activity,
             .dictation,
+            .modes,
             .meetings,
             .assistant,
             .integrations,
@@ -69,7 +75,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .metrics, .transcriptions, .models, .enhancements, .vocabulary, .permissions, .general, .intelligence, .audio:
             true
-        case .activity, .dictation, .meetings, .assistant, .integrations, .system:
+        case .activity, .dictation, .modes, .meetings, .assistant, .integrations, .system:
             false
         }
     }
@@ -89,7 +95,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .vocabulary:
             SettingsDestination(section: .system, systemRoute: .dictionary)
         case .enhancements:
-            SettingsDestination(section: .dictation, dictationRoute: .postProcessing)
+            SettingsDestination(section: .modes, modesRoute: .postProcessing)
         case .permissions:
             SettingsDestination(section: .system, systemRoute: .permissions)
         case .general:
@@ -98,7 +104,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
             SettingsDestination(section: .system, systemRoute: .sound)
         case .intelligence:
             SettingsDestination(section: .system, systemRoute: .models)
-        case .activity, .dictation, .meetings, .assistant, .integrations, .system:
+        case .activity, .dictation, .modes, .meetings, .assistant, .integrations, .system:
             SettingsDestination(section: self)
         }
     }
@@ -116,6 +122,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .metrics: "settings.section.metrics".localized
         case .general: "settings.section.general".localized
         case .dictation: "settings.section.dictation".localized
+        case .modes: "settings.section.modes".localized
         case .meetings: "settings.section.meetings".localized
         case .audio: "settings.section.audio".localized
         case .assistant: "settings.section.assistant".localized
@@ -136,6 +143,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .metrics: "chart.pie.fill"
         case .general: "gearshape.2"
         case .dictation: "microphone"
+        case .modes: "paintpalette"
         case .meetings: "bubble.left.and.text.bubble.right"
         case .audio: "speaker.wave.2"
         case .assistant: "sparkle"

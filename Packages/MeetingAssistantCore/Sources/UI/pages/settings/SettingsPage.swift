@@ -40,6 +40,7 @@ public struct SettingsView: View {
     @State private var transcriptionsSearchText = ""
     @State private var meetingNavigationState = MeetingSettingsNavigationState()
     @State private var dictationNavigationState = SettingsSubpageNavigationState<DictationSettingsRoute>()
+    @State private var modesNavigationState = SettingsSubpageNavigationState<ModesSettingsRoute>()
     @State private var enhancementsNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
     @State private var systemRoute: SystemSettingsRoute = .root
     @State private var columnVisibility: NavigationSplitViewVisibility
@@ -391,6 +392,8 @@ private extension SettingsView {
             _ = meetingNavigationState.goBack()
         case .dictation where dictationNavigationState.canGoBack:
             _ = dictationNavigationState.goBack()
+        case .modes where modesNavigationState.canGoBack:
+            _ = modesNavigationState.goBack()
         case .enhancements where enhancementsNavigationState.canGoBack:
             _ = enhancementsNavigationState.goBack()
         case .system where systemRoute != .root:
@@ -408,6 +411,8 @@ private extension SettingsView {
             _ = meetingNavigationState.goForward()
         case .dictation where dictationNavigationState.canGoForward:
             _ = dictationNavigationState.goForward()
+        case .modes where modesNavigationState.canGoForward:
+            _ = modesNavigationState.goForward()
         case .enhancements where enhancementsNavigationState.canGoForward:
             _ = enhancementsNavigationState.goForward()
         default:
@@ -426,6 +431,13 @@ private extension SettingsView {
                 dictationNavigationState.open(dictationRoute)
             } else {
                 dictationNavigationState = SettingsSubpageNavigationState()
+            }
+        }
+        if destination.section == .modes {
+            if let modesRoute = destination.modesRoute {
+                modesNavigationState.open(modesRoute)
+            } else {
+                modesNavigationState = SettingsSubpageNavigationState()
             }
         }
         if destination.section == .system {
@@ -470,6 +482,8 @@ private extension SettingsView {
             meetingNavigationState.canGoBack
         case .dictation:
             dictationNavigationState.canGoBack
+        case .modes:
+            modesNavigationState.canGoBack
         case .enhancements:
             enhancementsNavigationState.canGoBack
         case .system:
@@ -487,6 +501,8 @@ private extension SettingsView {
             meetingNavigationState.canGoForward
         case .dictation:
             dictationNavigationState.canGoForward
+        case .modes:
+            modesNavigationState.canGoForward
         case .enhancements:
             enhancementsNavigationState.canGoForward
         default:
@@ -508,6 +524,8 @@ private extension SettingsView {
             VocabularySettingsTab()
         case .dictation:
             DictationSettingsTab(navigationState: $dictationNavigationState)
+        case .modes:
+            ModesSettingsTab(navigationState: $modesNavigationState)
         case .meetings:
             MeetingSettingsTab(navigationState: $meetingNavigationState)
         case .assistant:

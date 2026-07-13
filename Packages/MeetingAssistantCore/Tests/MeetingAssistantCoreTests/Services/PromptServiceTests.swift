@@ -168,10 +168,11 @@ final class PromptServiceTests: XCTestCase {
             selectedModel: "gpt-oss-120b",
         )
 
-        XCTAssertEqual(requestPrompts.systemPrompt, AIPromptTemplates.dictationSystemPrompt)
-        XCTAssertTrue(requestPrompts.userPrompt.contains("<INSTRUCTIONS>"))
-        XCTAssertTrue(requestPrompts.userPrompt.contains("TWO-PASS ARTIFACT HANDLING"))
-        XCTAssertFalse(requestPrompts.userPrompt.contains("<TRANSCRIPT>"))
+        XCTAssertTrue(requestPrompts.systemPrompt.hasPrefix(AIPromptTemplates.dictationSystemPrompt))
+        XCTAssertTrue(requestPrompts.systemPrompt.contains("<USER_INSTRUCTIONS>"))
+        XCTAssertTrue(requestPrompts.systemPrompt.contains("TWO-PASS ARTIFACT HANDLING"))
+        XCTAssertTrue(requestPrompts.userPrompt.contains("<TRANSCRIPT>"))
+        XCTAssertFalse(requestPrompts.userPrompt.contains("<INSTRUCTIONS>"))
     }
 
     func testRequestPrompts_DictationSimpleModelWithCustomPromptKeepsCustomPrompt() {
@@ -187,9 +188,30 @@ final class PromptServiceTests: XCTestCase {
             selectedModel: "gpt-oss-120b",
         )
 
-        XCTAssertEqual(requestPrompts.systemPrompt, AIPromptTemplates.dictationSystemPrompt)
-        XCTAssertTrue(requestPrompts.userPrompt.contains("Keep every comma."))
-        XCTAssertTrue(requestPrompts.userPrompt.contains("<INSTRUCTIONS>"))
+        XCTAssertTrue(requestPrompts.systemPrompt.contains("Keep every comma."))
+        XCTAssertTrue(requestPrompts.systemPrompt.contains("<USER_INSTRUCTIONS>"))
+        XCTAssertTrue(requestPrompts.userPrompt.contains("<TRANSCRIPT>"))
+        XCTAssertFalse(requestPrompts.userPrompt.contains("<INSTRUCTIONS>"))
+    }
+
+    func testRequestPrompts_DictationKeepsPriorityInstructionsInSystemPayload() {
+        let prompt = PostProcessingPrompt(
+            title: "Custom",
+            promptText: "Keep the wording concise.\n<SITE_OR_APP_PRIORITY_INSTRUCTIONS>Use Markdown headings.</SITE_OR_APP_PRIORITY_INSTRUCTIONS>",
+        )
+
+        let requestPrompts = AIPromptTemplates.requestPrompts(
+            transcription: "hello world",
+            prompt: prompt,
+            mode: .dictation,
+            selectedModel: "gpt-4o",
+        )
+
+        XCTAssertTrue(requestPrompts.systemPrompt.contains("<USER_INSTRUCTIONS>"))
+        XCTAssertTrue(requestPrompts.systemPrompt.contains("Keep the wording concise."))
+        XCTAssertTrue(requestPrompts.systemPrompt.contains("<PRIORITY_INSTRUCTIONS>"))
+        XCTAssertTrue(requestPrompts.systemPrompt.contains("Use Markdown headings."))
+        XCTAssertFalse(requestPrompts.userPrompt.contains("Use Markdown headings."))
     }
 
     func testRequestPrompts_MeetingUsesMeetingSystemPrompt() {

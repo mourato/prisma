@@ -82,7 +82,7 @@ enum SettingsSearchIndex {
         }
 
         if modeOwnedContextKeys.contains(key) {
-            return SettingsSection.dictation.destination
+            return SettingsSection.modes.destination
         }
 
         if key.hasPrefix("settings.general.") {

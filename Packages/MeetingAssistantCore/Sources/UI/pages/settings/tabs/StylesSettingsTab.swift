@@ -6,32 +6,21 @@ public struct StylesSettingsTab: View {
     @StateObject private var viewModel: DictationStylesSettingsViewModel
     @StateObject private var aiSettingsViewModel: AISettingsViewModel
     @State private var selectedStyleID: UUID?
+    private let embedded: Bool
 
-    public init(settings: AppSettingsStore = .shared) {
+    public init(settings: AppSettingsStore = .shared, embedded: Bool = false) {
         _viewModel = StateObject(wrappedValue: DictationStylesSettingsViewModel(settings: settings))
         _aiSettingsViewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
+        self.embedded = embedded
     }
 
     public var body: some View {
-        SettingsScrollableContent {
-            SettingsSectionHeader(
-                title: "settings.section.rules_per_app".localized,
-                description: "settings.styles.description".localized,
-            )
-
-            DSGroup("settings.styles.title".localized, icon: "paintpalette") {
-                VStack(alignment: .leading, spacing: 12) {
-                    stylesList
-
-                    HStack {
-                        Spacer()
-                        Button {
-                            viewModel.openCreateStyle()
-                        } label: {
-                            Label("settings.styles.add".localized, systemImage: "plus")
-                        }
-                        .buttonStyle(.bordered)
-                    }
+        Group {
+            if embedded {
+                pageContent
+            } else {
+                SettingsScrollableContent {
+                    pageContent
                 }
             }
         }
@@ -57,6 +46,30 @@ public struct StylesSettingsTab: View {
             }
         }
         .onDeleteCommand(perform: deleteSelectedStyle)
+    }
+
+    @ViewBuilder
+    private var pageContent: some View {
+        SettingsSectionHeader(
+            title: "settings.section.rules_per_app".localized,
+            description: "settings.styles.description".localized,
+        )
+
+        DSGroup("settings.styles.title".localized, icon: "paintpalette") {
+            VStack(alignment: .leading, spacing: 12) {
+                stylesList
+
+                HStack {
+                    Spacer()
+                    Button {
+                        viewModel.openCreateStyle()
+                    } label: {
+                        Label("settings.styles.add".localized, systemImage: "plus")
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
     }
 
     @ViewBuilder

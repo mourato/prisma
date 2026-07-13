@@ -91,6 +91,8 @@ extension SettingsSearchIndex {
         "settings.context_awareness.window_ocr",
         "settings.context_awareness.window_ocr_desc",
         "settings.dictation.modes_and_prompts.title",
+        "settings.modes.prompts.title",
+        "settings.section.modes",
         "settings.dictation.modes.title",
         "settings.dictation.modes.description",
         "settings.dictation.modes.accessibility_hint",

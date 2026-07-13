@@ -3,6 +3,7 @@
 "settings.section.metrics" = "Dashboard";
 "settings.section.general" = "General";
 "settings.section.dictation" = "Dictation";
+"settings.section.modes" = "Modes";
 "settings.section.meetings" = "Meetings";
 "settings.section.audio" = "Sound";
 "settings.section.transcriptions" = "Transcriptions";
@@ -200,6 +201,7 @@
 "settings.meetings.web_targets.delete_confirm_message" = "Are you sure you want to delete \"%@\"?";
 "settings.dictation.prompts" = "User prompts";
 "settings.dictation.modes_and_prompts.title" = "Modes e User prompts";
+"settings.modes.prompts.title" = "Prompts and post-processing";
 "settings.dictation.modes.title" = "Modes";
 "settings.dictation.modes.description" = "Define reusable modes and bind them to multiple apps and websites.";
 "settings.dictation.modes.accessibility_hint" = "Opens reusable dictation modes for apps and websites.";

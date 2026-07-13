@@ -170,6 +170,20 @@ public enum AIPromptTemplates {
 
         let extracted = extractSiteOrAppPriorityInstructions(from: prompt.promptText)
         let cleanPrompt = promptContentTransformer?(extracted.cleanPrompt) ?? extracted.cleanPrompt
+
+        if mode == .dictation {
+            return RequestPrompts(
+                systemPrompt: dictationSystemPromptWithInstructions(
+                    cleanPrompt,
+                    priorityInstructions: extracted.priorityInstructions,
+                ),
+                userPrompt: simpleDictationUserMessage(
+                    transcription: transcription,
+                    contextMetadata: contextMetadata,
+                ),
+            )
+        }
+
         let systemMessage = systemPrompt(
             basePrompt: resolvedBaseSystemPrompt(mode: mode, override: baseSystemPrompt),
             priorityInstructions: extracted.priorityInstructions,
@@ -209,6 +223,39 @@ public enum AIPromptTemplates {
         case .meeting, .assistant:
             return defaultSystemPrompt
         }
+    }
+
+    private static func dictationSystemPromptWithInstructions(
+        _ instructions: String,
+        priorityInstructions: String?,
+    ) -> String {
+        let trimmedInstructions = instructions.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPriority = priorityInstructions?.trimmingCharacters(in: .whitespacesAndNewlines)
+        var sections = [dictationSystemPrompt]
+
+        if !trimmedInstructions.isEmpty {
+            sections.append(
+                """
+
+                <USER_INSTRUCTIONS>
+                \(trimmedInstructions)
+                </USER_INSTRUCTIONS>
+                """,
+            )
+        }
+
+        if let trimmedPriority, !trimmedPriority.isEmpty {
+            sections.append(
+                """
+
+                <PRIORITY_INSTRUCTIONS>
+                \(trimmedPriority)
+                </PRIORITY_INSTRUCTIONS>
+                """,
+            )
+        }
+
+        return sections.joined(separator: "\n")
     }
 
     /// Constructs a user message with transcription and specific prompt.

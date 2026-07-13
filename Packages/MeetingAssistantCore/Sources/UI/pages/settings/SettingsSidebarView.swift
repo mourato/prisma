@@ -5,7 +5,7 @@ struct SettingsSidebarView: View {
     @Binding var selectedSection: SettingsSection
     @Binding var searchText: String
     let onSelectDestination: (SettingsDestination) -> Void
-    @ScaledMetric(relativeTo: .body) private var sidebarIconSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .body) private var sidebarIconSize: CGFloat = 24
     @ScaledMetric(relativeTo: .caption) private var searchResultIconSize: CGFloat = 18
 
     var body: some View {
@@ -48,6 +48,7 @@ struct SettingsSidebarView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
+                .contentShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         }
         .buttonStyle(.plain)
         .background(sidebarButtonBackground(for: section))
