@@ -120,7 +120,8 @@ done
 if [ ! -d "${XCODEPROJ}" ]; then
     MESSAGE="Xcode project not found at ${XCODEPROJ}"
     if [ "${AGENT_MODE}" -eq 1 ]; then
-        LOG_DIR="$(ma_agent_prepare_log_dir)"
+        ma_agent_prepare_run_dir
+        LOG_DIR="${MA_AGENT_RUN_DIR}"
         LOG_PATH="${LOG_DIR}/test-swift.log"
         RESULT_PATH="${LOG_DIR}/test-swift.result.json"
         ma_agent_write_result_json "${RESULT_PATH}" "test" "FAIL" 0 "${LOG_PATH}" 1 "${MESSAGE}"
@@ -265,7 +266,8 @@ clear_stale_swiftpm_lock() {
 }
 
 if [ "${AGENT_MODE}" -eq 1 ]; then
-    LOG_DIR="$(ma_agent_prepare_log_dir)"
+    ma_agent_prepare_run_dir
+    LOG_DIR="${MA_AGENT_RUN_DIR}"
     LOG_PATH="${LOG_DIR}/test-swift-${SAFE_TARGET_LABEL}.log"
     RESULT_PATH="${LOG_DIR}/test-swift-${SAFE_TARGET_LABEL}.result.json"
 else

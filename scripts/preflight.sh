@@ -153,7 +153,8 @@ if [ "${AGENT_MODE}" -eq 0 ]; then
     exit 0
 fi
 
-LOG_DIR="$(ma_agent_prepare_log_dir)"
+ma_agent_prepare_run_dir
+LOG_DIR="${MA_AGENT_RUN_DIR}"
 RESULT_PATH="${LOG_DIR}/preflight.result.json"
 START_TIME=$(date +%s)
 

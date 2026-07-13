@@ -103,8 +103,8 @@ run_step() {
     return "${exit_code}"
 }
 
-LOG_DIR="${MA_AGENT_LOG_DIR:-/tmp/ma-agent}"
-mkdir -p "${LOG_DIR}"
+ma_agent_prepare_run_dir
+LOG_DIR="${MA_AGENT_RUN_DIR}"
 
 BUILD_OUT="${LOG_DIR}/build-test-build.step.log"
 TEST_OUT="${LOG_DIR}/build-test-test.step.log"

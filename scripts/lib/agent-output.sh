@@ -113,10 +113,34 @@ ma_agent_log_dir() {
 }
 
 ma_agent_prepare_log_dir() {
-    local dir
-    dir="$(ma_agent_log_dir)"
-    mkdir -p "${dir}"
-    printf '%s\n' "${dir}"
+    ma_agent_prepare_run_dir
+}
+
+# Create or reuse the immutable artifact tree for one agent invocation.
+# Parent scripts export MA_AGENT_RUN_DIR so nested validation commands share it.
+ma_agent_prepare_run_dir() {
+    local existing_dir="${MA_AGENT_RUN_DIR:-}"
+    if [ -n "${existing_dir}" ]; then
+        mkdir -p "${existing_dir}"
+        printf '%s\n' "${existing_dir}"
+        return
+    fi
+
+    local root
+    local repo_path
+    local repo_hash
+    local timestamp
+    local run_dir
+
+    root="$(ma_agent_log_dir)"
+    mkdir -p "${root}"
+    repo_path="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    repo_hash="$(printf '%s' "${repo_path}" | shasum -a 256 | awk '{print substr($1, 1, 16)}')"
+    timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+    run_dir="$(mktemp -d "${root}/run-${repo_hash}-${timestamp}-$$-XXXXXX")"
+
+    export MA_AGENT_RUN_DIR="${run_dir}"
+    printf '%s\n' "${run_dir}"
 }
 
 ma_agent_prepare_sandbox_env() {

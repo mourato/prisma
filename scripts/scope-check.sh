@@ -23,6 +23,7 @@ FORCE_FULL=0
 START_TIME="$(date +%s)"
 LOG_PATH="/tmp/ma-scope-check-$$.log"
 RESULT_PATH=""
+DIFF_RANGE_LABEL="HEAD -> working tree"
 
 TMP_FILES=()
 TARGETED_TESTS_RESULT=()
@@ -104,10 +105,11 @@ collect_changed_files() {
             echo "Error: base ref '${BASE_REF}' does not exist."
             return 1
         fi
-        git diff --name-only --diff-filter=ACMR "${BASE_REF}"...HEAD >> "${changed_file_list}"
+        DIFF_RANGE_LABEL="${BASE_REF} -> working tree"
     fi
 
-    git diff --name-only --diff-filter=ACMR HEAD >> "${changed_file_list}"
+    local tracked_base="${BASE_REF:-HEAD}"
+    git diff --name-only --diff-filter=ACMR "${tracked_base}" >> "${changed_file_list}"
     git ls-files --others --exclude-standard >> "${changed_file_list}"
 
     sed '/^$/d' "${changed_file_list}" | sort -u > "${changed_file_list}.sorted"
@@ -174,11 +176,39 @@ prepare_agent_logging() {
         return
     fi
     local log_dir
-    log_dir="$(ma_agent_prepare_log_dir)"
+    ma_agent_prepare_run_dir
+    log_dir="${MA_AGENT_RUN_DIR}"
     LOG_PATH="${log_dir}/scope-check.log"
     RESULT_PATH="${log_dir}/scope-check.result.json"
     : > "${LOG_PATH}"
     exec > >(tee "${LOG_PATH}") 2>&1
+}
+
+count_added_lines() {
+    local changed_file_list="$1"
+    local tracked_base="${BASE_REF:-HEAD}"
+    local tracked_added_lines
+    local untracked_added_lines=0
+    local file_path
+    local numstat
+    local added
+
+    tracked_added_lines="$(git diff --numstat --diff-filter=ACMR "${tracked_base}" -- \
+        | awk '$1 ~ /^[0-9]+$/ {sum += $1} END {print sum+0}')"
+
+    while IFS= read -r file_path; do
+        [ -n "${file_path}" ] || continue
+        if git ls-files --error-unmatch -- "${file_path}" >/dev/null 2>&1; then
+            continue
+        fi
+        numstat="$(git diff --no-index --numstat /dev/null "${file_path}" 2>/dev/null || true)"
+        added="$(printf '%s\n' "${numstat}" | awk '$1 ~ /^[0-9]+$/ {print $1; exit}')"
+        if [ -n "${added}" ]; then
+            untracked_added_lines=$((untracked_added_lines + added))
+        fi
+    done < "${changed_file_list}"
+
+    printf '%s\n' $((tracked_added_lines + untracked_added_lines))
 }
 
 should_treat_as_infra_trigger() {
@@ -395,7 +425,7 @@ main() {
         append_line_once "Cross-module change detected (${module_count} modules touched)" "${full_reasons_file}"
     fi
 
-    added_lines="$(git diff --numstat HEAD -- | awk '$1 ~ /^[0-9]+$/ {sum += $1} END {print sum+0}')"
+    added_lines="$(count_added_lines "${changed_file_list}")"
     if [ "${added_lines}" -gt 300 ]; then
         append_line_once "Large delta detected (${added_lines} added lines > 300)" "${full_reasons_file}"
     fi
@@ -427,7 +457,7 @@ main() {
     echo "Scoped validation plan:"
     echo "- Changed files: $(wc -l < "${changed_file_list}" | tr -d ' ')"
     echo "- Source files changed: ${source_files_changed}"
-    echo "- Added lines vs HEAD: ${added_lines}"
+    echo "- Added lines (${DIFF_RANGE_LABEL}): ${added_lines}"
     echo "- Candidate targeted tests: ${targeted_count}"
 
     while IFS= read -r test_identifier; do

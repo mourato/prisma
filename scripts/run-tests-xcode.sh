@@ -104,7 +104,8 @@ trap cleanup_strict_derived_data EXIT
 LOG_PATH="/tmp/ma-test-xcode-$$.log"
 RESULT_PATH=""
 if [ "${AGENT_MODE}" -eq 1 ]; then
-    LOG_DIR="$(ma_agent_prepare_log_dir)"
+    ma_agent_prepare_run_dir
+    LOG_DIR="${MA_AGENT_RUN_DIR}"
     LOG_PATH="${LOG_DIR}/test-xcode.log"
     RESULT_PATH="${LOG_DIR}/test-xcode.result.json"
 fi

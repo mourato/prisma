@@ -42,7 +42,8 @@ SOURCES="App Packages/MeetingAssistantCore/Sources"
 
 if [ "${AGENT_MODE}" -eq 1 ]; then
     ma_agent_prepare_sandbox_env "${PROJECT_ROOT}"
-    LOG_DIR="$(ma_agent_prepare_log_dir)"
+    ma_agent_prepare_run_dir
+    LOG_DIR="${MA_AGENT_RUN_DIR}"
     LINT_LOG="${LOG_DIR}/lint-swiftlint.log"
     FORMAT_LOG="${LOG_DIR}/lint-swiftformat.log"
     RESULT_PATH="${LOG_DIR}/lint.result.json"

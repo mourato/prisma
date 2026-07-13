@@ -64,7 +64,8 @@ CONFIG_SLUG="$(echo "${CONFIGURATION}" | tr '[:upper:]' '[:lower:]')"
 
 if [ "${AGENT_MODE}" -eq 1 ]; then
     ma_agent_prepare_sandbox_env "${PROJECT_ROOT}"
-    LOG_DIR="$(ma_agent_prepare_log_dir)"
+    ma_agent_prepare_run_dir
+    LOG_DIR="${MA_AGENT_RUN_DIR}"
     LOG_PATH="${LOG_DIR}/build-${CONFIG_SLUG}.log"
     RESULT_PATH="${LOG_DIR}/build-${CONFIG_SLUG}.result.json"
 else

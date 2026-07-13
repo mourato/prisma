@@ -6,6 +6,9 @@
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
+# shellcheck source=scripts/lib/agent-output.sh
+source "${SCRIPT_DIR}/lib/agent-output.sh"
+
 AGENT_MODE=0
 MODE="report-only"
 RECORD_BASELINE=0
@@ -46,8 +49,8 @@ done
 BASELINE_PATH="${PROJECT_ROOT}/Packages/MeetingAssistantCore/Tests/MeetingAssistantCoreTests/Resources/Benchmarks/summary-benchmark-baseline.v1.json"
 
 if [[ "${AGENT_MODE}" -eq 1 ]]; then
-    LOG_DIR="${MA_AGENT_LOG_DIR:-/tmp/ma-agent}"
-    mkdir -p "${LOG_DIR}"
+    ma_agent_prepare_run_dir
+    LOG_DIR="${MA_AGENT_RUN_DIR}"
     LOG_PATH="${LOG_DIR}/summary-benchmark-${MODE}.stream.log"
     RESULT_PATH="${LOG_DIR}/summary-benchmark.result.json"
     BENCHMARK_RESULT_PATH="${LOG_DIR}/summary-benchmark-result.v1.json"
