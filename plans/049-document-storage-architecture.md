@@ -68,11 +68,18 @@ Run guidance and diff checks, then update issue #51 with the document path and c
 
 ## Done criteria
 
-- [ ] Storage boundaries, migration, cleanup, credential, and privacy policies are documented.
-- [ ] The document lives under `.agents/docs/`, not root `docs/`.
-- [ ] All links/paths are valid and guidance validation passes.
-- [ ] Issue #51 is updated with the final document path.
-- [ ] `plans/README.md` status row updated.
+- [x] Storage boundaries, migration, cleanup, credential, and privacy policies are documented.
+- [x] The document lives under `.agents/docs/`, not root `docs/`.
+- [x] All links/paths are valid and guidance validation passes.
+- [x] Issue #51 is updated with the final document path.
+- [x] `plans/README.md` status row updated.
+
+## Validation evidence — 2026-07-12
+
+- Added `.agents/docs/storage-architecture.md` with current Core Data, repository, filesystem, UserDefaults, Keychain, migration, cleanup, concurrency, and privacy boundaries.
+- `make guidance-check`: passed.
+- `git diff --check`: passed.
+- Scope check: documentation files only.
 
 ## STOP conditions
 

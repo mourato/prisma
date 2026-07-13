@@ -216,7 +216,7 @@ honor its STOP conditions, and update your row when done.
 | 046 | Make custom provider setup explicit and resilient | P1 | M | 039 | DONE |
 | 047 | Decompose settings bootstrap and transcription initialization | P2 | M | 039 | DONE |
 | 048 | Improve Launch at Login failure diagnostics | P2 | S | 041 | DONE |
-| 049 | Document the current storage architecture and migration policy | P2 | M | - | TODO |
+| 049 | Document the current storage architecture and migration policy | P2 | M | - | DONE |
 | 050 | Design an opt-in live provider drift benchmark | P3 | M | 039 | TODO |
 | 051 | Re-run modularization triage and resolve confirmed hygiene findings | P3 | M | 039 | TODO |
 | 052 | Design an Assistant automation-rule spike | P3 | M | 042 | TODO |
