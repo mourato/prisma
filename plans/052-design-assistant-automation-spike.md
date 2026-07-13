@@ -68,12 +68,23 @@ Run thermo review if a prototype exists; otherwise perform a documented architec
 
 ## Done criteria
 
-- [ ] MVP scope, safety model, and vocabulary are documented.
-- [ ] Existing Assistant/integration boundaries are reused in the design.
-- [ ] No general automation engine or unsafe execution surface was added.
-- [ ] Any prototype is deterministic, tested, and reviewed.
-- [ ] Issue #91 is updated with the decision.
-- [ ] `plans/README.md` status row updated.
+- [x] MVP scope, safety model, and vocabulary are documented.
+- [x] Existing Assistant/integration boundaries are reused in the design.
+- [x] No general automation engine or unsafe execution surface was added.
+- [x] Any prototype is deterministic, tested, and reviewed.
+- [x] Issue #91 is updated with the decision.
+- [x] `plans/README.md` status row updated.
+
+## Validation evidence — 2026-07-12
+
+- Added `.agents/reports/assistant-automation-spike-2026-07-12.md`.
+- Design decision: defer implementation until the open product decisions are resolved; no prototype, persistence, editor, shell surface, or second pipeline was added.
+- `swift test --package-path Packages/MeetingAssistantCore --filter AssistantVoiceCommandServiceVocabularyTests`: 2 passed.
+- The requested broad Assistant/Integration filter selected 997 tests and reproduced the repository baseline of 16 `MetricsDashboardViewModelTests` failures; no Assistant-specific regression was identified.
+- `make build-agent`: passed.
+- `make lint`: non-blocking repository baseline; 362/504 files require formatting and 288 warnings.
+- `make build-test`: build passed; 993 executed, 17 skipped, 977 passed, 16 known `MetricsDashboardViewModelTests` failures.
+- Architecture review: no unresolved Critical/Medium findings. The design reuses existing Assistant phases, integration validation, dispatch, Keychain, and recording exclusivity boundaries.
 
 ## STOP conditions
 

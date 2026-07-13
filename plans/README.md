@@ -219,7 +219,7 @@ honor its STOP conditions, and update your row when done.
 | 049 | Document the current storage architecture and migration policy | P2 | M | - | DONE |
 | 050 | Design an opt-in live provider drift benchmark | P3 | M | 039 | DONE |
 | 051 | Re-run modularization triage and resolve confirmed hygiene findings | P3 | M | 039 | DONE |
-| 052 | Design an Assistant automation-rule spike | P3 | M | 042 | TODO |
+| 052 | Design an Assistant automation-rule spike | P3 | M | 042 | DONE |
 | 053 | Decide whether optional CloudKit sync fits Prisma's privacy boundary | P3 | L | 049 | TODO |
 | 054 | Retire the repository-wide Swift lint baseline and enable strict gating | P2 | M | 032 | TODO |
 
