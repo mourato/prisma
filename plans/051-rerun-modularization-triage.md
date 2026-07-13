@@ -71,13 +71,24 @@ Run thermo review focused on accidental module coupling, deleted context, and co
 
 ## Done criteria
 
-- [ ] Historical findings are reclassified against current main.
-- [ ] Confirmed import/comment issues are fixed or explicitly deferred.
-- [ ] No root `docs/` report is created.
-- [ ] Architecture/build/lint/full gates are recorded.
-- [ ] Thermo review has no unresolved Critical/Medium findings.
-- [ ] Issue #108 is updated with current evidence.
-- [ ] `plans/README.md` status row updated.
+- [x] Historical findings are reclassified against current main.
+- [x] Confirmed import/comment issues are fixed or explicitly deferred.
+- [x] No root `docs/` report is created.
+- [x] Architecture/build/lint/full gates are recorded.
+- [x] Thermo review has no unresolved Critical/Medium findings.
+- [x] Issue #108 is updated with current evidence.
+- [x] `plans/README.md` status row updated.
+
+## Validation evidence — 2026-07-12
+
+- `python3 scripts/modularization_triage.py --help`: supported read-only/report arguments confirmed.
+- Generated `.agents/reports/modularization-triage-2026-07-12.md` from the current build log with the optional comment heuristic.
+- `make arch-check`: passed.
+- Current triage found no reproducible `MAThemePicker` issue, no compiler error, and no confirmed missing import. Heuristic import/comment candidates were classified and deferred; no source change was justified.
+- `make build-agent`: passed.
+- `make lint`: non-blocking repository baseline; 362/504 files require formatting and 288 warnings.
+- `make build-test`: build passed; 993 executed, 17 skipped, 977 passed, 16 known `MetricsDashboardViewModelTests` failures. The source state was unchanged from the latest full gate while this report-only plan ran.
+- Thermo review: no unresolved Critical/Medium findings. The report documents why heuristic findings are not actionable regressions.
 
 ## STOP conditions
 
