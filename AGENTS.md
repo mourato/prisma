@@ -89,6 +89,13 @@ Full lane:
 - Changes to `scripts/`, `Makefile`, build/test infrastructure, or broad architecture require the full gate even when mapping appears narrow.
 - Full code review uses the thermo-nuclear semaforo: fix all Critical and Medium findings before merge.
 
+Delegation policy:
+
+- Keep simple search, explanation, bounded diff review, and small deterministic changes in the root session.
+- Delegate only broad work with independent questions; start with one explorer and add children only for distinct parallel tracks.
+- Use `implementer-fast` only as an explicit opt-in for deterministic Low/Fast work in an isolated worktree. Medium/High work uses the normal implementer and Full lane.
+- Keep model identifiers and effort defaults in global Codex config or custom agent files, not project guidance.
+
 During iteration, prefer:
 
 ```bash
@@ -118,6 +125,8 @@ Read [Build and Test Reference](./.agents/docs/build-and-test.md) for command de
 ## Skill and Information Routing
 
 Use the canonical skill for the task and no unrelated specialists. `macos-app-engineering` owns ordinary macOS UI/app implementation; `architecture`, `swift-concurrency-expert`, `audio-realtime`, `data-persistence`, `keychain-security`, `debugging-diagnostics`, `localization`, `testing-xctest`, `delivery-workflow`, `project-standards`, and `thermo-nuclear-code-quality-review` own their named domains.
+
+The root session is the default orchestrator for simple and serial work. Broad delegation must have independently verifiable workstreams and remains subject to the isolated-worktree and one-writing-agent constraints above.
 
 For external project code or documentation, prefer `MCP grep`, then `gh`, then DeepWiki, and use web search last.
 

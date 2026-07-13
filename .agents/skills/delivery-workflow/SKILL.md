@@ -43,6 +43,14 @@ Auto selects the lane before expensive work. Full executes strict lint then
 build-test once. `make preflight` and `make deliverable-gate` remain explicit
 release/high-confidence flows, not duplicate mandatory merge gates.
 
+## Delegation and effort policy
+
+- Keep simple, serial, and bounded work in the root session. Delegate only broad work with independently verifiable tracks.
+- Start with one read-only explorer when delegation is justified; add children only for distinct questions, and keep at most one writing child in an isolated worktree.
+- `implementer-fast` is explicit opt-in for deterministic Low/Fast work only. It must not receive ambiguous, Medium, or High-risk work.
+- Medium/High implementation continues through the normal implementer, review policy, and Full validation gate.
+- Model identifiers and global effort defaults belong to Codex config or custom agent files, not this skill.
+
 ## Evidence contract
 
 Every handoff, commit, or PR reports risk/lane, `reuse -> extend -> create`,

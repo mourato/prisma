@@ -21,6 +21,21 @@ When inspecting code outside this repository, use this source order:
 3. `deepwiki`
 4. Web search
 
+## Workflow Routing
+
+| Task shape | Default execution |
+|---|---|
+| Simple search, explanation, or serial edit | Root session only |
+| Bounded diff review | Root session, or one reviewer when an independent review is useful |
+| Broad diagnosis or planning | Root session plus one explorer; add a second only for a distinct independent question |
+| Implementation | Root plan plus one implementer in an isolated worktree; review according to risk |
+| Deterministic Low/Fast change | Explicit opt-in to `implementer-fast` in an isolated worktree |
+| Medium/High implementation | Normal implementer, specialist skill, and Full lane gates |
+
+Delegation is not a default optimization: it must reduce uncertainty through
+independent workstreams. Do not encode model identifiers here; global Codex
+configuration and custom agent files own model and reasoning-effort choices.
+
 ---
 
 ## Problem-Specific Routing
