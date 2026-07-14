@@ -8,6 +8,7 @@
 
 ## Status
 
+- **Status**: DONE
 - **Priority**: P1
 - **Effort**: L
 - **Risk**: HIGH
@@ -30,9 +31,9 @@ Prisma currently opens the entire mode editor as a modal sheet, while the target
 
 ## Current state
 
-- `Packages/MeetingAssistantCore/Sources/UI/pages/settings/tabs/StylesSettingsTab.swift:5-48` owns the mode list and presents `DictationStyleEditorSheet` with `.sheet(isPresented:)`.
-- `Packages/MeetingAssistantCore/Sources/UI/ViewModels/DictationStylesSettingsViewModel.swift:49-142` owns `showEditor`, an optional `editorDraft`, and save/cancel behavior.
-- `Packages/MeetingAssistantCore/Sources/UI/components/settings/DictationStyleEditorSheet.swift:79-215` is a 700x720 scrollable form containing every setting, prompt text editor, and targets editor.
+- `Packages/MeetingAssistantCore/Sources/UI/pages/settings/tabs/ModesSettingsTab.swift` owns the root/detail route and editor lifecycle.
+- `Packages/MeetingAssistantCore/Sources/UI/ViewModels/DictationStylesSettingsViewModel.swift` owns the optional draft and save/cancel behavior.
+- `Packages/MeetingAssistantCore/Sources/UI/components/settings/DictationStyleEditorDetailView.swift` is the flexible-width scrollable editor detail view.
 - `Packages/MeetingAssistantCore/Sources/UI/components/settings/SettingsDrillDownListRow.swift:3-29` is the existing native drill-down row pattern and should be reused.
 - `Packages/MeetingAssistantCore/Sources/UI/pages/settings/SettingsPage.swift:59-85` already supplies the app-level `NavigationSplitView`; do not redesign the global sidebar.
 - `DictationStyle`, `DictationStyleEditorDraft`, and `AppSettingsStore.dictationStyles` already provide the persisted data contract. Do not rename fields or migrate JSON in this plan.
@@ -93,12 +94,12 @@ Verify create, edit, cancel, save, delete, default-mode protection, and reopenin
 
 ## Done criteria
 
-- [ ] No `.sheet` presents `DictationStyleEditorSheet` from `StylesSettingsTab`.
-- [ ] Editing a mode renders in the settings detail column and supports back/cancel/save/delete.
-- [ ] The editor has no fixed width that overflows a narrow detail container.
-- [ ] Existing persisted fields and runtime matching behavior are unchanged.
-- [ ] Focused tests, `make preview-check`, and `make build-agent` pass.
-- [ ] Only in-scope files are modified.
+- [x] No `.sheet` presents the dictation-mode editor from `StylesSettingsTab`.
+- [x] Editing a mode renders in the settings detail column and supports back/cancel/save/delete.
+- [x] The editor has no fixed width that overflows a narrow detail container.
+- [x] Existing persisted fields and runtime matching behavior are unchanged.
+- [x] Focused tests and Full build/test validation pass.
+- [x] Only in-scope files were modified by the plan 66 implementation.
 
 ## STOP conditions
 
