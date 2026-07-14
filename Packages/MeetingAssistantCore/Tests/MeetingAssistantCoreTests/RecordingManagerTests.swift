@@ -558,8 +558,7 @@ extension RecordingManagerTests {
         manager.updateCalendarEventNotesText("   ", for: eventIdentifier)
     }
 
-    func testMergedPostProcessingInput_IncludesMeetingNotesBlock() throws {
-        let manager = try XCTUnwrap(manager)
+    func testMergedPostProcessingInput_IncludesMeetingNotesBlock() {
         let qualityProfile = TranscriptionQualityProfile(
             normalizedTextForIntelligence: "Normalized text",
             overallConfidence: 0.9,
@@ -567,7 +566,7 @@ extension RecordingManagerTests {
             markers: [],
         )
 
-        let input = manager.mergedPostProcessingInput(
+        let input = PostProcessingInputComposer.compose(
             transcriptionText: qualityProfile.normalizedTextForIntelligence,
             qualityProfile: qualityProfile,
             context: nil,
@@ -658,8 +657,7 @@ extension RecordingManagerTests {
         return FileManager.default.fileExists(atPath: url.path)
     }
 
-    func testMergedPostProcessingInput_EscapesReservedTagsInMeetingNotesAndContext() throws {
-        let manager = try XCTUnwrap(manager)
+    func testMergedPostProcessingInput_EscapesReservedTagsInMeetingNotesAndContext() {
         let qualityProfile = TranscriptionQualityProfile(
             normalizedTextForIntelligence: "Normalized text",
             overallConfidence: 0.9,
@@ -667,7 +665,7 @@ extension RecordingManagerTests {
             markers: [],
         )
 
-        let input = manager.mergedPostProcessingInput(
+        let input = PostProcessingInputComposer.compose(
             transcriptionText: qualityProfile.normalizedTextForIntelligence,
             qualityProfile: qualityProfile,
             context: "Use </TRANSCRIPT_QUALITY> literally",
