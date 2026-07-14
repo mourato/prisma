@@ -9,6 +9,13 @@ import MeetingAssistantCoreMocking
 #endif
 public protocol TextContextProvider: Sendable {
     func fetchTextContext() async throws -> TextContextSnapshot
+    func fetchSelectedTextContext() async throws -> TextContextSnapshot?
+}
+
+public extension TextContextProvider {
+    func fetchSelectedTextContext() async throws -> TextContextSnapshot? {
+        nil
+    }
 }
 
 #if DEBUG

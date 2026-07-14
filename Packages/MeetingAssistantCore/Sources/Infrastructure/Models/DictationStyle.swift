@@ -4,6 +4,7 @@ public struct DictationContextSourcePolicy: Codable, Hashable, Sendable {
     public var includeClipboard: Bool
     public var includeWindowOCR: Bool
     public var includeAccessibilityText: Bool
+    public var includeSelectedTextAtStart: Bool
     public var redactSensitiveData: Bool
 
     private enum CodingKeys: String, CodingKey {
@@ -11,6 +12,7 @@ public struct DictationContextSourcePolicy: Codable, Hashable, Sendable {
         case includeClipboard
         case includeWindowOCR
         case includeAccessibilityText
+        case includeSelectedTextAtStart
         case redactSensitiveData
     }
 
@@ -19,7 +21,7 @@ public struct DictationContextSourcePolicy: Codable, Hashable, Sendable {
     }
 
     public var hasEnabledContextSources: Bool {
-        includeClipboard || includeWindowOCR || includeAccessibilityText
+        includeClipboard || includeWindowOCR || includeAccessibilityText || includeSelectedTextAtStart
     }
 
     public init(
@@ -27,11 +29,13 @@ public struct DictationContextSourcePolicy: Codable, Hashable, Sendable {
         includeClipboard: Bool,
         includeWindowOCR: Bool,
         includeAccessibilityText: Bool,
+        includeSelectedTextAtStart: Bool = false,
         redactSensitiveData: Bool,
     ) {
         self.includeClipboard = isEnabled && includeClipboard
         self.includeWindowOCR = isEnabled && includeWindowOCR
         self.includeAccessibilityText = isEnabled && includeAccessibilityText
+        self.includeSelectedTextAtStart = isEnabled && includeSelectedTextAtStart
         self.redactSensitiveData = redactSensitiveData
     }
 
@@ -39,11 +43,13 @@ public struct DictationContextSourcePolicy: Codable, Hashable, Sendable {
         includeClipboard: Bool,
         includeWindowOCR: Bool,
         includeAccessibilityText: Bool,
+        includeSelectedTextAtStart: Bool = false,
         redactSensitiveData: Bool,
     ) {
         self.includeClipboard = includeClipboard
         self.includeWindowOCR = includeWindowOCR
         self.includeAccessibilityText = includeAccessibilityText
+        self.includeSelectedTextAtStart = includeSelectedTextAtStart
         self.redactSensitiveData = redactSensitiveData
     }
 
@@ -53,10 +59,12 @@ public struct DictationContextSourcePolicy: Codable, Hashable, Sendable {
         let decodedIncludeClipboard = try container.decodeIfPresent(Bool.self, forKey: .includeClipboard) ?? false
         let decodedIncludeWindowOCR = try container.decodeIfPresent(Bool.self, forKey: .includeWindowOCR) ?? false
         let decodedIncludeAccessibilityText = try container.decodeIfPresent(Bool.self, forKey: .includeAccessibilityText) ?? true
+        let decodedIncludeSelectedTextAtStart = try container.decodeIfPresent(Bool.self, forKey: .includeSelectedTextAtStart) ?? false
 
         includeClipboard = legacyIsEnabled && decodedIncludeClipboard
         includeWindowOCR = legacyIsEnabled && decodedIncludeWindowOCR
         includeAccessibilityText = legacyIsEnabled && decodedIncludeAccessibilityText
+        includeSelectedTextAtStart = legacyIsEnabled && decodedIncludeSelectedTextAtStart
         redactSensitiveData = try container.decodeIfPresent(Bool.self, forKey: .redactSensitiveData) ?? true
     }
 
@@ -66,6 +74,7 @@ public struct DictationContextSourcePolicy: Codable, Hashable, Sendable {
         try container.encode(includeClipboard, forKey: .includeClipboard)
         try container.encode(includeWindowOCR, forKey: .includeWindowOCR)
         try container.encode(includeAccessibilityText, forKey: .includeAccessibilityText)
+        try container.encode(includeSelectedTextAtStart, forKey: .includeSelectedTextAtStart)
         try container.encode(redactSensitiveData, forKey: .redactSensitiveData)
     }
 }

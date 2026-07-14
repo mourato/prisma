@@ -241,6 +241,7 @@ public struct TranscriptionContextItem: Identifiable, Codable, Hashable, Sendabl
         case clipboard
         case windowOCR
         case focusedText
+        case selectedTextAtStart
         case calendarEvent
         case meetingNotes
     }

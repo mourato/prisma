@@ -25,6 +25,7 @@ public struct DictationStyleEditorSheet: View {
     @State private var includeClipboard: Bool
     @State private var includeWindowOCR: Bool
     @State private var includeAccessibilityText: Bool
+    @State private var includeSelectedTextAtStart: Bool
     @State private var redactSensitiveData: Bool
     @State private var enhancementsSelection: EnhancementsAISelection?
     @State private var isDefault: Bool
@@ -67,6 +68,7 @@ public struct DictationStyleEditorSheet: View {
         _includeClipboard = State(initialValue: contextPolicy?.includeClipboard ?? false)
         _includeWindowOCR = State(initialValue: contextPolicy?.includeWindowOCR ?? false)
         _includeAccessibilityText = State(initialValue: contextPolicy?.includeAccessibilityText ?? true)
+        _includeSelectedTextAtStart = State(initialValue: contextPolicy?.includeSelectedTextAtStart ?? false)
         _redactSensitiveData = State(initialValue: contextPolicy?.redactSensitiveData ?? true)
         _enhancementsSelection = State(initialValue: draft.enhancementsSelection)
         _isDefault = State(initialValue: draft.isDefault)
@@ -245,6 +247,13 @@ public struct DictationStyleEditorSheet: View {
         DSGroup("settings.styles.editor.context_sources".localized, icon: "text.viewfinder") {
             VStack(alignment: .leading, spacing: 10) {
                 CheckboxRow("settings.context_awareness.accessibility_text".localized, isOn: $includeAccessibilityText)
+                VStack(alignment: .leading, spacing: 3) {
+                    CheckboxRow("settings.context_awareness.selected_text_at_start".localized, isOn: $includeSelectedTextAtStart)
+                    Text("settings.context_awareness.selected_text_at_start_desc".localized)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 24)
+                }
                 CheckboxRow("settings.context_awareness.clipboard".localized, isOn: $includeClipboard)
                 CheckboxRow("settings.context_awareness.window_ocr".localized, isOn: $includeWindowOCR)
                 CheckboxRow("settings.context_awareness.redact_sensitive_data".localized, isOn: $redactSensitiveData)
@@ -386,6 +395,7 @@ public struct DictationStyleEditorSheet: View {
                     includeClipboard: includeClipboard,
                     includeWindowOCR: includeWindowOCR,
                     includeAccessibilityText: includeAccessibilityText,
+                    includeSelectedTextAtStart: includeSelectedTextAtStart,
                     redactSensitiveData: redactSensitiveData,
                 ),
                 enhancementsSelection: enhancementsSelection,
