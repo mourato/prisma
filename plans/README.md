@@ -40,7 +40,7 @@ reason) | `REJECTED` (with a one-line rationale).
 | [065](065-add-friendly-mode-icons-and-emoji.md) | Add friendly mode icons and emoji | P1 | M | 062, 064 | DONE |
 | [066](066-move-dictation-mode-editor-to-detail-panel.md) | Move dictation-mode editing from a sheet to a settings detail panel | P1 | L | - | DONE |
 | [067](067-redesign-mode-trigger-search-and-selection.md) | Redesign mode trigger search, selection, and removal | P1 | L | 066 | DONE |
-| [068](068-add-mode-instruction-drilldown-and-narrow-layout.md) | Add instruction drill-down and compact mode settings layout | P1 | M | 066, 067 | TODO |
+| [068](068-add-mode-instruction-drilldown-and-narrow-layout.md) | Add instruction drill-down and compact mode settings layout | P1 | M | 066, 067 | DONE |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected

@@ -448,6 +448,8 @@
 "settings.styles.editor.post_processing_enabled" = "Enable post-processing for this mode";
 "settings.styles.editor.prompt" = "Instructions";
 "settings.styles.editor.prompt_hint" = "Optional. These instructions are applied when this style matches the focused app or website.";
+"settings.styles.editor.prompt_empty" = "Not configured";
+"settings.styles.editor.behavior" = "Behavior";
 "settings.styles.editor.markdown_output" = "Force Markdown Output";
 "settings.styles.editor.output_language" = "Force Translation";
 "settings.styles.editor.replace_base_prompt" = "Replace base dictation prompt";

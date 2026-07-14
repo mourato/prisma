@@ -6,6 +6,8 @@
 
 ## Status
 
+DONE — implemented, reviewed, and validated on 2026-07-14.
+
 - **Priority**: P1
 - **Effort**: M
 - **Risk**: MED
@@ -93,11 +95,11 @@ Add or revise English and Portuguese strings for instruction summary, prompt des
 
 ## Done criteria
 
-- [ ] Full instruction text is accessible only through the instruction drill-down.
-- [ ] All current mode settings remain available and persist unchanged.
-- [ ] The editor is usable in the narrow settings detail container with no horizontal clipping.
-- [ ] No new non-localized user-facing strings are introduced.
-- [ ] Focused tests, `make preview-check`, `make build-agent`, and `make guidance-check` pass.
+- [x] Full instruction text is accessible only through the instruction drill-down.
+- [x] All current mode settings remain available and persist unchanged.
+- [x] The editor is usable in the narrow settings detail container with no horizontal clipping.
+- [x] No new non-localized user-facing strings are introduced.
+- [x] Focused tests, `make preview-check`, `make build-agent`, and `make guidance-check` pass.
 
 ## STOP conditions
 

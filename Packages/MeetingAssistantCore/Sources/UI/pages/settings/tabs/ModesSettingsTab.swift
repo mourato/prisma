@@ -22,6 +22,8 @@ public struct ModesSettingsTab: View {
                 editorPage(for: route)
             case .triggerSelection:
                 triggerSelectionPage
+            case .promptEditor:
+                promptEditorPage
             }
         }
     }
@@ -59,8 +61,13 @@ public struct ModesSettingsTab: View {
                         viewModel.clearEditor()
                         navigateToRoot()
                     } : nil,
-                    onOpenTriggerSelection: {
+                    onOpenTriggerSelection: { draft in
+                        viewModel.editorDraft = draft
                         navigationState.open(.triggerSelection(styleID: styleID))
+                    },
+                    onOpenPromptEditor: { draft in
+                        viewModel.editorDraft = draft
+                        navigationState.open(.promptEditor(styleID: styleID))
                     },
                 )
                 .id(route)
@@ -94,6 +101,23 @@ public struct ModesSettingsTab: View {
                 navigationState.open(.editor(styleID: styleID))
             },
         )
+    }
+
+    @ViewBuilder
+    private var promptEditorPage: some View {
+        if let draft = viewModel.editorDraft {
+            DictationStylePromptEditorView(
+                promptInstructions: Binding(
+                    get: { draft.promptInstructions },
+                    set: { viewModel.editorDraft?.promptInstructions = $0 },
+                ),
+                onCancel: {
+                    navigationState.open(.editor(styleID: draft.id))
+                },
+            )
+        } else {
+            stylesListPage
+        }
     }
 
     private var stylesListPage: some View {

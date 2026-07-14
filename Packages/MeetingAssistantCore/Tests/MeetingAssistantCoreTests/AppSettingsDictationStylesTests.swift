@@ -269,4 +269,49 @@ final class AppSettingsDictationStylesTests: XCTestCase {
         XCTAssertTrue(decoded.includeSelectedTextAtStart)
         XCTAssertTrue(decoded.hasEnabledContextSources)
     }
+
+    func testDictationStyles_PromptInstructionsRoundTripsThroughDraftAndSave() throws {
+        let viewModel = DictationStylesSettingsViewModel(settings: settings)
+
+        viewModel.prepareEditor(for: nil)
+
+        XCTAssertNotNil(viewModel.editorDraft)
+        XCTAssertEqual(viewModel.editorDraft?.promptInstructions, "")
+
+        viewModel.editorDraft?.promptInstructions = "Prefer concise technical responses with code examples."
+
+        try viewModel.saveStyle(XCTUnwrap(viewModel.editorDraft))
+        let savedStyle = settings.dictationStyles.last(where: { $0.isDefault == false })
+        XCTAssertNotNil(savedStyle)
+        XCTAssertEqual(savedStyle?.promptInstructions, "Prefer concise technical responses with code examples.")
+    }
+
+    func testDictationStyles_EmptyPromptInstructionsArePreserved() {
+        settings.dictationStyles = [
+            DictationStyle(
+                name: "No Prompt",
+                iconSymbol: "textformat",
+                promptInstructions: "",
+                forceMarkdownOutput: false,
+                replaceBasePrompt: false,
+                targets: [.app(bundleIdentifier: "com.apple.TextEdit")],
+            ),
+        ]
+
+        let style = settings.dictationStyles[1]
+        XCTAssertEqual(style.promptInstructions, "")
+    }
+
+    func testDictationStyleRoute_PromptEditorCarriesStyleIdentity() {
+        let styleID = UUID()
+
+        XCTAssertEqual(
+            DictationStyleRoute.promptEditor(styleID: styleID),
+            DictationStyleRoute.promptEditor(styleID: styleID),
+        )
+        XCTAssertNotEqual(
+            DictationStyleRoute.promptEditor(styleID: styleID),
+            DictationStyleRoute.editor(styleID: styleID),
+        )
+    }
 }

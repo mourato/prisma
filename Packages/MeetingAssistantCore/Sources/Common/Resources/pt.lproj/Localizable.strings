@@ -449,6 +449,8 @@
 "settings.styles.editor.post_processing_enabled" = "Habilitar pós-processamento para este modo";
 "settings.styles.editor.prompt" = "Instruções";
 "settings.styles.editor.prompt_hint" = "Opcional. Essas instruções são aplicadas quando este estilo combina com o app ou site em foco.";
+"settings.styles.editor.prompt_empty" = "Não configurado";
+"settings.styles.editor.behavior" = "Comportamento";
 "settings.styles.editor.markdown_output" = "Forçar saída em Markdown";
 "settings.styles.editor.output_language" = "Forçar tradução";
 "settings.styles.editor.replace_base_prompt" = "Substituir prompt base do ditado";

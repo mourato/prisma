@@ -33,7 +33,8 @@ public struct DictationStyleEditorDetailView: View {
     @State private var isDefault: Bool
     @State private var validationMessage: String?
 
-    private let onOpenTriggerSelection: (() -> Void)?
+    private let onOpenTriggerSelection: ((DictationStyleEditorDraft) -> Void)?
+    private let onOpenPromptEditor: ((DictationStyleEditorDraft) -> Void)?
 
     public init(
         draft: DictationStyleEditorDraft,
@@ -48,7 +49,8 @@ public struct DictationStyleEditorDetailView: View {
         onSave: @escaping (DictationStyleEditorDraft) -> Void,
         onCancel: @escaping () -> Void,
         onDelete: (() -> Void)? = nil,
-        onOpenTriggerSelection: (() -> Void)? = nil,
+        onOpenTriggerSelection: ((DictationStyleEditorDraft) -> Void)? = nil,
+        onOpenPromptEditor: ((DictationStyleEditorDraft) -> Void)? = nil,
     ) {
         self.appCatalog = appCatalog
         self.isLoadingAppCatalog = isLoadingAppCatalog
@@ -62,6 +64,7 @@ public struct DictationStyleEditorDetailView: View {
         self.onCancel = onCancel
         self.onDelete = onDelete
         self.onOpenTriggerSelection = onOpenTriggerSelection
+        self.onOpenPromptEditor = onOpenPromptEditor
 
         _styleID = State(initialValue: draft.id)
         _name = State(initialValue: draft.name)
@@ -128,37 +131,30 @@ public struct DictationStyleEditorDetailView: View {
                         .frame(width: 220)
                     }
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("settings.styles.editor.prompt".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    SettingsDrillDownButtonRow(
+                        title: "settings.styles.editor.prompt".localized,
+                        subtitle: promptSummary,
+                        action: {
+                            onOpenPromptEditor?(currentDraft)
+                        },
+                    )
 
-                        Text("settings.styles.editor.prompt_hint".localized)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                    DSGroup("settings.styles.editor.behavior".localized, icon: "gearshape.2") {
+                        CheckboxRow("settings.styles.editor.post_processing_enabled".localized, isOn: $postProcessingEnabled)
+                        CheckboxRow("settings.styles.editor.markdown_output".localized, isOn: $forceMarkdownOutput)
+                        CheckboxRow("settings.styles.editor.replace_base_prompt".localized, isOn: $replaceBasePrompt)
 
-                        TextEditor(text: $promptInstructions)
-                            .font(.body)
-                            .frame(minHeight: 130)
-                            .padding(AppDesignSystem.Layout.textAreaPadding)
-                            .background(AppDesignSystem.Colors.subtleFill2)
-                            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
-                    }
+                        Divider()
 
-                    CheckboxRow("settings.styles.editor.post_processing_enabled".localized, isOn: $postProcessingEnabled)
-                    CheckboxRow("settings.styles.editor.markdown_output".localized, isOn: $forceMarkdownOutput)
-                    CheckboxRow("settings.styles.editor.replace_base_prompt".localized, isOn: $replaceBasePrompt)
-
-                    HStack(spacing: 12) {
-                        Text("settings.styles.editor.output_language".localized)
-                            .font(.body)
-                            .fontWeight(.regular)
-
-                        Spacer()
-
-                        DSMenuPicker("settings.styles.editor.output_language".localized, selection: $outputLanguage) {
-                            ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
-                                Text(language.displayName).tag(language)
+                        HStack(spacing: 12) {
+                            Text("settings.styles.editor.output_language".localized)
+                                .font(.body)
+                                .fontWeight(.regular)
+                            Spacer()
+                            DSMenuPicker("settings.styles.editor.output_language".localized, selection: $outputLanguage) {
+                                ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
+                                    Text(language.displayName).tag(language)
+                                }
                             }
                         }
                     }
@@ -262,7 +258,7 @@ public struct DictationStyleEditorDetailView: View {
                 title: "settings.styles.editor.triggers_row".localized,
                 subtitle: triggersRowSubtitle,
                 action: {
-                    onOpenTriggerSelection?()
+                    onOpenTriggerSelection?(currentDraft)
                 },
             )
 
@@ -297,6 +293,17 @@ public struct DictationStyleEditorDetailView: View {
         }
     }
 
+    private var promptSummary: String {
+        let trimmed = promptInstructions.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            return "settings.styles.editor.prompt_empty".localized
+        }
+        if trimmed.count <= 80 {
+            return trimmed
+        }
+        return String(trimmed.prefix(80)).trimmingCharacters(in: .whitespaces) + "…"
+    }
+
     private var triggersRowSubtitle: String {
         let count = targets.count
         switch count {
@@ -311,6 +318,29 @@ public struct DictationStyleEditorDetailView: View {
 
     private var detailActionTitle: String {
         styleID == nil ? "common.create".localized : "common.save".localized
+    }
+
+    private var currentDraft: DictationStyleEditorDraft {
+        DictationStyleEditorDraft(
+            id: styleID,
+            name: name,
+            iconSymbol: iconSymbol,
+            promptInstructions: promptInstructions,
+            postProcessingEnabled: postProcessingEnabled,
+            forceMarkdownOutput: forceMarkdownOutput,
+            replaceBasePrompt: replaceBasePrompt,
+            outputLanguage: outputLanguage,
+            targets: targets,
+            contextSourcePolicy: DictationContextSourcePolicy(
+                includeClipboard: includeClipboard,
+                includeWindowOCR: includeWindowOCR,
+                includeAccessibilityText: includeAccessibilityText,
+                includeSelectedTextAtStart: includeSelectedTextAtStart,
+                redactSensitiveData: redactSensitiveData,
+            ),
+            enhancementsSelection: enhancementsSelection,
+            isDefault: isDefault,
+        )
     }
 
     private var contextResourcesSection: some View {
