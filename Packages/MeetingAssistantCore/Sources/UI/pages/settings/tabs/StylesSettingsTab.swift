@@ -5,16 +5,22 @@ import SwiftUI
 public struct StylesSettingsTab: View {
     @ObservedObject private var viewModel: DictationStylesSettingsViewModel
     @ObservedObject private var aiSettingsViewModel: AISettingsViewModel
+    private let focusedStyleID: FocusState<UUID?>.Binding?
+    private let accessibilityFocusedStyleID: AccessibilityFocusState<UUID?>.Binding?
     @State private var selectedStyleID: UUID?
     private let onOpenEditor: ((UUID?) -> Void)?
 
     public init(
         viewModel: DictationStylesSettingsViewModel,
         aiSettingsViewModel: AISettingsViewModel,
+        focusedStyleID: FocusState<UUID?>.Binding? = nil,
+        accessibilityFocusedStyleID: AccessibilityFocusState<UUID?>.Binding? = nil,
         onOpenEditor: ((UUID?) -> Void)? = nil,
     ) {
         _viewModel = ObservedObject(wrappedValue: viewModel)
         _aiSettingsViewModel = ObservedObject(wrappedValue: aiSettingsViewModel)
+        self.focusedStyleID = focusedStyleID
+        self.accessibilityFocusedStyleID = accessibilityFocusedStyleID
         self.onOpenEditor = onOpenEditor
     }
 
@@ -106,6 +112,12 @@ public struct StylesSettingsTab: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(styleAccessibilityLabel(style))
         .accessibilityHint("settings.styles.actions".localized)
+        .accessibilityAddTraits(selectedStyleID == style.id ? .isSelected : [])
+        .stylesFocus(
+            focusedStyleID: focusedStyleID,
+            accessibilityFocusedStyleID: accessibilityFocusedStyleID,
+            styleID: style.id,
+        )
     }
 
     private func styleRowContent(_ style: DictationStyle, isSelected: Bool) -> some View {
@@ -280,8 +292,44 @@ public struct StylesSettingsTab: View {
 }
 
 #Preview {
-    StylesSettingsTab(
-        viewModel: DictationStylesSettingsViewModel(),
-        aiSettingsViewModel: AISettingsViewModel(settings: AppSettingsStore.shared),
-    )
+    StylesSettingsPreview()
+}
+
+private struct StylesSettingsPreview: View {
+    @FocusState private var focusedStyleID: UUID?
+    @AccessibilityFocusState private var accessibilityFocusedStyleID: UUID?
+
+    var body: some View {
+        StylesSettingsTab(
+            viewModel: DictationStylesSettingsViewModel(),
+            aiSettingsViewModel: AISettingsViewModel(settings: AppSettingsStore.shared),
+            focusedStyleID: $focusedStyleID,
+            accessibilityFocusedStyleID: $accessibilityFocusedStyleID,
+        )
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func stylesFocus(
+        focusedStyleID: FocusState<UUID?>.Binding?,
+        accessibilityFocusedStyleID: AccessibilityFocusState<UUID?>.Binding?,
+        styleID: UUID,
+    ) -> some View {
+        let focusableView = focusable()
+
+        if let focusedStyleID, let accessibilityFocusedStyleID {
+            focusableView
+                .accessibilityFocused(accessibilityFocusedStyleID, equals: styleID)
+                .focused(focusedStyleID, equals: styleID)
+        } else if let focusedStyleID {
+            focusableView
+                .focused(focusedStyleID, equals: styleID)
+        } else if let accessibilityFocusedStyleID {
+            focusableView
+                .accessibilityFocused(accessibilityFocusedStyleID, equals: styleID)
+        } else {
+            focusableView
+        }
+    }
 }

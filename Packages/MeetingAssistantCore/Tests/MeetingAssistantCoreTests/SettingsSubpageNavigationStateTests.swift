@@ -87,4 +87,17 @@ final class SettingsSubpageNavigationStateTests: XCTestCase {
         XCTAssertEqual(state.currentRoute, .editor(styleID: secondStyleID))
         XCTAssertFalse(state.canGoForward)
     }
+
+    func testRapidRouteChangesLeaveLatestRouteCurrent() {
+        var state = SettingsSubpageNavigationState<DictationStyleRoute>()
+        let styleID = UUID()
+
+        state.open(.editor(styleID: styleID))
+        state.open(.promptEditor(styleID: styleID))
+        state.open(.triggerSelection(styleID: styleID))
+        state.open(.editor(styleID: styleID))
+
+        XCTAssertEqual(state.currentRoute, .editor(styleID: styleID))
+        XCTAssertFalse(state.canGoForward)
+    }
 }

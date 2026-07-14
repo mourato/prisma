@@ -6,38 +6,43 @@ public struct ModesSettingsTab: View {
     @StateObject private var viewModel: DictationStylesSettingsViewModel
     @StateObject private var aiSettingsViewModel: AISettingsViewModel
     @State private var navigationState = SettingsSubpageNavigationState<DictationStyleRoute>()
+    @FocusState private var focusedStyleID: UUID?
+    @AccessibilityFocusState private var accessibilityFocusedStyleID: UUID?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private let reduceMotionOverride: Bool?
+    @Environment(\.modesReduceMotionPreview) private var reduceMotionPreview
 
     public init(settings: AppSettingsStore = .shared) {
         _viewModel = StateObject(wrappedValue: DictationStylesSettingsViewModel(settings: settings))
         _aiSettingsViewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
-        reduceMotionOverride = nil
-    }
-
-    init(settings: AppSettingsStore = .shared, reduceMotionOverride: Bool?) {
-        _viewModel = StateObject(wrappedValue: DictationStylesSettingsViewModel(settings: settings))
-        _aiSettingsViewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
-        self.reduceMotionOverride = reduceMotionOverride
     }
 
     public var body: some View {
-        NavigationSplitView {
+        if navigationState.currentRoute == nil {
             listColumn
-                .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 360)
-        } detail: {
-            detailContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else {
+            NavigationSplitView {
+                listColumn
+                    .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 360)
+            } detail: {
+                detailContent
+                    .navigationSplitViewColumnWidth(min: 360, ideal: 480, max: 640)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+            .navigationSplitViewStyle(.balanced)
         }
-        .navigationSplitViewStyle(.balanced)
     }
 
     private var listColumn: some View {
         StylesSettingsTab(
             viewModel: viewModel,
             aiSettingsViewModel: aiSettingsViewModel,
+            focusedStyleID: $focusedStyleID,
+            accessibilityFocusedStyleID: $accessibilityFocusedStyleID,
             onOpenEditor: { styleID in
                 viewModel.prepareEditor(for: styleID)
+                focusedStyleID = nil
+                accessibilityFocusedStyleID = nil
                 openRoute(.editor(styleID: styleID))
             },
         )
@@ -74,7 +79,7 @@ public struct ModesSettingsTab: View {
     }
 
     private var effectiveReduceMotion: Bool {
-        reduceMotionOverride ?? reduceMotion
+        reduceMotion || reduceMotionPreview
     }
 
     private var emptyDetailPlaceholder: some View {
@@ -111,18 +116,19 @@ public struct ModesSettingsTab: View {
                     providerDisplayName: viewModel.enhancementsProviderDisplayName(for:),
                     onSave: { draft in
                         viewModel.saveStyle(draft)
-                        navigateToRoot()
+                        navigateToRoot(focusStyleID: draft.id)
                     },
                     onCancel: {
+                        let styleID = viewModel.editorDraft?.id
                         viewModel.clearEditor()
-                        navigateToRoot()
+                        navigateToRoot(focusStyleID: styleID)
                     },
                     onDelete: styleID != nil ? {
                         if let styleID {
                             viewModel.deleteStyle(id: styleID)
                         }
                         viewModel.clearEditor()
-                        navigateToRoot()
+                        navigateToRoot(focusStyleID: styleID)
                     } : nil,
                     onOpenTriggerSelection: { draft in
                         viewModel.editorDraft = draft
@@ -180,10 +186,12 @@ public struct ModesSettingsTab: View {
         }
     }
 
-    private func navigateToRoot() {
+    private func navigateToRoot(focusStyleID: UUID? = nil) {
         withAnimation(SettingsMotion.sectionAnimation(reduceMotion: effectiveReduceMotion)) {
             _ = navigationState.goBack()
         }
+        focusedStyleID = focusStyleID
+        accessibilityFocusedStyleID = focusStyleID
     }
 
     private func openRoute(_ route: DictationStyleRoute) {
@@ -208,6 +216,11 @@ public struct ModesSettingsTab: View {
 }
 
 #Preview("Modes — Reduce Motion") {
-    ModesSettingsTab(reduceMotionOverride: true)
+    ModesSettingsTab()
         .frame(width: 820, height: 620)
+        .environment(\.modesReduceMotionPreview, true)
+}
+
+private extension EnvironmentValues {
+    @Entry var modesReduceMotionPreview: Bool = false
 }

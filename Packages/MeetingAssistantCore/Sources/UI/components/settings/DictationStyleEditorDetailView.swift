@@ -32,9 +32,14 @@ public struct DictationStyleEditorDetailView: View {
     @State private var enhancementsSelection: EnhancementsAISelection?
     @State private var isDefault: Bool
     @State private var validationMessage: String?
+    @FocusState private var focusedField: EditorField?
 
     private let onOpenTriggerSelection: ((DictationStyleEditorDraft) -> Void)?
     private let onOpenPromptEditor: ((DictationStyleEditorDraft) -> Void)?
+
+    private enum EditorField: Hashable {
+        case name
+    }
 
     public init(
         draft: DictationStyleEditorDraft,
@@ -98,6 +103,7 @@ public struct DictationStyleEditorDetailView: View {
             editorForm
         }
         .onAppear {
+            focusedField = .name
             onEnsureAppCatalogLoaded()
             onRefreshModelOptions()
         }
@@ -117,6 +123,7 @@ public struct DictationStyleEditorDetailView: View {
                         .foregroundStyle(.secondary)
                     TextField("", text: $name)
                         .textFieldStyle(.roundedBorder)
+                        .focused($focusedField, equals: .name)
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
