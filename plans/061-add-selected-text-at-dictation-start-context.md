@@ -160,15 +160,15 @@ Add a Core Data/domain round-trip test for a transcription containing `.selected
 
 ## Done criteria
 
-- [ ] The setting is visible as an opt-in checkbox in the existing dictation Context Sources UI, with English/Portuguese copy and Accessibility guidance.
-- [ ] Existing dictation-style JSON without `includeSelectedTextAtStart` decodes unchanged and the new value survives save/reload.
-- [ ] Selected text is read only once, at dictation start, through a selected-only Accessibility operation; no full focused/visible text fallback is used.
-- [ ] Capture failures never prevent recording and never log selected-text content.
-- [ ] `.selectedTextAtStart` survives context merging, retry, transcription persistence, and display metadata.
-- [ ] The post-processing payload uses `<SELECTED_TEXT_AT_START>` and prompts explicitly forbid treating it as transcript content or instructions.
-- [ ] Focused tests, `make preview-check`, `make build-agent`, and `git diff --check` pass.
-- [ ] `make validate-agent ARGS="--lane full --no-reuse --agent"` is run and its result/baseline failures are reported honestly.
-- [ ] No files outside the Scope list are modified and the plan row is updated.
+- [x] The setting is visible as an opt-in checkbox in the existing dictation Context Sources UI, with English/Portuguese copy and Accessibility guidance.
+- [x] Existing dictation-style JSON without `includeSelectedTextAtStart` decodes unchanged and the new value survives save/reload.
+- [x] Selected text is read only once, at dictation start, through a selected-only Accessibility operation; no full focused/visible text fallback is used.
+- [x] Capture failures never prevent recording and never log selected-text content.
+- [x] `.selectedTextAtStart` survives context merging, retry, transcription persistence, and display metadata.
+- [x] The post-processing payload uses `<SELECTED_TEXT_AT_START>` and prompts explicitly forbid treating it as transcript content or instructions.
+- [x] Focused tests, `make preview-check`, `make build-agent`, and `git diff --check` pass.
+- [x] `make validate-agent ARGS="--lane full --no-reuse --agent"` is run and its result/baseline failures are reported honestly.
+- [x] No files outside the Scope list are modified and the plan row is updated.
 
 ## STOP conditions
 
@@ -188,3 +188,4 @@ Stop and report instead of improvising if:
 - Reviewers should inspect the exact start-time ordering and ensure later asynchronous capture cannot replace the snapshot.
 - The new source is intentionally opt-in false; changing that default requires a privacy/product decision and migration review.
 - The existing Full gate has a known unrelated baseline failure in `SettingsSearchIndexTests` for `settings.modes.prompts.title`; the executor must re-check whether it remains present rather than treating it as evidence for this feature.
+- The `settings.modes.prompts.title` route was corrected in `SettingsSearchIndex`; the remaining Full-runner `INCOMPLETE` status came from CoreData/XPC diagnostics, while all 1,002 tests passed.
