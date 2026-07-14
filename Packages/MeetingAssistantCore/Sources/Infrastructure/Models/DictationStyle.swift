@@ -170,6 +170,7 @@ public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
         case name
         case iconSymbol
         case promptInstructions
+        case postProcessingEnabled
         case forceMarkdownOutput
         case replaceBasePrompt
         case outputLanguage
@@ -183,6 +184,7 @@ public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
     public var name: String
     public var iconSymbol: String
     public var promptInstructions: String
+    public var postProcessingEnabled: Bool
     public var forceMarkdownOutput: Bool
     public var replaceBasePrompt: Bool
     public var outputLanguage: DictationOutputLanguage
@@ -196,6 +198,7 @@ public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
         name: String,
         iconSymbol: String = "textformat",
         promptInstructions: String,
+        postProcessingEnabled: Bool = true,
         forceMarkdownOutput: Bool,
         replaceBasePrompt: Bool,
         outputLanguage: DictationOutputLanguage = .original,
@@ -208,6 +211,7 @@ public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
         self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.iconSymbol = iconSymbol.trimmingCharacters(in: .whitespacesAndNewlines)
         self.promptInstructions = promptInstructions.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.postProcessingEnabled = postProcessingEnabled
         self.forceMarkdownOutput = forceMarkdownOutput
         self.replaceBasePrompt = replaceBasePrompt
         self.outputLanguage = outputLanguage
@@ -226,6 +230,7 @@ public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? "textformat"
         promptInstructions = try container.decodeIfPresent(String.self, forKey: .promptInstructions)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        postProcessingEnabled = try container.decodeIfPresent(Bool.self, forKey: .postProcessingEnabled) ?? true
         forceMarkdownOutput = try container.decodeIfPresent(Bool.self, forKey: .forceMarkdownOutput) ?? false
         replaceBasePrompt = try container.decodeIfPresent(Bool.self, forKey: .replaceBasePrompt) ?? false
         outputLanguage = try container.decodeIfPresent(DictationOutputLanguage.self, forKey: .outputLanguage) ?? .original

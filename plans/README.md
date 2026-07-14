@@ -34,8 +34,12 @@ reason) | `REJECTED` (with a one-line rationale).
 | [059](059-tune-global-agent-routing.md) | Tune global routing and root reasoning from controlled cost-quality evidence | P1 | M | 058 | DONE (medium beat high on cost/latency; defaults remain unchanged) |
 | [060](060-evaluate-lean-tools-fast-implementer.md) | Evaluate a lean code profile and a Fast-lane implementer before enabling either | P2 | M | 058, 059 | DONE (lean/Fast candidates measured; neither promoted globally) |
 | [061](061-add-selected-text-at-dictation-start-context.md) | Add opt-in selected-text-at-start context for dictation | P1 | L | - | DONE (implemented; Full runner marked incomplete despite 1,002/1,002 tests passing because of CoreData/XPC diagnostics) |
+| [062](062-centralize-dictation-post-processing-in-modes.md) | Centralize dictation post-processing in modes | P1 | L | 061 | DONE |
+| [063](063-resolve-post-processing-by-dictation-mode.md) | Resolve post-processing by dictation mode | P1 | L | 062 | IN PROGRESS |
+| [064](064-remove-user-prompts-and-system-prompt-settings-surface.md) | Remove user-prompts and system-prompt settings surface | P1 | M | 062, 063 | TODO |
+| [065](065-add-friendly-mode-icons-and-emoji.md) | Add friendly mode icons and emoji | P1 | M | 062, 064 | TODO |
 
-Plans 001–060 are completed or archived in the historical ledger. The archive preserves the original audit scope,
+Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
 options verbatim for searchability.
 

@@ -93,6 +93,43 @@ final class AppSettingsDictationStylesTests: XCTestCase {
         XCTAssertEqual(settings.dictationStyles.first?.targets, [])
     }
 
+    func testDictationStyle_PostProcessingEnabledDefaultsForLegacyPayloads() throws {
+        let legacyPayload = """
+        {
+          "id": "00000000-0000-0000-0000-000000000020",
+          "name": "Default",
+          "iconSymbol": "textformat",
+          "promptInstructions": "",
+          "forceMarkdownOutput": false,
+          "replaceBasePrompt": false,
+          "outputLanguage": "original",
+          "targets": [],
+          "isDefault": true
+        }
+        """
+
+        let style = try JSONDecoder().decode(DictationStyle.self, from: Data(legacyPayload.utf8))
+
+        XCTAssertTrue(style.postProcessingEnabled)
+    }
+
+    func testDictationStyles_PersistPerModePostProcessingValue() {
+        settings.dictationStyles = [
+            DictationStyle(
+                name: "No AI",
+                promptInstructions: "Keep the transcript unchanged.",
+                postProcessingEnabled: false,
+                forceMarkdownOutput: false,
+                replaceBasePrompt: false,
+                targets: [.app(bundleIdentifier: "com.apple.TextEdit")],
+            ),
+        ]
+
+        let style = settings.dictationStyles[1]
+        XCTAssertFalse(style.postProcessingEnabled)
+        XCTAssertEqual(style.promptInstructions, "Keep the transcript unchanged.")
+    }
+
     func testDictationStyles_DefaultModeAdoptsLegacyContextAndModelSelection() {
         settings.contextAwarenessEnabled = true
         settings.contextAwarenessIncludeClipboard = true

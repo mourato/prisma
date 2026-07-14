@@ -8,6 +8,7 @@ public struct DictationStyleEditorDraft: Equatable, Sendable {
     public var name: String
     public var iconSymbol: String
     public var promptInstructions: String
+    public var postProcessingEnabled: Bool
     public var forceMarkdownOutput: Bool
     public var replaceBasePrompt: Bool
     public var outputLanguage: DictationOutputLanguage
@@ -21,6 +22,7 @@ public struct DictationStyleEditorDraft: Equatable, Sendable {
         name: String,
         iconSymbol: String,
         promptInstructions: String,
+        postProcessingEnabled: Bool = true,
         forceMarkdownOutput: Bool,
         replaceBasePrompt: Bool,
         outputLanguage: DictationOutputLanguage,
@@ -33,6 +35,7 @@ public struct DictationStyleEditorDraft: Equatable, Sendable {
         self.name = name
         self.iconSymbol = iconSymbol
         self.promptInstructions = promptInstructions
+        self.postProcessingEnabled = postProcessingEnabled
         self.forceMarkdownOutput = forceMarkdownOutput
         self.replaceBasePrompt = replaceBasePrompt
         self.outputLanguage = outputLanguage
@@ -72,6 +75,7 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
             name: "",
             iconSymbol: "textformat",
             promptInstructions: "",
+            postProcessingEnabled: true,
             forceMarkdownOutput: true,
             replaceBasePrompt: false,
             outputLanguage: .original,
@@ -90,6 +94,7 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
             name: style.name,
             iconSymbol: style.iconSymbol,
             promptInstructions: style.promptInstructions,
+            postProcessingEnabled: style.postProcessingEnabled,
             forceMarkdownOutput: style.forceMarkdownOutput,
             replaceBasePrompt: style.replaceBasePrompt,
             outputLanguage: style.outputLanguage,
@@ -113,6 +118,7 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
             name: draft.name,
             iconSymbol: draft.iconSymbol,
             promptInstructions: draft.promptInstructions,
+            postProcessingEnabled: draft.postProcessingEnabled,
             forceMarkdownOutput: draft.forceMarkdownOutput,
             replaceBasePrompt: draft.replaceBasePrompt,
             outputLanguage: draft.outputLanguage,

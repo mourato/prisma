@@ -457,6 +457,7 @@
 "settings.styles.editor.edit_title" = "Edit Mode";
 "settings.styles.editor.name" = "Mode name";
 "settings.styles.editor.icon" = "SF Symbol";
+"settings.styles.editor.post_processing_enabled" = "Enable post-processing for this mode";
 "settings.styles.editor.prompt" = "Instructions";
 "settings.styles.editor.prompt_hint" = "Optional. These instructions are applied when this style matches the focused app or website.";
 "settings.styles.editor.markdown_output" = "Force Markdown Output";

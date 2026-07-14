@@ -18,6 +18,7 @@ public struct DictationStyleEditorSheet: View {
     @State private var name: String
     @State private var iconSymbol: String
     @State private var promptInstructions: String
+    @State private var postProcessingEnabled: Bool
     @State private var forceMarkdownOutput: Bool
     @State private var replaceBasePrompt: Bool
     @State private var outputLanguage: DictationOutputLanguage
@@ -60,6 +61,7 @@ public struct DictationStyleEditorSheet: View {
         _name = State(initialValue: draft.name)
         _iconSymbol = State(initialValue: draft.iconSymbol)
         _promptInstructions = State(initialValue: draft.promptInstructions)
+        _postProcessingEnabled = State(initialValue: draft.postProcessingEnabled)
         _forceMarkdownOutput = State(initialValue: draft.forceMarkdownOutput)
         _replaceBasePrompt = State(initialValue: draft.replaceBasePrompt)
         _outputLanguage = State(initialValue: draft.outputLanguage)
@@ -122,6 +124,7 @@ public struct DictationStyleEditorSheet: View {
                         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
                 }
 
+                CheckboxRow("settings.styles.editor.post_processing_enabled".localized, isOn: $postProcessingEnabled)
                 CheckboxRow("settings.styles.editor.markdown_output".localized, isOn: $forceMarkdownOutput)
                 CheckboxRow("settings.styles.editor.replace_base_prompt".localized, isOn: $replaceBasePrompt)
 
@@ -387,6 +390,7 @@ public struct DictationStyleEditorSheet: View {
                 name: normalizedName,
                 iconSymbol: normalizedIconSymbol,
                 promptInstructions: normalizedPrompt,
+                postProcessingEnabled: postProcessingEnabled,
                 forceMarkdownOutput: forceMarkdownOutput,
                 replaceBasePrompt: replaceBasePrompt,
                 outputLanguage: outputLanguage,
