@@ -51,4 +51,24 @@ final class ContextAwarenessServiceTests: XCTestCase {
         XCTAssertEqual(output?.contains("[REDACTED_SECRET]"), true)
         XCTAssertEqual(output?.contains("[REDACTED_NUMBER]"), true)
     }
+
+    func testMakePostProcessingContextUsesTypedBlocksForEachSource() {
+        let service = ContextAwarenessService()
+        let context = service.makePostProcessingContext(
+            from: ContextAwarenessSnapshot(
+                activeAppName: "Safari",
+                activeWindowTitle: "OpenAI",
+                activeAccessibilityText: "Focused text",
+                clipboardText: "Clipboard text",
+                activeWindowOCRText: "Visible text",
+            ),
+        )
+
+        XCTAssertTrue(context?.contains("<ACTIVE_APP>\nSafari\n</ACTIVE_APP>") == true)
+        XCTAssertTrue(context?.contains("<WINDOW_TITLE>\nOpenAI\n</WINDOW_TITLE>") == true)
+        XCTAssertTrue(context?.contains("<FOCUSED_UI_TEXT>\nFocused text\n</FOCUSED_UI_TEXT>") == true)
+        XCTAssertTrue(context?.contains("<CLIPBOARD_CONTEXT>\nClipboard text\n</CLIPBOARD_CONTEXT>") == true)
+        XCTAssertTrue(context?.contains("<WINDOW_OCR_CONTEXT>\nVisible text\n</WINDOW_OCR_CONTEXT>") == true)
+        XCTAssertFalse(context?.contains("- Clipboard text:") == true)
+    }
 }

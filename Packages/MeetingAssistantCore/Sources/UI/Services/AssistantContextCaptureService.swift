@@ -248,10 +248,8 @@ public final class AssistantContextCaptureService {
 
         items.append(TranscriptionContextItem(source: .focusedText, text: focusedText))
         appendContextBlock(
-            """
-            - Focused text:
-            \(focusedText)
-            """,
+            tag: "FOCUSED_TEXT",
+            value: focusedText,
             to: &context,
         )
     }
@@ -300,7 +298,7 @@ public final class AssistantContextCaptureService {
         items: inout [TranscriptionContextItem],
     ) {
         items.append(TranscriptionContextItem(source: .activeTabURL, text: activeTabURL))
-        appendContextBlock("- Active tab URL: \(activeTabURL)", to: &context)
+        appendContextBlock(tag: "ACTIVE_TAB_URL", value: activeTabURL, to: &context)
     }
 
     private func appendCalendarContext(
@@ -310,16 +308,11 @@ public final class AssistantContextCaptureService {
     ) {
         items.append(TranscriptionContextItem(source: .calendarEvent, text: calendarContext))
 
-        if let existingContext = context,
-           !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        {
-            context = "\(existingContext)\n\(calendarContext)"
-        } else {
-            context = calendarContext
-        }
+        appendContextBlock(tag: "CALENDAR_CONTEXT", value: calendarContext, to: &context)
     }
 
-    private func appendContextBlock(_ block: String, to context: inout String?) {
+    private func appendContextBlock(tag: String, value: String, to context: inout String?) {
+        let block = "<\(tag)>\n\(value)\n</\(tag)>"
         if let existingContext = context,
            !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         {

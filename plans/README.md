@@ -33,6 +33,7 @@ reason) | `REJECTED` (with a one-line rationale).
 | [058](058-build-global-agent-efficiency-evaluator.md) | Build a global agent-efficiency evaluator with model-attributed cost | P1 | L | - | DONE (54 controlled runs; 100% segment attribution; API-equivalent estimates) |
 | [059](059-tune-global-agent-routing.md) | Tune global routing and root reasoning from controlled cost-quality evidence | P1 | M | 058 | DONE (medium beat high on cost/latency; defaults remain unchanged) |
 | [060](060-evaluate-lean-tools-fast-implementer.md) | Evaluate a lean code profile and a Fast-lane implementer before enabling either | P2 | M | 058, 059 | DONE (lean/Fast candidates measured; neither promoted globally) |
+| [061](061-add-selected-text-at-dictation-start-context.md) | Add opt-in selected-text-at-start context for dictation | P1 | L | - | TODO |
 
 Plans 001–060 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
@@ -54,3 +55,6 @@ options verbatim for searchability.
 - 060 found lean and Fast candidates; keep lean opt-in until artifact/browser
   smoke coverage is added, and keep Fast limited to deterministic Fast-lane
   work in isolated worktrees.
+- 061 is a cross-module dictation-context feature; preserve the current
+  prompt/context-hardening worktree changes before implementation and keep the
+  new source opt-in false unless product explicitly changes the privacy default.

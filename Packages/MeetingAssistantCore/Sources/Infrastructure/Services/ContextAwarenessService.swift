@@ -136,29 +136,32 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         lines.append("CONTEXT_METADATA")
 
         if let activeAppName = snapshot.activeAppName {
-            lines.append("- Active app: \(activeAppName)")
+            appendTaggedContext("ACTIVE_APP", activeAppName, to: &lines)
         }
 
         if let activeWindowTitle = snapshot.activeWindowTitle {
-            lines.append("- Active window title: \(activeWindowTitle)")
+            appendTaggedContext("WINDOW_TITLE", activeWindowTitle, to: &lines)
         }
 
         if let activeAccessibilityText = snapshot.activeAccessibilityText {
-            lines.append("- Focused UI text (Accessibility):")
-            lines.append(activeAccessibilityText)
+            appendTaggedContext("FOCUSED_UI_TEXT", activeAccessibilityText, to: &lines)
         }
 
         if let clipboardText = snapshot.clipboardText {
-            lines.append("- Clipboard text:")
-            lines.append(clipboardText)
+            appendTaggedContext("CLIPBOARD_CONTEXT", clipboardText, to: &lines)
         }
 
         if let activeWindowOCRText = snapshot.activeWindowOCRText {
-            lines.append("- Active window visible text (OCR):")
-            lines.append(activeWindowOCRText)
+            appendTaggedContext("WINDOW_OCR_CONTEXT", activeWindowOCRText, to: &lines)
         }
 
         return lines.joined(separator: "\n")
+    }
+
+    private func appendTaggedContext(_ tag: String, _ value: String, to lines: inout [String]) {
+        lines.append("<\(tag)>")
+        lines.append(value)
+        lines.append("</\(tag)>")
     }
 
     private func focusedWindowTitle(for app: NSRunningApplication?) -> String? {

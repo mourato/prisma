@@ -28,6 +28,8 @@ final class PostProcessingSystemContextMetadataTests: XCTestCase {
         XCTAssertTrue(enriched.contains("- Locale: en_BR"))
         XCTAssertTrue(enriched.contains("- User's full name: Renato"))
         XCTAssertTrue(enriched.contains("- Active app: WhatsApp"))
+        XCTAssertTrue(enriched.contains("<SYSTEM_CONTEXT>"))
+        XCTAssertTrue(enriched.contains("</SYSTEM_CONTEXT>"))
     }
 
     func testAugment_DoesNotDuplicateSystemFieldsIfAlreadyPresent() throws {
