@@ -98,17 +98,31 @@ public struct TriggerSelectionView: View {
             Text("settings.styles.editor.website_input_section".localized)
                 .font(.subheadline.weight(.semibold))
 
-            HStack(spacing: 8) {
-                TextField("settings.styles.editor.website_placeholder".localized, text: $websiteInput)
-                    .textFieldStyle(.roundedBorder)
+            ViewThatFits {
+                HStack(spacing: 8) {
+                    TextField("settings.styles.editor.website_placeholder".localized, text: $websiteInput)
+                        .textFieldStyle(.roundedBorder)
 
-                Button("settings.styles.editor.add_website".localized) {
-                    addWebsiteTarget()
+                    Button("settings.styles.editor.add_website".localized) {
+                        addWebsiteTarget()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(normalizedWebsiteInput == nil)
                 }
-                .buttonStyle(.bordered)
-                .disabled(normalizedWebsiteInput == nil)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("settings.styles.editor.website_placeholder".localized, text: $websiteInput)
+                        .textFieldStyle(.roundedBorder)
+
+                    Button("settings.styles.editor.add_website".localized) {
+                        addWebsiteTarget()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(normalizedWebsiteInput == nil)
+                }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var selectedTargetsSection: some View {
@@ -153,10 +167,12 @@ public struct TriggerSelectionView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(AppDesignSystem.Colors.subtleFill2)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var filteredApps: [InstalledApplicationRecord] {
@@ -235,6 +251,7 @@ public struct TriggerSelectionView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func addAppTarget(_ bundleIdentifier: String) {
@@ -318,7 +335,7 @@ public struct TriggerSelectionView: View {
     }
 }
 
-#Preview {
+#Preview("Trigger Selection (Narrow)") {
     NavigationStack {
         TriggerSelectionView(
             initialTargets: [
@@ -336,5 +353,28 @@ public struct TriggerSelectionView: View {
             onApply: { _ in },
             onCancel: {},
         )
+        .frame(width: 360)
+    }
+}
+
+#Preview("Trigger Selection (Normal)") {
+    NavigationStack {
+        TriggerSelectionView(
+            initialTargets: [
+                .app(bundleIdentifier: "com.tinyspeck.slackmacgap"),
+                .website(url: "docs.example.com"),
+            ],
+            appCatalog: [
+                InstalledApplicationRecord(bundleIdentifier: "com.tinyspeck.slackmacgap", displayName: "Slack"),
+                InstalledApplicationRecord(bundleIdentifier: "com.apple.Safari", displayName: "Safari"),
+                InstalledApplicationRecord(bundleIdentifier: "com.microsoft.VSCode", displayName: "VS Code"),
+            ],
+            isLoadingAppCatalog: false,
+            styleID: nil,
+            onFindConflictingStyleName: { _, _ in nil },
+            onApply: { _ in },
+            onCancel: {},
+        )
+        .frame(width: 640)
     }
 }

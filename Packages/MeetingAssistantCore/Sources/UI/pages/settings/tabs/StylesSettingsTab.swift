@@ -83,6 +83,7 @@ public struct StylesSettingsTab: View {
 
             styleActionsMenu(for: style, isSelected: selectedStyleID == style.id)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(selectionBackground(isSelected: selectedStyleID == style.id))

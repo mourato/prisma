@@ -216,6 +216,7 @@ public struct DictationStyleEditorDetailView: View {
                     .foregroundStyle(.red)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var targetsEditor: some View {
@@ -257,10 +258,12 @@ public struct DictationStyleEditorDetailView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(AppDesignSystem.Colors.subtleFill2)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var promptSummary: String {
@@ -551,5 +554,91 @@ private struct CheckboxRow: View {
             onDelete: {},
         )
         .frame(width: 360)
+    }
+}
+
+#Preview("Editor (Normal)") {
+    NavigationStack {
+        DictationStyleEditorDetailView(
+            draft: DictationStyleEditorDraft(
+                name: "Daily Notes",
+                iconSymbol: "note.text",
+                promptInstructions: "Prefer concise bullets and list action items at the end.",
+                forceMarkdownOutput: true,
+                replaceBasePrompt: false,
+                outputLanguage: .english,
+                targets: [
+                    .app(bundleIdentifier: "com.tinyspeck.slackmacgap"),
+                    .website(url: "docs.example.com"),
+                ],
+                contextSourcePolicy: .init(
+                    isEnabled: true,
+                    includeClipboard: true,
+                    includeWindowOCR: false,
+                    includeAccessibilityText: true,
+                    redactSensitiveData: true,
+                ),
+                enhancementsSelection: .default,
+                isDefault: false,
+            ),
+            appCatalog: [
+                InstalledApplicationRecord(bundleIdentifier: "com.tinyspeck.slackmacgap", displayName: "Slack"),
+                InstalledApplicationRecord(bundleIdentifier: "com.apple.Safari", displayName: "Safari"),
+            ],
+            isLoadingAppCatalog: false,
+            onEnsureAppCatalogLoaded: {},
+            onFindConflictingStyleName: { _, _ in nil },
+            modelOptions: [],
+            isLoadingModelOptions: false,
+            onRefreshModelOptions: {},
+            providerDisplayName: { $0.provider.displayName },
+            onSave: { _ in },
+            onCancel: {},
+            onDelete: {},
+        )
+        .frame(width: 640)
+    }
+}
+
+#Preview("Editor (Wide)") {
+    NavigationStack {
+        DictationStyleEditorDetailView(
+            draft: DictationStyleEditorDraft(
+                name: "Daily Notes",
+                iconSymbol: "note.text",
+                promptInstructions: "Prefer concise bullets and list action items at the end.",
+                forceMarkdownOutput: true,
+                replaceBasePrompt: false,
+                outputLanguage: .english,
+                targets: [
+                    .app(bundleIdentifier: "com.tinyspeck.slackmacgap"),
+                    .website(url: "docs.example.com"),
+                ],
+                contextSourcePolicy: .init(
+                    isEnabled: true,
+                    includeClipboard: true,
+                    includeWindowOCR: false,
+                    includeAccessibilityText: true,
+                    redactSensitiveData: true,
+                ),
+                enhancementsSelection: .default,
+                isDefault: false,
+            ),
+            appCatalog: [
+                InstalledApplicationRecord(bundleIdentifier: "com.tinyspeck.slackmacgap", displayName: "Slack"),
+                InstalledApplicationRecord(bundleIdentifier: "com.apple.Safari", displayName: "Safari"),
+            ],
+            isLoadingAppCatalog: false,
+            onEnsureAppCatalogLoaded: {},
+            onFindConflictingStyleName: { _, _ in nil },
+            modelOptions: [],
+            isLoadingModelOptions: false,
+            onRefreshModelOptions: {},
+            providerDisplayName: { $0.provider.displayName },
+            onSave: { _ in },
+            onCancel: {},
+            onDelete: {},
+        )
+        .frame(width: 900)
     }
 }
