@@ -31,8 +31,9 @@ public struct DictationStyleEditorDetailView: View {
     @State private var redactSensitiveData: Bool
     @State private var enhancementsSelection: EnhancementsAISelection?
     @State private var isDefault: Bool
-    @State private var websiteInput = ""
     @State private var validationMessage: String?
+
+    private let onOpenTriggerSelection: (() -> Void)?
 
     public init(
         draft: DictationStyleEditorDraft,
@@ -47,6 +48,7 @@ public struct DictationStyleEditorDetailView: View {
         onSave: @escaping (DictationStyleEditorDraft) -> Void,
         onCancel: @escaping () -> Void,
         onDelete: (() -> Void)? = nil,
+        onOpenTriggerSelection: (() -> Void)? = nil,
     ) {
         self.appCatalog = appCatalog
         self.isLoadingAppCatalog = isLoadingAppCatalog
@@ -59,6 +61,7 @@ public struct DictationStyleEditorDetailView: View {
         self.onSave = onSave
         self.onCancel = onCancel
         self.onDelete = onDelete
+        self.onOpenTriggerSelection = onOpenTriggerSelection
 
         _styleID = State(initialValue: draft.id)
         _name = State(initialValue: draft.name)
@@ -255,29 +258,54 @@ public struct DictationStyleEditorDetailView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
-            AppSearchInlineSection(
-                appCatalog: appCatalog,
-                isLoading: isLoadingAppCatalog,
-                selectedBundleIdentifiers: selectedAppBundleIdentifiers,
-                onAdd: addAppTarget,
+            SettingsDrillDownButtonRow(
+                title: "settings.styles.editor.triggers_row".localized,
+                subtitle: triggersRowSubtitle,
+                action: {
+                    onOpenTriggerSelection?()
+                },
             )
 
-            HStack(spacing: 8) {
-                TextField("settings.styles.editor.website_placeholder".localized, text: $websiteInput)
-                    .textFieldStyle(.roundedBorder)
+            if !targets.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(targets.enumerated()), id: \.offset) { index, target in
+                        HStack(spacing: 10) {
+                            targetIcon(for: target)
 
-                Button("settings.styles.editor.add_website".localized) {
-                    addWebsiteTarget()
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(targetPrimaryText(target))
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                Text(targetSecondaryText(target))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+
+                        if index < targets.count - 1 {
+                            Divider()
+                        }
+                    }
                 }
-                .buttonStyle(.bordered)
-                .disabled(normalizedWebsiteInput == nil)
+                .background(AppDesignSystem.Colors.subtleFill2)
+                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
             }
+        }
+    }
 
-            Text("settings.styles.editor.selected_targets".localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            selectedTargetsList
+    private var triggersRowSubtitle: String {
+        let count = targets.count
+        switch count {
+        case 0:
+            return "settings.styles.editor.no_targets".localized
+        case 1:
+            return "settings.styles.targets.count.one".localized
+        default:
+            return "settings.styles.targets.count.many".localized(with: count)
         }
     }
 
@@ -306,96 +334,6 @@ public struct DictationStyleEditorDetailView: View {
     private var normalizedIconSymbol: String {
         let trimmed = iconSymbol.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "textformat" : trimmed
-    }
-
-    private var selectedAppBundleIdentifiers: [String] {
-        targets.compactMap { target in
-            guard case let .app(bundleIdentifier) = target else { return nil }
-            return bundleIdentifier
-        }
-    }
-
-    private var normalizedWebsiteInput: String? {
-        let trimmed = websiteInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !trimmed.contains(where: \.isWhitespace) else { return nil }
-
-        if URL(string: trimmed) != nil {
-            return trimmed
-        }
-
-        return trimmed.contains(".") ? trimmed : nil
-    }
-
-    private func addAppTarget(_ bundleIdentifier: String) {
-        addTarget(.app(bundleIdentifier: bundleIdentifier))
-    }
-
-    private func addWebsiteTarget() {
-        guard let website = normalizedWebsiteInput else { return }
-        addTarget(.website(url: website))
-        websiteInput = ""
-    }
-
-    private func addTarget(_ target: DictationStyleTarget) {
-        let identity = targetIdentity(target)
-        guard !targets.contains(where: { targetIdentity($0) == identity }) else { return }
-
-        if let styleName = onFindConflictingStyleName(target, styleID) {
-            validationMessage = styleName.isEmpty
-                ? "settings.styles.editor.validation.target_conflict".localized
-                : "settings.styles.editor.validation.target_conflict_named".localized(with: styleName)
-            return
-        }
-
-        validationMessage = nil
-        targets.append(target)
-    }
-
-    @ViewBuilder
-    private var selectedTargetsList: some View {
-        if targets.isEmpty {
-            Text("settings.styles.editor.no_targets".localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
-            VStack(spacing: 0) {
-                ForEach(Array(targets.enumerated()), id: \.offset) { index, target in
-                    HStack(spacing: 10) {
-                        targetIcon(for: target)
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(targetPrimaryText(target))
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            Text(targetSecondaryText(target))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Spacer()
-
-                        Button(role: .destructive) {
-                            removeTarget(target)
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .buttonStyle(.borderless)
-                        .accessibilityLabel("settings.styles.editor.remove_target".localized)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-
-                    if index < targets.count - 1 {
-                        Divider()
-                    }
-                }
-            }
-        }
-    }
-
-    private func removeTarget(_ target: DictationStyleTarget) {
-        let identity = targetIdentity(target)
-        targets.removeAll { targetIdentity($0) == identity }
     }
 
     private func saveDraft() {
@@ -502,12 +440,7 @@ public struct DictationStyleEditorDetailView: View {
     }
 
     private func targetIdentity(_ target: DictationStyleTarget) -> String {
-        switch target {
-        case let .app(bundleIdentifier):
-            "app|\(normalizeBundleIdentifier(bundleIdentifier))"
-        case let .website(url):
-            "website|\(url.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())"
-        }
+        target.normalizedIdentity
     }
 
     private func normalizeBundleIdentifier(_ value: String) -> String {

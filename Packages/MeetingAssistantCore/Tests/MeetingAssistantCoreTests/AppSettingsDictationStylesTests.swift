@@ -84,6 +84,15 @@ final class AppSettingsDictationStylesTests: XCTestCase {
         )
     }
 
+    func testDictationStyleTarget_NormalizedIdentityTreatsWebsiteSchemesAsEquivalent() {
+        let httpsTarget = DictationStyleTarget.website(url: " HTTPS://Docs.Example.com ")
+        let httpTarget = DictationStyleTarget.website(url: "http://docs.example.com")
+        let bareTarget = DictationStyleTarget.website(url: "docs.example.com")
+
+        XCTAssertEqual(httpsTarget.normalizedIdentity, httpTarget.normalizedIdentity)
+        XCTAssertEqual(httpTarget.normalizedIdentity, bareTarget.normalizedIdentity)
+    }
+
     func testDictationStyles_CreatesDefaultModeWhenDeleted() {
         settings.dictationStyles = []
 

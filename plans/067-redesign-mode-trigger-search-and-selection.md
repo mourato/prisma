@@ -6,6 +6,7 @@
 
 ## Status
 
+- **Status**: DONE
 - **Priority**: P1
 - **Effort**: L
 - **Risk**: HIGH
@@ -95,12 +96,12 @@ Keep immediate conflict feedback when adding a target and repeat validation on s
 
 ## Done criteria
 
-- [ ] Trigger editing is a child drill-down, not a wide inline form.
-- [ ] Apps support search by name/bundle ID, sorted results, selected state, and removal.
-- [ ] Websites support add/search-oriented interaction, duplicate prevention, and removal.
-- [ ] Existing exclusivity and runtime matching contracts remain unchanged.
-- [ ] The UI remains usable at the narrow settings detail width.
-- [ ] English/Portuguese strings are localized and `make guidance-check` passes.
+- [x] Trigger editing is a child drill-down, not a wide inline form.
+- [x] Apps support search by name/bundle ID, sorted results, selected state, and removal.
+- [x] Websites support add/search-oriented interaction, duplicate prevention, and removal.
+- [x] Existing exclusivity and runtime matching contracts remain unchanged.
+- [x] The UI remains usable at the narrow settings detail width.
+- [x] English/Portuguese strings are localized and `make guidance-check` passes.
 
 ## STOP conditions
 

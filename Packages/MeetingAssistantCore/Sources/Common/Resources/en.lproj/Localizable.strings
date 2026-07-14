@@ -914,6 +914,8 @@
 "common.save" = "Save";
 "common.create" = "Create";
 "common.select" = "Select";
+"common.back" = "Back";
+"common.done" = "Done";
 "common.optional" = "(optional)";
 "settings.transcriptions.delete_title" = "Delete Transcription";
 "settings.transcriptions.delete_message" = "Delete the transcription from %@?";
@@ -1442,6 +1444,13 @@
 "metrics.performance.recording.input_source" = "Input source";
 "metrics.performance.units.audio_minutes_per_minute" = "audio min/min";
 "metrics.performance.units.characters_per_second" = "chars/s";
+
+/* Mode Trigger Selection */
+"settings.styles.editor.triggers_row" = "Apps and Websites";
+"settings.styles.editor.app_search_section" = "Apps";
+"settings.styles.editor.website_input_section" = "Websites";
+"settings.styles.editor.app_search_no_match" = "No apps match your search.";
+"settings.styles.editor.validation.target_duplicate" = "This target is already added.";
 
 /* Error */
 "metrics.error.load" = "Could not load dashboard data.";

@@ -197,19 +197,10 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
     }
 
     private static func targetIdentity(_ target: DictationStyleTarget) -> String {
-        switch target {
-        case let .app(bundleIdentifier):
-            "app|\(normalizeBundleIdentifier(bundleIdentifier))"
-        case let .website(url):
-            "website|\(normalizeWebsite(url))"
-        }
+        target.normalizedIdentity
     }
 
     private static func normalizeBundleIdentifier(_ value: String) -> String {
-        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    }
-
-    private static func normalizeWebsite(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 

@@ -915,6 +915,8 @@
 "common.save" = "Salvar";
 "common.create" = "Criar";
 "common.select" = "Selecionar";
+"common.back" = "Voltar";
+"common.done" = "Concluir";
 "common.optional" = "(opcional)";
 "settings.transcriptions.delete_title" = "Excluir Transcrição";
 "settings.transcriptions.delete_message" = "Excluir a transcrição de %@?";
@@ -1444,3 +1446,10 @@
 "metrics.performance.recording.input_source" = "Fonte de entrada";
 "metrics.performance.units.audio_minutes_per_minute" = "min audio/min";
 "metrics.performance.units.characters_per_second" = "carac/s";
+
+/* Mode Trigger Selection */
+"settings.styles.editor.triggers_row" = "Apps e Sites";
+"settings.styles.editor.app_search_section" = "Apps";
+"settings.styles.editor.website_input_section" = "Sites";
+"settings.styles.editor.app_search_no_match" = "Nenhum app corresponde à sua busca.";
+"settings.styles.editor.validation.target_duplicate" = "Este alvo já foi adicionado.";

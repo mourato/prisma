@@ -119,12 +119,12 @@ public enum DictationStyleTarget: Hashable, Codable, Sendable {
         }
     }
 
-    var normalizedIdentity: String {
+    public var normalizedIdentity: String {
         switch self {
         case let .app(bundleIdentifier):
             "app|\(Self.normalizeBundleIdentifier(bundleIdentifier))"
         case let .website(url):
-            "website|\(Self.normalizeWebsiteURL(url))"
+            "website|\(Self.normalizeWebsiteIdentity(url))"
         }
     }
 
@@ -161,6 +161,16 @@ public enum DictationStyleTarget: Hashable, Codable, Sendable {
 
     private static func normalizeWebsiteURL(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private static func normalizeWebsiteIdentity(_ value: String) -> String {
+        var normalized = normalizeWebsiteURL(value)
+        if normalized.hasPrefix("https://") {
+            normalized.removeFirst("https://".count)
+        } else if normalized.hasPrefix("http://") {
+            normalized.removeFirst("http://".count)
+        }
+        return normalized
     }
 }
 

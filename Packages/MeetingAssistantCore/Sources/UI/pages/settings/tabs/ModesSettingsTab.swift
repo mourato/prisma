@@ -17,7 +17,12 @@ public struct ModesSettingsTab: View {
         case nil:
             stylesListPage
         case let .some(route):
-            editorPage(for: route)
+            switch route {
+            case .editor:
+                editorPage(for: route)
+            case .triggerSelection:
+                triggerSelectionPage
+            }
         }
     }
 
@@ -54,11 +59,41 @@ public struct ModesSettingsTab: View {
                         viewModel.clearEditor()
                         navigateToRoot()
                     } : nil,
+                    onOpenTriggerSelection: {
+                        navigationState.open(.triggerSelection(styleID: styleID))
+                    },
                 )
+                .id(route)
             } else {
                 stylesListPage
             }
         }
+    }
+
+    private var triggerSelectionPage: some View {
+        let styleID: UUID? = {
+            if case let .triggerSelection(styleID) = navigationState.currentRoute {
+                return styleID
+            }
+            return nil
+        }()
+
+        return TriggerSelectionView(
+            initialTargets: viewModel.editorDraft?.targets ?? [],
+            appCatalog: viewModel.appCatalog,
+            isLoadingAppCatalog: viewModel.isLoadingAppCatalog,
+            styleID: styleID,
+            onFindConflictingStyleName: { target, excludeID in
+                viewModel.styleNameConflicting(with: target, excluding: excludeID)
+            },
+            onApply: { updatedTargets in
+                viewModel.editorDraft?.targets = updatedTargets
+                navigationState.open(.editor(styleID: styleID))
+            },
+            onCancel: {
+                navigationState.open(.editor(styleID: styleID))
+            },
+        )
     }
 
     private var stylesListPage: some View {
