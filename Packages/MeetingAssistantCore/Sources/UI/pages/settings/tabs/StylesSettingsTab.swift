@@ -6,30 +6,21 @@ public struct StylesSettingsTab: View {
     @ObservedObject private var viewModel: DictationStylesSettingsViewModel
     @ObservedObject private var aiSettingsViewModel: AISettingsViewModel
     @State private var selectedStyleID: UUID?
-    private let embedded: Bool
     private let onOpenEditor: ((UUID?) -> Void)?
 
     public init(
         viewModel: DictationStylesSettingsViewModel,
         aiSettingsViewModel: AISettingsViewModel,
-        embedded: Bool = false,
         onOpenEditor: ((UUID?) -> Void)? = nil,
     ) {
         _viewModel = ObservedObject(wrappedValue: viewModel)
         _aiSettingsViewModel = ObservedObject(wrappedValue: aiSettingsViewModel)
-        self.embedded = embedded
         self.onOpenEditor = onOpenEditor
     }
 
     public var body: some View {
-        Group {
-            if embedded {
-                pageContent
-            } else {
-                SettingsScrollableContent {
-                    pageContent
-                }
-            }
+        SettingsScrollableContent {
+            pageContent
         }
         .onDeleteCommand(perform: deleteSelectedStyle)
     }

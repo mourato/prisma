@@ -124,7 +124,6 @@ public struct ModesSettingsTab: View {
         StylesSettingsTab(
             viewModel: viewModel,
             aiSettingsViewModel: aiSettingsViewModel,
-            embedded: true,
             onOpenEditor: { styleID in
                 viewModel.prepareEditor(for: styleID)
                 navigationState.open(.editor(styleID: styleID))

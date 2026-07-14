@@ -14,6 +14,7 @@ private enum LayoutConstants {
     static let sidebarMinWidth: CGFloat = 220
     static let sidebarIdealWidth: CGFloat = 240
     static let sidebarMaxWidth: CGFloat = 260
+    static let contentChromeVerticalInset: CGFloat = 44
 }
 
 // MARK: - Settings View
@@ -523,6 +524,7 @@ private struct SettingsDetailChromeModifier<LegacyHeader: View>: ViewModifier {
     func body(content: Content) -> some View {
         if usesToolbarChrome {
             content
+                .padding(.top, LayoutConstants.contentChromeVerticalInset)
         } else {
             content.safeAreaInset(edge: .top, spacing: 0) {
                 legacyHeader

@@ -41,6 +41,10 @@ reason) | `REJECTED` (with a one-line rationale).
 | [066](066-move-dictation-mode-editor-to-detail-panel.md) | Move dictation-mode editing from a sheet to a settings detail panel | P1 | L | - | DONE |
 | [067](067-redesign-mode-trigger-search-and-selection.md) | Redesign mode trigger search, selection, and removal | P1 | L | 066 | DONE |
 | [068](068-add-mode-instruction-drilldown-and-narrow-layout.md) | Add instruction drill-down and compact mode settings layout | P1 | M | 066, 067 | DONE |
+| [069](069-establish-settings-content-surface-contract.md) | Establish a shared settings content-surface contract | P1 | M | - | DONE |
+| [070](070-build-modes-secondary-sidebar-editor.md) | Build the Modes secondary-sidebar editor | P1 | L | 069 | TODO |
+| [071](071-normalize-fluid-settings-groups.md) | Normalize fluid configuration groups and responsive rows | P1 | L | 069 | TODO |
+| [072](072-align-mode-trigger-flow-with-voiceink-reference.md) | Align the mode trigger flow with the VoiceInk reference | P2 | M | 070, 071 | TODO |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
@@ -71,3 +75,11 @@ options verbatim for searchability.
   it changes only the search/selection surface.
 - 068 keeps all current persisted mode settings and routes new instruction text
   through a child detail view.
+- 069 establishes the shared safe-area, gutter, scrolling, and background
+  contract before any drawer work.
+- 070 depends on 069 and owns the native Modes secondary pane, drawer header,
+  child-route integration, and fixed editor footer.
+- 071 depends on 069 and owns the full-width group contract and responsive rows;
+  it must not invent a second navigation shell.
+- 072 depends on 070 and 071 and refines only apps/sites trigger presentation
+  while preserving target identity, exclusivity, and runtime matching.
