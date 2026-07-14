@@ -363,7 +363,12 @@ private final class MockContextAwarenessService: ContextAwarenessServiceProtocol
 
 private struct MockTextContextProvider: TextContextProvider {
     let text: String?
-    let selectedText: String? = nil
+    let selectedText: String?
+
+    init(text: String?, selectedText: String? = nil) {
+        self.text = text
+        self.selectedText = selectedText
+    }
 
     func fetchTextContext() async throws -> TextContextSnapshot {
         TextContextSnapshot(
