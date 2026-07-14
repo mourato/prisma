@@ -74,4 +74,17 @@ final class SettingsSubpageNavigationStateTests: XCTestCase {
         _ = state.goBack()
         XCTAssertNil(state.currentRoute)
     }
+
+    func testClosingEditorAllowsReopeningAnotherMode() {
+        var state = SettingsSubpageNavigationState<DictationStyleRoute>()
+        let firstStyleID = UUID()
+        let secondStyleID = UUID()
+
+        state.open(.editor(styleID: firstStyleID))
+        _ = state.goBack()
+        state.open(.editor(styleID: secondStyleID))
+
+        XCTAssertEqual(state.currentRoute, .editor(styleID: secondStyleID))
+        XCTAssertFalse(state.canGoForward)
+    }
 }

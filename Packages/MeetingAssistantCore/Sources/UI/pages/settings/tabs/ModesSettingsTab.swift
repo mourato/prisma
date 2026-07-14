@@ -13,15 +13,14 @@ public struct ModesSettingsTab: View {
     }
 
     public var body: some View {
-        HStack(spacing: 0) {
+        NavigationSplitView {
             listColumn
-                .frame(minWidth: 260, idealWidth: 300, maxWidth: 340)
-
-            Divider()
-
+                .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 360)
+        } detail: {
             detailContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .navigationSplitViewStyle(.balanced)
     }
 
     private var listColumn: some View {
@@ -30,25 +29,31 @@ public struct ModesSettingsTab: View {
             aiSettingsViewModel: aiSettingsViewModel,
             onOpenEditor: { styleID in
                 viewModel.prepareEditor(for: styleID)
-                navigationState.open(.editor(styleID: styleID))
+                openRoute(.editor(styleID: styleID))
             },
         )
     }
 
-    @ViewBuilder
     private var detailContent: some View {
-        switch navigationState.currentRoute {
-        case nil:
-            emptyDetailPlaceholder
-        case let .some(route):
-            switch route {
-            case .editor:
-                editorPage(for: route)
-            case .triggerSelection:
-                triggerSelectionPage
-            case .promptEditor:
-                promptEditorPage
+        ZStack {
+            if let route = navigationState.currentRoute {
+                routeContent(for: route)
+                    .id(route)
+            } else {
+                emptyDetailPlaceholder
             }
+        }
+    }
+
+    @ViewBuilder
+    private func routeContent(for route: DictationStyleRoute) -> some View {
+        switch route {
+        case .editor:
+            editorPage(for: route)
+        case .triggerSelection:
+            triggerSelectionPage
+        case .promptEditor:
+            promptEditorPage
         }
     }
 
@@ -101,11 +106,11 @@ public struct ModesSettingsTab: View {
                     } : nil,
                     onOpenTriggerSelection: { draft in
                         viewModel.editorDraft = draft
-                        navigationState.open(.triggerSelection(styleID: styleID))
+                        openRoute(.triggerSelection(styleID: styleID))
                     },
                     onOpenPromptEditor: { draft in
                         viewModel.editorDraft = draft
-                        navigationState.open(.promptEditor(styleID: styleID))
+                        openRoute(.promptEditor(styleID: styleID))
                     },
                 )
                 .id(route)
@@ -133,7 +138,7 @@ public struct ModesSettingsTab: View {
             },
             onApply: { updatedTargets in
                 viewModel.editorDraft?.targets = updatedTargets
-                navigationState.open(.editor(styleID: styleID))
+                openRoute(.editor(styleID: styleID))
             },
         )
     }
@@ -147,7 +152,7 @@ public struct ModesSettingsTab: View {
                     set: { viewModel.editorDraft?.promptInstructions = $0 },
                 ),
                 onCancel: {
-                    navigationState.open(.editor(styleID: draft.id))
+                    openRoute(.editor(styleID: draft.id))
                 },
             )
         } else {
@@ -158,8 +163,22 @@ public struct ModesSettingsTab: View {
     private func navigateToRoot() {
         _ = navigationState.goBack()
     }
+
+    private func openRoute(_ route: DictationStyleRoute) {
+        navigationState.open(route)
+    }
 }
 
-#Preview {
+#Preview("Modes — Native Split") {
     ModesSettingsTab()
+}
+
+#Preview("Modes — Narrow") {
+    ModesSettingsTab()
+        .frame(width: 620, height: 520)
+}
+
+#Preview("Modes — Expanded") {
+    ModesSettingsTab()
+        .frame(width: 1_080, height: 720)
 }
