@@ -2,7 +2,7 @@
 
 This is the active plan ledger. Historical audits, completed plan rows, review
 notes, and rejected options remain in the [2026-07-12 ledger archive](archive/2026-07-12-plan-ledger-history.md).
-Plan files are never renumbered; the next available plan number is 061.
+Plan files are never renumbered; the next available plan number is 069.
 
 ## Execution rules
 
@@ -38,6 +38,9 @@ reason) | `REJECTED` (with a one-line rationale).
 | [063](063-resolve-post-processing-by-dictation-mode.md) | Resolve post-processing by dictation mode | P1 | L | 062 | DONE |
 | [064](064-remove-user-prompts-and-system-prompt-settings-surface.md) | Remove user-prompts and system-prompt settings surface | P1 | M | 062, 063 | DONE |
 | [065](065-add-friendly-mode-icons-and-emoji.md) | Add friendly mode icons and emoji | P1 | M | 062, 064 | DONE |
+| [066](066-move-dictation-mode-editor-to-detail-panel.md) | Move dictation-mode editing from a sheet to a settings detail panel | P1 | L | - | TODO |
+| [067](067-redesign-mode-trigger-search-and-selection.md) | Redesign mode trigger search, selection, and removal | P1 | L | 066 | TODO |
+| [068](068-add-mode-instruction-drilldown-and-narrow-layout.md) | Add instruction drill-down and compact mode settings layout | P1 | M | 066, 067 | TODO |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
@@ -62,3 +65,9 @@ options verbatim for searchability.
 - 061 is a cross-module dictation-context feature; preserve the current
   prompt/context-hardening worktree changes before implementation and keep the
   new source opt-in false unless product explicitly changes the privacy default.
+- 066 must land before 067 and 068 because both child drill-downs depend on the
+  editor owning an explicit detail route rather than a modal boolean.
+- 067 preserves the existing one-target-per-mode invariant and runtime matching;
+  it changes only the search/selection surface.
+- 068 keeps all current persisted mode settings and routes new instruction text
+  through a child detail view.
