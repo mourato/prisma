@@ -52,8 +52,14 @@ extension RecordingManager {
             guard !Task.isCancelled else { return }
             guard currentMeeting?.id == meetingID else { return }
 
-            postProcessingContext = captureResult.context
-            postProcessingContextItems = captureResult.items
+            postProcessingContext = mergedContext(
+                existing: postProcessingContext,
+                incoming: captureResult.context,
+            )
+            postProcessingContextItems = mergedContextItems(
+                existing: postProcessingContextItems,
+                incoming: captureResult.items,
+            )
 
             if captureResult.didTimeout {
                 AppLogger.warning(
@@ -146,15 +152,15 @@ extension RecordingManager {
             updatedItems.append(ocrItem)
             postProcessingContextItems = updatedItems
 
-            var updatedContext = postProcessingContext
-            appendContextBlock(
-                """
-                - Active window visible text (OCR):
-                \(ocrItem.text)
-                """,
-                to: &updatedContext,
+            let ocrContext = """
+            <WINDOW_OCR_CONTEXT>
+            \(ocrItem.text)
+            </WINDOW_OCR_CONTEXT>
+            """
+            postProcessingContext = mergedContext(
+                existing: postProcessingContext,
+                incoming: ocrContext,
             )
-            postProcessingContext = updatedContext
 
             AppLogger.debug(
                 "Deferred OCR context capture appended",
@@ -177,16 +183,42 @@ extension RecordingManager {
         ).contextSourcePolicy
     }
 
-    private func appendContextBlock(_ block: String, to context: inout String?) {
-        if let existingContext = context,
-           !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        {
-            context = "\(existingContext)\n\(block)"
-        } else {
-            context = """
-            CONTEXT_METADATA
-            \(block)
-            """
+    private func mergedContext(existing: String?, incoming: String?) -> String? {
+        let existingBody = contextBody(existing)
+        let incomingBody = contextBody(incoming)
+        let bodies = [existingBody, incomingBody].filter { !$0.isEmpty }
+        guard !bodies.isEmpty else { return nil }
+        return "CONTEXT_METADATA\n" + bodies.joined(separator: "\n")
+    }
+
+    private func contextBody(_ context: String?) -> String {
+        guard let context else { return "" }
+        var lines = context.components(separatedBy: .newlines)
+        while let first = lines.first, first.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            lines.removeFirst()
         }
+        if let first = lines.first,
+           first.trimmingCharacters(in: .whitespacesAndNewlines)
+           .compare("CONTEXT_METADATA", options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        {
+            lines.removeFirst()
+        }
+        return lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func mergedContextItems(
+        existing: [TranscriptionContextItem],
+        incoming: [TranscriptionContextItem],
+    ) -> [TranscriptionContextItem] {
+        var merged = existing
+        for item in incoming where !merged.contains(where: { $0.source == item.source && $0.text == item.text }) {
+            merged.append(item)
+        }
+
+        if let selectedIndex = merged.firstIndex(where: { $0.source == .selectedTextAtStart }), selectedIndex > 0 {
+            let selectedItem = merged.remove(at: selectedIndex)
+            merged.insert(selectedItem, at: 0)
+        }
+        return merged
     }
 }

@@ -185,6 +185,20 @@ extension RecordingManager {
         restoreMeetingNotesIfNeeded(for: meeting.id)
         isMeetingNotesPanelVisible = false
 
+        if purpose == .dictation {
+            let dictationStyle = AppSettingsStore.shared.effectiveDictationStyle(
+                bundleIdentifier: resolvedContext.appBundleIdentifier,
+                activeURL: resolvedContext.activeBrowserURL,
+            )
+            let selectedTextCapture = await contextCaptureService.captureSelectedTextAtDictationStart(
+                contextSourcePolicy: dictationStyle.contextSourcePolicy,
+            )
+            if let selectedTextItem = selectedTextCapture.item {
+                postProcessingContextItems = [selectedTextItem]
+                postProcessingContext = selectedTextCapture.context
+            }
+        }
+
         let audioURL = storage.createRecordingURL(for: meeting, type: .merged)
         setMergedAudioURL(audioURL)
         try await prepareIncrementalDictationSessionIfNeeded(

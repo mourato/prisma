@@ -93,6 +93,53 @@ public final class AXTextContextProvider: TextContextProvider {
         }
     }
 
+    public func fetchSelectedTextContext() async throws -> TextContextSnapshot? {
+        guard let appContext = try await activeAppProvider.fetchActiveAppContext() else {
+            throw ContextAcquisitionError.noActiveApp
+        }
+
+        let customExcludedBundleIDs = customExcludedBundleIDsProvider()
+        let exclusionPolicy = exclusionPolicyProvider()
+        if exclusionPolicy.isExcluded(
+            bundleIdentifier: appContext.bundleIdentifier,
+            customExcludedBundleIDs: customExcludedBundleIDs,
+        ) {
+            recordFailure(appContext: appContext, reason: .excludedApp)
+            throw ContextAcquisitionError.excludedApp
+        }
+
+        guard AccessibilityPermissionService.isTrusted() else {
+            recordFailure(appContext: appContext, reason: .permissionDenied)
+            throw ContextAcquisitionError.permissionDenied
+        }
+
+        do {
+            let focusedElement = try focusedElement(for: appContext.processIdentifier)
+            guard let selectedText = readAXStringAttribute(
+                focusedElement,
+                attribute: kAXSelectedTextAttribute as String,
+            )?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+                !selectedText.isEmpty
+            else {
+                return nil
+            }
+
+            return TextContextSnapshot(
+                text: normalizeLineBreaks(selectedText),
+                source: .selectedText,
+                appContext: appContext,
+            )
+        } catch let error as ContextAcquisitionError {
+            recordFailure(appContext: appContext, reason: error)
+            throw error
+        } catch {
+            let wrapped = ContextAcquisitionError.providerFailed(error.localizedDescription)
+            recordFailure(appContext: appContext, reason: wrapped)
+            throw wrapped
+        }
+    }
+
     private func focusedElement(for processIdentifier: Int) throws -> AXUIElement {
         let appElement = AXUIElementCreateApplication(pid_t(processIdentifier))
         var focusedElementRef: CFTypeRef?

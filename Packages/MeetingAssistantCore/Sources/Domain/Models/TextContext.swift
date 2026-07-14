@@ -21,6 +21,7 @@ public struct TextContextSnapshot: Sendable, Equatable {
 
 public enum ContextSource: String, Sendable, Equatable {
     case accessibility
+    case selectedText
     case visibleOnly
     case unknown
 }

@@ -193,4 +193,34 @@ final class AppSettingsDictationStylesTests: XCTestCase {
         XCTAssertEqual(policy.isEnabled, false)
         XCTAssertEqual(policy.hasEnabledContextSources, false)
     }
+
+    func testDictationContextSourcePolicy_SelectedTextAtStartDefaultsOffAndRoundTrips() throws {
+        let legacyJSON = """
+        {
+          "includeClipboard": false,
+          "includeWindowOCR": false,
+          "includeAccessibilityText": false,
+          "redactSensitiveData": true
+        }
+        """
+
+        let legacyPolicy = try JSONDecoder().decode(
+            DictationContextSourcePolicy.self,
+            from: Data(legacyJSON.utf8),
+        )
+        XCTAssertFalse(legacyPolicy.includeSelectedTextAtStart)
+
+        let policy = DictationContextSourcePolicy(
+            includeClipboard: false,
+            includeWindowOCR: false,
+            includeAccessibilityText: false,
+            includeSelectedTextAtStart: true,
+            redactSensitiveData: true,
+        )
+        let data = try JSONEncoder().encode(policy)
+        let decoded = try JSONDecoder().decode(DictationContextSourcePolicy.self, from: data)
+
+        XCTAssertTrue(decoded.includeSelectedTextAtStart)
+        XCTAssertTrue(decoded.hasEnabledContextSources)
+    }
 }

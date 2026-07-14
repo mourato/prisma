@@ -133,9 +133,12 @@ enum SettingsSearchIndex {
         "settings.context_awareness.clipboard_desc",
         "settings.context_awareness.redact_sensitive_data",
         "settings.context_awareness.redact_sensitive_data_desc",
+        "settings.context_awareness.selected_text_at_start",
+        "settings.context_awareness.selected_text_at_start_desc",
         "settings.context_awareness.window_ocr",
         "settings.context_awareness.window_ocr_desc",
         "settings.styles.editor.context_sources",
+        "settings.modes.prompts.title",
     ]
 
     private static let protectedAppsKeys: Set<String> = [

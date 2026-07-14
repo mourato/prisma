@@ -85,6 +85,8 @@ extension SettingsSearchIndex {
         "settings.context_awareness.protect_sensitive_apps_desc",
         "settings.context_awareness.redact_sensitive_data",
         "settings.context_awareness.redact_sensitive_data_desc",
+        "settings.context_awareness.selected_text_at_start",
+        "settings.context_awareness.selected_text_at_start_desc",
         "settings.context_awareness.screen_permission_desc",
         "settings.context_awareness.screen_permission_title",
         "settings.context_awareness.title",

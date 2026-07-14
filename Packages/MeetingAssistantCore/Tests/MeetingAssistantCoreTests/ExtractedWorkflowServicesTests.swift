@@ -189,6 +189,41 @@ final class ExtractedWorkflowServicesTests: XCTestCase {
         XCTAssertTrue(result.context?.contains("Focused draft") == true)
     }
 
+    func testAssistantContextCaptureService_CapturesSelectedTextAtDictationStartOnlyWhenEnabled() async {
+        let contextService = MockContextAwarenessService()
+        let service = AssistantContextCaptureService(
+            contextAwarenessService: contextService,
+            textContextProvider: MockTextContextProvider(text: nil, selectedText: "Selected reference"),
+            textContextGuardrails: TextContextGuardrails(),
+            textContextPolicy: .default,
+            isAccessibilityTrusted: { true },
+            requestAccessibilityPermission: {},
+        )
+
+        let disabled = await service.captureSelectedTextAtDictationStart(
+            contextSourcePolicy: DictationContextSourcePolicy(
+                includeClipboard: false,
+                includeWindowOCR: false,
+                includeAccessibilityText: false,
+                redactSensitiveData: false,
+            ),
+        )
+        XCTAssertNil(disabled.item)
+
+        let enabled = await service.captureSelectedTextAtDictationStart(
+            contextSourcePolicy: DictationContextSourcePolicy(
+                includeClipboard: false,
+                includeWindowOCR: false,
+                includeAccessibilityText: false,
+                includeSelectedTextAtStart: true,
+                redactSensitiveData: false,
+            ),
+        )
+        XCTAssertEqual(enabled.item?.source, .selectedTextAtStart)
+        XCTAssertEqual(enabled.item?.text, "Selected reference")
+        XCTAssertTrue(enabled.context?.contains("<SELECTED_TEXT_AT_START>") == true)
+    }
+
     func testAssistantContextCaptureService_SourcePolicyWithNoSourcesSkipsContextCapture() async {
         settings.contextAwarenessEnabled = true
         settings.contextAwarenessIncludeAccessibilityText = true
@@ -328,11 +363,21 @@ private final class MockContextAwarenessService: ContextAwarenessServiceProtocol
 
 private struct MockTextContextProvider: TextContextProvider {
     let text: String?
+    let selectedText: String? = nil
 
     func fetchTextContext() async throws -> TextContextSnapshot {
         TextContextSnapshot(
             text: text ?? "",
             source: .accessibility,
+            appContext: ActiveAppContext(bundleIdentifier: "com.apple.Safari", name: "Safari", processIdentifier: 1),
+        )
+    }
+
+    func fetchSelectedTextContext() async throws -> TextContextSnapshot? {
+        guard let selectedText else { return nil }
+        return TextContextSnapshot(
+            text: selectedText,
+            source: .selectedText,
             appContext: ActiveAppContext(bundleIdentifier: "com.apple.Safari", name: "Safari", processIdentifier: 1),
         )
     }

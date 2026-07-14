@@ -107,6 +107,55 @@ public final class AssistantContextCaptureService {
         return (context, items)
     }
 
+    public func captureSelectedTextAtDictationStart(
+        contextSourcePolicy: DictationContextSourcePolicy?,
+    ) async -> (context: String?, item: TranscriptionContextItem?) {
+        guard contextSourcePolicy?.includeSelectedTextAtStart == true else {
+            return (nil, nil)
+        }
+
+        guard isAccessibilityTrusted() else {
+            AppLogger.warning(
+                "Selected text at dictation start skipped: accessibility permission not granted",
+                category: .recordingManager,
+                extra: ["reasonCode": "selected_text_at_start.permission_denied"],
+            )
+            return (nil, nil)
+        }
+
+        do {
+            guard let snapshot = try await textContextProvider.fetchSelectedTextContext() else {
+                return (nil, nil)
+            }
+
+            let guarded = textContextGuardrails.apply(to: snapshot.text, policy: textContextPolicy)
+            var normalized = guarded.trimmingCharacters(in: .whitespacesAndNewlines)
+            if contextSourcePolicy?.redactSensitiveData == true {
+                normalized = ContextAwarenessPrivacy.redactSensitiveText(normalized) ?? ""
+            }
+            guard !normalized.isEmpty else { return (nil, nil) }
+
+            let item = TranscriptionContextItem(source: .selectedTextAtStart, text: normalized)
+            let context = """
+            CONTEXT_METADATA
+            <SELECTED_TEXT_AT_START>
+            (normalized)
+            </SELECTED_TEXT_AT_START>
+            """
+            return (context, item)
+        } catch {
+            AppLogger.warning(
+                "Selected text at dictation start failed",
+                category: .recordingManager,
+                extra: [
+                    "reasonCode": "selected_text_at_start.provider_failed",
+                    "error": error.localizedDescription,
+                ],
+            )
+            return (nil, nil)
+        }
+    }
+
     // Public compatibility surface; keep the existing call shape for external clients.
     // swiftlint:disable:next function_parameter_count
     public func capturePostProcessingContextWithTimeout(

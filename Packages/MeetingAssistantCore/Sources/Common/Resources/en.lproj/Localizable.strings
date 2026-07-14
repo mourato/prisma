@@ -409,6 +409,8 @@
 "settings.context_awareness.screen_permission_desc" = "Enable Screen Recording to capture visible text from the active window.";
 "settings.context_awareness.accessibility_text" = "Include Accessibility UI Text";
 "settings.context_awareness.accessibility_text_desc" = "Capture selected or focused text from the active app via Accessibility APIs (requires Accessibility permission).";
+"settings.context_awareness.selected_text_at_start" = "Include Text Selected at Dictation Start";
+"settings.context_awareness.selected_text_at_start_desc" = "Capture the text selected when dictation starts, once, as AI context (requires Accessibility permission).";
 "settings.context_awareness.permission_title" = "Accessibility permission required";
 "settings.context_awareness.permission_desc" = "Enable Accessibility to read focused text from the active app.";
 "settings.context_awareness.protect_sensitive_apps" = "Protected Apps";
@@ -868,6 +870,7 @@
 "transcription.context.source.clipboard" = "Clipboard";
 "transcription.context.source.window_ocr" = "Window OCR";
 "transcription.context.source.focused_text" = "Focused text";
+"transcription.context.source.selected_text_at_start" = "Text selected at dictation start";
 "transcription.context.source.calendar_event" = "Calendar event";
 "transcription.tab.ai_processed" = "Processed";
 "transcription.tab.original" = "Original";
