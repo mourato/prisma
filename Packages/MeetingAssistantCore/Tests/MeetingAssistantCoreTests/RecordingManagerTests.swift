@@ -277,6 +277,31 @@ extension RecordingManagerTests {
         XCTAssertTrue(shouldApply)
     }
 
+    func testShouldApplyEnhancementsPostProcessing_DictationIgnoresMeetingGlobalToggle() {
+        let settings = AppSettingsStore.shared
+        let originalPostProcessing = settings.postProcessingEnabled
+        let originalDictationSelection = settings.enhancementsDictationAISelection
+
+        defer {
+            settings.postProcessingEnabled = originalPostProcessing
+            settings.enhancementsDictationAISelection = originalDictationSelection
+        }
+
+        settings.postProcessingEnabled = false
+        settings.enhancementsDictationAISelection = EnhancementsAISelection(
+            provider: .openai,
+            selectedModel: "gpt-4o-mini",
+        )
+
+        let shouldApply = RecordingManager.shouldApplyEnhancementsPostProcessing(
+            settings: settings,
+            kernelMode: .dictation,
+            apiKeyExists: { _ in true },
+        )
+
+        XCTAssertTrue(shouldApply)
+    }
+
     func testPromptWithDictationRuleOverrides_EmbedsLanguageAndCustomInstructionsAsPriorityBlock() throws {
         let manager = try XCTUnwrap(manager)
         let settings = AppSettingsStore.shared

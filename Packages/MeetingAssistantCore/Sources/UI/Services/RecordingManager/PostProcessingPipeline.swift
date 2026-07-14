@@ -70,14 +70,17 @@ extension RecordingManager {
         )
 
         let settings = AppSettingsStore.shared
-        guard settings.postProcessingEnabled else {
-            return PostProcessingResult(failureReason: "Post-processing is disabled globally.")
-        }
         let kernelMode = postProcessingKernelMode(
             for: meeting,
             capturePurposeOverride: capturePurposeOverride,
         )
         let isDictation = kernelMode == .dictation
+        guard isDictation || settings.postProcessingEnabled else {
+            return PostProcessingResult(failureReason: "Post-processing is disabled globally.")
+        }
+        guard !isDictation || (matchingDictationStyleForDictation(settings: settings)?.postProcessingEnabled ?? true) else {
+            return PostProcessingResult(failureReason: "Post-processing is disabled for this recording type.")
+        }
         let dictationSelectionOverride = isDictation
             ? matchingDictationStyleForDictation(settings: settings)?.enhancementsSelection
             : nil
@@ -93,10 +96,6 @@ extension RecordingManager {
                 extra: ["reasonCode": reasonCode],
             )
             return PostProcessingResult(failureReason: "recording_indicator.post_processing_warning.missing_config".localized)
-        }
-
-        guard !isPostProcessingDisabled(isDictation: isDictation, settings: settings) else {
-            return PostProcessingResult(failureReason: "Post-processing is disabled for this recording type.")
         }
 
         let type = meeting?.type ?? currentMeeting?.type ?? .general
