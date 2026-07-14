@@ -244,7 +244,7 @@ public struct DictationStyle: Identifiable, Codable, Hashable, Sendable {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    var normalizedIconSymbol: String {
+    public var normalizedIconSymbol: String {
         let trimmed = iconSymbol.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "textformat" : trimmed
     }

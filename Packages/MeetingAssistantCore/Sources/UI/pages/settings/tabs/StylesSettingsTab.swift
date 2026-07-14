@@ -132,6 +132,12 @@ public struct StylesSettingsTab: View {
 
     private func styleRowContent(_ style: DictationStyle, isSelected: Bool) -> some View {
         HStack(spacing: 12) {
+            DictationStyleIconView(
+                iconSymbol: style.normalizedIconSymbol,
+                size: 28,
+                accessibilityLabel: styleDisplayName(style),
+            )
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(styleDisplayName(style))
                     .font(.headline)

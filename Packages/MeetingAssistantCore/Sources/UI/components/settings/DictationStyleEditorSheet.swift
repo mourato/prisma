@@ -96,12 +96,27 @@ public struct DictationStyleEditorSheet: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         HStack(spacing: 8) {
-                            Image(systemName: normalizedIconSymbol)
-                                .font(.body)
-                                .foregroundStyle(.secondary)
-                                .frame(width: 22)
+                            DictationStyleIconView(
+                                iconSymbol: normalizedIconSymbol,
+                                size: 22,
+                                accessibilityLabel: "settings.styles.editor.icon".localized,
+                            )
                             TextField("", text: $iconSymbol)
                                 .textFieldStyle(.roundedBorder)
+
+                            Menu {
+                                ForEach(DictationStyleIconCatalog.recommendedSymbols, id: \.self) { symbol in
+                                    Button {
+                                        iconSymbol = symbol
+                                    } label: {
+                                        Label(symbol, systemImage: symbol)
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "square.grid.2x2")
+                            }
+                            .menuStyle(.borderlessButton)
+                            .accessibilityLabel("settings.styles.editor.icon_picker".localized)
                         }
                     }
                     .frame(width: 220)

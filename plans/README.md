@@ -37,7 +37,7 @@ reason) | `REJECTED` (with a one-line rationale).
 | [062](062-centralize-dictation-post-processing-in-modes.md) | Centralize dictation post-processing in modes | P1 | L | 061 | DONE |
 | [063](063-resolve-post-processing-by-dictation-mode.md) | Resolve post-processing by dictation mode | P1 | L | 062 | DONE |
 | [064](064-remove-user-prompts-and-system-prompt-settings-surface.md) | Remove user-prompts and system-prompt settings surface | P1 | M | 062, 063 | DONE |
-| [065](065-add-friendly-mode-icons-and-emoji.md) | Add friendly mode icons and emoji | P1 | M | 062, 064 | IN PROGRESS |
+| [065](065-add-friendly-mode-icons-and-emoji.md) | Add friendly mode icons and emoji | P1 | M | 062, 064 | DONE |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
