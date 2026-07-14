@@ -6,10 +6,19 @@ public struct ModesSettingsTab: View {
     @StateObject private var viewModel: DictationStylesSettingsViewModel
     @StateObject private var aiSettingsViewModel: AISettingsViewModel
     @State private var navigationState = SettingsSubpageNavigationState<DictationStyleRoute>()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let reduceMotionOverride: Bool?
 
     public init(settings: AppSettingsStore = .shared) {
         _viewModel = StateObject(wrappedValue: DictationStylesSettingsViewModel(settings: settings))
         _aiSettingsViewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
+        reduceMotionOverride = nil
+    }
+
+    init(settings: AppSettingsStore = .shared, reduceMotionOverride: Bool?) {
+        _viewModel = StateObject(wrappedValue: DictationStylesSettingsViewModel(settings: settings))
+        _aiSettingsViewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
+        self.reduceMotionOverride = reduceMotionOverride
     }
 
     public var body: some View {
@@ -39,10 +48,13 @@ public struct ModesSettingsTab: View {
             if let route = navigationState.currentRoute {
                 routeContent(for: route)
                     .id(route)
+                    .transition(paneTransition)
             } else {
                 emptyDetailPlaceholder
+                    .transition(paneTransition)
             }
         }
+        .animation(SettingsMotion.sectionAnimation(reduceMotion: effectiveReduceMotion), value: navigationState.currentRoute)
     }
 
     @ViewBuilder
@@ -55,6 +67,14 @@ public struct ModesSettingsTab: View {
         case .promptEditor:
             promptEditorPage
         }
+    }
+
+    private var paneTransition: AnyTransition {
+        AppleMotion.transition(reduceMotion: effectiveReduceMotion, edge: .trailing)
+    }
+
+    private var effectiveReduceMotion: Bool {
+        reduceMotionOverride ?? reduceMotion
     }
 
     private var emptyDetailPlaceholder: some View {
@@ -161,11 +181,15 @@ public struct ModesSettingsTab: View {
     }
 
     private func navigateToRoot() {
-        _ = navigationState.goBack()
+        withAnimation(SettingsMotion.sectionAnimation(reduceMotion: effectiveReduceMotion)) {
+            _ = navigationState.goBack()
+        }
     }
 
     private func openRoute(_ route: DictationStyleRoute) {
-        navigationState.open(route)
+        withAnimation(SettingsMotion.sectionAnimation(reduceMotion: effectiveReduceMotion)) {
+            navigationState.open(route)
+        }
     }
 }
 
@@ -181,4 +205,9 @@ public struct ModesSettingsTab: View {
 #Preview("Modes — Expanded") {
     ModesSettingsTab()
         .frame(width: 1_080, height: 720)
+}
+
+#Preview("Modes — Reduce Motion") {
+    ModesSettingsTab(reduceMotionOverride: true)
+        .frame(width: 820, height: 620)
 }
