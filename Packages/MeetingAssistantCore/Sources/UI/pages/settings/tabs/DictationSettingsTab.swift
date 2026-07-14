@@ -6,37 +6,23 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public enum DictationSettingsRoute: Hashable, Sendable {
-    case modes
-    case postProcessing
-    case userPrompts
-}
-
 // MARK: - Dictation Settings Tab
 
 /// Tab for dictation-specific settings like auto-copy/paste and shortcuts.
 public struct DictationSettingsTab: View {
-    @Binding private var navigationState: SettingsSubpageNavigationState<DictationSettingsRoute>
     @State private var viewModel: GeneralSettingsViewModel
     @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
     @StateObject private var serviceViewModel: ServiceSettingsViewModel
 
     public init(
         settings: AppSettingsStore = .shared,
-        navigationState: Binding<SettingsSubpageNavigationState<DictationSettingsRoute>> = .constant(SettingsSubpageNavigationState()),
     ) {
-        _navigationState = navigationState
         _viewModel = State(wrappedValue: GeneralSettingsViewModel(settingsStore: settings))
         _serviceViewModel = StateObject(wrappedValue: ServiceSettingsViewModel(settings: settings))
     }
 
     public var body: some View {
-        switch navigationState.currentRoute {
-        case nil:
-            rootPage
-        case .some:
-            rootPage
-        }
+        rootPage
     }
 
     private var rootPage: some View {

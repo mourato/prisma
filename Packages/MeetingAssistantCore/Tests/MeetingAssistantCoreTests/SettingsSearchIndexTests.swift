@@ -49,12 +49,6 @@ final class SettingsSearchIndexTests: XCTestCase {
         XCTAssertEqual(section, .modes)
     }
 
-    func testSectionMappingRoutesModesPromptsTitleToModesSection() {
-        let section = SettingsSearchIndex.section(forLocalizationKey: "settings.modes.prompts.title")
-
-        XCTAssertEqual(section, .modes)
-    }
-
     func testSectionMappingRoutesDictationModelSelectorToDictationSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.enhancements.selector.dictation.title")
 

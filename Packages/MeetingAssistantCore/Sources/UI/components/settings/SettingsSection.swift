@@ -3,21 +3,15 @@ import MeetingAssistantCoreCommon
 public struct SettingsDestination: Equatable, Sendable {
     public let section: SettingsSection
     public let activityRoute: ActivitySettingsRoute?
-    public let dictationRoute: DictationSettingsRoute?
-    public let modesRoute: ModesSettingsRoute?
     public let systemRoute: SystemSettingsRoute?
 
     public init(
         section: SettingsSection,
         activityRoute: ActivitySettingsRoute? = nil,
-        dictationRoute: DictationSettingsRoute? = nil,
-        modesRoute: ModesSettingsRoute? = nil,
         systemRoute: SystemSettingsRoute? = nil,
     ) {
         self.section = section
         self.activityRoute = activityRoute
-        self.dictationRoute = dictationRoute
-        self.modesRoute = modesRoute
         self.systemRoute = systemRoute
     }
 }
@@ -95,7 +89,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .vocabulary:
             SettingsDestination(section: .system, systemRoute: .dictionary)
         case .enhancements:
-            SettingsDestination(section: .modes, modesRoute: .postProcessing)
+            SettingsDestination(section: .modes)
         case .permissions:
             SettingsDestination(section: .system, systemRoute: .permissions)
         case .general:

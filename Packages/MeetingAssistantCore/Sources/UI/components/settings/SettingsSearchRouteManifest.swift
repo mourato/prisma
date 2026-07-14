@@ -40,7 +40,6 @@ enum SettingsSearchRouteManifest {
         .init(prefix: "settings.service.transcription_provider.input_language", section: .dictation),
         .init(prefix: "settings.dictation.modes_and_prompts.", section: .modes),
         .init(prefix: "settings.dictation.modes.", section: .modes),
-        .init(prefix: "settings.dictation.user_prompts.", section: .modes),
         .init(prefix: "settings.section.rules_per_app", section: .modes),
         .init(prefix: "settings.rules_per_app", section: .modes),
         .init(prefix: "settings.styles.", section: .modes),

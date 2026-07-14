@@ -6,10 +6,6 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public enum EnhancementsSettingsRoute: Hashable {
-    case systemGuidelines
-}
-
 public enum EnhancementsSettingsContent: Sendable {
     case all
     case protectedApps
@@ -22,15 +18,12 @@ public enum EnhancementsSettingsContent: Sendable {
 public struct EnhancementsSettingsTab: View {
     @StateObject private var postProcessingViewModel: PostProcessingSettingsViewModel
     @StateObject private var sensitiveAppsViewModel: InstalledAppsSelectionViewModel
-    @Binding private var navigationState: SettingsSubpageNavigationState<EnhancementsSettingsRoute>
-    @State private var systemGuidelinesDraft = ""
     @State private var showAppSearchSheet = false
     private let showsHeader: Bool
     private let content: EnhancementsSettingsContent
 
     public init(
         settings: AppSettingsStore = .shared,
-        navigationState: Binding<SettingsSubpageNavigationState<EnhancementsSettingsRoute>> = .constant(SettingsSubpageNavigationState()),
         showsHeader: Bool = true,
         content: EnhancementsSettingsContent = .all,
     ) {
@@ -44,18 +37,12 @@ public struct EnhancementsSettingsTab: View {
                 saveBundleIdentifiers: { settings.contextAwarenessExcludedBundleIDs = $0 },
             ),
         )
-        _navigationState = navigationState
         self.showsHeader = showsHeader
         self.content = content
     }
 
     public var body: some View {
-        switch navigationState.currentRoute {
-        case nil:
-            rootPage
-        case .some(.systemGuidelines):
-            systemGuidelinesPage
-        }
+        rootPage
     }
 
     // MARK: - Sections
@@ -100,12 +87,6 @@ public struct EnhancementsSettingsTab: View {
                 isOn: $postProcessingViewModel.settings.postProcessingEnabled,
             )
 
-            SettingsListDrillDownButtonRow(
-                title: "settings.post_processing.edit_system_prompt".localized,
-                accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized,
-            ) {
-                navigationState.open(.systemGuidelines)
-            }
         }
     }
 
@@ -135,56 +116,6 @@ public struct EnhancementsSettingsTab: View {
                 addButtonKey: "settings.context_awareness.excluded_apps_add",
             )
         }
-    }
-
-    private var systemGuidelinesPage: some View {
-        SettingsScrollableContent {
-            DSGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        SettingsTitleWithPopover(
-                            title: "settings.post_processing.base_instructions".localized,
-                            helperMessage: "prompt.instructions_hint".localized,
-                            font: .subheadline,
-                            fontWeight: .medium,
-                        )
-                        Spacer()
-                        Button("settings.post_processing.restore_default".localized) {
-                            restoreSystemGuidelines()
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                    }
-
-                    TextEditor(text: $systemGuidelinesDraft)
-                        .font(.body)
-                        .frame(minHeight: 250)
-                        .enhancementsEditorSurface(intensity: .strong)
-
-                    HStack {
-                        Spacer()
-                        Button("common.save".localized) {
-                            saveSystemGuidelines()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(AppDesignSystem.Colors.accent)
-                        .disabled(systemGuidelinesDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-                }
-            }
-        }
-        .onAppear {
-            systemGuidelinesDraft = postProcessingViewModel.settings.systemPrompt
-        }
-    }
-
-    private func restoreSystemGuidelines() {
-        postProcessingViewModel.resetSystemPrompt()
-        systemGuidelinesDraft = postProcessingViewModel.settings.systemPrompt
-    }
-
-    private func saveSystemGuidelines() {
-        postProcessingViewModel.handleSaveSystemPrompt(systemGuidelinesDraft)
     }
 
 }

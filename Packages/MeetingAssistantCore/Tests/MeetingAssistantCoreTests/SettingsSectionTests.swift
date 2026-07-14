@@ -99,7 +99,7 @@ final class SettingsSectionTests: XCTestCase {
         )
         XCTAssertEqual(
             SettingsSection.resolvedDestination(for: "enhancements"),
-            SettingsDestination(section: .modes, modesRoute: .postProcessing),
+            SettingsDestination(section: .modes),
         )
     }
 

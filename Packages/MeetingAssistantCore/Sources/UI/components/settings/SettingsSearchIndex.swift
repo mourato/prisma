@@ -138,7 +138,6 @@ enum SettingsSearchIndex {
         "settings.context_awareness.window_ocr",
         "settings.context_awareness.window_ocr_desc",
         "settings.styles.editor.context_sources",
-        "settings.modes.prompts.title",
     ]
 
     private static let protectedAppsKeys: Set<String> = [

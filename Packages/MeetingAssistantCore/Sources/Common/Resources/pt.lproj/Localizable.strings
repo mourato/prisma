@@ -202,14 +202,10 @@
 "settings.meetings.web_targets.delete_confirm_message" = "Tem certeza que deseja excluir \"%@\"?";
 "settings.dictation.prompts" = "Prompts do usuário";
 "settings.dictation.modes_and_prompts.title" = "Modos e Prompts do usuário";
-"settings.modes.prompts.title" = "Prompts e pós-processamento";
 "settings.dictation.modes.title" = "Modos";
 "settings.dictation.modes.description" = "Defina modos reutilizáveis e associe-os a múltiplos apps e sites.";
 "settings.dictation.modes.accessibility_hint" = "Abre modos reutilizáveis de ditado para apps e sites.";
 "settings.dictation.modes.default_name" = "Padrão";
-"settings.dictation.user_prompts.title" = "Prompts do usuário";
-"settings.dictation.user_prompts.description" = "Crie e gerencie prompts personalizados para o pós-processamento de ditados.";
-"settings.dictation.user_prompts.accessibility_hint" = "Abre as configurações de prompts do usuário.";
 "settings.general.theme_color" = "Cor do Tema";
 "settings.general.appearance" = "Aparência";
 "settings.general.appearance.theme" = "Tema";
@@ -381,9 +377,6 @@
 "settings.post_processing.description" = "Quando habilitado, as transcrições serão automaticamente processadas por IA para gerar resumos e correções.";
 "settings.post_processing.warning_title" = "Conexão com IA não configurada";
 "settings.post_processing.warning_desc" = "Configure um provedor e um modelo acima para ativar este recurso.";
-"settings.post_processing.system_prompt" = "Diretrizes do Sistema";
-"settings.post_processing.base_instructions" = "Instruções Base";
-"settings.post_processing.restore_default" = "Restaurar Padrão";
 "settings.post_processing.prompts" = "Prompts de Processamento";
 "settings.post_processing.choose_active" = "Escolha o prompt ativo para as novas transcrições.";
 "settings.post_processing.new_prompt" = "Novo";
@@ -391,12 +384,6 @@
 "settings.post_processing.delete" = "Excluir";
 "settings.post_processing.delete_confirm_title" = "Excluir Prompt?";
 "settings.post_processing.delete_confirm_message" = "Tem certeza que deseja excluir o prompt \"%@\"? Esta ação não pode ser desfeita.";
-"settings.post_processing.edit_system_guidelines" = "Editar Instruções";
-"settings.post_processing.edit_system_prompt" = "Editar Prompt do Sistema";
-"settings.post_processing.system_prompt_editor_title" = "Instruções do Sistema";
-"settings.post_processing.system_guidelines.default_summary" = "Diretrizes padrão ativas";
-"settings.post_processing.system_guidelines.custom_summary" = "Diretrizes customizadas ativas";
-"settings.post_processing.system_guidelines.accessibility_hint" = "Abre o editor de Diretrizes do Sistema.";
 "settings.post_processing.duplicate" = "Duplicar";
 "settings.post_processing.select" = "Ativar";
 "settings.post_processing.is_active" = "Ativo";
