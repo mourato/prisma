@@ -38,29 +38,27 @@ public struct AIProviderIntegrationCard: View {
                 .foregroundStyle(.primary)
                 .padding(.leading, 4)
 
-            DSCard {
-                VStack(spacing: 0) {
-                    providerRow
-                    Divider()
-                    apiKeyRow
-                    Divider()
-                    modelRow
-                    if viewModel.settings.aiConfiguration.provider == .custom {
-                        Divider()
-                        baseURLRow
-                    }
-
-                    if let detail = viewModel.connectionStatus.detail, !detail.isEmpty, viewModel.connectionStatus != .success {
-                        connectionDetailRow(detail)
-                    }
-
-                    if let actionError = viewModel.actionError {
-                        actionErrorRow(actionError)
-                    }
+            Form {
+                providerRow
+                apiKeyRow
+                modelRow
+                if viewModel.settings.aiConfiguration.provider == .custom {
+                    baseURLRow
                 }
 
+                if let detail = viewModel.connectionStatus.detail, !detail.isEmpty, viewModel.connectionStatus != .success {
+                    connectionDetailRow(detail)
+                }
+
+                if let actionError = viewModel.actionError {
+                    actionErrorRow(actionError)
+                }
                 footerActions
             }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .scrollDisabled(true)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .task {
             guard runInitialTasks else { return }
@@ -71,10 +69,7 @@ public struct AIProviderIntegrationCard: View {
     // MARK: - Rows
 
     private var providerRow: some View {
-        HStack {
-            Text("settings.ai.provider".localized)
-                .foregroundStyle(.secondary)
-            Spacer()
+        LabeledContent("settings.ai.provider".localized) {
             HStack(spacing: 8) {
                 if viewModel.connectionStatus == .success || viewModel.connectionStatus == .saved {
                     HStack(spacing: 4) {
@@ -87,12 +82,12 @@ public struct AIProviderIntegrationCard: View {
                     }
                 }
 
-                DSMenuPicker(selection: $viewModel.settings.aiConfiguration.provider) {
+                Picker("", selection: $viewModel.settings.aiConfiguration.provider) {
                     ForEach(AIProvider.allCases, id: \.self) { provider in
                         Text(provider.displayName).tag(provider)
                     }
                 }
-                .fixedSize()
+                .pickerStyle(.menu)
                 .onChange(of: viewModel.settings.aiConfiguration.provider) { _, newProvider in
                     if newProvider != .custom {
                         viewModel.settings.aiConfiguration.baseURL = newProvider.defaultBaseURL
@@ -104,11 +99,8 @@ public struct AIProviderIntegrationCard: View {
     }
 
     private var modelRow: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        LabeledContent("settings.ai.model".localized) {
             HStack {
-                Text("settings.ai.model".localized)
-                    .foregroundStyle(.secondary)
-                Spacer()
                 if viewModel.settings.aiConfiguration.provider == .custom {
                     TextField(
                         "",
@@ -137,7 +129,7 @@ public struct AIProviderIntegrationCard: View {
                         .disabled(viewModel.isLoadingModels || viewModel.connectionStatus == .testing)
                     }
 
-                    DSMenuPicker(selection: selectedModelBinding) {
+                    Picker("", selection: selectedModelBinding) {
                         if viewModel.isLoadingModels {
                             Text("settings.ai.loading".localized).tag("")
                         } else if viewModel.availableModels.isEmpty {
@@ -149,33 +141,48 @@ public struct AIProviderIntegrationCard: View {
                             }
                         }
                     }
+                    .pickerStyle(.menu)
                     .disabled(viewModel.isLoadingModels || viewModel.availableModels.isEmpty)
                 }
             }
-
-            if let refreshSummary = viewModel.modelsRefreshSummary {
-                HStack(spacing: 6) {
-                    Image(systemName: viewModel.lastModelsRefreshSucceeded ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                        .foregroundStyle(
-                            viewModel.lastModelsRefreshSucceeded
-                                ? AppDesignSystem.Colors.success
-                                : AppDesignSystem.Colors.warning,
-                        )
-                    Text(refreshSummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } else if viewModel.modelCatalogStatus == .unavailable {
-                Text("settings.ai.models.catalog_unavailable".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else if viewModel.canRefreshModels, viewModel.availableModels.isEmpty, !viewModel.isLoadingModels {
-                Text("settings.ai.model_hint".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
-        .padding(.vertical, 8)
+        .overlay(alignment: .bottomLeading) {
+            modelStatusMessage
+                .offset(y: 22)
+        }
+        .padding(.bottom, hasModelStatusMessage ? 22 : 0)
+    }
+
+    private var hasModelStatusMessage: Bool {
+        viewModel.modelsRefreshSummary != nil
+            || viewModel.modelCatalogStatus == .unavailable
+            || (viewModel.canRefreshModels && viewModel.availableModels.isEmpty && !viewModel.isLoadingModels)
+    }
+
+    @ViewBuilder
+    private var modelStatusMessage: some View {
+        if let refreshSummary = viewModel.modelsRefreshSummary {
+            Label(
+                refreshSummary,
+                systemImage: viewModel.lastModelsRefreshSucceeded
+                    ? "checkmark.circle.fill"
+                    : "exclamationmark.triangle.fill",
+            )
+            .foregroundStyle(
+                viewModel.lastModelsRefreshSucceeded
+                    ? AppDesignSystem.Colors.success
+                    : AppDesignSystem.Colors.warning,
+            )
+            .font(.caption)
+        } else if viewModel.modelCatalogStatus == .unavailable {
+            Text("settings.ai.models.catalog_unavailable".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else if viewModel.canRefreshModels, viewModel.availableModels.isEmpty, !viewModel.isLoadingModels {
+            Text("settings.ai.model_hint".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var baseURLRow: some View {

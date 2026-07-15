@@ -14,28 +14,24 @@ public struct ServiceMeetingTranscriptionSection: View {
     }
 
     public var body: some View {
-        DSGroup("settings.models.meeting_transcription.title".localized, icon: "waveform.and.person.filled") {
+        SettingsFormGroup("settings.models.meeting_transcription.title".localized, icon: "waveform.and.person.filled") {
             VStack(alignment: .leading, spacing: 12) {
                 Text("settings.models.meeting_transcription.description".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text("settings.service.model".localized)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 100, alignment: .leading)
-
-                    DSMenuPicker(
-                        selection: Binding(
-                            get: { viewModel.selectedMeetingLocalModel },
-                            set: { viewModel.updateMeetingLocalModel($0) },
-                        ),
-                    ) {
-                        ForEach(viewModel.localModels) { localModel in
-                            Text(localModel.displayName).tag(localModel.model)
-                        }
+                Picker(
+                    "settings.service.model".localized,
+                    selection: Binding(
+                        get: { viewModel.selectedMeetingLocalModel },
+                        set: { viewModel.updateMeetingLocalModel($0) },
+                    ),
+                ) {
+                    ForEach(viewModel.localModels) { localModel in
+                        Text(localModel.displayName).tag(localModel.model)
                     }
                 }
+                .pickerStyle(.menu)
 
                 if viewModel.shouldShowMeetingDiarizationAutoDisableWarning {
                     DSCallout(

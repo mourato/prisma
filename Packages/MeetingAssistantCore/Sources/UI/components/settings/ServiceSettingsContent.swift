@@ -129,7 +129,7 @@ public struct ServiceSettingsContent: View {
     }
 
     private var cloudModelsSection: some View {
-        DSGroup("settings.models.cloud_models.title".localized, icon: "cloud") {
+        SettingsFormGroup("settings.models.cloud_models.title".localized, icon: "cloud") {
             VStack(alignment: .leading, spacing: 16) {
                 Text("settings.models.cloud_models.description".localized)
                     .font(.caption)
@@ -245,30 +245,25 @@ public struct ServiceSettingsContent: View {
     }
 
     private var runtimeSection: some View {
-        DSGroup("settings.models.runtime.title".localized, icon: "cpu") {
+        SettingsFormGroup("settings.models.runtime.title".localized, icon: "cpu") {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 10) {
-                    Text("settings.service.model_residency_timeout".localized)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 160, alignment: .leading)
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        DSMenuPicker(
-                            "settings.service.model_residency_timeout".localized,
-                            selection: Binding(
-                                get: { viewModel.modelResidencyTimeout },
-                                set: { viewModel.modelResidencyTimeout = $0 },
-                            ),
-                        ) {
-                            ForEach(viewModel.modelResidencyTimeoutOptions, id: \.self) { option in
-                                Text(option.displayName).tag(option)
-                            }
+                VStack(alignment: .leading, spacing: 6) {
+                    Picker(
+                        "settings.service.model_residency_timeout".localized,
+                        selection: Binding(
+                            get: { viewModel.modelResidencyTimeout },
+                            set: { viewModel.modelResidencyTimeout = $0 },
+                        ),
+                    ) {
+                        ForEach(viewModel.modelResidencyTimeoutOptions, id: \.self) { option in
+                            Text(option.displayName).tag(option)
                         }
-
-                        Text("settings.service.model_residency_timeout.help".localized)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
                     }
+                    .pickerStyle(.menu)
+
+                    Text("settings.service.model_residency_timeout.help".localized)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
 
                 Text("settings.service.no_internet".localized)
@@ -320,11 +315,8 @@ public struct ServiceSettingsContent: View {
 
     private func cloudProviderModelRow(_ provider: ServiceSettingsViewModel.CloudProviderDescriptor) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text("settings.service.transcription_provider.model".localized)
-                .foregroundStyle(.secondary)
-                .frame(width: 100, alignment: .leading)
-
-            DSMenuPicker(
+            Picker(
+                "settings.service.transcription_provider.model".localized,
                 selection: Binding(
                     get: { provider.selectedModelID },
                     set: { viewModel.updateCloudProviderModel($0, for: provider.provider) },
@@ -334,6 +326,7 @@ public struct ServiceSettingsContent: View {
                     Text(viewModel.displayName(forModelID: modelID)).tag(modelID)
                 }
             }
+            .pickerStyle(.menu)
         }
     }
 

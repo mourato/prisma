@@ -85,7 +85,7 @@ public struct AssistantSettingsTab: View {
     }
 
     private var visualFeedbackSection: some View {
-        DSGroup(
+        SettingsFormGroup(
             "settings.assistant.visual_feedback".localized,
             icon: "rectangle.inset.filled",
         ) {
@@ -115,21 +115,12 @@ public struct AssistantSettingsTab: View {
 
                 Divider()
 
-                HStack {
-                    Text("settings.assistant.border_style".localized)
-                        .font(.body)
-                        .fontWeight(.medium)
-
-                    Spacer()
-
-                    Picker("", selection: $viewModel.borderStyle) {
-                        ForEach(AssistantBorderStyle.allCases, id: \.self) { style in
-                            Text(style.displayName).tag(style)
-                        }
+                Picker("settings.assistant.border_style".localized, selection: $viewModel.borderStyle) {
+                    ForEach(AssistantBorderStyle.allCases, id: \.self) { style in
+                        Text(style.displayName).tag(style)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
                 }
+                .pickerStyle(.segmented)
 
                 Divider()
 
@@ -150,20 +141,12 @@ public struct AssistantSettingsTab: View {
                 Divider()
 
                 if viewModel.borderStyle == .stroke {
-                    HStack(spacing: 8) {
-                        Text("settings.assistant.border_width".localized)
-                            .font(.body)
-                            .fontWeight(.medium)
-
-                        Spacer()
-
-                        DSMenuPicker(selection: borderWidthSelection) {
-                            ForEach(AssistantShortcutSettingsViewModel.borderWidthOptions, id: \.self) { option in
-                                Text("\(Int(option)) pt").tag(option)
-                            }
+                    Picker("settings.assistant.border_width".localized, selection: borderWidthSelection) {
+                        ForEach(AssistantShortcutSettingsViewModel.borderWidthOptions, id: \.self) { option in
+                            Text("\(Int(option)) pt").tag(option)
                         }
-
                     }
+                    .pickerStyle(.menu)
                 } else {
                     HStack(spacing: 8) {
                         Text("settings.assistant.glow_size".localized)

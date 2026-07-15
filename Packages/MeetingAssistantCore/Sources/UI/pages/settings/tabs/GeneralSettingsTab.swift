@@ -116,37 +116,20 @@ public struct GeneralSettingsTab: View {
             }
 
             // Appearance
-            SettingsListGroup("settings.general.appearance".localized, icon: "paintbrush.fill") {
-                HStack {
-                    Text("settings.general.language".localized)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-
-                    DSMenuPicker(selection: $viewModel.selectedLanguage) {
-                        ForEach(AppLanguage.allCases, id: \.self) { language in
-                            Text(language.displayName).tag(language)
-                        }
+            SettingsFormGroup("settings.general.appearance".localized, icon: "paintbrush.fill") {
+                Picker("settings.general.language".localized, selection: $viewModel.selectedLanguage) {
+                    ForEach(AppLanguage.allCases, id: \.self) { language in
+                        Text(language.displayName).tag(language)
                     }
                 }
+                .pickerStyle(.menu)
 
-                HStack {
-                    Text("settings.general.appearance.theme".localized)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-
-                    Picker("", selection: $viewModel.appearanceMode) {
-                        ForEach(AppearanceMode.allCases, id: \.self) { mode in
-                            Text(mode.displayName).tag(mode)
-                        }
+                Picker("settings.general.appearance.theme".localized, selection: $viewModel.appearanceMode) {
+                    ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(width: 260)
                 }
+                .pickerStyle(.segmented)
             }
 
             recordingIndicatorSection
@@ -338,34 +321,24 @@ public struct GeneralSettingsTab: View {
     }
 
     private var storageSection: some View {
-        DSGroup("settings.general.storage".localized, icon: "folder.fill") {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .center, spacing: 12) {
-                    SettingsTitleWithPopover(
-                        title: "settings.general.auto_delete".localized,
-                        helperMessage: "settings.general.auto_delete_desc".localized,
-                    )
-
-                    Spacer()
-
-                    DSMenuPicker(selection: storageRetentionBinding, width: AppDesignSystem.Layout.smallPickerWidth) {
-                        ForEach(StorageRetentionOption.allCases) { option in
-                            Text(option.title).tag(option)
-                        }
-                    }
+        SettingsFormGroup("settings.general.storage".localized, icon: "folder.fill") {
+            Picker("settings.general.auto_delete".localized, selection: storageRetentionBinding) {
+                ForEach(StorageRetentionOption.allCases) { option in
+                    Text(option.title).tag(option)
                 }
+            }
+            .pickerStyle(.menu)
 
-                HStack {
-                    Button {
-                        viewModel.performCleanup()
-                    } label: {
-                        Text(cleanupNowTitle)
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(!viewModel.autoDeleteTranscriptions || viewModel.cleanupInProgress)
-
-                    Spacer()
+            HStack {
+                Button {
+                    viewModel.performCleanup()
+                } label: {
+                    Text(cleanupNowTitle)
                 }
+                .buttonStyle(.bordered)
+                .disabled(!viewModel.autoDeleteTranscriptions || viewModel.cleanupInProgress)
+
+                Spacer()
             }
         }
     }

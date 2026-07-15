@@ -134,22 +134,21 @@ public struct MeetingSettingsTab: View {
                     },
                 )
 
-                SettingsListGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
+                SettingsFormGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
                     DSToggleRow(
                         "settings.general.auto_start".localized,
                         isOn: $meetingViewModel.settings.autoStartRecording,
                     )
 
-                    HStack {
-                        Text("settings.general.auto_start_confirmation_delay".localized)
-                        Spacer()
-                        DSMenuPicker(selection: $meetingViewModel.settings.automaticAutomaticMeetingRecordingConfirmationDelay) {
-                            ForEach(AppSettingsStore.AutomaticMeetingRecordingConfirmationDelay.allCases, id: \.self) { delay in
-                                Text(delay.localizedTitle)
-                                    .tag(delay)
-                            }
+                    Picker(
+                        "settings.general.auto_start_confirmation_delay".localized,
+                        selection: $meetingViewModel.settings.automaticAutomaticMeetingRecordingConfirmationDelay,
+                    ) {
+                        ForEach(AppSettingsStore.AutomaticMeetingRecordingConfirmationDelay.allCases, id: \.self) { delay in
+                            Text(delay.localizedTitle).tag(delay)
                         }
                     }
+                    .pickerStyle(.menu)
 
                     SettingsListDrillDownButtonRow(
                         title: "settings.meetings.monitoring_access.button".localized,
@@ -181,36 +180,28 @@ public struct MeetingSettingsTab: View {
                     SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)
                 }
 
-                DSGroup("settings.meetings.notes_typography.title".localized, icon: "textformat.size") {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            SettingsTitleWithPopover(
-                                title: "settings.meetings.notes_typography.font_family".localized,
-                                helperTitle: "settings.meetings.notes_typography.title".localized,
-                                helperMessage: "settings.meetings.notes_typography.desc".localized,
-                            )
-                            Spacer()
-                            DSMenuPicker(selection: $meetingViewModel.settings.meetingNotesFontFamilyKey) {
-                                Text("settings.meetings.notes_typography.font_system".localized)
-                                    .tag(MeetingNotesTypographyDefaults.systemFontFamilyKey)
-                                ForEach(availableMeetingNotesFontFamilies, id: \.self) { family in
-                                    Text(family).tag(family)
-                                }
-                            }
-                        }
-
-                        Divider()
-
-                        HStack {
-                            Text("settings.meetings.notes_typography.font_size".localized)
-                            Spacer()
-                            DSMenuPicker(selection: $meetingViewModel.settings.meetingNotesFontSize) {
-                                ForEach(MeetingNotesTypographyDefaults.supportedFontSizes, id: \.self) { size in
-                                    Text("\(Int(size))").tag(size)
-                                }
-                            }
+                SettingsFormGroup("settings.meetings.notes_typography.title".localized, icon: "textformat.size") {
+                    Picker(
+                        "settings.meetings.notes_typography.font_family".localized,
+                        selection: $meetingViewModel.settings.meetingNotesFontFamilyKey,
+                    ) {
+                        Text("settings.meetings.notes_typography.font_system".localized)
+                            .tag(MeetingNotesTypographyDefaults.systemFontFamilyKey)
+                        ForEach(availableMeetingNotesFontFamilies, id: \.self) { family in
+                            Text(family).tag(family)
                         }
                     }
+                    .pickerStyle(.menu)
+
+                    Picker(
+                        "settings.meetings.notes_typography.font_size".localized,
+                        selection: $meetingViewModel.settings.meetingNotesFontSize,
+                    ) {
+                        ForEach(MeetingNotesTypographyDefaults.supportedFontSizes, id: \.self) { size in
+                            Text("\(Int(size))").tag(size)
+                        }
+                    }
+                    .pickerStyle(.menu)
                 }
 
             }
@@ -323,7 +314,7 @@ public struct MeetingSettingsTab: View {
                 description: "settings.meetings.export_drilldown_desc".localized,
             )
 
-            DSGroup("settings.meetings.export".localized, icon: "folder.fill") {
+            SettingsFormGroup("settings.meetings.export".localized, icon: "folder.fill") {
                 VStack(alignment: .leading, spacing: 16) {
                     DSToggleRow(
                         "settings.meetings.auto_export".localized,
@@ -363,18 +354,15 @@ public struct MeetingSettingsTab: View {
 
                         Divider()
 
-                        HStack {
-                            SettingsTitleWithPopover(
-                                title: "settings.meetings.export_safety_policy".localized,
-                                helperMessage: "settings.meetings.export_safety_policy_desc".localized,
-                            )
-                            Spacer()
-                            DSMenuPicker(selection: $meetingViewModel.settings.summaryExportSafetyPolicyLevel) {
-                                ForEach(SummaryExportSafetyPolicyLevel.allCases, id: \.self) { level in
-                                    Text(exportSafetyPolicyLabel(level)).tag(level)
-                                }
+                        Picker(
+                            "settings.meetings.export_safety_policy".localized,
+                            selection: $meetingViewModel.settings.summaryExportSafetyPolicyLevel,
+                        ) {
+                            ForEach(SummaryExportSafetyPolicyLevel.allCases, id: \.self) { level in
+                                Text(exportSafetyPolicyLabel(level)).tag(level)
                             }
                         }
+                        .pickerStyle(.menu)
 
                         if meetingViewModel.settings.summaryExportFolder == nil {
                             Text("settings.meetings.export_location_required".localized)
@@ -427,21 +415,17 @@ public struct MeetingSettingsTab: View {
                 description: "settings.meetings.prompts_drilldown_desc".localized,
             )
 
-            DSGroup("settings.meetings.prompts".localized, icon: "sparkles") {
+            SettingsFormGroup("settings.meetings.prompts".localized, icon: "sparkles") {
                 VStack(alignment: .leading, spacing: AppDesignSystem.Layout.cardPadding) {
-                    HStack {
-                        SettingsTitleWithPopover(
-                            title: "settings.meetings.summary_output_language".localized,
-                            helperMessage: "settings.meetings.summary_output_language_desc".localized,
-                        )
-                        Spacer()
-                        DSMenuPicker(selection: $meetingViewModel.settings.meetingSummaryOutputLanguage) {
-                            ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
-                                Text(meetingSummaryOutputLanguageLabel(language))
-                                    .tag(language)
-                            }
+                    Picker(
+                        "settings.meetings.summary_output_language".localized,
+                        selection: $meetingViewModel.settings.meetingSummaryOutputLanguage,
+                    ) {
+                        ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
+                            Text(meetingSummaryOutputLanguageLabel(language)).tag(language)
                         }
                     }
+                    .pickerStyle(.menu)
 
                     Divider()
 

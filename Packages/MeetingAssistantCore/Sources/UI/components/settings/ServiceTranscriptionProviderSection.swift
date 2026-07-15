@@ -14,7 +14,7 @@ public struct ServiceTranscriptionProviderSection: View {
     }
 
     public var body: some View {
-        DSGroup("settings.models.routing.title".localized, icon: "arrow.triangle.branch") {
+        SettingsFormGroup("settings.models.routing.title".localized, icon: "arrow.triangle.branch") {
             VStack(alignment: .leading, spacing: 12) {
                 Text("settings.models.routing.description".localized)
                     .font(.caption)
@@ -49,22 +49,18 @@ public struct ServiceTranscriptionProviderSection: View {
                         .fontWeight(.medium)
                 }
 
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text("settings.service.transcription_provider.input_language".localized)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 100, alignment: .leading)
-
-                    DSMenuPicker(
-                        selection: Binding(
-                            get: { viewModel.selectedInputLanguageHintRawValue },
-                            set: { viewModel.updateTranscriptionInputLanguageHint(rawValue: $0) },
-                        ),
-                    ) {
-                        ForEach(viewModel.availableInputLanguageHints, id: \.rawValue) { hint in
-                            Text(hint.displayName).tag(hint.rawValue)
-                        }
+                Picker(
+                    "settings.service.transcription_provider.input_language".localized,
+                    selection: Binding(
+                        get: { viewModel.selectedInputLanguageHintRawValue },
+                        set: { viewModel.updateTranscriptionInputLanguageHint(rawValue: $0) },
+                    ),
+                ) {
+                    ForEach(viewModel.availableInputLanguageHints, id: \.rawValue) { hint in
+                        Text(hint.displayName).tag(hint.rawValue)
                     }
                 }
+                .pickerStyle(.menu)
 
                 Text("settings.service.transcription_provider.input_language.help".localized)
                     .font(.caption)
