@@ -77,7 +77,7 @@ help:
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean          - Clean build artifacts"
-	@echo "  make setup          - Verify toolchain and install development dependencies"
+	@echo "  make setup          - Verify toolchain, install dependencies, configure Git hooks"
 	@echo ""
 	@echo "CI/CD Commands:"
 	@echo "  make ci-build       - Full CI build (lint + test + build-release)"

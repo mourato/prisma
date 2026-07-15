@@ -211,15 +211,17 @@ This command keeps fast local iteration while adding the release parity guard (`
 
 ## Git Hooks Setup
 
-Configure local Git hooks to use the tracked repository hooks:
+`make setup` configures local Git hooks automatically (`core.hooksPath=scripts/hooks` and executable bits). To configure manually:
 
 ```bash
-git config core.hooksPath scripts/hooks
+make setup
+# or explicitly:
+git config --local core.hooksPath scripts/hooks
 chmod +x scripts/hooks/pre-commit scripts/hooks/pre-push scripts/hooks/first-commit-version-bump.sh
 find scripts/hooks -maxdepth 1 -type f ! -perm -u+x -print
 ```
 
-The `find` command must print nothing. If it prints paths, those hook files are not executable yet.
+The `find` command must print nothing. Stale copies under `.git/hooks/` (for example `pre-push.disabled`) are ignored once `core.hooksPath` points at `scripts/hooks`.
 
 ## Script Support Surface
 

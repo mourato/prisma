@@ -89,6 +89,19 @@ install_brew_formula "swiftlint"
 install_brew_formula "swiftformat"
 
 echo ""
+print_step "Configuring Git hooks..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=lib/configure-git-hooks.sh
+source "${SCRIPT_DIR}/lib/configure-git-hooks.sh"
+if configure_git_hooks "${PROJECT_ROOT}"; then
+    print_ok "Git hooks configured (core.hooksPath=scripts/hooks)"
+else
+    print_error "Git hooks configuration failed"
+    exit 1
+fi
+
+echo ""
 echo -e "${GREEN}[OK] Development environment setup complete${NC}"
 echo ""
 echo "Next steps:"

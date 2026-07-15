@@ -39,7 +39,7 @@ make run
 make dmg
 ```
 
-`./scripts/setup-dev-environment.sh` verifies the local developer toolchain, including `make`, and installs Homebrew-managed tools (`swiftlint`, `swiftformat`). After `make` is available, `make setup` runs the same script. SwiftPM dependencies resolve automatically during build. Local AI model assets may download on first use.
+`./scripts/setup-dev-environment.sh` verifies the local developer toolchain, including `make`, installs Homebrew-managed tools (`swiftlint`, `swiftformat`), and configures tracked Git hooks (`core.hooksPath=scripts/hooks`). After `make` is available, `make setup` runs the same script. SwiftPM dependencies resolve automatically during build. Local AI model assets may download on first use.
 
 Use `make help` to print the current target list from the `Makefile`.
 
@@ -125,7 +125,7 @@ The pre-commit hook runs SwiftFormat and SwiftLint on staged Swift files and doe
 | Target | Description |
 |--------|-------------|
 | `make clean` | Remove build and distribution artifacts. |
-| `make setup` | Install local development dependencies such as SwiftLint and SwiftFormat. |
+| `make setup` | Install local development dependencies (SwiftLint, SwiftFormat) and configure Git hooks. |
 | `make ci-build` | Run the CI build sequence: architecture checks, lint, tests, and release build. |
 | `make ci-test` | Run the CI test path. |
 | `make ci-release-parity` | Run the local Sparkle release parity gate in dry-run mode. |

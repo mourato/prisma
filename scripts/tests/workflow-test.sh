@@ -571,5 +571,6 @@ test_validate_runner_preview_and_reuse
 test_committed_and_staged_boundaries
 test_staged_receipt_reused_after_commit
 test_pre_push_protocol
+"${SCRIPT_ROOT}/scripts/tests/hooks-setup-test.sh"
 "${SCRIPT_ROOT}/scripts/tests/preview-check-test.sh"
 echo "WORKFLOW_TEST_STATUS=PASS"
