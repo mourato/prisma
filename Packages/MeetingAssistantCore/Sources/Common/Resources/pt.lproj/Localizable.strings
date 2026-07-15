@@ -1465,3 +1465,6 @@
 "settings.styles.editor.empty_detail" = "Selecione um modo para editar suas configurações.";
 "settings.styles.editor.delete_confirmation_title" = "Excluir modo?";
 "settings.styles.editor.delete_confirmation_message" = "Isso excluirá permanentemente \"%@\".";
+"common.add" = "Adicionar";
+"common.selected" = "Selecionado";
+"settings.styles.editor.validation.icon_invalid" = "Digite um único emoji.";

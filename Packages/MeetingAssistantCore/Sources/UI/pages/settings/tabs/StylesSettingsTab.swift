@@ -5,22 +5,22 @@ import SwiftUI
 public struct StylesSettingsTab: View {
     @ObservedObject private var viewModel: DictationStylesSettingsViewModel
     @ObservedObject private var aiSettingsViewModel: AISettingsViewModel
-    private let focusedStyleID: FocusState<UUID?>.Binding?
-    private let accessibilityFocusedStyleID: AccessibilityFocusState<UUID?>.Binding?
+    private let focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding?
+    private let accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding?
     @State private var selectedStyleID: UUID?
     private let onOpenEditor: ((UUID?) -> Void)?
 
     public init(
         viewModel: DictationStylesSettingsViewModel,
         aiSettingsViewModel: AISettingsViewModel,
-        focusedStyleID: FocusState<UUID?>.Binding? = nil,
-        accessibilityFocusedStyleID: AccessibilityFocusState<UUID?>.Binding? = nil,
+        focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding? = nil,
+        accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding? = nil,
         onOpenEditor: ((UUID?) -> Void)? = nil,
     ) {
         _viewModel = ObservedObject(wrappedValue: viewModel)
         _aiSettingsViewModel = ObservedObject(wrappedValue: aiSettingsViewModel)
-        self.focusedStyleID = focusedStyleID
-        self.accessibilityFocusedStyleID = accessibilityFocusedStyleID
+        self.focusedStyle = focusedStyle
+        self.accessibilityFocusedStyle = accessibilityFocusedStyle
         self.onOpenEditor = onOpenEditor
     }
 
@@ -38,20 +38,21 @@ public struct StylesSettingsTab: View {
             description: "settings.styles.description".localized,
         )
 
-        DSGroup("settings.styles.title".localized, icon: "paintpalette") {
-            VStack(alignment: .leading, spacing: 12) {
-                stylesList
-
-                HStack {
-                    Spacer()
-                    Button {
-                        onOpenEditor?(nil)
-                    } label: {
-                        Label("settings.styles.add".localized, systemImage: "plus")
-                    }
-                    .buttonStyle(.bordered)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("settings.styles.title".localized, systemImage: "paintpalette")
+                    .font(.headline)
+                Spacer()
+                Button("settings.styles.add".localized, systemImage: "plus") {
+                    onOpenEditor?(nil)
                 }
+                .buttonStyle(.bordered)
+                .stylesAddFocus(
+                    focusedStyle: focusedStyle,
+                    accessibilityFocusedStyle: accessibilityFocusedStyle,
+                )
             }
+            stylesList
         }
     }
 
@@ -109,13 +110,12 @@ public struct StylesSettingsTab: View {
                 Label("settings.styles.remove".localized, systemImage: "trash")
             }
         }
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(styleAccessibilityLabel(style))
-        .accessibilityHint("settings.styles.actions".localized)
         .accessibilityAddTraits(selectedStyleID == style.id ? .isSelected : [])
         .stylesFocus(
-            focusedStyleID: focusedStyleID,
-            accessibilityFocusedStyleID: accessibilityFocusedStyleID,
+            focusedStyle: focusedStyle,
+            accessibilityFocusedStyle: accessibilityFocusedStyle,
             styleID: style.id,
         )
     }
@@ -147,24 +147,35 @@ public struct StylesSettingsTab: View {
     }
 
     private func styleActionsMenu(for style: DictationStyle, isSelected: Bool) -> some View {
-        SettingsContextMenuButton(
-            accessibilityLabel: "settings.styles.actions".localized,
-            symbolColor: isSelected
-                ? AppDesignSystem.Colors.selectedContentSecondaryForeground
-                : .secondary,
-        ) {
-            Button {
+        HStack(spacing: 6) {
+            Button("settings.styles.edit".localized, systemImage: "pencil") {
                 selectedStyleID = style.id
                 openEditor(for: style)
-            } label: {
-                Label("settings.styles.edit".localized, systemImage: "pencil")
             }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .help("settings.styles.edit".localized)
+            .accessibilityLabel("settings.styles.edit".localized)
 
-            Button(role: .destructive) {
-                selectedStyleID = style.id
-                viewModel.deleteStyle(id: style.id)
-            } label: {
-                Label("settings.styles.remove".localized, systemImage: "trash")
+            SettingsContextMenuButton(
+                accessibilityLabel: "settings.styles.actions".localized,
+                symbolColor: isSelected
+                    ? AppDesignSystem.Colors.selectedContentSecondaryForeground
+                    : .secondary,
+            ) {
+                Button {
+                    selectedStyleID = style.id
+                    openEditor(for: style)
+                } label: {
+                    Label("settings.styles.edit".localized, systemImage: "pencil")
+                }
+
+                Button(role: .destructive) {
+                    selectedStyleID = style.id
+                    viewModel.deleteStyle(id: style.id)
+                } label: {
+                    Label("settings.styles.remove".localized, systemImage: "trash")
+                }
             }
         }
     }
@@ -296,15 +307,15 @@ public struct StylesSettingsTab: View {
 }
 
 private struct StylesSettingsPreview: View {
-    @FocusState private var focusedStyleID: UUID?
-    @AccessibilityFocusState private var accessibilityFocusedStyleID: UUID?
+    @FocusState private var focusedStyle: DictationStyleFocusTarget?
+    @AccessibilityFocusState private var accessibilityFocusedStyle: DictationStyleFocusTarget?
 
     var body: some View {
         StylesSettingsTab(
             viewModel: DictationStylesSettingsViewModel(),
             aiSettingsViewModel: AISettingsViewModel(settings: AppSettingsStore.shared),
-            focusedStyleID: $focusedStyleID,
-            accessibilityFocusedStyleID: $accessibilityFocusedStyleID,
+            focusedStyle: $focusedStyle,
+            accessibilityFocusedStyle: $accessibilityFocusedStyle,
         )
     }
 }
@@ -312,22 +323,44 @@ private struct StylesSettingsPreview: View {
 private extension View {
     @ViewBuilder
     func stylesFocus(
-        focusedStyleID: FocusState<UUID?>.Binding?,
-        accessibilityFocusedStyleID: AccessibilityFocusState<UUID?>.Binding?,
+        focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding?,
+        accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding?,
         styleID: UUID,
     ) -> some View {
         let focusableView = focusable()
+        let target = DictationStyleFocusTarget.style(styleID)
 
-        if let focusedStyleID, let accessibilityFocusedStyleID {
+        if let focusedStyle, let accessibilityFocusedStyle {
             focusableView
-                .accessibilityFocused(accessibilityFocusedStyleID, equals: styleID)
-                .focused(focusedStyleID, equals: styleID)
-        } else if let focusedStyleID {
+                .accessibilityFocused(accessibilityFocusedStyle, equals: target)
+                .focused(focusedStyle, equals: target)
+        } else if let focusedStyle {
             focusableView
-                .focused(focusedStyleID, equals: styleID)
-        } else if let accessibilityFocusedStyleID {
+                .focused(focusedStyle, equals: target)
+        } else if let accessibilityFocusedStyle {
             focusableView
-                .accessibilityFocused(accessibilityFocusedStyleID, equals: styleID)
+                .accessibilityFocused(accessibilityFocusedStyle, equals: target)
+        } else {
+            focusableView
+        }
+    }
+
+    @ViewBuilder
+    func stylesAddFocus(
+        focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding?,
+        accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding?,
+    ) -> some View {
+        let focusableView = focusable()
+        let target = DictationStyleFocusTarget.addButton
+
+        if let focusedStyle, let accessibilityFocusedStyle {
+            focusableView
+                .accessibilityFocused(accessibilityFocusedStyle, equals: target)
+                .focused(focusedStyle, equals: target)
+        } else if let focusedStyle {
+            focusableView.focused(focusedStyle, equals: target)
+        } else if let accessibilityFocusedStyle {
+            focusableView.accessibilityFocused(accessibilityFocusedStyle, equals: target)
         } else {
             focusableView
         }

@@ -2,7 +2,7 @@
 
 This is the active plan ledger. Historical audits, completed plan rows, review
 notes, and rejected options remain in the [2026-07-12 ledger archive](archive/2026-07-12-plan-ledger-history.md).
-Plan files are never renumbered; the next available plan number is 069.
+Plan files are never renumbered; the next available plan number is 079.
 
 ## Execution rules
 
@@ -50,6 +50,7 @@ reason) | `REJECTED` (with a one-line rationale).
 | [075](075-add-interruptible-modes-pane-transitions.md) | Add interruptible Modes pane transitions | P1 | M | 074 | DONE |
 | [076](076-harden-editor-interaction-accessibility.md) | Harden editor interaction safety and accessibility | P2 | M | 074 | DONE |
 | [077](077-add-typography-and-visual-validation-matrix.md) | Add typography and visual validation coverage | P3 | M | 073, 074, 075, 076 | DONE |
+| [078](078-match-voiceink-mode-editor-drawer-experience.md) | Replace the Modes split view with the VoiceInk-style editor drawer experience | P1 | L | - | TODO |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
@@ -98,3 +99,9 @@ options verbatim for searchability.
   focus, keyboard, and VoiceOver behavior.
 - 077 runs last because it validates the combined surface and owns final
   typography and preview-matrix adjustments.
+- 078 supersedes the completed presentation decisions in 066–077 after the
+  exact VoiceInk `v2.0-beta.2` reference showed that the target interaction is
+  a 400 pt trailing overlay, not a nested split/detail column. Preserve the
+  valid draft, persistence, privacy, localization, delete-confirmation, and
+  accessibility work from those plans while replacing the presentation,
+  hierarchy, trigger route, and visual-validation contract.

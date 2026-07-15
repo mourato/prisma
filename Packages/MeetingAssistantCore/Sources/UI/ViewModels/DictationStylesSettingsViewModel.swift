@@ -107,9 +107,11 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
         editorDraft = nil
     }
 
-    public func saveStyle(_ draft: DictationStyleEditorDraft) {
+    @discardableResult
+    public func saveStyle(_ draft: DictationStyleEditorDraft) -> UUID {
+        let persistedID = draft.id ?? UUID()
         let updatedStyle = DictationStyle(
-            id: draft.id ?? UUID(),
+            id: persistedID,
             name: draft.name,
             iconSymbol: draft.iconSymbol,
             promptInstructions: draft.promptInstructions,
@@ -134,6 +136,7 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
 
         settings.dictationStyles = updatedStyles
         clearEditor()
+        return persistedID
     }
 
     public func deleteStyle(id: UUID) {

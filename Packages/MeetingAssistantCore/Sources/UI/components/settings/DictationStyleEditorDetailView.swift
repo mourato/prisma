@@ -1,4 +1,3 @@
-import MeetingAssistantCoreCommon
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
@@ -14,6 +13,7 @@ public struct DictationStyleEditorDetailView: View {
     private let onSave: (DictationStyleEditorDraft) -> Void
     private let onCancel: () -> Void
     private let onDelete: (() -> Void)?
+    private let onOpenPromptEditor: ((DictationStyleEditorDraft) -> Void)?
 
     @State private var styleID: UUID?
     @State private var name: String
@@ -33,14 +33,7 @@ public struct DictationStyleEditorDetailView: View {
     @State private var isDefault: Bool
     @State private var validationMessage: String?
     @State private var isDeleteConfirmationPresented = false
-    @FocusState private var focusedField: EditorField?
-
-    private let onOpenTriggerSelection: ((DictationStyleEditorDraft) -> Void)?
-    private let onOpenPromptEditor: ((DictationStyleEditorDraft) -> Void)?
-
-    private enum EditorField: Hashable {
-        case name
-    }
+    @State private var isIconPickerPresented = false
 
     public init(
         draft: DictationStyleEditorDraft,
@@ -55,7 +48,6 @@ public struct DictationStyleEditorDetailView: View {
         onSave: @escaping (DictationStyleEditorDraft) -> Void,
         onCancel: @escaping () -> Void,
         onDelete: (() -> Void)? = nil,
-        onOpenTriggerSelection: ((DictationStyleEditorDraft) -> Void)? = nil,
         onOpenPromptEditor: ((DictationStyleEditorDraft) -> Void)? = nil,
     ) {
         self.appCatalog = appCatalog
@@ -69,9 +61,7 @@ public struct DictationStyleEditorDetailView: View {
         self.onSave = onSave
         self.onCancel = onCancel
         self.onDelete = onDelete
-        self.onOpenTriggerSelection = onOpenTriggerSelection
         self.onOpenPromptEditor = onOpenPromptEditor
-
         _styleID = State(initialValue: draft.id)
         _name = State(initialValue: draft.name)
         _iconSymbol = State(initialValue: draft.iconSymbol)
@@ -81,12 +71,12 @@ public struct DictationStyleEditorDetailView: View {
         _replaceBasePrompt = State(initialValue: draft.replaceBasePrompt)
         _outputLanguage = State(initialValue: draft.outputLanguage)
         _targets = State(initialValue: draft.targets)
-        let contextPolicy = draft.contextSourcePolicy
-        _includeClipboard = State(initialValue: contextPolicy?.includeClipboard ?? false)
-        _includeWindowOCR = State(initialValue: contextPolicy?.includeWindowOCR ?? false)
-        _includeAccessibilityText = State(initialValue: contextPolicy?.includeAccessibilityText ?? true)
-        _includeSelectedTextAtStart = State(initialValue: contextPolicy?.includeSelectedTextAtStart ?? false)
-        _redactSensitiveData = State(initialValue: contextPolicy?.redactSensitiveData ?? true)
+        let policy = draft.contextSourcePolicy
+        _includeClipboard = State(initialValue: policy?.includeClipboard ?? false)
+        _includeWindowOCR = State(initialValue: policy?.includeWindowOCR ?? false)
+        _includeAccessibilityText = State(initialValue: policy?.includeAccessibilityText ?? true)
+        _includeSelectedTextAtStart = State(initialValue: policy?.includeSelectedTextAtStart ?? false)
+        _redactSensitiveData = State(initialValue: policy?.redactSensitiveData ?? true)
         _enhancementsSelection = State(initialValue: draft.enhancementsSelection)
         _isDefault = State(initialValue: draft.isDefault)
     }
@@ -96,112 +86,86 @@ public struct DictationStyleEditorDetailView: View {
             headerStyle: .close,
             title: headerTitle,
             iconSymbol: normalizedIconSymbol,
+            name: $name,
+            onIconPicker: { isIconPickerPresented = true },
             onClose: onCancel,
-            footerLeadingAction: (styleID != nil && !isDefault && onDelete != nil) ? {
-                isDeleteConfirmationPresented = true
-            } : nil,
-            footerTrailingTitle: detailActionTitle,
+            footerLeadingAction: styleID != nil && !isDefault ? { isDeleteConfirmationPresented = true } : nil,
+            footerTrailingTitle: styleID == nil ? "common.create".localized : "common.save".localized,
             footerTrailingAction: saveDraft,
-        ) {
-            editorForm
-        }
-        .confirmationDialog(
-            "settings.styles.editor.delete_confirmation_title".localized,
-            isPresented: $isDeleteConfirmationPresented,
-            titleVisibility: .visible,
-        ) {
-            Button("common.delete".localized, role: .destructive) {
-                onDelete?()
+        ) { editorForm }
+            .popover(isPresented: $isIconPickerPresented) {
+                DictationStyleIconPickerPopover(
+                    selection: $iconSymbol,
+                    onComplete: { isIconPickerPresented = false },
+                )
             }
-            Button("common.cancel".localized, role: .cancel) {}
-        } message: {
-            Text("settings.styles.editor.delete_confirmation_message".localized(with: headerTitle))
-        }
-        .onAppear {
-            focusedField = .name
-            onEnsureAppCatalogLoaded()
-            onRefreshModelOptions()
-        }
+            .confirmationDialog(
+                "settings.styles.editor.delete_confirmation_title".localized,
+                isPresented: $isDeleteConfirmationPresented,
+                titleVisibility: .visible,
+            ) {
+                Button("common.delete".localized, role: .destructive) { onDelete?() }
+                Button("common.cancel".localized, role: .cancel) {}
+            } message: {
+                Text("settings.styles.editor.delete_confirmation_message".localized(with: headerTitle))
+            }
+            .onAppear {
+                onEnsureAppCatalogLoaded()
+                onRefreshModelOptions()
+            }
     }
 
     private var headerTitle: String {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "settings.styles.editor.new_title".localized : trimmed
+        let value = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? "settings.styles.editor.new_title".localized : value
     }
 
     private var editorForm: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("settings.styles.editor.name".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    TextField("", text: $name)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($focusedField, equals: .name)
+        Form {
+            if isDefault {
+                Section("settings.styles.editor.targets".localized) {
+                    Text("settings.styles.editor.default_mode_hint".localized).foregroundStyle(.secondary)
                 }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("settings.styles.editor.icon".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    HStack(spacing: 8) {
-                        DictationStyleIconView(
-                            iconSymbol: normalizedIconSymbol,
-                            size: 22,
-                            accessibilityLabel: "settings.styles.editor.icon".localized,
-                        )
-                        TextField("", text: $iconSymbol)
-                            .textFieldStyle(.roundedBorder)
-
-                        Menu {
-                            ForEach(DictationStyleIconCatalog.recommendedSymbols, id: \.self) { symbol in
-                                Button {
-                                    iconSymbol = symbol
-                                } label: {
-                                    Label(symbol, systemImage: symbol)
-                                }
-                            }
-                        } label: {
-                            Label("settings.styles.editor.icon_picker".localized, systemImage: "square.grid.2x2")
-                        }
-                        .labelStyle(.iconOnly)
-                        .menuStyle(.borderlessButton)
-                    }
+            } else {
+                Section("settings.styles.editor.targets".localized) {
+                    DictationStyleTriggerSection(
+                        targets: $targets,
+                        appCatalog: appCatalog,
+                        isLoadingAppCatalog: isLoadingAppCatalog,
+                        styleID: styleID,
+                        onEnsureAppCatalogLoaded: onEnsureAppCatalogLoaded,
+                        onFindConflictingStyleName: onFindConflictingStyleName,
+                    )
                 }
             }
 
-            SettingsDrillDownButtonRow(
-                title: "settings.styles.editor.prompt".localized,
-                subtitle: promptSummary,
-                action: {
-                    onOpenPromptEditor?(currentDraft)
-                },
-            )
-
-            DSGroup("settings.styles.editor.behavior".localized, icon: "gearshape.2") {
+            Section("settings.styles.editor.behavior".localized) {
+                SettingsDrillDownButtonRow(
+                    title: "settings.styles.editor.prompt".localized,
+                    subtitle: promptSummary,
+                    action: { onOpenPromptEditor?(currentDraft) },
+                )
                 CheckboxRow("settings.styles.editor.post_processing_enabled".localized, isOn: $postProcessingEnabled)
                 CheckboxRow("settings.styles.editor.markdown_output".localized, isOn: $forceMarkdownOutput)
                 CheckboxRow("settings.styles.editor.replace_base_prompt".localized, isOn: $replaceBasePrompt)
-
-                Divider()
-
-                HStack(spacing: 12) {
-                    Text("settings.styles.editor.output_language".localized)
-                        .font(.body)
-                        .fontWeight(.regular)
-                    Spacer()
-                    DSMenuPicker("settings.styles.editor.output_language".localized, selection: $outputLanguage) {
-                        ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
-                            Text(language.displayName).tag(language)
-                        }
+                Picker("settings.styles.editor.output_language".localized, selection: $outputLanguage) {
+                    ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
+                        Text(language.displayName).tag(language)
                     }
                 }
             }
 
-            contextResourcesSection
+            Section("settings.styles.editor.context_sources".localized) {
+                CheckboxRow("settings.context_awareness.accessibility_text".localized, isOn: $includeAccessibilityText)
+                CheckboxRow("settings.context_awareness.selected_text_at_start".localized, isOn: $includeSelectedTextAtStart)
+                Text("settings.context_awareness.selected_text_at_start_desc".localized)
+                    .font(.caption).foregroundStyle(.secondary)
+                CheckboxRow("settings.context_awareness.clipboard".localized, isOn: $includeClipboard)
+                CheckboxRow("settings.context_awareness.window_ocr".localized, isOn: $includeWindowOCR)
+                CheckboxRow("settings.context_awareness.redact_sensitive_data".localized, isOn: $redactSensitiveData)
+            }
 
-            DSGroup("settings.enhancements.selector.dictation.title".localized, icon: "cpu") {
+            Section("settings.enhancements.selector.dictation.title".localized) {
                 EnhancementsModelPicker(
                     title: "settings.enhancements.selector.dictation.title".localized,
                     subtitle: "settings.enhancements.selector.dictation.subtitle".localized,
@@ -211,383 +175,88 @@ public struct DictationStyleEditorDetailView: View {
                     providerDisplayName: providerDisplayName,
                     onRefresh: onRefreshModelOptions,
                     onSelect: { option in
-                        enhancementsSelection = EnhancementsAISelection(
-                            provider: option.provider,
-                            selectedModel: option.modelID,
-                            registrationID: option.registrationID,
-                        )
+                        enhancementsSelection = EnhancementsAISelection(provider: option.provider, selectedModel: option.modelID, registrationID: option.registrationID)
                     },
                 )
             }
 
-            if !isDefault {
-                DSGroup("settings.styles.editor.targets".localized, icon: "scope") {
-                    targetsEditor
-                }
-            }
-
-            if isDefault {
-                Text("settings.styles.editor.default_mode_hint".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
             if let validationMessage, !validationMessage.isEmpty {
-                Text(validationMessage)
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                Section { Text(validationMessage).foregroundStyle(.red) }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var targetsEditor: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("settings.styles.editor.targets_hint".localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            SettingsDrillDownButtonRow(
-                title: "settings.styles.editor.triggers_row".localized,
-                subtitle: triggersRowSubtitle,
-                action: {
-                    onOpenTriggerSelection?(currentDraft)
-                },
-            )
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var promptSummary: String {
-        let trimmed = promptInstructions.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            return "settings.styles.editor.prompt_empty".localized
-        }
-        if trimmed.count <= 80 {
-            return trimmed
-        }
-        return String(trimmed.prefix(80)).trimmingCharacters(in: .whitespaces) + "…"
+        let value = promptInstructions.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? "settings.styles.editor.prompt_empty".localized : (value.count <= 80 ? value : String(value.prefix(80)) + "…")
     }
 
-    private var triggersRowSubtitle: String {
-        let count = targets.count
-        switch count {
-        case 0:
-            return "settings.styles.editor.no_targets".localized
-        case 1:
-            return "settings.styles.targets.count.one".localized
-        default:
-            return "settings.styles.targets.count.many".localized(with: count)
-        }
-    }
-
-    private var detailActionTitle: String {
-        styleID == nil ? "common.create".localized : "common.save".localized
+    private var normalizedIconSymbol: String {
+        let value = iconSymbol.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? "textformat" : value
     }
 
     private var currentDraft: DictationStyleEditorDraft {
         DictationStyleEditorDraft(
-            id: styleID,
-            name: name,
-            iconSymbol: iconSymbol,
-            promptInstructions: promptInstructions,
-            postProcessingEnabled: postProcessingEnabled,
-            forceMarkdownOutput: forceMarkdownOutput,
-            replaceBasePrompt: replaceBasePrompt,
-            outputLanguage: outputLanguage,
-            targets: targets,
+            id: styleID, name: name, iconSymbol: normalizedIconSymbol, promptInstructions: promptInstructions,
+            postProcessingEnabled: postProcessingEnabled, forceMarkdownOutput: forceMarkdownOutput,
+            replaceBasePrompt: replaceBasePrompt, outputLanguage: outputLanguage, targets: targets,
             contextSourcePolicy: DictationContextSourcePolicy(
-                includeClipboard: includeClipboard,
-                includeWindowOCR: includeWindowOCR,
-                includeAccessibilityText: includeAccessibilityText,
-                includeSelectedTextAtStart: includeSelectedTextAtStart,
+                includeClipboard: includeClipboard, includeWindowOCR: includeWindowOCR,
+                includeAccessibilityText: includeAccessibilityText, includeSelectedTextAtStart: includeSelectedTextAtStart,
                 redactSensitiveData: redactSensitiveData,
-            ),
-            enhancementsSelection: enhancementsSelection,
-            isDefault: isDefault,
+            ), enhancementsSelection: enhancementsSelection, isDefault: isDefault,
         )
-    }
-
-    private var contextResourcesSection: some View {
-        DSGroup("settings.styles.editor.context_sources".localized, icon: "text.viewfinder") {
-            VStack(alignment: .leading, spacing: 10) {
-                CheckboxRow("settings.context_awareness.accessibility_text".localized, isOn: $includeAccessibilityText)
-                VStack(alignment: .leading, spacing: 3) {
-                    CheckboxRow("settings.context_awareness.selected_text_at_start".localized, isOn: $includeSelectedTextAtStart)
-                    Text("settings.context_awareness.selected_text_at_start_desc".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.leading, 24)
-                }
-                CheckboxRow("settings.context_awareness.clipboard".localized, isOn: $includeClipboard)
-                CheckboxRow("settings.context_awareness.window_ocr".localized, isOn: $includeWindowOCR)
-                CheckboxRow("settings.context_awareness.redact_sensitive_data".localized, isOn: $redactSensitiveData)
-            }
-        }
-    }
-
-    private var normalizedIconSymbol: String {
-        let trimmed = iconSymbol.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "textformat" : trimmed
     }
 
     private func saveDraft() {
-        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalizedName.isEmpty else {
-            validationMessage = "settings.styles.editor.validation.name_required".localized
-            return
-        }
-
-        let normalizedPrompt = promptInstructions.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard isDefault || !targets.isEmpty else {
-            validationMessage = "settings.styles.editor.validation.targets_required".localized
-            return
-        }
-
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { validationMessage = "settings.styles.editor.validation.name_required".localized
+            return }
         let normalizedTargets = isDefault ? [] : deduplicatedTargets(targets)
+        guard isDefault || !normalizedTargets.isEmpty else { validationMessage = "settings.styles.editor.validation.targets_required".localized
+            return }
         for target in normalizedTargets {
-            if let styleName = onFindConflictingStyleName(target, styleID) {
-                validationMessage = styleName.isEmpty
-                    ? "settings.styles.editor.validation.target_conflict".localized
-                    : "settings.styles.editor.validation.target_conflict_named".localized(with: styleName)
+            if let conflict = onFindConflictingStyleName(target, styleID) {
+                validationMessage = conflict.isEmpty ? "settings.styles.editor.validation.target_conflict".localized : "settings.styles.editor.validation.target_conflict_named".localized(with: conflict)
                 return
             }
         }
-
         validationMessage = nil
-        onSave(
-            DictationStyleEditorDraft(
-                id: styleID,
-                name: normalizedName,
-                iconSymbol: normalizedIconSymbol,
-                promptInstructions: normalizedPrompt,
-                postProcessingEnabled: postProcessingEnabled,
-                forceMarkdownOutput: forceMarkdownOutput,
-                replaceBasePrompt: replaceBasePrompt,
-                outputLanguage: outputLanguage,
-                targets: normalizedTargets,
-                contextSourcePolicy: DictationContextSourcePolicy(
-                    includeClipboard: includeClipboard,
-                    includeWindowOCR: includeWindowOCR,
-                    includeAccessibilityText: includeAccessibilityText,
-                    includeSelectedTextAtStart: includeSelectedTextAtStart,
-                    redactSensitiveData: redactSensitiveData,
-                ),
-                enhancementsSelection: enhancementsSelection,
-                isDefault: isDefault,
-            ),
-        )
+        onSave(DictationStyleEditorDraft(
+            id: styleID, name: trimmedName, iconSymbol: normalizedIconSymbol,
+            promptInstructions: promptInstructions.trimmingCharacters(in: .whitespacesAndNewlines),
+            postProcessingEnabled: postProcessingEnabled, forceMarkdownOutput: forceMarkdownOutput,
+            replaceBasePrompt: replaceBasePrompt, outputLanguage: outputLanguage, targets: normalizedTargets,
+            contextSourcePolicy: currentDraft.contextSourcePolicy, enhancementsSelection: enhancementsSelection, isDefault: isDefault,
+        ))
     }
 
-    private func deduplicatedTargets(_ candidates: [DictationStyleTarget]) -> [DictationStyleTarget] {
+    private func deduplicatedTargets(_ values: [DictationStyleTarget]) -> [DictationStyleTarget] {
         var seen = Set<String>()
-        var ordered: [DictationStyleTarget] = []
-
-        for target in candidates {
-            let identity = targetIdentity(target)
-            guard !seen.contains(identity) else { continue }
-
-            seen.insert(identity)
-            ordered.append(target)
-        }
-
-        return ordered
-    }
-
-    private func targetIdentity(_ target: DictationStyleTarget) -> String {
-        target.normalizedIdentity
+        return values.filter { seen.insert($0.normalizedIdentity).inserted }
     }
 }
 
 private struct CheckboxRow: View {
-    private let title: String
-    @Binding private var isOn: Bool
-
+    let title: String
+    @Binding var isOn: Bool
     init(_ title: String, isOn: Binding<Bool>) {
         self.title = title
-        _isOn = isOn
-    }
+        _isOn = isOn }
 
     var body: some View {
-        Toggle(isOn: $isOn) {
-            Text(title)
-                .font(.body)
-                .fontWeight(.regular)
-        }
-        .toggleStyle(.checkbox)
-        .accessibilityLabel(title)
+        Toggle(title, isOn: $isOn).toggleStyle(.checkbox).accessibilityLabel(title)
     }
 }
 
-#Preview {
-    NavigationStack {
-        DictationStyleEditorDetailView(
-            draft: DictationStyleEditorDraft(
-                name: "Daily Notes",
-                iconSymbol: "note.text",
-                promptInstructions: "Prefer concise bullets and list action items at the end.",
-                forceMarkdownOutput: true,
-                replaceBasePrompt: false,
-                outputLanguage: .english,
-                targets: [
-                    .app(bundleIdentifier: "com.tinyspeck.slackmacgap"),
-                    .website(url: "docs.example.com"),
-                ],
-                contextSourcePolicy: .init(
-                    isEnabled: true,
-                    includeClipboard: true,
-                    includeWindowOCR: false,
-                    includeAccessibilityText: true,
-                    redactSensitiveData: true,
-                ),
-                enhancementsSelection: .default,
-                isDefault: false,
-            ),
-            appCatalog: [
-                InstalledApplicationRecord(bundleIdentifier: "com.tinyspeck.slackmacgap", displayName: "Slack"),
-                InstalledApplicationRecord(bundleIdentifier: "com.apple.Safari", displayName: "Safari"),
-            ],
-            isLoadingAppCatalog: false,
-            onEnsureAppCatalogLoaded: {},
-            onFindConflictingStyleName: { _, _ in nil },
-            modelOptions: [],
-            isLoadingModelOptions: false,
-            onRefreshModelOptions: {},
-            providerDisplayName: { $0.provider.displayName },
-            onSave: { _ in },
-            onCancel: {},
-            onDelete: {},
-        )
-        .frame(width: 420)
-    }
-}
-
-#Preview("Editor (Narrow)") {
-    NavigationStack {
-        DictationStyleEditorDetailView(
-            draft: DictationStyleEditorDraft(
-                name: "Daily Notes",
-                iconSymbol: "note.text",
-                promptInstructions: "Prefer concise bullets and list action items at the end.",
-                forceMarkdownOutput: true,
-                replaceBasePrompt: false,
-                outputLanguage: .english,
-                targets: [
-                    .app(bundleIdentifier: "com.tinyspeck.slackmacgap"),
-                    .website(url: "docs.example.com"),
-                ],
-                contextSourcePolicy: .init(
-                    isEnabled: true,
-                    includeClipboard: true,
-                    includeWindowOCR: false,
-                    includeAccessibilityText: true,
-                    redactSensitiveData: true,
-                ),
-                enhancementsSelection: .default,
-                isDefault: false,
-            ),
-            appCatalog: [
-                InstalledApplicationRecord(bundleIdentifier: "com.tinyspeck.slackmacgap", displayName: "Slack"),
-                InstalledApplicationRecord(bundleIdentifier: "com.apple.Safari", displayName: "Safari"),
-            ],
-            isLoadingAppCatalog: false,
-            onEnsureAppCatalogLoaded: {},
-            onFindConflictingStyleName: { _, _ in nil },
-            modelOptions: [],
-            isLoadingModelOptions: false,
-            onRefreshModelOptions: {},
-            providerDisplayName: { $0.provider.displayName },
-            onSave: { _ in },
-            onCancel: {},
-            onDelete: {},
-        )
-        .frame(width: 360)
-    }
-}
-
-#Preview("Editor (Normal)") {
-    NavigationStack {
-        DictationStyleEditorDetailView(
-            draft: DictationStyleEditorDraft(
-                name: "Daily Notes",
-                iconSymbol: "note.text",
-                promptInstructions: "Prefer concise bullets and list action items at the end.",
-                forceMarkdownOutput: true,
-                replaceBasePrompt: false,
-                outputLanguage: .english,
-                targets: [
-                    .app(bundleIdentifier: "com.tinyspeck.slackmacgap"),
-                    .website(url: "docs.example.com"),
-                ],
-                contextSourcePolicy: .init(
-                    isEnabled: true,
-                    includeClipboard: true,
-                    includeWindowOCR: false,
-                    includeAccessibilityText: true,
-                    redactSensitiveData: true,
-                ),
-                enhancementsSelection: .default,
-                isDefault: false,
-            ),
-            appCatalog: [
-                InstalledApplicationRecord(bundleIdentifier: "com.tinyspeck.slackmacgap", displayName: "Slack"),
-                InstalledApplicationRecord(bundleIdentifier: "com.apple.Safari", displayName: "Safari"),
-            ],
-            isLoadingAppCatalog: false,
-            onEnsureAppCatalogLoaded: {},
-            onFindConflictingStyleName: { _, _ in nil },
-            modelOptions: [],
-            isLoadingModelOptions: false,
-            onRefreshModelOptions: {},
-            providerDisplayName: { $0.provider.displayName },
-            onSave: { _ in },
-            onCancel: {},
-            onDelete: {},
-        )
-        .frame(width: 640)
-    }
-}
-
-#Preview("Editor (Wide)") {
-    NavigationStack {
-        DictationStyleEditorDetailView(
-            draft: DictationStyleEditorDraft(
-                name: "Daily Notes",
-                iconSymbol: "note.text",
-                promptInstructions: "Prefer concise bullets and list action items at the end.",
-                forceMarkdownOutput: true,
-                replaceBasePrompt: false,
-                outputLanguage: .english,
-                targets: [
-                    .app(bundleIdentifier: "com.tinyspeck.slackmacgap"),
-                    .website(url: "docs.example.com"),
-                ],
-                contextSourcePolicy: .init(
-                    isEnabled: true,
-                    includeClipboard: true,
-                    includeWindowOCR: false,
-                    includeAccessibilityText: true,
-                    redactSensitiveData: true,
-                ),
-                enhancementsSelection: .default,
-                isDefault: false,
-            ),
-            appCatalog: [
-                InstalledApplicationRecord(bundleIdentifier: "com.tinyspeck.slackmacgap", displayName: "Slack"),
-                InstalledApplicationRecord(bundleIdentifier: "com.apple.Safari", displayName: "Safari"),
-            ],
-            isLoadingAppCatalog: false,
-            onEnsureAppCatalogLoaded: {},
-            onFindConflictingStyleName: { _, _ in nil },
-            modelOptions: [],
-            isLoadingModelOptions: false,
-            onRefreshModelOptions: {},
-            providerDisplayName: { $0.provider.displayName },
-            onSave: { _ in },
-            onCancel: {},
-            onDelete: {},
-        )
-        .frame(width: 900)
-    }
+#Preview("Mode Editor") {
+    DictationStyleEditorDetailView(
+        draft: DictationStyleEditorDraft(name: "Writing", iconSymbol: "note.text", promptInstructions: "Be concise", forceMarkdownOutput: true, replaceBasePrompt: false, outputLanguage: .original, targets: [.app(bundleIdentifier: "com.apple.Safari")], contextSourcePolicy: nil, enhancementsSelection: nil, isDefault: false),
+        appCatalog: [], isLoadingAppCatalog: false, onEnsureAppCatalogLoaded: {}, onFindConflictingStyleName: { _, _ in nil }, modelOptions: [], isLoadingModelOptions: false, onRefreshModelOptions: {}, providerDisplayName: { _ in "" }, onSave: { _ in }, onCancel: {},
+    )
+    .frame(width: 400, height: 640)
 }

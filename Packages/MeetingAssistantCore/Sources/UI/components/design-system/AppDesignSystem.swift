@@ -317,6 +317,7 @@ public enum AppDesignSystem {
         public static let recordingIndicatorSuperHeight: CGFloat = 98
 
         public static let recordingIndicatorPanelWidth: CGFloat = 380
+        public static let modeEditorPanelWidth: CGFloat = 400
 
         // Recording Indicator Metrics
         public static let recordingIndicatorClassicPromptSize: CGFloat = 42

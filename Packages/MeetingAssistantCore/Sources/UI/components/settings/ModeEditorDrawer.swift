@@ -1,24 +1,15 @@
 import MeetingAssistantCoreCommon
 import SwiftUI
 
-/// Right-side secondary pane for editing a dictation mode.
-///
-/// Presentation contract (per plan 070):
-/// - A fixed header sits above independently scrolling content. The header shows the
-///   mode icon + title + a close (X) button for the editor, or a back button for child routes.
-/// - An optional fixed footer (Delete on the leading side, Save/Create on the trailing side)
-///   stays visible while the body scrolls. Child routes have no footer of their own.
-/// - Closing follows the parent's cancel semantics and never autosaves.
+/// Three-zone content anatomy used by the Modes side panel.
 public struct ModeEditorDrawer<Content: View>: View {
-    public enum HeaderStyle {
-        case close
-        case back
-        case backWithAction
-    }
+    public enum HeaderStyle { case close, back, backWithAction }
 
     private let headerStyle: HeaderStyle
     private let title: String
     private let iconSymbol: String
+    private let name: Binding<String>?
+    private let onIconPicker: (() -> Void)?
     private let actionTitle: String
     private let onClose: (() -> Void)?
     private let onBack: (() -> Void)?
@@ -27,11 +18,14 @@ public struct ModeEditorDrawer<Content: View>: View {
     private let footerTrailingTitle: String
     private let footerTrailingAction: () -> Void
     private let content: Content
+    @FocusState private var isNameFocused: Bool
 
     public init(
         headerStyle: HeaderStyle,
         title: String,
         iconSymbol: String = "",
+        name: Binding<String>? = nil,
+        onIconPicker: (() -> Void)? = nil,
         actionTitle: String = "",
         onClose: (() -> Void)? = nil,
         onBack: (() -> Void)? = nil,
@@ -44,6 +38,8 @@ public struct ModeEditorDrawer<Content: View>: View {
         self.headerStyle = headerStyle
         self.title = title
         self.iconSymbol = iconSymbol
+        self.name = name
+        self.onIconPicker = onIconPicker
         self.actionTitle = actionTitle
         self.onClose = onClose
         self.onBack = onBack
@@ -57,16 +53,10 @@ public struct ModeEditorDrawer<Content: View>: View {
     public var body: some View {
         VStack(spacing: 0) {
             header
-
-            ScrollView {
-                content
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if showsFooter {
-                    footer
-                }
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            if showsFooter {
+                footer
             }
         }
     }
@@ -76,142 +66,100 @@ public struct ModeEditorDrawer<Content: View>: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             switch headerStyle {
             case .close:
-                if !iconSymbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    DictationStyleIconView(
-                        iconSymbol: normalizedSymbol(iconSymbol),
-                        size: 22,
-                        accessibilityLabel: title,
-                    )
+                if let name, let onIconPicker {
+                    Button {
+                        onIconPicker()
+                    } label: {
+                        DictationStyleIconView(iconSymbol: iconSymbol, size: 24, accessibilityLabel: "settings.styles.editor.icon".localized)
+                            .frame(width: 36, height: 36)
+                            .background(Circle().fill(AppDesignSystem.Colors.subtleFill2))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("settings.styles.editor.icon_picker".localized)
+                    TextField("settings.styles.editor.name".localized, text: name)
+                        .textFieldStyle(.plain)
+                        .font(.headline.weight(.semibold))
+                        .focused($isNameFocused)
+                        .accessibilityLabel("settings.styles.editor.name".localized)
+                } else if !iconSymbol.isEmpty {
+                    DictationStyleIconView(iconSymbol: iconSymbol, size: 24, accessibilityLabel: title)
+                        .frame(width: 36, height: 36)
+                    Text(title).font(.headline.weight(.semibold)).lineLimit(1)
+                } else {
+                    Text(title).font(.headline.weight(.semibold)).lineLimit(1)
                 }
-                titleText(title)
                 Spacer()
                 if let onClose {
                     closeButton(onClose)
                 }
-
             case .back:
                 if let onBack {
                     backButton(onBack)
                 }
-                titleText(title)
+                Text(title).font(.headline.weight(.semibold)).lineLimit(1)
                 Spacer()
-
             case .backWithAction:
                 if let onBack {
                     backButton(onBack)
                 }
-                titleText(title)
+                Text(title).font(.headline.weight(.semibold)).lineLimit(1)
                 Spacer()
                 if let onAction {
-                    Button(actionTitle) {
-                        onAction()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    Button(actionTitle, action: onAction).buttonStyle(.borderedProminent).controlSize(.small)
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(SettingsTitleBarMaterialBackground(usesBottomFade: false))
-        .overlay(alignment: .bottom) {
-            Divider()
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .overlay(alignment: .bottom) { Divider() }
+        .onAppear {
+            if headerStyle == .close, name != nil {
+                isNameFocused = true
+            }
         }
     }
 
-    private func titleText(_ title: String) -> some View {
-        Text(title)
-            .font(.headline)
-            .fontWeight(.semibold)
-            .lineLimit(1)
+    private func closeButton(_ action: @escaping () -> Void) -> some View {
+        Button("settings.styles.editor.close".localized, systemImage: "xmark", action: action)
+            .labelStyle(.iconOnly)
+            .buttonStyle(.plain)
+            .keyboardShortcut(.escape)
+            .accessibilityLabel("settings.styles.editor.close".localized)
     }
 
-    private func closeButton(_ onClose: @escaping () -> Void) -> some View {
-        Button("settings.styles.editor.close".localized, systemImage: "xmark") {
-            onClose()
-        }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.plain)
-        .keyboardShortcut(.escape)
-    }
-
-    private func backButton(_ onBack: @escaping () -> Void) -> some View {
-        Button("common.back".localized, systemImage: "chevron.left") {
-            onBack()
-        }
-        .buttonStyle(.plain)
-        .keyboardShortcut(.escape)
+    private func backButton(_ action: @escaping () -> Void) -> some View {
+        Button("common.back".localized, systemImage: "chevron.left", action: action)
+            .buttonStyle(.plain)
+            .keyboardShortcut(.escape)
     }
 
     private var footer: some View {
-        HStack(spacing: 12) {
+        HStack {
             if let footerLeadingAction {
-                Button(role: .destructive) {
-                    footerLeadingAction()
-                } label: {
-                    Label("common.delete".localized, systemImage: "trash")
+                Button(role: .destructive, action: footerLeadingAction) {
+                    Label(footerTrailingTitle == "common.create".localized ? "common.cancel".localized : "common.delete".localized, systemImage: footerTrailingTitle == "common.create".localized ? "xmark" : "trash")
                 }
                 .buttonStyle(.bordered)
-                .controlSize(.small)
             }
-
             Spacer()
-
             if !footerTrailingTitle.isEmpty {
-                Button(footerTrailingTitle) {
-                    footerTrailingAction()
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
+                Button(footerTrailingTitle, action: footerTrailingAction)
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.return, modifiers: .command)
+                    .disabled(name?.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(SettingsTitleBarMaterialBackground(usesBottomFade: false))
-        .overlay(alignment: .top) {
-            Divider()
-        }
-    }
-
-    private func normalizedSymbol(_ symbol: String) -> String {
-        let trimmed = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "textformat" : trimmed
+        .padding(14)
+        .overlay(alignment: .top) { Divider() }
     }
 }
 
-#Preview("Drawer (Editor)") {
-    ModeEditorDrawer(
-        headerStyle: .close,
-        title: "Daily Notes",
-        iconSymbol: "note.text",
-        onClose: {},
-        footerLeadingAction: {},
-        footerTrailingTitle: "common.save".localized,
-        footerTrailingAction: {},
-        content: {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Body content scrolls independently from the fixed footer.")
-                Text("Second line of sample content.")
-                Text("Third line of sample content.")
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        },
-    )
-    .frame(width: 380)
-}
-
-#Preview("Drawer (Child Back)") {
-    ModeEditorDrawer(
-        headerStyle: .back,
-        title: "settings.styles.editor.prompt".localized,
-        onBack: {},
-        content: {
-            Text("Child route content uses back, not close.")
-                .frame(maxWidth: .infinity, alignment: .leading)
-        },
-    )
-    .frame(width: 380)
+#Preview("Drawer") {
+    ModeEditorDrawer(headerStyle: .close, title: "Daily Notes", iconSymbol: "note.text", onClose: {}) {
+        Form { Text("Grouped form content") }.formStyle(.grouped)
+    }
+    .frame(width: 400, height: 500)
 }

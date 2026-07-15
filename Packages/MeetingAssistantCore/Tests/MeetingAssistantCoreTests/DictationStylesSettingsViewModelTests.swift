@@ -66,10 +66,11 @@ final class DictationStylesSettingsViewModelTests: XCTestCase {
         var draft = try XCTUnwrap(viewModel.editorDraft)
         draft.name = "Daily Notes"
 
-        viewModel.saveStyle(draft)
+        let createdID = viewModel.saveStyle(draft)
 
         XCTAssertNil(viewModel.editorDraft)
         XCTAssertTrue(settings.dictationStyles.contains { $0.name == "Daily Notes" })
+        XCTAssertEqual(settings.dictationStyles.first(where: { $0.name == "Daily Notes" })?.id, createdID)
     }
 
     func testSaveStyleUpdatesExistingModeAndCanReopenIt() throws {
@@ -88,10 +89,11 @@ final class DictationStylesSettingsViewModelTests: XCTestCase {
         var draft = try XCTUnwrap(viewModel.editorDraft)
         draft.name = "Updated"
         draft.promptInstructions = "Updated instructions"
-        viewModel.saveStyle(draft)
+        let updatedID = viewModel.saveStyle(draft)
 
         viewModel.prepareEditor(for: persistedStyle.id)
 
+        XCTAssertEqual(updatedID, persistedStyle.id)
         XCTAssertEqual(viewModel.editorDraft?.name, "Updated")
         XCTAssertEqual(viewModel.editorDraft?.promptInstructions, "Updated instructions")
     }

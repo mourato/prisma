@@ -521,10 +521,15 @@ private struct SettingsDetailChromeModifier<LegacyHeader: View>: ViewModifier {
     let usesToolbarChrome: Bool
 
     func body(content: Content) -> some View {
-        content.modifier(SettingsChromeSafeAreaInset(
-            legacyHeader: legacyHeader,
-            usesToolbarChrome: usesToolbarChrome,
-        ))
+        if !SettingsChromeLayoutPolicy.usesLegacyHeader(usesToolbarChrome: usesToolbarChrome) {
+            // The native SwiftUI toolbar already reserves its own safe-area.
+            // Adding the legacy 44pt boundary here creates a second vertical gap.
+            content
+        } else {
+            content.safeAreaInset(edge: .top, spacing: 0) {
+                legacyHeader
+            }
+        }
     }
 }
 

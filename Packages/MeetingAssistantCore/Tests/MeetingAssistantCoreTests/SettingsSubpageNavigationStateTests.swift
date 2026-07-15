@@ -1,4 +1,5 @@
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreUI
 import XCTest
 
 final class SettingsSubpageNavigationStateTests: XCTestCase {
@@ -94,10 +95,27 @@ final class SettingsSubpageNavigationStateTests: XCTestCase {
 
         state.open(.editor(styleID: styleID))
         state.open(.promptEditor(styleID: styleID))
-        state.open(.triggerSelection(styleID: styleID))
         state.open(.editor(styleID: styleID))
 
         XCTAssertEqual(state.currentRoute, .editor(styleID: styleID))
         XCTAssertFalse(state.canGoForward)
+    }
+
+    func testDictationStyleFocusTargetMapsCreateAndExistingModes() {
+        let styleID = UUID()
+
+        XCTAssertEqual(DictationStyleFocusTarget.forStyleID(nil), .addButton)
+        XCTAssertEqual(DictationStyleFocusTarget.forStyleID(styleID), .style(styleID))
+    }
+
+    func testSettingsChromeUsesLegacyHeaderOnlyWithoutToolbarChrome() {
+        XCTAssertTrue(SettingsChromeLayoutPolicy.usesLegacyHeader(usesToolbarChrome: false))
+        XCTAssertFalse(SettingsChromeLayoutPolicy.usesLegacyHeader(usesToolbarChrome: true))
+    }
+
+    func testSettingsSidePanelWidthNeverExceedsAvailableSpace() {
+        XCTAssertEqual(SettingsSidePanelLayout.resolvedWidth(requested: 400, available: 320), 320)
+        XCTAssertEqual(SettingsSidePanelLayout.resolvedWidth(requested: 400, available: 640), 400)
+        XCTAssertEqual(SettingsSidePanelLayout.resolvedWidth(requested: -1, available: 640), 0)
     }
 }

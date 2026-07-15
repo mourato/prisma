@@ -1463,6 +1463,9 @@
 "settings.styles.editor.empty_detail" = "Select a mode to edit its settings.";
 "settings.styles.editor.delete_confirmation_title" = "Delete mode?";
 "settings.styles.editor.delete_confirmation_message" = "This will permanently delete \"%@\".";
+"common.add" = "Add";
+"common.selected" = "Selected";
+"settings.styles.editor.validation.icon_invalid" = "Enter one emoji character.";
 
 /* Error */
 "metrics.error.load" = "Could not load dashboard data.";

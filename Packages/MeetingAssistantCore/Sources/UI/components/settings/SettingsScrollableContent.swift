@@ -6,6 +6,12 @@ enum SettingsContentSurface {
     static let toolbarBoundaryHeight: CGFloat = 44
 }
 
+enum SettingsChromeLayoutPolicy {
+    static func usesLegacyHeader(usesToolbarChrome: Bool) -> Bool {
+        !usesToolbarChrome
+    }
+}
+
 public struct SettingsScrollableContent<Content: View>: View {
     private let spacing: CGFloat
     private let content: Content
@@ -43,31 +49,6 @@ public struct SettingsScrollableContent<Content: View>: View {
             .scrollContentBackground(.hidden)
             .background(Color.clear)
             .subtleScrollbars()
-        }
-    }
-}
-
-struct SettingsChromeSafeAreaInset<LegacyHeader: View>: ViewModifier {
-    private let legacyHeader: LegacyHeader
-    private let usesToolbarChrome: Bool
-
-    init(
-        legacyHeader: LegacyHeader,
-        usesToolbarChrome: Bool,
-    ) {
-        self.legacyHeader = legacyHeader
-        self.usesToolbarChrome = usesToolbarChrome
-    }
-
-    func body(content: Content) -> some View {
-        content.safeAreaInset(edge: .top, spacing: 0) {
-            if usesToolbarChrome {
-                Color.clear
-                    .frame(height: SettingsContentSurface.toolbarBoundaryHeight)
-                    .accessibilityHidden(true)
-            } else {
-                legacyHeader
-            }
         }
     }
 }
