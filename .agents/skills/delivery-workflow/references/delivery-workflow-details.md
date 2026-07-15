@@ -1,133 +1,54 @@
----
-name: delivery-workflow
-description: This skill should be used when the user asks to classify risk, select a Prisma execution lane, choose validation commands, run quality checks, commit, prepare PRs, merge, or enforce pre-merge workflow.
----
+# Delivery Workflow — task reference
 
-# Delivery Workflow
+Git mechanics, scoped validation, hooks, and release flows. Role, lanes, and the agent validation loop live in `../SKILL.md`.
 
-## Role
-
-Use this skill as the canonical owner for Prisma task delivery from risk classification through integration.
-
-- Own risk classification, Fast/Full lane selection, lifecycle sequencing, validation command mapping, Git mechanics, and evidence reporting.
-- Keep delivery work aligned with `AGENTS.md`, `Makefile`, repository hooks, and Conventional Commits.
-- Delegate implementation-specific testing and review details to specialist skills.
-
-## Scope Boundary
-
-Use this skill for:
-
-- classifying task risk and selecting Fast/Full lane
-- sequencing implementation work
-- choosing scoped validation and merge-gate commands
-- deciding when to escalate to full gates
-- branch, commit, PR, merge, push, and cleanup mechanics
-- reporting verification evidence and baseline failures
-
-Use specialist skills when the task is primarily about:
-
-- `../testing-xctest/SKILL.md` for XCTest structure, async tests, fakes, spies, and fixtures.
-- Global `thermo-nuclear-code-quality-review` for review findings, semaforo severity, approval bars, and strict structural maintainability review.
-- subsystem skills for domain-specific rules, such as audio, persistence, concurrency, security, UI, localization, or intelligence-kernel work.
-
-## When to Use
-
-Use this skill when a Prisma task needs risk classification, delivery sequencing, validation command selection, Git operations, PR/merge workflow, or pre-merge evidence.
-
-## Risk Classification
-
-Classify before implementation:
-
-| Risk | Use when | Lane |
-|---|---|---|
-| Low | Docs/comments only, localization updates, constrained non-functional refactor in one module | Fast |
-| Medium | Feature/bugfix in one subsystem, UI state behavior, public API change in one package | Full |
-| High | Audio, concurrency, persistence, security, cross-module architecture, build/release infra, large or broad deltas | Full |
-
-When uncertain, choose the higher risk. High triggers override Medium.
-
-## Lifecycle
-
-1. Identify scope and likely owner skills.
-2. Scan for reusable services, helpers, components, and patterns: `reuse -> extend -> create`.
-3. Clarify material ambiguity; state minor assumptions.
-4. Implement in small slices.
-5. Run targeted checks first, then narrow builds and relevant scope checks.
-6. Before push/merge, run the lane gate.
-7. Use global `thermo-nuclear-code-quality-review` for review when review is required; Full lane requires semaforo review with the thermo structural bar.
-8. Fix Critical/Medium review findings, re-run required gates, then integrate and clean up.
-
-## Verification by Lane
+## Verification by lane
 
 ### Fast lane (Low risk)
 
-Minimum expectation:
-
-- Run staged lint/format checks or equivalent lightweight checks when relevant.
-- Run scoped checks first when the change could affect behavior.
-- Before push/merge, run `make validate-agent ARGS="--lane fast"`.
+- Run staged lint/format when relevant.
+- Run scoped checks when behavior could change.
+- Before push/merge: `make validate-agent ARGS="--lane fast"`.
 
 ### Full lane (Medium/High risk)
 
-Minimum expectation:
-
 - During development, run scoped checks continuously.
-- Prefer compact `*-agent` commands during iteration; use `make validate-agent ARGS="--lane auto --dry-run --base main"` as a planning preview when the gate is unclear.
-- Reserve direct `make build-test` for uncached milestone checks; final merge evidence is owned by `make validate-agent`.
-- Before push/merge, run `make validate-agent ARGS="--lane full"`; it runs strict lint then build-test once and emits the aggregate evidence.
+- Prefer `make validate-agent ARGS="--lane auto --dry-run --base main"` at most once when the gate is unclear.
+- Reserve direct `make build-test` for milestone checks; final merge evidence is owned by `make validate-agent`.
+- Before push/merge: `make validate-agent ARGS="--lane full"`.
 
-`make preflight` remains optional and does not replace lane merge gates.
+`make preflight` is optional and does not replace lane merge gates.
 
-### Evidence Contract
+### Evidence contract
 
-Every handoff, commit, or PR must state:
+Every handoff, commit, or PR must state: risk/lane, reusable-block decision, files inspected, commands and results, escalation rationale, known baseline failures, and review outcome.
 
-- risk level and selected lane;
-- reusable-block decision (`reuse`, `extend`, or `create`);
-- files or subsystem inspected;
-- commands executed and their results;
-- escalation rationale when a broader gate ran;
-- known baseline failures and whether they are in scope;
-- review outcome, including unresolved Minor findings when applicable.
+A dry-run is planning evidence only. Fast/Full evidence must include the final `make validate-agent` aggregate and thermo-nuclear semaforo review when required.
 
-Fast/Full lane evidence must include scoped iteration checks, the final `make validate-agent` aggregate and the thermo-nuclear semaforo review when required. A dry-run is planning evidence only and never substitutes for the executed gate.
+## Scoped validation
 
-## Scoped Validation
+Iteration order:
 
-Use this order during implementation:
-
-1. Targeted tests: `./scripts/run-tests.sh --suite dev --file <TestFile>` or `./scripts/run-tests.sh --suite dev --test <testName>`.
-2. Narrow build confidence: `make build-agent` or `make build`.
-3. Scope-specific checks: `make preview-check`, `make arch-check`, or `make guidance-check`.
-4. Full suite gate: `make build-test` when required by lane or escalation triggers.
+1. Targeted tests: `./scripts/run-tests.sh --suite dev --file <TestFile>` or `--test <testName>`.
+2. Narrow build: `make build-agent` or `make build`.
+3. Scope checks: `make preview-check`, `make arch-check`, or `make guidance-check`.
+4. Full suite: `make build-test` when lane or escalation requires it.
 
 Canonical final evidence: `make validate-agent`. Use `make scope-check` only as an ad-hoc changed-path preview engine — not as a duplicate merge gate.
 
-Escalate immediately to full suite (`make build-test`) when:
+Escalate to `make build-test` when infrastructure, cross-module/public API, audio/persistence/concurrency/security paths, large deltas, or flaky scoped checks demand it.
 
-- build/release/test infrastructure changes (`Makefile`, `scripts/`, `.github/workflows`, `Package.swift`, project config)
-- cross-module or public API changes
-- audio, persistence, concurrency, or security-sensitive paths
-- large change sets or low-confidence test mapping
-- scoped checks show flaky or inconsistent behavior
-
-Run these scope checks only when relevant:
-
-- `make arch-check` for architecture boundary, access-control, or import-rule changes.
-- `make preview-check` when adding or changing SwiftUI views.
-- `make guidance-check` when editing `AGENTS.md`, `.agents/`, command docs, routing docs, or referenced guidance.
-
-## Practical Command Set
+## Practical command set
 
 ```bash
 # Core gates
-make scope-check
 make validate-agent ARGS="--lane auto"
 make build-test
 make lint
 make preflight
+make deliverable-gate
 
-# Compact AI-agent mode
+# Compact agent mode
 make build-agent
 make test-agent
 make lint-agent
@@ -136,7 +57,7 @@ make validate-agent ARGS="--lane auto --agent"
 make workflow-test
 make preflight-agent
 
-# Scope-specific checks
+# Scope-specific
 make preview-check
 make arch-check
 make guidance-check
@@ -147,41 +68,31 @@ make guidance-check
 ./scripts/run-tests.sh --agent
 ```
 
-Compact-mode notes:
+### Compact-mode notes
 
-- Each agent invocation creates an immutable run directory below `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`. Nested build/lint/test steps inherit `MA_AGENT_RUN_DIR` and write into that same tree; result JSON points to the exact paths.
-- Scripts emit deterministic `AGENT_*` summary lines for pass/fail parsing.
-- `*.result.json` files use schema version 2 with command summaries and the selected validation decision; they contain metadata and log paths, never prompts, transcripts, file contents, or secrets.
-- `make workflow-test` runs disposable, deterministic fixtures for diff selection, risk thresholds, result schema, quoting, invalid refs, and concurrent artifact isolation without invoking Xcode.
-- `make validate-agent` is the canonical final lane runner. Its content-addressed PASS fingerprint covers the validation scope, base/head trees, gate inputs, toolchain, lane, and runner schema; working-tree mode also covers worktree state, while staged and committed modes exclude unrelated unstaged/untracked state. Reuse fails closed when any child result is missing, corrupt, non-PASS, or mismatched. Use `--no-reuse` after flaky or inconclusive behavior.
-- Use compact mode for iteration; keep lane merge gates unchanged.
+- Each agent invocation creates an immutable run directory below `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`.
+- Scripts emit deterministic `AGENT_*` summary lines; `*.result.json` uses schema version 2 with metadata only — no prompts, transcripts, or secrets.
+- `make workflow-test` runs deterministic fixtures without Xcode.
+- `make validate-agent` is the canonical final lane runner with content-addressed PASS fingerprints; reuse fails closed on mismatch. Use `--no-reuse` after flaky behavior.
 
-Agent delivery sequence:
+### Agent delivery sequence
 
-1. Preview the lane decision when needed with `make validate-agent ARGS="--lane auto --dry-run --base main"`; this does not prove the change.
-2. Run the smallest meaningful changed-path check: targeted tests, `make build-agent`, `make preview-check`, `make arch-check`, or `make guidance-check`.
-3. Before commit, the staged pre-commit hook runs SwiftFormat and SwiftLint for staged Swift files. Run `make lint-fix` when it fails; `SKIP_LINT=1` is an explicit emergency bypass.
-4. Before push, the pre-push hook consumes Git's stdin protocol and runs `make validate-agent ARGS="--lane auto --committed --base <remote-or-merge-base> --head <local-sha> --agent"` for the exact ref range. If a first-push merge-base equals the local head, it uses `--empty-base` so the complete tree is validated instead of an empty range. The remote name and URL come from the hook's `$1`/`$2`, but output omits complete URLs and credentials; direct URLs, including generic SSH SCP forms such as `host:path` and `user@host:path`, use local `main`/`master` only as a deterministic first-push merge-base fallback. A named remote without a usable local default reference also uses `--empty-base`. Unsupported non-branch/non-tag refs with non-zero SHAs fail closed. Committed validation materializes `HEAD_REF` in a temporary detached worktree before selecting or running the gate, compares external gate inputs such as `Package.resolved`, disables both PASS reuse and PASS-cache writes on mismatch, and cleans up on normal return or signals. Set `PUSH_CHECK_VERBOSE=1` for human-readable output; `SKIP_TESTS=1` remains an emergency bypass.
-5. Final Fast/Full evidence uses `make validate-agent`; `--no-reuse` is required after flaky or inconclusive behavior.
-6. Use `make preflight-agent` or `make deliverable-gate` for release or high-confidence validation.
+1. Preview lane when needed: `make validate-agent ARGS="--lane auto --dry-run --base main"` (planning only).
+2. Run the smallest changed-path check during iteration.
+3. Staged pre-commit hook runs SwiftFormat/SwiftLint; `SKIP_LINT=1` is emergency bypass only.
+4. Pre-push hook runs `validate-agent --committed` on the exact ref range and reuses compatible PASS evidence.
+5. Final Fast/Full evidence uses `make validate-agent`; `--no-reuse` after flaky runs.
+6. `make preflight-agent` or `make deliverable-gate` for release or high-confidence validation.
 
-Tests are intentionally not run before every commit: staged lint/format is the cheap mechanical gate, while tests remain scoped to behavior and lane/risk requirements.
+Tests are not run before every commit by default.
 
-## Git Workflow
+## Git workflow
 
 - Preserve unrelated worktree changes.
 - Use Conventional Commits: `<type>(<optional-scope>): <summary>`.
-- Keep commits atomic by intent: feature, fix, refactor, tests, docs, cleanup, review fix.
-- Keep version/build bumps out of functional commits. The pre-commit hook may run `scripts/hooks/first-commit-version-bump.sh`; use `SKIP_DAILY_VERSION_BUMP=1 git commit ...` for normal atomic commits, then make a separate `chore(release): bump version` commit when a release/version bump is actually intended.
-- Do not commit knowingly broken code.
-- Use PRs for non-trivial work unless the user explicitly chooses the direct local merge path.
-- Prefer a GitHub PR with squash merge for non-trivial work. Use the direct local merge exception only when opening a PR is impractical, and record the rationale in the commit or a follow-up issue.
-- Use `gh --body-file` patterns for multiline GitHub content.
-- Prefer non-interactive Git commands.
-- Avoid destructive commands unless the user explicitly requested them.
-- Stop before rewriting shared history unless the intent is explicit.
-
-Standard commands:
+- Keep commits atomic; do not commit knowingly broken code.
+- Use PRs for non-trivial work unless the user explicitly chooses direct local merge.
+- Prefer `gh --body-file` for multiline GitHub content; avoid destructive commands without explicit authorization.
 
 ```bash
 git status --short
@@ -191,51 +102,19 @@ SKIP_DAILY_VERSION_BUMP=1 git commit -m "<type>(<scope>): <summary>"
 git push origin <branch>
 ```
 
-Use temporary files for multiline GitHub Markdown to avoid shell interpolation problems:
+PR descriptions: summary, scope/risk, validation results, review findings, baseline failures. Never include secrets or full transcripts.
 
-```bash
-cat <<'EOF' >/tmp/prisma-gh-body.md
-## Summary
-- ...
+## Hook and troubleshooting
 
-## Verification
-- ...
-EOF
-gh pr create --body-file /tmp/prisma-gh-body.md
-gh issue comment <id> --body-file /tmp/prisma-gh-body.md
-```
+- Install hooks: `git config core.hooksPath scripts/hooks`.
+- `pre-commit`: blocking staged Swift lint/format; no tests.
+- `pre-push`: compact validation over the committed range unless bypassed.
+- Emergency bypasses (`SKIP_LINT=1`, `SKIP_TESTS=1`) should be rare with immediate remediation.
+- Missing tools: `brew install swiftlint swiftformat`.
 
-PR descriptions should include a concise summary, scope/risk, validation commands and results, review findings, baseline failures, and rollback or follow-up notes when relevant. Never include secrets, full transcripts, or large raw logs.
+## Preflight and deliverable-gate
 
-## Evidence To Report
-
-Always report:
-
-- risk level and lane
-- reusable-block decision
-- commands run and result
-- review outcome when relevant
-- escalation rationale, if any
-- known baseline failures, if any
-
-For Full lane work, Critical and Medium review findings block handoff until fixed. Minor findings may be deferred only with an explicit follow-up note.
-
-## Hook and Troubleshooting Notes
-
-- Install hooks with `git config core.hooksPath scripts/hooks`.
-- `pre-commit` runs blocking lightweight staged checks for Swift files and does not run tests.
-- `pre-push` consumes Git's ref-update protocol and enforces compact validation over the exact committed range unless explicitly bypassed.
-- Emergency bypasses should be rare and followed by immediate remediation.
-- If tools are missing, install SwiftLint and SwiftFormat with `brew install swiftlint swiftformat`.
-
-## Related Skills
-
-- `../testing-xctest/SKILL.md`
-- Global `thermo-nuclear-code-quality-review`
-
-## References
-
-- `AGENTS.md`
-- `Makefile`
-- `scripts/lint.sh`
-- `scripts/run-tests.sh`
+- `make preflight`: build + test + lint + benchmark (optional comprehensive validation).
+- `make preflight-fast`: lint + build + test (skips benchmark).
+- `make deliverable-gate`: build-test + lint + ci-release-parity for release confidence.
+- These do not replace mandatory Fast/Full lane merge gates.
