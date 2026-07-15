@@ -13,8 +13,8 @@ import SwiftUI
 public struct TranscriptionsSettingsTab: View {
     @StateObject private var viewModel = TranscriptionSettingsViewModel()
     @StateObject private var dictationService = MeetingQuestionDictationService()
-    @Binding private var searchText: String
     @Binding private var navigationHistory: TranscriptionsNavigationHistory
+    private let onBackToActivity: (() -> Void)?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var currentRoute: TranscriptionsPageRoute {
@@ -22,11 +22,11 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     public init(
-        searchText: Binding<String> = .constant(""),
         navigationHistory: Binding<TranscriptionsNavigationHistory> = .constant(TranscriptionsNavigationHistory()),
+        onBackToActivity: (() -> Void)? = nil,
     ) {
-        _searchText = searchText
         _navigationHistory = navigationHistory
+        self.onBackToActivity = onBackToActivity
     }
 
     public var body: some View {
@@ -35,7 +35,6 @@ public struct TranscriptionsSettingsTab: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task {
-            synchronizeSearchTextFromChrome()
             await viewModel.loadTranscriptions()
             syncSelectionForCurrentRoute()
         }
@@ -43,12 +42,6 @@ public struct TranscriptionsSettingsTab: View {
             Task {
                 await viewModel.loadTranscriptions()
             }
-        }
-        .onChange(of: viewModel.searchText) { _, _ in
-            synchronizeChromeSearchText()
-        }
-        .onChange(of: searchText) { _, _ in
-            synchronizeSearchTextFromChrome()
         }
         .onDisappear {
             Task {
@@ -107,9 +100,18 @@ public struct TranscriptionsSettingsTab: View {
     private var listPage: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
+                if let onBackToActivity {
+                    SettingsChildPageBackButton(action: onBackToActivity)
+                }
+
                 SettingsSectionHeader(
                     title: "settings.section.history".localized,
                     description: "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count),
+                )
+
+                SettingsSearchField(
+                    text: $viewModel.searchText,
+                    placeholder: "settings.transcriptions.search_placeholder".localized,
                 )
 
                 HStack(spacing: 16) {
@@ -339,6 +341,10 @@ public struct TranscriptionsSettingsTab: View {
             viewModel: viewModel,
             dictationService: dictationService,
             onToggleDictation: handleDictationToggle,
+            onBack: {
+                _ = navigationHistory.goBack()
+                syncSelectionForCurrentRoute()
+            },
         )
     }
 
@@ -387,24 +393,6 @@ public struct TranscriptionsSettingsTab: View {
         DispatchQueue.main.async {
             navigationHistory = sanitizedHistory
             syncSelectionForCurrentRoute()
-        }
-    }
-
-    private func synchronizeSearchTextFromChrome() {
-        guard viewModel.searchText != searchText else { return }
-        let updatedSearchText = searchText
-        DispatchQueue.main.async {
-            guard viewModel.searchText != updatedSearchText else { return }
-            viewModel.searchText = updatedSearchText
-        }
-    }
-
-    private func synchronizeChromeSearchText() {
-        guard searchText != viewModel.searchText else { return }
-        let updatedSearchText = viewModel.searchText
-        DispatchQueue.main.async {
-            guard searchText != updatedSearchText else { return }
-            searchText = updatedSearchText
         }
     }
 

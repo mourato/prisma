@@ -3,15 +3,18 @@ import MeetingAssistantCoreCommon
 public struct SettingsDestination: Equatable, Sendable {
     public let section: SettingsSection
     public let activityRoute: ActivitySettingsRoute?
+    public let activityPendingSheet: ActivityPendingSheet?
     public let systemRoute: SystemSettingsRoute?
 
     public init(
         section: SettingsSection,
         activityRoute: ActivitySettingsRoute? = nil,
+        activityPendingSheet: ActivityPendingSheet? = nil,
         systemRoute: SystemSettingsRoute? = nil,
     ) {
         self.section = section
         self.activityRoute = activityRoute
+        self.activityPendingSheet = activityPendingSheet
         self.systemRoute = systemRoute
     }
 }
@@ -81,7 +84,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     public var destination: SettingsDestination {
         switch self {
         case .metrics:
-            SettingsDestination(section: .activity, activityRoute: .modelPerformance)
+            SettingsDestination(section: .activity, activityPendingSheet: .performance)
         case .transcriptions:
             SettingsDestination(section: .activity, activityRoute: .history)
         case .models:

@@ -229,7 +229,7 @@ final class SettingsSearchIndexTests: XCTestCase {
     func testMetricsKeysPreserveActivityModelPerformanceDestination() {
         let destination = SettingsSearchIndex.destination(forLocalizationKey: "settings.section.metrics")
 
-        XCTAssertEqual(destination, SettingsDestination(section: .activity, activityRoute: .modelPerformance))
+        XCTAssertEqual(destination, SettingsDestination(section: .activity, activityPendingSheet: .performance))
     }
 
     func testQueryTranscriptionModelsReturnsSettingsSection() {

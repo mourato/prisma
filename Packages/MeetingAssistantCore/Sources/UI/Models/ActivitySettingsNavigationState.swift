@@ -3,26 +3,27 @@ import MeetingAssistantCoreDomain
 public enum ActivitySettingsRoute: Hashable, Sendable {
     case root
     case history
-    case modelPerformance
-    case moreInsights
-    case eventDetail(MeetingCalendarEventSnapshot)
+}
+
+public enum ActivityPendingSheet: Hashable, Sendable {
+    case performance
 }
 
 public struct ActivitySettingsNavigationState: Equatable {
     public var activeRoute: ActivitySettingsRoute
     public var forwardRoute: ActivitySettingsRoute?
-    public var metricsNavigationState: SettingsSubpageNavigationState<MetricsDashboardRoute>
+    public var pendingSheet: ActivityPendingSheet?
     public var transcriptionsNavigationHistory: TranscriptionsNavigationHistory
 
     public init(
         activeRoute: ActivitySettingsRoute = .root,
         forwardRoute: ActivitySettingsRoute? = nil,
-        metricsNavigationState: SettingsSubpageNavigationState<MetricsDashboardRoute> = SettingsSubpageNavigationState(),
+        pendingSheet: ActivityPendingSheet? = nil,
         transcriptionsNavigationHistory: TranscriptionsNavigationHistory = TranscriptionsNavigationHistory(),
     ) {
         self.activeRoute = activeRoute
         self.forwardRoute = forwardRoute
-        self.metricsNavigationState = metricsNavigationState
+        self.pendingSheet = pendingSheet
         self.transcriptionsNavigationHistory = transcriptionsNavigationHistory
     }
 
@@ -31,14 +32,7 @@ public struct ActivitySettingsNavigationState: Equatable {
     }
 
     public var canGoBack: Bool {
-        switch activeRoute {
-        case .root:
-            false
-        case .history:
-            true
-        case .modelPerformance, .moreInsights, .eventDetail:
-            true
-        }
+        activeRoute == .history
     }
 
     public var canGoForward: Bool {
@@ -47,8 +41,6 @@ public struct ActivitySettingsNavigationState: Equatable {
             forwardRoute != nil
         case .history:
             transcriptionsNavigationHistory.canGoForward
-        case .modelPerformance, .moreInsights, .eventDetail:
-            metricsNavigationState.canGoForward
         }
     }
 
@@ -59,9 +51,6 @@ public struct ActivitySettingsNavigationState: Equatable {
 
     public mutating func open(_ route: ActivitySettingsRoute) {
         guard activeRoute != route else { return }
-        if let metricsRoute = metricsRoute(for: route) {
-            metricsNavigationState.open(metricsRoute)
-        }
         activeRoute = route
         forwardRoute = nil
     }
@@ -77,13 +66,6 @@ public struct ActivitySettingsNavigationState: Equatable {
                 forwardRoute = activeRoute
                 activeRoute = .root
             }
-        case .modelPerformance, .moreInsights, .eventDetail:
-            if metricsNavigationState.canGoBack, metricsNavigationState.currentRoute != topLevelMetricsRoute {
-                _ = metricsNavigationState.goBack()
-            } else {
-                forwardRoute = activeRoute
-                activeRoute = .root
-            }
         }
     }
 
@@ -94,25 +76,6 @@ public struct ActivitySettingsNavigationState: Equatable {
             open(forwardRoute)
         case .history:
             _ = transcriptionsNavigationHistory.goForward()
-        case .modelPerformance, .moreInsights, .eventDetail:
-            _ = metricsNavigationState.goForward()
-        }
-    }
-
-    private var topLevelMetricsRoute: MetricsDashboardRoute? {
-        metricsRoute(for: activeRoute)
-    }
-
-    private func metricsRoute(for route: ActivitySettingsRoute) -> MetricsDashboardRoute? {
-        switch route {
-        case .modelPerformance:
-            .performance
-        case .moreInsights:
-            .moreInsights
-        case let .eventDetail(event):
-            .eventDetail(event)
-        case .root, .history:
-            nil
         }
     }
 }

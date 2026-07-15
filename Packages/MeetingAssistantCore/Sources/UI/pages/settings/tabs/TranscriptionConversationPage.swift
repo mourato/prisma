@@ -12,6 +12,7 @@ struct TranscriptionConversationPage: View {
     @ObservedObject var viewModel: TranscriptionSettingsViewModel
     @ObservedObject var dictationService: MeetingQuestionDictationService
     let onToggleDictation: () -> Void
+    let onBack: (() -> Void)?
 
     @StateObject private var aiSettingsViewModel: AISettingsViewModel
 
@@ -22,12 +23,14 @@ struct TranscriptionConversationPage: View {
         dictationService: MeetingQuestionDictationService,
         settings: AppSettingsStore = .shared,
         onToggleDictation: @escaping () -> Void,
+        onBack: (() -> Void)? = nil,
     ) {
         self.transcriptionID = transcriptionID
         self.activeTranscription = activeTranscription
         self.viewModel = viewModel
         self.dictationService = dictationService
         self.onToggleDictation = onToggleDictation
+        self.onBack = onBack
         _aiSettingsViewModel = StateObject(
             wrappedValue: AISettingsViewModel(
                 settings: settings,
@@ -41,6 +44,15 @@ struct TranscriptionConversationPage: View {
         let meetingNotesContent = viewModel.meetingNotesContent(for: activeTranscription)
 
         VStack(spacing: 0) {
+            if let onBack {
+                HStack {
+                    SettingsChildPageBackButton(action: onBack)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+            }
+
             SettingsSectionHeader(
                 title: "settings.section.history".localized,
                 description: activeTranscription?.meeting.appName,

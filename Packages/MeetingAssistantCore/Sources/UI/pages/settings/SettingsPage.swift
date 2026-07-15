@@ -21,10 +21,6 @@ private enum LayoutConstants {
 /// Settings view for app configuration.
 /// Uses sidebar navigation pattern similar to macOS System Settings.
 public struct SettingsView: View {
-    private enum ToolbarLayout {
-        static let transcriptionsSearchWidth: CGFloat = 230
-    }
-
     fileprivate enum ChromeMode {
         case automatic
         case toolbar
@@ -37,7 +33,6 @@ public struct SettingsView: View {
     @State private var selectedSection: SettingsSection = .activity
     @State private var settingsSearchText = ""
     @State private var activityNavigationState = ActivitySettingsNavigationState()
-    @State private var transcriptionsSearchText = ""
     @State private var systemRoute: SystemSettingsRoute = .root
     @State private var columnVisibility: NavigationSplitViewVisibility
     @State private var navigationService = NavigationService.shared
@@ -155,12 +150,6 @@ private extension SettingsView {
                 toolbarNavigationControlGroup
             }
 
-            if shouldShowTranscriptionsSearch {
-                ToolbarItem(placement: .primaryAction) {
-                    transcriptionsToolbarSearchField
-                }
-            }
-
             if showsCapabilityToolbarAccessory {
                 ToolbarItem(placement: .automatic) {
                     capabilityToolbarAccessory
@@ -202,18 +191,11 @@ private extension SettingsView {
         }
     }
 
-    private var shouldShowTranscriptionsSearch: Bool {
-        selectedSection == .activity && activityNavigationState.isShowingHistoryList
-    }
-
     @available(macOS 26.0, *)
     private var tahoeDetailNavigationBar: some View {
         HStack {
             toolbarNavigationControlGroup
-            if shouldShowTranscriptionsSearch {
-                Spacer()
-                transcriptionsToolbarSearchField
-            } else if showsCapabilityToolbarAccessory {
+            if showsCapabilityToolbarAccessory {
                 Spacer()
                 capabilityToolbarAccessory
             }
@@ -271,10 +253,7 @@ private extension SettingsView {
 
             Spacer(minLength: 0)
 
-            if shouldShowTranscriptionsSearch {
-                transcriptionsSearchField
-                    .frame(width: ToolbarLayout.transcriptionsSearchWidth)
-            } else if showsCapabilityToolbarAccessory {
+            if showsCapabilityToolbarAccessory {
                 capabilityToolbarAccessory
             }
         }
@@ -286,19 +265,6 @@ private extension SettingsView {
         .overlay(alignment: .bottom) {
             Divider()
         }
-    }
-
-    @available(macOS 26.0, *)
-    private var transcriptionsToolbarSearchField: some View {
-        transcriptionsSearchField
-            .frame(width: ToolbarLayout.transcriptionsSearchWidth)
-    }
-
-    private var transcriptionsSearchField: some View {
-        SettingsSearchField(
-            text: $transcriptionsSearchText,
-            placeholder: "settings.transcriptions.search_placeholder".localized,
-        )
     }
 
     private var showsCapabilityToolbarAccessory: Bool {
@@ -401,11 +367,11 @@ private extension SettingsView {
     }
 
     private func selectDestination(_ destination: SettingsDestination) {
-        if selectedSection == .activity, destination.section != .activity {
-            transcriptionsSearchText = ""
-        }
         selectedSection = destination.section
         activityNavigationState.apply(destination.activityRoute)
+        if let pendingSheet = destination.activityPendingSheet {
+            activityNavigationState.pendingSheet = pendingSheet
+        }
         if destination.section == .system {
             systemRoute = destination.systemRoute ?? .root
         }
@@ -464,8 +430,8 @@ private extension SettingsView {
     @ViewBuilder
     private var detailView: some View {
         switch selectedSection {
-        case .metrics:
-            MetricsDashboardSettingsTab(navigationState: $activityNavigationState.metricsNavigationState)
+        case .metrics, .activity, .transcriptions:
+            ActivitySettingsTab(navigationState: $activityNavigationState)
         case .general:
             GeneralSettingsTab()
         case .models:
@@ -484,20 +450,10 @@ private extension SettingsView {
             IntegrationsSettingsTab()
         case .audio:
             SystemSettingsTab(route: .constant(.sound))
-        case .transcriptions:
-            TranscriptionsSettingsTab(
-                searchText: $transcriptionsSearchText,
-                navigationHistory: $activityNavigationState.transcriptionsNavigationHistory,
-            )
         case .enhancements:
             EnhancementsSettingsTab()
         case .permissions:
             PermissionsSettingsTab()
-        case .activity:
-            ActivitySettingsTab(
-                navigationState: $activityNavigationState,
-                transcriptionsSearchText: $transcriptionsSearchText,
-            )
         case .intelligence:
             SystemSettingsTab(route: .constant(.models))
         case .system:

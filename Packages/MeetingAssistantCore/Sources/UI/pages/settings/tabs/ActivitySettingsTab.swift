@@ -3,20 +3,39 @@ import SwiftUI
 public struct ActivitySettingsTab: View {
     @StateObject private var viewModel = MetricsDashboardViewModel()
     @Binding private var navigationState: ActivitySettingsNavigationState
-    @Binding private var transcriptionsSearchText: String
+    @State private var presentedSheet: ActivityPresentationSheet?
 
     @MainActor
     public init(
         navigationState: Binding<ActivitySettingsNavigationState> = .constant(ActivitySettingsNavigationState()),
-        transcriptionsSearchText: Binding<String> = .constant(""),
     ) {
         _navigationState = navigationState
-        _transcriptionsSearchText = transcriptionsSearchText
     }
 
     public var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .sheet(item: $presentedSheet) { sheet in
+                switch sheet {
+                case .moreInsights:
+                    ActivityMoreInsightsSheet(viewModel: viewModel)
+                case .performance:
+                    ActivityPerformanceSheet(viewModel: viewModel)
+                case let .eventDetail(event):
+                    ActivityEventDetailSheet(event: event, viewModel: viewModel)
+                }
+            }
+            .onChange(of: navigationState.pendingSheet) { _, pending in
+                guard let pending else { return }
+                switch pending {
+                case .performance:
+                    presentedSheet = .performance
+                }
+                navigationState.pendingSheet = nil
+            }
+            .onAppear {
+                presentPendingSheetIfNeeded()
+            }
     }
 
     @ViewBuilder
@@ -26,11 +45,11 @@ public struct ActivitySettingsTab: View {
             rootPage
         case .history:
             TranscriptionsSettingsTab(
-                searchText: $transcriptionsSearchText,
                 navigationHistory: $navigationState.transcriptionsNavigationHistory,
+                onBackToActivity: {
+                    navigationState.goBack()
+                },
             )
-        case .modelPerformance, .moreInsights, .eventDetail:
-            MetricsDashboardSettingsTab(navigationState: $navigationState.metricsNavigationState)
         }
     }
 
@@ -38,18 +57,28 @@ public struct ActivitySettingsTab: View {
         ActivityDashboardRootPage(
             viewModel: viewModel,
             openHistory: { navigationState.open(.history) },
-            openMoreInsights: { navigationState.open(.moreInsights) },
-            openPerformance: { navigationState.open(.modelPerformance) },
-            openEventDetail: { navigationState.open(.eventDetail($0)) },
+            openMoreInsights: { presentedSheet = .moreInsights },
+            openPerformance: { presentedSheet = .performance },
+            openEventDetail: { presentedSheet = .eventDetail($0) },
         )
         .task {
             await viewModel.load()
+            presentPendingSheetIfNeeded()
         }
         .onReceive(NotificationCenter.default.publisher(for: .meetingAssistantTranscriptionSaved)) { notification in
             Task {
                 await viewModel.handleTranscriptionSaved(notification)
             }
         }
+    }
+
+    private func presentPendingSheetIfNeeded() {
+        guard navigationState.activeRoute == .root, let pending = navigationState.pendingSheet else { return }
+        switch pending {
+        case .performance:
+            presentedSheet = .performance
+        }
+        navigationState.pendingSheet = nil
     }
 }
 
