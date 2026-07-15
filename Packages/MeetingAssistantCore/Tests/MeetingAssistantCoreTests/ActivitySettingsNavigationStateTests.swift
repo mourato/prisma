@@ -29,7 +29,7 @@ final class ActivitySettingsNavigationStateTests: XCTestCase {
         XCTAssertTrue(state.isShowingHistoryList)
     }
 
-    func testBackForwardDelegatesToActiveHistoryRoute() {
+    func testBackFromConversationReturnsToHistoryList() {
         let conversationID = UUID()
         var history = TranscriptionsNavigationHistory()
         history.push(.conversation(conversationID))
@@ -43,7 +43,8 @@ final class ActivitySettingsNavigationStateTests: XCTestCase {
         state.goBack()
 
         XCTAssertEqual(state.transcriptionsNavigationHistory.currentRoute, .list)
-        XCTAssertTrue(state.canGoForward)
+        XCTAssertEqual(state.activeRoute, .history)
+        XCTAssertTrue(state.canGoBack)
     }
 
     func testHistoryBackFromListReturnsToRoot() {
@@ -52,7 +53,7 @@ final class ActivitySettingsNavigationStateTests: XCTestCase {
         state.goBack()
 
         XCTAssertEqual(state.activeRoute, .root)
-        XCTAssertTrue(state.canGoForward)
+        XCTAssertFalse(state.canGoBack)
     }
 
     func testPendingPerformanceSheetFlag() {
