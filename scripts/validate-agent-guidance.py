@@ -15,7 +15,7 @@ MARKDOWN_FILES = [
 ]
 SKILLS_ROOT = ROOT / ".agents" / "skills"
 SKILLS_INDEX = ROOT / ".agents" / "SKILLS_INDEX.md"
-SKILLS_TAXONOMY = SKILLS_ROOT / "SKILLS_TAXONOMY.md"
+SKILL_ROUTING = ROOT / ".agents" / "docs" / "skill-routing.md"
 
 MAKE_TARGET_RE = re.compile(r"^([A-Za-z0-9_.-]+):", re.MULTILINE)
 MARKDOWN_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
@@ -146,12 +146,12 @@ def parse_indexed_skills(index_path: Path) -> tuple[set[str], set[str]]:
     return indexed, global_skills
 
 
-def parse_taxonomy_skills(taxonomy_path: Path) -> set[str]:
-    text = taxonomy_path.read_text(encoding="utf-8")
+def parse_routed_skills(routing_path: Path) -> set[str]:
+    text = routing_path.read_text(encoding="utf-8")
     return set(
         match.group(1)
-        for match in re.finditer(r"^\|\s*([a-z0-9-]+)\s*\|", text, re.MULTILINE)
-        if match.group(1) != "---"
+        for match in re.finditer(r"`([a-z0-9-]+)`", text)
+        if match.group(1) not in {"macos", "main"}
     )
 
 
@@ -163,18 +163,18 @@ def validate_skill_catalog() -> list[str]:
         if path.is_dir() and (path / "SKILL.md").exists()
     )
     indexed, global_skills = parse_indexed_skills(SKILLS_INDEX)
-    taxonomy = parse_taxonomy_skills(SKILLS_TAXONOMY)
+    routed = parse_routed_skills(SKILL_ROUTING)
 
     for skill in skill_dirs:
         if skill not in indexed:
             errors.append(f"Skill '{skill}' exists in .agents/skills but is missing from .agents/SKILLS_INDEX.md")
-        if skill not in taxonomy:
-            errors.append(f"Skill '{skill}' exists in .agents/skills but is missing from .agents/skills/SKILLS_TAXONOMY.md")
+        if skill not in routed:
+            errors.append(
+                f"Skill '{skill}' exists in .agents/skills but is missing from .agents/docs/skill-routing.md"
+            )
 
     for skill in sorted(indexed - set(skill_dirs) - global_skills):
         errors.append(f"Skill '{skill}' is indexed in .agents/SKILLS_INDEX.md but has no matching directory")
-    for skill in sorted(taxonomy - set(skill_dirs) - global_skills):
-        errors.append(f"Skill '{skill}' is listed in .agents/skills/SKILLS_TAXONOMY.md but has no matching directory")
 
     return errors
 

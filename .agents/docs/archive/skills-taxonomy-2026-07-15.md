@@ -1,4 +1,7 @@
-# Skills Taxonomy Matrix
+# Skills Taxonomy Matrix (archived 2026-07-15)
+
+> Archived by plan 084. Live skill ownership and routing live in
+> [skill-routing.md](../skill-routing.md).
 
 This matrix defines ownership, overlap, and action for all skills under `.agents/skills`.
 

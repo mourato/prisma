@@ -30,8 +30,8 @@ delivery, review gates, or evidence reporting.
 | High | Audio, concurrency, persistence, security, infrastructure, broad or large delta | Full |
 
 When uncertain, choose the higher lane. During iteration use targeted tests,
-`make build-agent`, `make scope-check`, and relevant scope checks. Final merge
-evidence is owned by `make validate-agent`:
+`make build-agent`, and relevant scope checks. Final merge evidence is owned by
+`make validate-agent`:
 
 ```bash
 make validate-agent ARGS="--lane auto"
@@ -42,6 +42,15 @@ make validate-agent ARGS="--lane full --no-reuse --agent"
 Auto selects the lane before expensive work. Full executes strict lint then
 build-test once. `make preflight` and `make deliverable-gate` remain explicit
 release/high-confidence flows, not duplicate mandatory merge gates.
+
+## Agent validation loop
+
+1. Prefer `make validate-agent ARGS="--lane auto --dry-run --base main"` **at most once** when the gate choice is unclear.
+2. During iteration, run only the smallest changed-path check (`make build-agent`, focused tests, `make preview-check`, `make guidance-check`, etc.). Do **not** run Full `build-test` on every slice.
+3. Before commit, run **one** `make validate-agent ARGS="--lane auto --staged --base main --agent"` when evidence is needed; otherwise rely on the staged pre-commit lint/format hook for Swift formatting.
+4. Do **not** re-run the Full merge gate solely because a push is coming — the pre-push hook runs `validate-agent --committed` on the exact range and reuses compatible PASS fingerprints.
+5. `make scope-check` / `scope-check-agent` are the **engine/preview** used internally by `validate-agent` and for ad-hoc changed-path mapping. Agents should treat `validate-agent` as the remembered command; do not run both "for safety".
+6. `SKIP_LINT=1` / `SKIP_TESTS=1` remain emergency bypasses only.
 
 ## Delegation and effort policy
 

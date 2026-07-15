@@ -72,7 +72,7 @@ Minimum expectation:
 Minimum expectation:
 
 - During development, run scoped checks continuously.
-- Prefer compact `*-agent` commands during iteration; use `make scope-check-agent ARGS="--dry-run --base main"` as a planning preview when the gate is unclear.
+- Prefer compact `*-agent` commands during iteration; use `make validate-agent ARGS="--lane auto --dry-run --base main"` as a planning preview when the gate is unclear.
 - Reserve direct `make build-test` for uncached milestone checks; final merge evidence is owned by `make validate-agent`.
 - Before push/merge, run `make validate-agent ARGS="--lane full"`; it runs strict lint then build-test once and emits the aggregate evidence.
 
@@ -101,7 +101,7 @@ Use this order during implementation:
 3. Scope-specific checks: `make preview-check`, `make arch-check`, or `make guidance-check`.
 4. Full suite gate: `make build-test` when required by lane or escalation triggers.
 
-Canonical automation for iteration: `make scope-check`; canonical final evidence: `make validate-agent`.
+Canonical final evidence: `make validate-agent`. Use `make scope-check` only as an ad-hoc changed-path preview engine — not as a duplicate merge gate.
 
 Escalate immediately to full suite (`make build-test`) when:
 

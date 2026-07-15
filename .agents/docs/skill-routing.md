@@ -227,7 +227,40 @@ Use `thermo-nuclear-code-quality-review` for review output, semaforo severity, a
 
 ---
 
+### Documentation and API Reference
 
+**Primary:** `documentation`
+- DocC comments and API documentation
+- MARK organization and docs structure
+
+**Complementary:** `project-standards`
+
+**Example:** "Add DocC comments to the transcription service" → `documentation`
+
+---
+
+### Swift Style and Conventions
+
+**Primary:** `swift-conventions`
+- Swift style, type safety, API naming, and module organization
+
+**Complementary:** `code-quality`
+
+**Example:** "Rename public API to match module conventions" → `swift-conventions`
+
+---
+
+### Reference Projects and Benchmarking
+
+**Primary:** `benchmarking`
+- Reference project registry and clone policy
+- Inspiration-driven comparisons (VoiceInk, FluidVoice, TypeWhisper)
+
+**Complementary:** `macos-app-engineering`, `architecture`, `audio-realtime`
+
+**Example:** "Compare dictation mode UX with VoiceInk" → `benchmarking`
+
+---
 
 ## Skill Files and Direct Access
 
@@ -235,6 +268,7 @@ Use `thermo-nuclear-code-quality-review` for review output, semaforo severity, a
 |-------|------|-------------|
 | `accessibility-audit` | `.agents/skills/accessibility-audit/SKILL.md` | VoiceOver, focus order, keyboard navigation, reduced motion |
 | `apple-design` | `.agents/skills/apple-design/SKILL.md` | Apple-style interaction design, fluid motion, springs, materials, typography |
+| `benchmarking` | `.agents/skills/benchmarking/SKILL.md` | Reference project registry, clone policy, inspiration comparisons |
 | `architecture` | `.agents/skills/architecture/SKILL.md` | Module boundaries, Clean Architecture, DI |
 | `audio-realtime` | `.agents/skills/audio-realtime/SKILL.md` | AVAudioSourceNode, ProcessTap, underruns |
 | `code-quality` | `.agents/skills/code-quality/SKILL.md` | Readability, refactoring |
@@ -245,7 +279,9 @@ Use `thermo-nuclear-code-quality-review` for review output, semaforo severity, a
 | `intelligence-kernel` | `.agents/skills/intelligence-kernel/SKILL.md` | Kernel modes and summary benchmark gates |
 | `macos-app-engineering` | `.agents/skills/macos-app-engineering/SKILL.md` | macOS UI/app implementation, SwiftUI, AppKit bridging, Settings UI, previews |
 | `menubar` | `.agents/skills/menubar/SKILL.md` | Menu bar, popover, and floating-panel behavior |
-| `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest code structure, mocks, async tests |
+| `project-standards` | `.agents/skills/project-standards/SKILL.md` | AGENTS.md, project policy, repository standards |
 | `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/SKILL.md` | Swift 6.2 actor isolation and Sendable fixes |
+| `swift-conventions` | `.agents/skills/swift-conventions/SKILL.md` | Swift style, type safety, API naming, module organization |
 | `swiftui-pro` | `.agents/skills/swiftui-pro/SKILL.md` | SwiftUI API, data flow, navigation, accessibility, performance, and maintainability review |
+| `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest code structure, mocks, async tests |
 | `thermo-nuclear-code-quality-review` | Global skill + `.agents/docs/prisma-review-profile.md` | Default code review, PR audits, semaforo output, and strict Prisma maintainability analysis |
