@@ -229,7 +229,25 @@ final class SettingsSearchIndexTests: XCTestCase {
     func testMetricsKeysPreserveActivityModelPerformanceDestination() {
         let destination = SettingsSearchIndex.destination(forLocalizationKey: "settings.section.metrics")
 
-        XCTAssertEqual(destination, SettingsDestination(section: .activity, activityPendingSheet: .performance))
+        XCTAssertEqual(
+            destination,
+            SettingsDestination(
+                section: .activity,
+                activityRoute: .root,
+                activityPendingSheet: .performance,
+            ),
+        )
+    }
+
+    func testProtectedAppsDestinationExpandsProtectedAppsSection() {
+        let destination = SettingsSearchIndex.destination(
+            forLocalizationKey: "settings.context_awareness.protect_sensitive_apps",
+        )
+
+        XCTAssertEqual(
+            destination,
+            SettingsDestination(section: .system, expandProtectedApps: true),
+        )
     }
 
     func testQueryTranscriptionModelsReturnsSettingsSection() {

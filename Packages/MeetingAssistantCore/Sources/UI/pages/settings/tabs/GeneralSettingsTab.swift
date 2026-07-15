@@ -21,6 +21,7 @@ public struct GeneralSettingsTab: View {
     private let openModels: (() -> Void)?
     private let openDictionary: (() -> Void)?
     private let openSound: (() -> Void)?
+    @Binding private var expandProtectedApps: Bool
 
     public init(
         showsHeader: Bool = true,
@@ -29,6 +30,7 @@ public struct GeneralSettingsTab: View {
         openModels: (() -> Void)? = nil,
         openDictionary: (() -> Void)? = nil,
         openSound: (() -> Void)? = nil,
+        expandProtectedApps: Binding<Bool> = .constant(false),
     ) {
         self.showsHeader = showsHeader
         self.headerTitleKey = headerTitleKey
@@ -36,6 +38,7 @@ public struct GeneralSettingsTab: View {
         self.openModels = openModels
         self.openDictionary = openDictionary
         self.openSound = openSound
+        _expandProtectedApps = expandProtectedApps
     }
 
     public var body: some View {
@@ -143,12 +146,18 @@ public struct GeneralSettingsTab: View {
                     ) {
                         ProtectedAppsSettingsContent()
                     }
-                } header: {
-                    SettingsFormSectionHeader(
-                        title: "settings.context_awareness.protect_sensitive_apps".localized,
-                        icon: "lock.shield",
-                    )
                 }
+            }
+        }
+        .onChange(of: expandProtectedApps) { _, shouldExpand in
+            guard shouldExpand else { return }
+            isProtectedAppsExpanded = true
+            expandProtectedApps = false
+        }
+        .onAppear {
+            if expandProtectedApps {
+                isProtectedAppsExpanded = true
+                expandProtectedApps = false
             }
         }
         .confirmationDialog(

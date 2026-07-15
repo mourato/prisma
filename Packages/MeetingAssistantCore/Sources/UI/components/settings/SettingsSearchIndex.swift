@@ -78,7 +78,7 @@ enum SettingsSearchIndex {
         }
 
         if protectedAppsKeys.contains(key) {
-            return SettingsDestination(section: .system)
+            return SettingsDestination(section: .system, expandProtectedApps: true)
         }
 
         if modeOwnedContextKeys.contains(key) {

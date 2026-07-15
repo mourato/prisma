@@ -34,6 +34,7 @@ public struct SettingsView: View {
     @State private var settingsSearchText = ""
     @State private var activityNavigationState = ActivitySettingsNavigationState()
     @State private var systemRoute: SystemSettingsRoute = .root
+    @State private var expandProtectedApps = false
     @State private var columnVisibility: NavigationSplitViewVisibility
     @State private var navigationService = NavigationService.shared
 
@@ -144,16 +145,12 @@ private extension SettingsView {
         }
     }
 
-    private var showsEmbeddedTahoeChrome: Bool {
-        false
-    }
-
     private var shouldShowLegacyChrome: Bool {
         switch chromeMode {
         case .none, .toolbar:
             false
         case .embedded, .automatic:
-            !showsEmbeddedTahoeChrome
+            true
         }
     }
 
@@ -195,9 +192,8 @@ private extension SettingsView {
     private func selectDestination(_ destination: SettingsDestination) {
         selectedSection = destination.section
         activityNavigationState.apply(destination.activityRoute)
-        if let pendingSheet = destination.activityPendingSheet {
-            activityNavigationState.pendingSheet = pendingSheet
-        }
+        activityNavigationState.pendingSheet = destination.activityPendingSheet
+        expandProtectedApps = destination.expandProtectedApps
         if destination.section == .system {
             systemRoute = destination.systemRoute ?? .root
         }
@@ -263,7 +259,10 @@ private extension SettingsView {
         case .intelligence:
             SystemSettingsTab(route: .constant(.models))
         case .system:
-            SystemSettingsTab(route: $systemRoute)
+            SystemSettingsTab(
+                route: $systemRoute,
+                expandProtectedApps: $expandProtectedApps,
+            )
         }
     }
 

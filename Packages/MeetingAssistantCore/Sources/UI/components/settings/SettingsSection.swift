@@ -5,17 +5,20 @@ public struct SettingsDestination: Equatable, Sendable {
     public let activityRoute: ActivitySettingsRoute?
     public let activityPendingSheet: ActivityPendingSheet?
     public let systemRoute: SystemSettingsRoute?
+    public let expandProtectedApps: Bool
 
     public init(
         section: SettingsSection,
         activityRoute: ActivitySettingsRoute? = nil,
         activityPendingSheet: ActivityPendingSheet? = nil,
         systemRoute: SystemSettingsRoute? = nil,
+        expandProtectedApps: Bool = false,
     ) {
         self.section = section
         self.activityRoute = activityRoute
         self.activityPendingSheet = activityPendingSheet
         self.systemRoute = systemRoute
+        self.expandProtectedApps = expandProtectedApps
     }
 }
 
@@ -84,7 +87,11 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     public var destination: SettingsDestination {
         switch self {
         case .metrics:
-            SettingsDestination(section: .activity, activityPendingSheet: .performance)
+            SettingsDestination(
+                section: .activity,
+                activityRoute: .root,
+                activityPendingSheet: .performance,
+            )
         case .transcriptions:
             SettingsDestination(section: .activity, activityRoute: .history)
         case .models:

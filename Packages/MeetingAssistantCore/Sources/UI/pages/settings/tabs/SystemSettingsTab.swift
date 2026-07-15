@@ -10,9 +10,14 @@ public enum SystemSettingsRoute: Hashable, Sendable {
 
 public struct SystemSettingsTab: View {
     @Binding private var route: SystemSettingsRoute
+    @Binding private var expandProtectedApps: Bool
 
-    public init(route: Binding<SystemSettingsRoute> = .constant(.root)) {
+    public init(
+        route: Binding<SystemSettingsRoute> = .constant(.root),
+        expandProtectedApps: Binding<Bool> = .constant(false),
+    ) {
         _route = route
+        _expandProtectedApps = expandProtectedApps
     }
 
     public var body: some View {
@@ -32,6 +37,7 @@ public struct SystemSettingsTab: View {
                 openModels: { route = .models },
                 openDictionary: { route = .dictionary },
                 openSound: { route = .sound },
+                expandProtectedApps: $expandProtectedApps,
             )
         case .models:
             ModelsSettingsTab(onBack: { route = .root })
