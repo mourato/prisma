@@ -20,9 +20,13 @@ Use this skill when the task involves:
 - VoiceOver labels, hints, traits, and grouping
 - keyboard shortcuts and keyboard-only navigation
 - focus order and focus recovery
-- reduced-motion behavior
+- reduced-motion **compliance** (audit pass/fail)
 - non-color affordances and warnings
 - floating panels, overlays, menu bar UI, and other non-standard surfaces
+
+For motion/type *implementation recipes* (springs, velocity handoff, tracking/
+leading), use `../apple-design/SKILL.md`. For ordinary UI implementation, use
+`../macos-app-engineering/SKILL.md`.
 
 ## When to Use
 
@@ -75,3 +79,4 @@ Review these areas first when the task touches accessibility-sensitive UI:
 - `../localization/SKILL.md`
 - `../menubar/SKILL.md`
 - `../macos-app-engineering/SKILL.md`
+- `../apple-design/SKILL.md`

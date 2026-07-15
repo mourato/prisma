@@ -1,25 +1,21 @@
----
-name: apple-design
-description: Apple's approach to interface design, fluid movement and physics — translated to Swift, SwiftUI and UIKit. Use when building or reviewing gesture-oriented UI, spring animations, drag/swipe/sheet interactions, momentum and interruptible transitions, translucent materials and depth, typography (Dynamic Type, tracking, leading), reduce motion, or the design fundamentals (feedback, spatial consistency, containment) behind interfaces in Apple style.
----
+# Apple Design — interaction reference
 
-## Role
+Role, scope, and routing live in `../SKILL.md`. This file is a deep reference,
+not a second skill entrypoint.
 
-Use this skill for Apple-style interaction design and implementation guidance: fluid gestures, interruptible motion, spring behavior, materials, depth, typography, and reduced-motion behavior.
+## Platform note
 
-## Scope Boundary
+Prisma targets **macOS 15+** with SwiftUI-first UI and AppKit at capability
+boundaries. Prefer SwiftUI examples below. UIKit / `UIViewPropertyAnimator`
+snippets are conceptual analogies for interruptibility and velocity handoff —
+translate them to SwiftUI springs/`DragGesture` (or AppKit) rather than
+importing UIKit into macOS product code. For Reduce Motion or Dynamic Type
+**audits**, use `../../accessibility-audit/SKILL.md`; keep the recipes here for
+implementation.
 
-This skill owns interaction feel and design principles. Use `macos-app-engineering` for ordinary SwiftUI/AppKit implementation and `accessibility-audit` for dedicated accessibility audits.
+How Apple builds interfaces that stop looking like a computer and start looking like an extension of you. This knowledge comes from WWDC design talks — mainly _Designing Fluid Interfaces_ (WWDC 2018) — distilled for SwiftUI and AppKit.
 
-## When to Use
-
-Use when building or reviewing gesture-oriented UI, spring animations, drag/swipe/sheet interactions, momentum, interruptible transitions, translucent materials, typography, or motion accessibility.
-
-# Apple Design (Swift / SwiftUI / UIKit)
-
-How Apple builds interfaces that stop looking like a computer and start looking like an extension of you. This knowledge comes from WWDC design talks — mainly _Designing Fluid Interfaces_ (WWDC 2018) — distilled and translated into Apple's native platform (SwiftUI, UIKit, Core Animation, `CADisplayLink`, `UIViewPropertyAnimator`).
-
-The common thread: **an interface feels alive when motion starts from the current value on screen, inherits the velocity of the user, projects momentum ahead, and can be grabbed and reversed at any instant.** Springs are the tool that makes this natural, because they are interruptible and velocity-sensitive by nature — and, fortunately, they are first-class citizens in both SwiftUI and UIKit/Core Animation.
+The common thread: **an interface feels alive when motion starts from the current value on screen, inherits the velocity of the user, projects momentum ahead, and can be grabbed and reversed at any instant.** Springs are the tool that makes this natural, because they are interruptible and velocity-sensitive by nature — and they are first-class citizens in SwiftUI.
 
 ## The central idea
 
@@ -46,11 +42,6 @@ struct PressableButtonStyle: ButtonStyle {
             .animation(.spring(response: 0.15, dampingFraction: 1.0), value: configuration.isPressed)
     }
 }
-```
-
-```swift
-// UIKit — highlight on touchDown, not touchUpInside
-button.addTarget(self, action: #selector(highlight), for: .touchDown)
 ```
 
 ## 2. Direct manipulation — 1:1 tracking
@@ -80,20 +71,8 @@ var body: some View {
 }
 ```
 
-```swift
-// UIKit
-@objc func handlePan(_ gesture: UIPanGestureRecognizer) {
-    let translation = gesture.translation(in: view.superview)
-    switch gesture.state {
-    case .began, .changed:
-        view.transform = CGAffineTransform(translationX: translation.x, y: translation.y)
-    case .ended, .cancelled:
-        let velocity = gesture.velocity(in: view.superview) // necessary for velocity handoff (§5)
-        release(with: velocity)
-    default: break
-    }
-}
-```
+On AppKit, keep the same contract: 1:1 tracking from the grab point, plus
+velocity at release for §5.
 
 ## 3. Interruptibility — the most important principle
 
@@ -102,32 +81,10 @@ var body: some View {
 Every animation must be interruptible and redirectable at any moment. The user needs to be able to grab an element mid-flight and reverse it without waiting for the animation to finish. A modal closing that the user grabs again should follow the finger — not finish closing and then reopen.
 
 - **Never block input during a transition.**
-- **Always animate from the value of _presentation_ (current), never from the target value.** In UIKit/Core Animation, read `layer.presentation()?.value(forKeyPath:)` when interrupting, not the `modelLayer` (final logical value) — animating from the logical value causes a visible jump.
-- **SwiftUI:** implicit animations via `.animation(_:value:)` already recycle the current state automatically when the `value` changes again mid-flight — it's the desired native behavior, as long as you use `.spring(...)` and don't force a `withAnimation(.linear)` that doesn't interpolate well from the middle.
-- **UIKit:** prefer `UIViewPropertyAnimator` to `UIView.animate(withDuration:)` for anything gesture-oriented — it's `isInterruptible` by default and allows reading/adjusting `fractionComplete` in real time, plus it continues from where it stopped when you call `.startAnimation()` again after a `.pauseAnimation()`.
-- **When a gesture reverses, blend the velocity — don't cut dry.** Replacing one animation with another on reversal creates a velocity discontinuity, a "brick wall." `UISpringTimingParameters(dampingRatio:initialVelocity:)` and SwiftUI's `Animation.spring` already do this re-target from current velocity when the target value changes.
-- **Decompose 2D motion into independent springs for X and Y.** A single spring over a 2D distance desynchronizes when X and Y have different velocities — animate `offset.width` and `offset.height` (or `CGPoint.x`/`.y`) as separate animatable values.
-
-```swift
-// UIKit — interruptible animator
-var animator: UIViewPropertyAnimator?
-
-func animateSheet(to y: CGFloat, velocity: CGVector) {
-    animator?.stopAnimation(true) // captures current state implicitly via presentation layer
-    let timing = UISpringTimingParameters(dampingRatio: 1.0, initialVelocity: velocity)
-    animator = UIViewPropertyAnimator(duration: 0.4, timingParameters: timing)
-    animator?.addAnimations { sheet.frame.origin.y = y }
-    animator?.startAnimation()
-}
-
-// To interrupt mid-flight, always start from the presentation value:
-func interrupt() {
-    animator?.pauseAnimation()
-    let currentY = sheet.layer.presentation()?.frame.origin.y ?? sheet.frame.origin.y
-    animator?.stopAnimation(true)
-    // new animation starts at currentY, not the old target
-}
-```
+- **Always animate from the value of _presentation_ (current), never from the target value.** On Core Animation bridges, read the presentation layer when interrupting — animating from the model/target value causes a visible jump.
+- **SwiftUI:** implicit animations via `.animation(_:value:)` already recycle the current state when the `value` changes mid-flight — prefer `.spring(...)` over forced linear animations that re-target poorly.
+- **When a gesture reverses, blend the velocity — don't cut dry.** SwiftUI's `Animation.spring` re-targets from current velocity when the target changes.
+- **Decompose 2D motion into independent springs for X and Y.** Animate `offset.width` and `offset.height` as separate animatable values when axes have different velocities.
 
 ## 4. Behavior instead of animation — use springs
 
@@ -135,7 +92,7 @@ func interrupt() {
 
 A pre-scripted animation with fixed duration doesn't respond to new input. A spring does — new input just changes the target, and motion continues smoothly. Resort to springs for anything the user might touch.
 
-Apple deliberately replaces the physics trio (mass/stiffness/damping) with two designer-friendly parameters, available directly in SwiftUI (and, from iOS 17, in the `Spring` type):
+Apple deliberately replaces the physics trio (mass/stiffness/damping) with two designer-friendly parameters, available directly in SwiftUI:
 
 - **`dampingFraction`** — controls overshoot. `1.0` = critically damped, no bounce, settles smoothly. `< 1.0` = overshoots and oscillates. Lower = more elastic.
 - **`response`** — how fast the value reaches the target, in seconds. Lower = snappier. **This is not "duration"** — a spring has no fixed duration; the settling time emerges from the parameters.
@@ -159,20 +116,10 @@ withAnimation(.spring(response: 0.4, dampingFraction: 1.0)) {
     offset = .zero
 }
 
-// Interaction with momentum — a little bounce, just because a flick preceded
+// Interaction with momentum — light bounce after a flick
 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
     offset = target
 }
-
-// iOS 17+: dedicated Spring API, more explicit about Apple's "mental model"
-let spring = Spring(response: 0.4, dampingRatio: 1.0)
-withAnimation(spring) { offset = .zero }
-```
-
-```swift
-// UIKit — the same parameters via UISpringTimingParameters
-let timing = UISpringTimingParameters(dampingRatio: 0.8) // bounce, for something with momentum
-let animator = UIViewPropertyAnimator(duration: 0.4, timingParameters: timing)
 ```
 
 ## 5. Velocity handoff — the seam between drag and animation
@@ -181,8 +128,8 @@ When a gesture ends, the animation needs to **continue at exactly the velocity o
 
 Pass the gesture's release velocity as the spring's initial velocity:
 
-- **SwiftUI:** `DragGesture.Value` doesn't expose velocity directly, but `predictedEndTranslation` already embeds Apple's momentum projection (see §6) — you can derive approximate velocity from the difference between `translation` and `predictedEndTranslation`, or track timestamps manually with `@GestureState`.
-- **UIKit:** `UIPanGestureRecognizer.velocity(in:)` returns velocity in points/second directly — pass it to `UISpringTimingParameters(dampingRatio:initialVelocity:)`.
+- **SwiftUI:** `DragGesture.Value` doesn't expose velocity directly, but `predictedEndTranslation` already embeds Apple's momentum projection (see §6) — derive approximate velocity from `translation` vs `predictedEndTranslation`, or track timestamps with `@GestureState`.
+- **AppKit:** read the recognizer/event velocity in points/second and feed it into the spring's initial velocity.
 
 Some spring APIs want velocity **relative**, normalized by the distance remaining to the target:
 
@@ -191,16 +138,6 @@ relativeVelocity = gestureVelocity / (targetValue − currentValue)
 ```
 
 Example: element at `y=50`, target `y=150` (100pt remaining), finger at 50pt/s → spring's initial velocity = `50 / 100 = 0.5`.
-
-```swift
-let velocity = panGesture.velocity(in: view.superview)
-let distanceRemaining = CGVector(dx: target.x - current.x, dy: target.y - current.y)
-let relativeVelocity = CGVector(
-    dx: distanceRemaining.dx != 0 ? velocity.x / distanceRemaining.dx : 0,
-    dy: distanceRemaining.dy != 0 ? velocity.y / distanceRemaining.dy : 0
-)
-let timing = UISpringTimingParameters(dampingRatio: 0.8, initialVelocity: relativeVelocity)
-```
 
 ## 6. Momentum projection — animate to where the gesture is _going_
 
@@ -328,29 +265,22 @@ Three rules for combining senses (from _Designing Audio-Haptic Experiences_):
 2. **Harmony** — the visual, sound, and haptic must fire in the **same frame**. Latency between them destroys the illusion. Fire the `UIFeedbackGenerator` in the same callback that starts the animation, not in a separate `.onEnded` with a delay.
 3. **Utility** — add feedback only where it justifies itself. Reserve haptics/sound for significant moments (success, error, confirmation, snap). Excessive feedback trains the user to ignore everything.
 
-```swift
-// Combine visual + haptic in the same instant
-let generator = UIImpactFeedbackGenerator(style: .medium)
-generator.prepare() // reduces latency of the first fire
-
-func snapToPlace() {
-    generator.impactOccurred() // fires along with animation, same frame
-    withAnimation(.spring(response: 0.3, dampingFraction: 1.0)) {
-        isSnapped = true
-    }
-}
-
-// For success/error/warning:
-UINotificationFeedbackGenerator().notificationOccurred(.success)
-```
+Prefer SwiftUI `sensoryFeedback` (or a single coordinated haptic) fired in the
+same frame as the visual snap — do not stack sound, haptics, copy, and motion
+for one state change. See MAE design-system / product surfaces for existing
+feedback tokens before inventing new ones.
 
 ## 14. Reduce Motion and accessibility
 
-Reduce Motion doesn't mean _no_ feedback — it means a softer, non-vestibular equivalent. Respond to three independent system signals and bake them into your components:
+Use this section for **implementation recipes**. For an accessibility **audit**
+(VoiceOver, keyboard/focus, Reduce Motion compliance), use
+`../../accessibility-audit/SKILL.md`.
 
-- **`UIAccessibility.isReduceMotionEnabled`** (or `@Environment(\.accessibilityReduceMotion)` in SwiftUI) — substitute slides/springs/parallax with **short cross-fades of opacity** or static transitions. Remove overshoot/elasticity. Keep opacity/color changes that aid comprehension.
-- **`UIAccessibility.isReduceTransparencyEnabled`** (`@Environment(\.accessibilityReduceTransparency)`) — make translucent surfaces more "frosted"/solid: increase background opacity, reduce blur (swap `Material` for a near-opaque color).
-- **`UIAccessibility.isDarkerSystemColorsEnabled`** / high contrast — near-solid backgrounds with a defined, contrasting border.
+Reduce Motion doesn't mean _no_ feedback — it means a softer, non-vestibular equivalent. Prefer SwiftUI environment values:
+
+- **`@Environment(\.accessibilityReduceMotion)`** — substitute slides/springs/parallax with **short cross-fades of opacity** or static transitions. Remove overshoot/elasticity. Keep opacity/color changes that aid comprehension.
+- **`@Environment(\.accessibilityReduceTransparency)`** — make translucent surfaces more solid: increase background opacity, reduce blur (swap `Material` for a near-opaque color).
+- High contrast / increased contrast — near-solid backgrounds with a defined, contrasting border.
 
 Beyond that: avoid continuous-motion backgrounds filling the entire viewport, slow oscillations in loop (near 0.2 Hz / one cycle every 5s), and abrupt brightness jumps (smooth light↔dark theme transitions). Make large objects in motion semi-transparent while traveling, and fade large surfaces during a wide reposition, returning to normal once they settle.
 
@@ -371,14 +301,18 @@ struct AdaptiveTransitionView: View {
 
 ## 15. Typography — Dynamic Type, tracking, leading
 
+Use this section for typography **metrics and layout recipes**. For accessibility
+**audits** of Dynamic Type / readable hierarchy failures, also involve
+`../../accessibility-audit/SKILL.md`.
+
 Apple designs type to change form with size; the same discipline applies in Swift. (From _The Details of UI Typography_, WWDC 2020.)
 
-- **Prefer `Font.system(.body, design:)` / `UIFont.preferredFont(forTextStyle:)` to fixed sizes.** The system's text styles (`.largeTitle`, `.title`, `.headline`, `.body`, `.footnote`...) already embed the correct optical sizing of San Francisco for each size — the typeface changes shape, not just scale, as size grows.
-- **Tracking (letter-spacing) is size-specific — never a single value for all.** Display text wants _negative_ tracking (letters get too spaced-out as text grows); small text wants slightly _positive_ tracking for legibility. In SwiftUI, use `.tracking(_:)` per size context, not a global fixed value.
-- **Leading (line-height/`lineSpacing`) scales inversely with size.** Tight on large titles, looser on body text. Adjust `.lineSpacing(_:)` accordingly.
-- **Build hierarchy from weight + size + leading as a set**, not just size. Emphasize with `.fontWeight(_:)` — adds presence without taking up more space.
-- **Respect the user's text size setting (Dynamic Type).** Use the system's text styles and `@ScaledMetric` for spacing/icon sizes tied to text, so layout scales _with_ text instead of breaking. Test with `.dynamicTypeSize(...xxxLarge)` in the preview.
-- **Prefer the system font (San Francisco) to a custom font** by default; it already comes with optical sizing, tracking tables, and legibility adjustment. Only substitute with clear reason — and if you do, enable `.fontDesign(.rounded)`/`.serif` instead of importing a fully custom font when possible, to retain some of the system's adaptive behavior.
+- **Prefer `Font.system(.body, design:)` to fixed sizes.** System text styles already embed optical sizing of San Francisco for each size.
+- **Tracking (letter-spacing) is size-specific — never a single value for all.** Display text wants _negative_ tracking; small text wants slightly _positive_ tracking. Use `.tracking(_:)` per size context.
+- **Leading (`lineSpacing`) scales inversely with size.** Tight on large titles, looser on body text.
+- **Build hierarchy from weight + size + leading as a set**, not just size.
+- **Respect Dynamic Type.** Use system text styles and `@ScaledMetric` for spacing/icon sizes tied to text. Test with `.dynamicTypeSize(...xxxLarge)` in previews.
+- **Prefer the system font** by default; use `.fontDesign(.rounded)`/`.serif` before importing a fully custom font when possible.
 
 ```swift
 Text("Emphasis headline")

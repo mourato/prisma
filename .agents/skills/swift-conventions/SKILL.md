@@ -95,6 +95,8 @@ Use this section as the practical "how to write code here" reference. Keep it al
 ## Related Skills
 
 - `../code-quality/SKILL.md`
+- `../macos-app-engineering/SKILL.md` (SwiftUI review appendix for API/review passes)
+- `../swift-concurrency-expert/SKILL.md`
 
 ## References
 

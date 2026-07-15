@@ -20,11 +20,10 @@ Catalog of agent skills for Prisma. For problem-specific routing, see [Skill Rou
 | `intelligence-kernel` | `.agents/skills/intelligence-kernel/` | Summary schema, kernel modes, trust flags, benchmark gates |
 | `keychain-security` | `.agents/skills/keychain-security/` | Keychain secrets, API keys, KeychainManager |
 | `localization` | `.agents/skills/localization/` | Localizable.strings, accessible copy, locale hygiene |
-| `macos-app-engineering` | `.agents/skills/macos-app-engineering/` | macOS UI/app, SwiftUI, AppKit, Settings, previews, lifecycle |
+| `macos-app-engineering` | `.agents/skills/macos-app-engineering/` | macOS UI/app, SwiftUI, AppKit, Settings, previews, lifecycle, SwiftUI review |
 | `menubar` | `.agents/skills/menubar/` | NSStatusItem, popover, non-activating overlays |
 | `project-standards` | `.agents/skills/project-standards/` | AGENTS.md, project policy, known limitations |
 | `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/` | Actor isolation, Sendable, Swift 6.2 concurrency |
 | `swift-conventions` | `.agents/skills/swift-conventions/` | Swift style, type safety, API naming, modules |
-| `swiftui-pro` | `.agents/skills/swiftui-pro/` | SwiftUI APIs, data flow, navigation, performance review |
 | `testing-xctest` | `.agents/skills/testing-xctest/` | XCTest, async/`@MainActor` tests, mocks/fakes/spies |
 | `thermo-nuclear-code-quality-review` | `global: ~/.codex/skills/thermo-nuclear-code-quality-review/` + `.agents/docs/prisma-review-profile.md` | Code review, PR audits, semaforo findings, maintainability |

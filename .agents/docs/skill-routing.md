@@ -6,9 +6,9 @@ When working on Prisma, multiple skills may be relevant to a task. This guide pr
 
 When uncertain which skill to use, apply this priority order:
 
-1. **`macos-app-engineering`** — canonical macOS UI/app implementation guidance
+1. **`macos-app-engineering`** — canonical macOS UI/app implementation guidance (includes SwiftUI review appendix)
 2. **`delivery-workflow`** — source of truth for risk lane, validation, Git, and delivery evidence
-3. **`swiftui-pro` / `apple-design` / `accessibility-audit` / `localization` / `menubar`** — specialist UI escalation when their scope is primary
+3. **`apple-design` / `accessibility-audit` / `localization` / `menubar`** — specialist UI escalation when their scope is primary
 4. **`swift-concurrency-expert`** — Swift 6.2 concurrency remediation
 5. **`debugging-diagnostics`** — cross-cutting investigation and diagnostic signal design when the failing subsystem is not yet proven
 
@@ -75,7 +75,10 @@ configuration and custom agent files own model and reasoning-effort choices.
 - Apply Settings/design-system patterns
 - Add or update previews
 
-**Then (if needed):** `swiftui-pro`, `apple-design`, `accessibility-audit`, `localization`, `menubar`, `debugging-diagnostics`, or `swift-concurrency-expert`
+**Then (if needed):** `apple-design`, `accessibility-audit`, `localization`, `menubar`, `debugging-diagnostics`, `swift-conventions`, or `swift-concurrency-expert`
+
+For a SwiftUI modern-API / maintainability **review** pass, stay on
+`macos-app-engineering` and open `references/swiftui-review.md`.
 
 **Example:** "Design the meeting recording UI" → `macos-app-engineering`
 
@@ -277,11 +280,10 @@ Use `thermo-nuclear-code-quality-review` for review output, semaforo severity, a
 | `delivery-workflow` | `.agents/skills/delivery-workflow/SKILL.md` | Risk lanes, validation gates, Git workflow, PR/merge mechanics |
 | `documentation` | `.agents/skills/documentation/SKILL.md` | DocC and API docs |
 | `intelligence-kernel` | `.agents/skills/intelligence-kernel/SKILL.md` | Kernel modes and summary benchmark gates |
-| `macos-app-engineering` | `.agents/skills/macos-app-engineering/SKILL.md` | macOS UI/app implementation, SwiftUI, AppKit bridging, Settings UI, previews |
+| `macos-app-engineering` | `.agents/skills/macos-app-engineering/SKILL.md` | macOS UI/app implementation, SwiftUI, AppKit bridging, Settings UI, previews, SwiftUI review appendix |
 | `menubar` | `.agents/skills/menubar/SKILL.md` | Menu bar, popover, and floating-panel behavior |
 | `project-standards` | `.agents/skills/project-standards/SKILL.md` | AGENTS.md, project policy, repository standards |
 | `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/SKILL.md` | Swift 6.2 actor isolation and Sendable fixes |
 | `swift-conventions` | `.agents/skills/swift-conventions/SKILL.md` | Swift style, type safety, API naming, module organization |
-| `swiftui-pro` | `.agents/skills/swiftui-pro/SKILL.md` | SwiftUI API, data flow, navigation, accessibility, performance, and maintainability review |
 | `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest code structure, mocks, async tests |
 | `thermo-nuclear-code-quality-review` | Global skill + `.agents/docs/prisma-review-profile.md` | Default code review, PR audits, semaforo output, and strict Prisma maintainability analysis |

@@ -2,7 +2,9 @@
 
 This is the active plan ledger. Historical audits, completed plan rows, review
 notes, and rejected options remain in the [2026-07-12 ledger archive](archive/2026-07-12-plan-ledger-history.md).
-Plan files are never renumbered; the next available plan number is 087.
+Plan files are never renumbered; the next available plan number is 089.
+(Plan 087 is reserved by the parallel WIP branch
+`fix/087-pre-push-reliability-and-agent-ops-followups`; do not reuse.)
 
 ## Execution rules
 
@@ -59,6 +61,7 @@ reason) | `REJECTED` (with a one-line rationale).
 | [084](084-slim-always-on-agent-guidance-and-validation-loop.md) | Slim always-on guidance, collapse skill routing, and unify the agent validation loop | P1 | M | - | DONE |
 | [085](085-finish-progressive-disclosure-and-prune-skill-bulk.md) | Finish progressive disclosure and prune hot-path skill reference bulk | P1 | L | 084 | DONE |
 | [086](086-auto-install-hooks-and-promote-implementer-fast.md) | Auto-install Git hooks via setup and promote allowlisted implementer-fast | P1 | M | 084 | DONE |
+| [088](088-optimize-macos-ui-swift-skills-cluster.md) | Optimize macOS UI / Apple design / Swift skills cluster (fold swiftui-pro; slim apple-design) | P1 | M | 028, 084, 085 | DONE |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
@@ -138,6 +141,12 @@ options verbatim for searchability.
   Scripts change ⇒ Full lane.
 - 084 → 085 → (086 can proceed after 084 in parallel with 085 only if two writers
   are forbidden by policy; default serial order is 084, then 085, then 086).
+- 088 re-audits the macOS UI / Apple design / Swift guidance cluster after
+  `apple-design` and `swiftui-pro` were added post–plan 028. Default path folds
+  `swiftui-pro` into a MAE review appendix and slims `apple-design`; it does not
+  reopen merging `swift-conventions` with `code-quality`. Low-utility
+  `.agents/docs/archive/` trees (taxonomy dump, MAE generic refs, retired
+  `swiftui-pro`) are deleted rather than retained for recovery.
 
 ## Findings considered and rejected
 
@@ -154,4 +163,12 @@ options verbatim for searchability.
 - Promoting lean-code as a global default is rejected until artifact/browser
   smoke coverage from plan 060 exists; 086 only allowlists `implementer-fast`.
 - Deleting archived macos reference dumps without a dated archive copy is
-  rejected; 085 must move unused generics under `.agents/docs/archive/`.
+  rejected for plan 085's original prune (must archive first). Plan 088 later
+  deletes the whole `.agents/docs/archive/` tree after confirming live routing
+  no longer depends on those recovery copies.
+- Merging `apple-design` into `macos-app-engineering` in the same pass as
+  retiring `swiftui-pro` (plan 088 Option C) is rejected by default: it would
+  re-inflate MAE after plan 085 pruned hot-path bulk. Keep motion/feel as a
+  progressive-disclosure specialist unless the operator explicitly selects C.
+- Merging `swift-conventions` into the UI cluster is rejected: language-style
+  ownership stays separate from macOS/UI implementation (plan 028).

@@ -1,27 +1,36 @@
 ---
 name: macos-app-engineering
-description: Use for macOS UI/app work touching SwiftUI views, AppKit bridging, Settings UI, design-system components, previews, lifecycle, or platform behavior.
+description: Use for macOS UI/app work touching SwiftUI views, AppKit bridging, Settings UI, design-system components, previews, lifecycle, platform behavior, or a SwiftUI API/review pass.
 ---
 
 # macOS App Engineering
 
 ## Role
 
-Own ordinary macOS application implementation: SwiftUI composition, settings
-surfaces, AppKit bridges, lifecycle, previews, platform availability, and
-design-system reuse.
+Own ordinary macOS application **implementation**: SwiftUI composition, settings
+surfaces, AppKit bridges, lifecycle, previews, platform availability,
+design-system reuse, and (via the review appendix) SwiftUI modern-API review.
 
 ## Scope Boundary
 
-Use this skill for macOS UI/app implementation and review. Route motion/physics
-to `apple-design`, accessibility audits to `accessibility-audit`, concurrency
-to `swift-concurrency-expert`, and architecture decisions to `architecture`.
+Exclusive claim: ordinary macOS UI/app implementation and SwiftUI review
+heuristics for this repo.
+
+Route elsewhere:
+
+- Interaction *feel* (gestures, springs, interruptibility, materials/depth,
+  typography metrics) → `apple-design`
+- Accessibility *audit* (VoiceOver, keyboard/focus, Reduce Motion compliance,
+  overlays) → `accessibility-audit`
+- Swift *language* style, type safety, module/file naming → `swift-conventions`
+- Concurrency remediation → `swift-concurrency-expert`
+- Architecture / module boundaries → `architecture`
 
 ## When to Use
 
 Trigger for SwiftUI views, Settings navigation/layout, design-system controls,
-preview coverage, AppKit panels/status items, lifecycle integration, or native
-macOS behavior.
+preview coverage, AppKit panels/status items, lifecycle integration, native
+macOS behavior, or a SwiftUI modern-API / maintainability review pass.
 
 ## Non-negotiable rules
 
@@ -37,20 +46,24 @@ macOS behavior.
 - Keep previews representative, deterministic, and free of network, Keychain,
   hardware, or destructive persistence side effects.
 - Respect Dynamic Type, Reduce Motion, focus, keyboard, VoiceOver, and native
-  control behavior.
+  control behavior — escalate full audits to `accessibility-audit`.
+- Prefer Observation for **new** UI state; preserve existing `ObservableObject`
+  contracts until an intentional migration.
 
 ## Routed references
 
 Read [macOS engineering details](references/macos-app-engineering-details.md)
-for the relevant implementation guidance:
+for implementation guidance, and [SwiftUI review](references/swiftui-review.md)
+for a review pass:
 
-| Request | Reference sections |
+| Request | Reference |
 |---|---|
-| SwiftUI composition/state and performance | SwiftUI composition and state; rendering |
-| Settings pages/navigation/design system | Settings and design-system patterns |
-| AppKit bridge, lifecycle, panels, capabilities | macOS platform integration and execution sequence |
-| Previews and verification | Preview requirements and verification |
-| Broad UI direction | UI/UX direction |
+| SwiftUI composition/state and performance | Details: composition and state; rendering |
+| Settings pages/navigation/design system | Details: Settings and design-system patterns |
+| AppKit bridge, lifecycle, panels, capabilities | Details: platform integration |
+| Previews and verification | Details: Preview requirements |
+| Broad UI direction | Details: UI/UX direction |
+| SwiftUI API / review pass | [swiftui-review.md](references/swiftui-review.md) |
 
 ## Verification and handoff
 
@@ -60,9 +73,11 @@ accessibility behavior, preview/test commands, and known baseline failures.
 ## Related Skills
 
 - `../apple-design/SKILL.md`
-- `../swiftui-pro/SKILL.md`
 - `../accessibility-audit/SKILL.md`
+- `../swift-conventions/SKILL.md`
+- `../swift-concurrency-expert/SKILL.md`
 
 ## References
 
 - [Detailed macOS app guidance](references/macos-app-engineering-details.md)
+- [SwiftUI review appendix](references/swiftui-review.md)

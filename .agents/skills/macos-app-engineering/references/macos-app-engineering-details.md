@@ -8,6 +8,7 @@ Prisma-specific Settings, SwiftUI, AppKit, preview, and UX guidance. Role, scope
 |---|---|
 | Design-system components and settings rows | [design-system.md](design-system.md) |
 | SwiftUI composition, state, and performance | [swiftui-composition.md](swiftui-composition.md) |
+| SwiftUI modern-API / review pass | [swiftui-review.md](swiftui-review.md) |
 | AppKit bridging, windows, and lifecycle | [appkit-integration.md](appkit-integration.md) |
 | macOS polish, hierarchy, and native feel | [macos-polish.md](macos-polish.md) |
 | Concurrency patterns in UI code | [concurrency-patterns.md](concurrency-patterns.md) |

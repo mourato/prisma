@@ -1,27 +1,38 @@
 ---
 name: apple-design
-description: Apple's approach to interface design, fluid movement and physics — translated to Swift, SwiftUI and UIKit. Use for gesture-oriented UI, spring animations, sheets, materials, typography, Dynamic Type, Reduce Motion, or Apple-style interaction fundamentals.
+description: Apple's approach to interface design, fluid movement and physics — translated to Swift and SwiftUI/AppKit for Prisma. Use for gesture-oriented UI, spring animations, sheets, materials, typography metrics, or Apple-style interaction fundamentals.
 ---
 
 # Apple Design
 
 ## Role
 
-Own the interaction, motion, material, depth, typography, and feedback
-principles that make Prisma's SwiftUI/AppKit surfaces feel native.
+Own interaction *feel*: motion, material, depth, typography metrics, and
+feedback principles that make Prisma's SwiftUI/AppKit surfaces feel native.
 
 ## Scope Boundary
 
-Use this skill for gesture-oriented UI, interruptible transitions, translucent
-materials, typography/scaled layout, accessibility-aware motion, and the design
-reasoning behind those behaviors. Use `macos-app-engineering` for ordinary view
-ownership, lifecycle, settings, previews, and AppKit bridging.
+Exclusive claim: gesture/spring physics, interruptibility, velocity handoff,
+materials/depth as hierarchy, and typography *metrics* (tracking/leading/
+Dynamic Type–aware layout recipes).
+
+Not owned here:
+
+- Ordinary view/Settings/DS/preview/AppKit lifecycle → `macos-app-engineering`
+- Accessibility *audit* pass/fail (VoiceOver, keyboard/focus, Reduce Motion
+  compliance) → `accessibility-audit`
+- SwiftUI modern-API review checklist → `macos-app-engineering`
+  (`references/swiftui-review.md`)
 
 ## When to Use
 
 Trigger for drag/swipe/sheet interactions, spring or momentum animation, press
-feedback, material/depth changes, Dynamic Type or tracking/leading work, Reduce
-Motion behavior, or an Apple-style visual/interaction review.
+feedback, material/depth changes, typography metrics (tracking/leading/scaled
+layout recipes), or an Apple-style visual/interaction critique.
+
+For Reduce Motion or Dynamic Type **audits**, start with `accessibility-audit`;
+use this skill for the motion/type *implementation recipes* those audits
+require.
 
 ## Non-negotiable rules
 
@@ -43,7 +54,7 @@ request needs the corresponding deep guidance:
 |---|---|
 | Drag, swipe, sheet, spring, momentum, or interruptible transitions | Response through rubber-banding; gesture feel checklist |
 | Materials, depth, feedback, or haptics | Materials, multimodal feedback, design fundamentals |
-| Reduce Motion or accessibility review | Reduce Motion and accessibility; design fundamentals |
+| Reduce Motion implementation recipes | Reduce Motion and accessibility (then audit via `accessibility-audit`) |
 | Dynamic Type, tracking, leading, or scaled layout | Typography |
 | End-to-end interaction critique | Process and quick reference |
 
@@ -58,7 +69,7 @@ creating a local animation vocabulary.
 
 - `../macos-app-engineering/SKILL.md`
 - `../accessibility-audit/SKILL.md`
-- `../swiftui-pro/SKILL.md`
+- `../swift-conventions/SKILL.md`
 
 ## References
 
