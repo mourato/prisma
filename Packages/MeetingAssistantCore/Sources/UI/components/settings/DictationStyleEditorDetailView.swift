@@ -153,6 +153,7 @@ public struct DictationStyleEditorDetailView: View {
                         Text(language.displayName).tag(language)
                     }
                 }
+                .pickerStyle(.menu)
             }
 
             Section("settings.styles.editor.context_sources".localized) {

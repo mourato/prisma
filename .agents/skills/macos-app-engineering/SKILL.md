@@ -31,6 +31,9 @@ macOS behavior.
   localization, and search contracts before creating new abstractions.
 - Keep AppKit bridging at lifecycle/panel/capability boundaries and preserve
   macOS 15 fallbacks for newer APIs.
+- In settings `Form` surfaces, use a native `Picker` with a visible label as
+  the default value-control pattern. Reserve `DSMenuPicker` for compact
+  controls outside `Form`, such as filters or fixed-width action rows.
 - Keep previews representative, deterministic, and free of network, Keychain,
   hardware, or destructive persistence side effects.
 - Respect Dynamic Type, Reduce Motion, focus, keyboard, VoiceOver, and native
