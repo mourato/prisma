@@ -3,82 +3,80 @@ import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import SwiftUI
 
-struct MetricsDashboardUpcomingEventsSection: View {
-    @ObservedObject var viewModel: MetricsDashboardViewModel
-    let onOpenEventDetail: (MeetingCalendarEventSnapshot) -> Void
+@MainActor
+@ViewBuilder
+func MetricsDashboardUpcomingEventFormRows(
+    viewModel: MetricsDashboardViewModel,
+    onOpenEventDetail: @escaping (MeetingCalendarEventSnapshot) -> Void,
+) -> some View {
+    Text("metrics.calendar.upcoming.subtitle".localized)
+        .font(.caption)
+        .foregroundStyle(.secondary)
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("metrics.calendar.upcoming.subtitle".localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if viewModel.isLoadingCalendar {
-                SettingsStateBlock(
-                    kind: .loading,
-                    title: "metrics.calendar.loading.title".localized,
-                    message: "metrics.calendar.loading.message".localized,
-                )
-            } else if !viewModel.calendarPermissionState.isAuthorized {
-                SettingsStateBlock(
-                    kind: .warning,
-                    title: "metrics.calendar.permission.title".localized,
-                    message: calendarPermissionMessage,
-                    actionTitle: calendarPermissionActionTitle,
-                ) {
-                    if viewModel.calendarPermissionState == .notDetermined {
-                        Task { await viewModel.requestCalendarAccess() }
-                    } else {
-                        viewModel.openCalendarSettings()
-                    }
-                }
-            } else if viewModel.upcomingEvents.isEmpty {
-                MAEmptyStateView(
-                    iconName: "calendar.badge.exclamationmark",
-                    title: "metrics.calendar.empty.title".localized,
-                    message: "metrics.calendar.empty.message".localized,
-                    emphasis: .compact,
-                )
+    if viewModel.isLoadingCalendar {
+        SettingsStateBlock(
+            kind: .loading,
+            title: "metrics.calendar.loading.title".localized,
+            message: "metrics.calendar.loading.message".localized,
+        )
+    } else if !viewModel.calendarPermissionState.isAuthorized {
+        SettingsStateBlock(
+            kind: .warning,
+            title: "metrics.calendar.permission.title".localized,
+            message: upcomingEventsCalendarPermissionMessage(viewModel.calendarPermissionState),
+            actionTitle: upcomingEventsCalendarPermissionActionTitle(viewModel.calendarPermissionState),
+        ) {
+            if viewModel.calendarPermissionState == .notDetermined {
+                Task { await viewModel.requestCalendarAccess() }
             } else {
-                ForEach(viewModel.upcomingEvents, id: \.eventIdentifier) { event in
-                    UpcomingCalendarEventRow(
-                        event: event,
-                        isRecording: viewModel.isRecording,
-                        isLinked: viewModel.isLinkedEvent(event),
-                        onOpen: {
-                            onOpenEventDetail(event)
-                        },
-                        onLink: {
-                            viewModel.linkCalendarEvent(event)
-                        },
-                        onClear: {
-                            viewModel.clearLinkedCalendarEvent()
-                        },
-                        onIgnore: {
-                            viewModel.ignoreUpcomingEvent(event)
-                        },
-                    )
-                }
+                viewModel.openCalendarSettings()
             }
         }
-    }
-
-    private var calendarPermissionMessage: String {
-        switch viewModel.calendarPermissionState {
-        case .notDetermined:
-            "metrics.calendar.permission.request".localized
-        case .denied, .restricted:
-            "metrics.calendar.permission.denied".localized
-        case .granted:
-            ""
+    } else if viewModel.upcomingEvents.isEmpty {
+        MAEmptyStateView(
+            iconName: "calendar.badge.exclamationmark",
+            title: "metrics.calendar.empty.title".localized,
+            message: "metrics.calendar.empty.message".localized,
+            emphasis: .compact,
+        )
+    } else {
+        ForEach(viewModel.upcomingEvents, id: \.eventIdentifier) { event in
+            UpcomingCalendarEventRow(
+                event: event,
+                isRecording: viewModel.isRecording,
+                isLinked: viewModel.isLinkedEvent(event),
+                onOpen: {
+                    onOpenEventDetail(event)
+                },
+                onLink: {
+                    viewModel.linkCalendarEvent(event)
+                },
+                onClear: {
+                    viewModel.clearLinkedCalendarEvent()
+                },
+                onIgnore: {
+                    viewModel.ignoreUpcomingEvent(event)
+                },
+            )
         }
     }
+}
 
-    private var calendarPermissionActionTitle: String {
-        viewModel.calendarPermissionState == .notDetermined
-            ? "metrics.calendar.permission.action_request".localized
-            : "metrics.calendar.permission.action_open_settings".localized
+private func upcomingEventsCalendarPermissionMessage(_ state: PermissionState) -> String {
+    switch state {
+    case .notDetermined:
+        "metrics.calendar.permission.request".localized
+    case .denied, .restricted:
+        "metrics.calendar.permission.denied".localized
+    case .granted:
+        ""
     }
+}
+
+private func upcomingEventsCalendarPermissionActionTitle(_ state: PermissionState) -> String {
+    state == .notDetermined
+        ? "metrics.calendar.permission.action_request".localized
+        : "metrics.calendar.permission.action_open_settings".localized
 }
 
 struct MetricsDashboardActivitySection: View {
@@ -86,11 +84,7 @@ struct MetricsDashboardActivitySection: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("metrics.activity.subtitle".localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
+        Group {
             if viewModel.isLoading {
                 ProgressView()
                     .tint(AppDesignSystem.Colors.accent)
@@ -104,44 +98,54 @@ struct MetricsDashboardActivitySection: View {
                     emphasis: .compact,
                 )
             } else {
-                HStack(alignment: .top, spacing: ActivityHeatmap.weekdayToGridSpacing) {
-                    weekdayLegendColumn
+                VStack(alignment: .leading, spacing: 8) {
+                    heatmapGrid
+                    heatmapLegend
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
+    }
 
-                    ScrollViewReader { proxy in
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            VStack(alignment: .leading, spacing: ActivityHeatmap.monthToGridSpacing) {
-                                monthHeaderRow
+    private var heatmapGrid: some View {
+        HStack(alignment: .top, spacing: ActivityHeatmap.weekdayToGridSpacing) {
+            weekdayLegendColumn
 
-                                HStack(alignment: .top, spacing: ActivityHeatmap.spacing) {
-                                    ForEach(heatmapWeekColumns) { column in
-                                        VStack(spacing: ActivityHeatmap.spacing) {
-                                            ForEach(Array(column.days.enumerated()), id: \.offset) { _, bucket in
-                                                if let bucket {
-                                                    activitySquare(for: bucket)
-                                                } else {
-                                                    heatmapPlaceholder
-                                                }
-                                            }
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: ActivityHeatmap.monthToGridSpacing) {
+                        monthHeaderRow
+
+                        HStack(alignment: .top, spacing: ActivityHeatmap.spacing) {
+                            ForEach(heatmapWeekColumns) { column in
+                                VStack(spacing: ActivityHeatmap.spacing) {
+                                    ForEach(Array(column.days.enumerated()), id: \.offset) { _, bucket in
+                                        if let bucket {
+                                            activitySquare(for: bucket)
+                                        } else {
+                                            heatmapPlaceholder
                                         }
-                                        .id("\(ActivityHeatmap.weekColumnPrefix)-\(column.id)")
                                     }
-                                    Color.clear
-                                        .frame(width: 1, height: 1)
-                                        .id(ActivityHeatmap.latestAnchorID)
                                 }
+                                .id("\(ActivityHeatmap.weekColumnPrefix)-\(column.id)")
                             }
-                            .padding(.vertical, ActivityHeatmap.verticalPadding)
-                        }
-                        .frame(height: ActivityHeatmap.scrollHeight)
-                        .onAppear {
-                            scrollToLatest(in: proxy, animated: true)
-                        }
-                        .onReceive(viewModel.$dailyBuckets.dropFirst()) { _ in
-                            scrollToLatest(in: proxy, animated: false)
+                            Color.clear
+                                .frame(width: 1, height: 1)
+                                .id(ActivityHeatmap.latestAnchorID)
                         }
                     }
+                    .padding(.vertical, ActivityHeatmap.verticalPadding)
                 }
-                heatmapLegend
+                .frame(maxWidth: .infinity)
+                .frame(height: ActivityHeatmap.scrollHeight)
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+                .onAppear {
+                    scrollToLatest(in: proxy, animated: true)
+                }
+                .onReceive(viewModel.$dailyBuckets.dropFirst()) { _ in
+                    scrollToLatest(in: proxy, animated: false)
+                }
             }
         }
     }
@@ -458,6 +462,9 @@ struct MetricStatCard: View {
 #Preview("Dashboard Activity") {
     Form {
         Section {
+            Text("Last 365 days")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             MetricsDashboardActivitySection(viewModel: MetricsDashboardViewModel())
         } header: {
             SettingsFormSectionHeader(title: "Transcription Activity", icon: "calendar.badge.clock")

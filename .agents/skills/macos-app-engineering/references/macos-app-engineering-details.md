@@ -76,8 +76,8 @@ Classification checklist:
 - Does changing the control persist immediately without a Save button? → switch
 - Does the value live on a draft until Save/Create/Apply/Close-commit? → checkbox
 
-Correct exemplars: `AudioSettingsTab` (immediate), `DictationStyleEditorDetailView`
-(deferred).
+Correct exemplars: `AudioSettingsTab` (immediate), `SettingsCheckboxRow` /
+`DictationStyleEditorDetailView` (deferred).
 
 ```swift
 // Immediate-effect setting

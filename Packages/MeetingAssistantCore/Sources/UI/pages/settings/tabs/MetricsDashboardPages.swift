@@ -30,6 +30,9 @@ struct MetricsDashboardIndexPage: View {
             )
         } content: {
             Section {
+                Text("metrics.activity.subtitle".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 MetricsDashboardActivitySection(viewModel: viewModel)
             } header: {
                 SettingsFormSectionHeader(title: "metrics.activity.title".localized, icon: "calendar.badge.clock") {
@@ -41,12 +44,12 @@ struct MetricsDashboardIndexPage: View {
                 MetricsDashboardMoreInsightsLinkSection(openMoreInsights: openMoreInsights)
                 MetricsDashboardPerformanceLinkSection(openPerformance: openPerformance)
             } header: {
-                SettingsFormSectionHeader(title: "settings.section.activity".localized, icon: "chart.line.uptrend.xyaxis")
+                SettingsFormSectionHeader(title: "settings.activity.explore.title".localized, icon: "chart.line.uptrend.xyaxis")
             }
 
             if viewModel.isMeetingTranscriptionEnabled {
                 Section {
-                    MetricsDashboardUpcomingEventsSection(
+                    MetricsDashboardUpcomingEventFormRows(
                         viewModel: viewModel,
                         onOpenEventDetail: openEventDetail,
                     )
@@ -85,6 +88,9 @@ struct ActivityDashboardRootPage: View {
             )
         } content: {
             Section {
+                Text("metrics.activity.subtitle".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 MetricsDashboardActivitySection(viewModel: viewModel)
             } header: {
                 SettingsFormSectionHeader(title: "metrics.activity.title".localized, icon: "calendar.badge.clock") {
@@ -93,18 +99,36 @@ struct ActivityDashboardRootPage: View {
             }
 
             Section {
-                ActivityDashboardDrillDownSection(
-                    openHistory: openHistory,
-                    openMoreInsights: openMoreInsights,
-                    openPerformance: openPerformance,
-                )
+                SettingsListDrillDownButtonRow(
+                    title: "settings.activity.recording_history.title".localized,
+                    subtitle: "settings.activity.recording_history.subtitle".localized,
+                    accessibilityHint: "settings.activity.recording_history.accessibility_hint".localized,
+                ) {
+                    openHistory()
+                }
+
+                SettingsListDrillDownButtonRow(
+                    title: "metrics.performance.link.title".localized,
+                    subtitle: "settings.activity.model_performance.subtitle".localized,
+                    accessibilityHint: "metrics.performance.link.accessibility_hint".localized,
+                ) {
+                    openPerformance()
+                }
+
+                SettingsListDrillDownButtonRow(
+                    title: "metrics.more_insights.title".localized,
+                    subtitle: "settings.activity.more_insights.subtitle".localized,
+                    accessibilityHint: "metrics.more_insights.accessibility_hint".localized,
+                ) {
+                    openMoreInsights()
+                }
             } header: {
-                SettingsFormSectionHeader(title: "settings.section.activity".localized, icon: "chart.line.uptrend.xyaxis")
+                SettingsFormSectionHeader(title: "settings.activity.explore.title".localized, icon: "chart.line.uptrend.xyaxis")
             }
 
             if viewModel.isMeetingTranscriptionEnabled {
                 Section {
-                    MetricsDashboardUpcomingEventsSection(
+                    MetricsDashboardUpcomingEventFormRows(
                         viewModel: viewModel,
                         onOpenEventDetail: openEventDetail,
                     )
@@ -277,38 +301,6 @@ struct MetricsDashboardEventDetailPage: View {
         notesAutosaveTask?.cancel()
         notesAutosaveTask = nil
         viewModel.updateCalendarEventNotes(notesDraft, for: event)
-    }
-}
-
-private struct ActivityDashboardDrillDownSection: View {
-    let openHistory: () -> Void
-    let openMoreInsights: () -> Void
-    let openPerformance: () -> Void
-
-    var body: some View {
-        SettingsListDrillDownButtonRow(
-            title: "settings.activity.recording_history.title".localized,
-            subtitle: "settings.activity.recording_history.subtitle".localized,
-            accessibilityHint: "settings.activity.recording_history.accessibility_hint".localized,
-        ) {
-            openHistory()
-        }
-
-        SettingsListDrillDownButtonRow(
-            title: "metrics.performance.link.title".localized,
-            subtitle: "settings.activity.model_performance.subtitle".localized,
-            accessibilityHint: "metrics.performance.link.accessibility_hint".localized,
-        ) {
-            openPerformance()
-        }
-
-        SettingsListDrillDownButtonRow(
-            title: "metrics.more_insights.title".localized,
-            subtitle: "settings.activity.more_insights.subtitle".localized,
-            accessibilityHint: "metrics.more_insights.accessibility_hint".localized,
-        ) {
-            openMoreInsights()
-        }
     }
 }
 

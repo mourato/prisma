@@ -145,9 +145,9 @@ public struct DictationStyleEditorDetailView: View {
                     subtitle: promptSummary,
                     action: { onOpenPromptEditor?(currentDraft) },
                 )
-                CheckboxRow("settings.styles.editor.post_processing_enabled".localized, isOn: $postProcessingEnabled)
-                CheckboxRow("settings.styles.editor.markdown_output".localized, isOn: $forceMarkdownOutput)
-                CheckboxRow("settings.styles.editor.replace_base_prompt".localized, isOn: $replaceBasePrompt)
+                SettingsCheckboxRow("settings.styles.editor.post_processing_enabled".localized, isOn: $postProcessingEnabled)
+                SettingsCheckboxRow("settings.styles.editor.markdown_output".localized, isOn: $forceMarkdownOutput)
+                SettingsCheckboxRow("settings.styles.editor.replace_base_prompt".localized, isOn: $replaceBasePrompt)
                 Picker("settings.styles.editor.output_language".localized, selection: $outputLanguage) {
                     ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
                         Text(language.displayName).tag(language)
@@ -157,13 +157,13 @@ public struct DictationStyleEditorDetailView: View {
             }
 
             Section("settings.styles.editor.context_sources".localized) {
-                CheckboxRow("settings.context_awareness.accessibility_text".localized, isOn: $includeAccessibilityText)
-                CheckboxRow("settings.context_awareness.selected_text_at_start".localized, isOn: $includeSelectedTextAtStart)
+                SettingsCheckboxRow("settings.context_awareness.accessibility_text".localized, isOn: $includeAccessibilityText)
+                SettingsCheckboxRow("settings.context_awareness.selected_text_at_start".localized, isOn: $includeSelectedTextAtStart)
                 Text("settings.context_awareness.selected_text_at_start_desc".localized)
                     .font(.caption).foregroundStyle(.secondary)
-                CheckboxRow("settings.context_awareness.clipboard".localized, isOn: $includeClipboard)
-                CheckboxRow("settings.context_awareness.window_ocr".localized, isOn: $includeWindowOCR)
-                CheckboxRow("settings.context_awareness.redact_sensitive_data".localized, isOn: $redactSensitiveData)
+                SettingsCheckboxRow("settings.context_awareness.clipboard".localized, isOn: $includeClipboard)
+                SettingsCheckboxRow("settings.context_awareness.window_ocr".localized, isOn: $includeWindowOCR)
+                SettingsCheckboxRow("settings.context_awareness.redact_sensitive_data".localized, isOn: $redactSensitiveData)
             }
 
             Section("settings.enhancements.selector.dictation.title".localized) {
@@ -239,18 +239,6 @@ public struct DictationStyleEditorDetailView: View {
     private func deduplicatedTargets(_ values: [DictationStyleTarget]) -> [DictationStyleTarget] {
         var seen = Set<String>()
         return values.filter { seen.insert($0.normalizedIdentity).inserted }
-    }
-}
-
-private struct CheckboxRow: View {
-    let title: String
-    @Binding var isOn: Bool
-    init(_ title: String, isOn: Binding<Bool>) {
-        self.title = title
-        _isOn = isOn }
-
-    var body: some View {
-        Toggle(title, isOn: $isOn).toggleStyle(.checkbox).accessibilityLabel(title)
     }
 }
 
