@@ -42,8 +42,6 @@ public struct ServiceMeetingTranscriptionSection: View {
                 )
             }
 
-            Divider()
-
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("settings.service.diarization_model_name".localized)
