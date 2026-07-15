@@ -11,28 +11,48 @@ struct MetricsDashboardIndexPage: View {
     let openEventDetail: (MeetingCalendarEventSnapshot) -> Void
 
     var body: some View {
-        SettingsScrollableContent {
-            SettingsSectionHeader(
-                title: "settings.section.metrics".localized,
-                description: "metrics.hero.subtitle".localized(
-                    with: MetricsDashboardFormatters.formattedNumber(viewModel.summary.wordsDictated),
-                    viewModel.summary.sessionsRecorded,
-                ),
-            )
+        SettingsFormPage {
+            VStack(alignment: .leading, spacing: 4) {
+                SettingsFormSectionHeader(title: "settings.section.metrics".localized, icon: "chart.line.uptrend.xyaxis")
+                Text(
+                    "metrics.hero.subtitle".localized(
+                        with: MetricsDashboardFormatters.formattedNumber(viewModel.summary.wordsDictated),
+                        viewModel.summary.sessionsRecorded,
+                    ),
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
 
             MetricsDashboardLoadErrorSection(
                 errorMessage: viewModel.errorMessage,
                 onRetry: { await viewModel.load() },
             )
+        } content: {
+            Section {
+                MetricsDashboardActivitySection(viewModel: viewModel)
+            } header: {
+                SettingsFormSectionHeader(title: "metrics.activity.title".localized, icon: "calendar.badge.clock") {
+                    MetricsDashboardActivityFilterMenu(viewModel: viewModel)
+                }
+            }
 
-            MetricsDashboardActivitySection(viewModel: viewModel)
-            MetricsDashboardMoreInsightsLinkSection(openMoreInsights: openMoreInsights)
-            MetricsDashboardPerformanceLinkSection(openPerformance: openPerformance)
+            Section {
+                MetricsDashboardMoreInsightsLinkSection(openMoreInsights: openMoreInsights)
+                MetricsDashboardPerformanceLinkSection(openPerformance: openPerformance)
+            } header: {
+                SettingsFormSectionHeader(title: "settings.section.activity".localized, icon: "chart.line.uptrend.xyaxis")
+            }
+
             if viewModel.isMeetingTranscriptionEnabled {
-                MetricsDashboardUpcomingEventsSection(
-                    viewModel: viewModel,
-                    onOpenEventDetail: openEventDetail,
-                )
+                Section {
+                    MetricsDashboardUpcomingEventsSection(
+                        viewModel: viewModel,
+                        onOpenEventDetail: openEventDetail,
+                    )
+                } header: {
+                    SettingsFormSectionHeader(title: "metrics.calendar.upcoming.title".localized, icon: "calendar.badge.clock")
+                }
             }
         }
     }
@@ -46,32 +66,51 @@ struct ActivityDashboardRootPage: View {
     let openEventDetail: (MeetingCalendarEventSnapshot) -> Void
 
     var body: some View {
-        SettingsScrollableContent {
-            SettingsSectionHeader(
-                title: "settings.section.activity".localized,
-                description: "metrics.hero.subtitle".localized(
-                    with: MetricsDashboardFormatters.formattedNumber(viewModel.summary.wordsDictated),
-                    viewModel.summary.sessionsRecorded,
-                ),
-            )
+        SettingsFormPage {
+            VStack(alignment: .leading, spacing: 4) {
+                SettingsFormSectionHeader(title: "settings.section.activity".localized, icon: "chart.line.uptrend.xyaxis")
+                Text(
+                    "metrics.hero.subtitle".localized(
+                        with: MetricsDashboardFormatters.formattedNumber(viewModel.summary.wordsDictated),
+                        viewModel.summary.sessionsRecorded,
+                    ),
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
 
             MetricsDashboardLoadErrorSection(
                 errorMessage: viewModel.errorMessage,
                 onRetry: { await viewModel.load() },
             )
+        } content: {
+            Section {
+                MetricsDashboardActivitySection(viewModel: viewModel)
+            } header: {
+                SettingsFormSectionHeader(title: "metrics.activity.title".localized, icon: "calendar.badge.clock") {
+                    MetricsDashboardActivityFilterMenu(viewModel: viewModel)
+                }
+            }
 
-            MetricsDashboardActivitySection(viewModel: viewModel)
-            ActivityDashboardDrillDownSection(
-                openHistory: openHistory,
-                openMoreInsights: openMoreInsights,
-                openPerformance: openPerformance,
-            )
+            Section {
+                ActivityDashboardDrillDownSection(
+                    openHistory: openHistory,
+                    openMoreInsights: openMoreInsights,
+                    openPerformance: openPerformance,
+                )
+            } header: {
+                SettingsFormSectionHeader(title: "settings.section.activity".localized, icon: "chart.line.uptrend.xyaxis")
+            }
 
             if viewModel.isMeetingTranscriptionEnabled {
-                MetricsDashboardUpcomingEventsSection(
-                    viewModel: viewModel,
-                    onOpenEventDetail: openEventDetail,
-                )
+                Section {
+                    MetricsDashboardUpcomingEventsSection(
+                        viewModel: viewModel,
+                        onOpenEventDetail: openEventDetail,
+                    )
+                } header: {
+                    SettingsFormSectionHeader(title: "metrics.calendar.upcoming.title".localized, icon: "calendar.badge.clock")
+                }
             }
         }
     }
@@ -247,30 +286,28 @@ private struct ActivityDashboardDrillDownSection: View {
     let openPerformance: () -> Void
 
     var body: some View {
-        SettingsListGroup("settings.section.activity".localized, icon: "chart.line.uptrend.xyaxis") {
-            SettingsListDrillDownButtonRow(
-                title: "settings.activity.recording_history.title".localized,
-                subtitle: "settings.activity.recording_history.subtitle".localized,
-                accessibilityHint: "settings.activity.recording_history.accessibility_hint".localized,
-            ) {
-                openHistory()
-            }
+        SettingsListDrillDownButtonRow(
+            title: "settings.activity.recording_history.title".localized,
+            subtitle: "settings.activity.recording_history.subtitle".localized,
+            accessibilityHint: "settings.activity.recording_history.accessibility_hint".localized,
+        ) {
+            openHistory()
+        }
 
-            SettingsListDrillDownButtonRow(
-                title: "metrics.performance.link.title".localized,
-                subtitle: "settings.activity.model_performance.subtitle".localized,
-                accessibilityHint: "metrics.performance.link.accessibility_hint".localized,
-            ) {
-                openPerformance()
-            }
+        SettingsListDrillDownButtonRow(
+            title: "metrics.performance.link.title".localized,
+            subtitle: "settings.activity.model_performance.subtitle".localized,
+            accessibilityHint: "metrics.performance.link.accessibility_hint".localized,
+        ) {
+            openPerformance()
+        }
 
-            SettingsListDrillDownButtonRow(
-                title: "metrics.more_insights.title".localized,
-                subtitle: "settings.activity.more_insights.subtitle".localized,
-                accessibilityHint: "metrics.more_insights.accessibility_hint".localized,
-            ) {
-                openMoreInsights()
-            }
+        SettingsListDrillDownButtonRow(
+            title: "metrics.more_insights.title".localized,
+            subtitle: "settings.activity.more_insights.subtitle".localized,
+            accessibilityHint: "metrics.more_insights.accessibility_hint".localized,
+        ) {
+            openMoreInsights()
         }
     }
 }
@@ -299,13 +336,11 @@ private struct MetricsDashboardMoreInsightsLinkSection: View {
     let openMoreInsights: () -> Void
 
     var body: some View {
-        DSGroup {
-            SettingsDrillDownButtonRow(
-                title: "metrics.more_insights.title".localized,
-                accessibilityHint: "metrics.more_insights.accessibility_hint".localized,
-            ) {
-                openMoreInsights()
-            }
+        SettingsDrillDownButtonRow(
+            title: "metrics.more_insights.title".localized,
+            accessibilityHint: "metrics.more_insights.accessibility_hint".localized,
+        ) {
+            openMoreInsights()
         }
     }
 }
@@ -314,13 +349,11 @@ private struct MetricsDashboardPerformanceLinkSection: View {
     let openPerformance: () -> Void
 
     var body: some View {
-        DSGroup {
-            SettingsDrillDownButtonRow(
-                title: "metrics.performance.link.title".localized,
-                accessibilityHint: "metrics.performance.link.accessibility_hint".localized,
-            ) {
-                openPerformance()
-            }
+        SettingsDrillDownButtonRow(
+            title: "metrics.performance.link.title".localized,
+            accessibilityHint: "metrics.performance.link.accessibility_hint".localized,
+        ) {
+            openPerformance()
         }
     }
 }
