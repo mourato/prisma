@@ -26,12 +26,8 @@ public struct ActivitySettingsTab: View {
                 }
             }
             .onChange(of: navigationState.pendingSheet) { _, pending in
-                guard let pending else { return }
-                switch pending {
-                case .performance:
-                    presentedSheet = .performance
-                }
-                navigationState.pendingSheet = nil
+                guard pending != nil else { return }
+                presentPendingSheetIfNeeded()
             }
             .onAppear {
                 presentPendingSheetIfNeeded()
@@ -73,7 +69,10 @@ public struct ActivitySettingsTab: View {
     }
 
     private func presentPendingSheetIfNeeded() {
-        guard navigationState.activeRoute == .root, let pending = navigationState.pendingSheet else { return }
+        guard let pending = navigationState.pendingSheet else { return }
+        if navigationState.activeRoute != .root {
+            navigationState.open(.root)
+        }
         switch pending {
         case .performance:
             presentedSheet = .performance
