@@ -1,7 +1,8 @@
 import SwiftUI
 
 public struct DSCard<Content: View>: View {
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.accessibilityReduceTransparency) private var accessibilityReduceTransparency
+    @Environment(\.settingsReduceTransparencyPreview) private var reduceTransparencyPreview
 
     public enum Style {
         case standard
@@ -77,6 +78,10 @@ public struct DSCard<Content: View>: View {
                     }
             }
         }
+    }
+
+    private var reduceTransparency: Bool {
+        accessibilityReduceTransparency || reduceTransparencyPreview
     }
 
     private var settingsCardStroke: Color {

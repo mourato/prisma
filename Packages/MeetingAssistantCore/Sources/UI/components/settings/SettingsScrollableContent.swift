@@ -145,5 +145,6 @@ private struct SettingsContentSurfacePreview: View {
     SettingsContentSurfacePreview()
         .frame(width: 600)
         .environment(\.dynamicTypeSize, .accessibility3)
+        .environment(\.settingsReduceTransparencyPreview, true)
         .preferredColorScheme(.dark)
 }

@@ -1,8 +1,14 @@
 import AppKit
 import SwiftUI
 
+extension EnvironmentValues {
+    @Entry var settingsReduceTransparencyPreview = false
+}
+
 public struct SettingsWindowBackground: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var accessibilityReduceTransparency
+    @Environment(\.settingsReduceTransparencyPreview) private var reduceTransparencyPreview
 
     public init() {}
 
@@ -15,7 +21,7 @@ public struct SettingsWindowBackground: View {
     private var nativeWindowBackground: some View {
         switch colorScheme {
         case .light, .dark:
-            if AppDesignSystem.Accessibility.reduceTransparency {
+            if effectiveReduceTransparency {
                 AppDesignSystem.Colors.windowBackground
             } else {
                 ZStack {
@@ -30,10 +36,18 @@ public struct SettingsWindowBackground: View {
             AppDesignSystem.Colors.windowBackground
         }
     }
+
+    private var effectiveReduceTransparency: Bool {
+        accessibilityReduceTransparency
+            || reduceTransparencyPreview
+            || AppDesignSystem.Accessibility.reduceTransparency
+    }
 }
 
 public struct SettingsTitleBarMaterialBackground: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var accessibilityReduceTransparency
+    @Environment(\.settingsReduceTransparencyPreview) private var reduceTransparencyPreview
 
     public init(usesBottomFade: Bool = true) {
         _ = usesBottomFade
@@ -58,7 +72,7 @@ public struct SettingsTitleBarMaterialBackground: View {
     private var nativeTitleBarBackground: some View {
         switch colorScheme {
         case .light, .dark:
-            if AppDesignSystem.Accessibility.reduceTransparency {
+            if effectiveReduceTransparency {
                 Rectangle()
                     .fill(AppDesignSystem.Colors.settingsCanvasBackground)
             } else {
@@ -73,6 +87,12 @@ public struct SettingsTitleBarMaterialBackground: View {
             Rectangle()
                 .fill(AppDesignSystem.Colors.windowBackground)
         }
+    }
+
+    private var effectiveReduceTransparency: Bool {
+        accessibilityReduceTransparency
+            || reduceTransparencyPreview
+            || AppDesignSystem.Accessibility.reduceTransparency
     }
 }
 

@@ -226,6 +226,7 @@ public struct ModesSettingsTab: View {
         .frame(width: 820, height: 620)
         .environment(\.dynamicTypeSize, .accessibility3)
         .environment(\.modesReduceMotionPreview, true)
+        .environment(\.settingsReduceTransparencyPreview, true)
         .preferredColorScheme(.dark)
 }
 
