@@ -12,6 +12,9 @@ enum SettingsChromeLayoutPolicy {
     }
 }
 
+/// Owns the single vertical scroll surface for collection, status, analytics,
+/// and rich-editor pages that are intentionally outside the native settings
+/// `Form` contract. Do not embed a page `Form` inside this container.
 public struct SettingsScrollableContent<Content: View>: View {
     private let spacing: CGFloat
     private let content: Content

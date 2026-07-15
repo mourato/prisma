@@ -24,6 +24,8 @@
 
 ## Status
 
+DONE — implemented on `refactor/082-retire-settings-form-islands`; the transitional primitive was removed, retained specialized surfaces were audited, and focused tests, preview coverage, lint, build, and Full validation passed.
+
 - **Priority**: P2
 - **Effort**: M
 - **Risk**: HIGH

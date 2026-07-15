@@ -1,5 +1,11 @@
 import SwiftUI
 
+/// Card-backed surface for composed settings content such as collections,
+/// analytics, editors, callouts, and dense status blocks.
+///
+/// Ordinary scalar settings belong in the owning page's native `Form` and
+/// `Section`; use this group only when the content's semantics need a richer
+/// surface than a settings row.
 public struct DSGroup<Content: View, HeaderAccessory: View>: View {
     private let title: String?
     private let icon: String?
