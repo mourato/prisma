@@ -111,11 +111,15 @@ public struct MeetingSettingsTab: View {
 
     private var mainPage: some View {
         SettingsFormPage {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 SettingsFormSectionHeader(title: "settings.section.meetings".localized, icon: "person.2.fill")
                 Text("settings.meetings.description".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                SettingsCapabilityHeaderToggle(
+                    titleKey: "settings.capabilities.meeting_transcription",
+                    isOn: $meetingViewModel.settings.isMeetingTranscriptionEnabled,
+                )
             }
         } content: {
             ShortcutSettingsSection(

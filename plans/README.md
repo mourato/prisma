@@ -69,7 +69,7 @@ reason) | `REJECTED` (with a one-line rationale).
 | [094](094-flatten-meetings-into-single-form-page.md) | Flatten Meetings into a single Form page | P1 | L | 093 | DONE |
 | [095](095-flatten-system-settings-onto-general.md) | Flatten System settings hierarchy onto General | P1 | L | 093 | DONE |
 | [096](096-flatten-activity-drilldowns-to-sheets.md) | Flatten Activity drill-downs to sheets; localize History chrome | P1 | L | 093 | DONE |
-| [097](097-retire-settings-toolbar-navigation-chrome.md) | Retire Settings toolbar back/forward navigation chrome | P1 | M | 094, 095, 096 | TODO |
+| [097](097-retire-settings-toolbar-navigation-chrome.md) | Retire Settings toolbar back/forward navigation chrome | P1 | M | 094, 095, 096 | DONE |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
@@ -195,6 +195,9 @@ options verbatim for searchability.
   conversation dismiss move off the global toolbar.
 - 097 removes back/forward chrome and relocates capability toggles onto their
   pages. Do not start 097 until 094–096 preconditions pass.
+- **B2 sequence (093–097) is complete** — Settings navigation flatten ships
+  expandable disclosure, inline System/Meetings content, Activity sheets, and
+  title-only toolbar chrome.
 
 ## Findings considered and rejected
 

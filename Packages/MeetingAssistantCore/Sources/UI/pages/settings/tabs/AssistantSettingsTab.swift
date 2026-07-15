@@ -28,11 +28,15 @@ public struct AssistantSettingsTab: View {
 
     public var body: some View {
         SettingsFormPage {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 SettingsFormSectionHeader(title: "settings.section.assistant".localized, icon: "sparkles")
                 Text("settings.assistant.header_desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                SettingsCapabilityHeaderToggle(
+                    titleKey: "settings.capabilities.assistant",
+                    isOn: $settings.isAssistantEnabled,
+                )
             }
         } content: {
             assistantControlsSection

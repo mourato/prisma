@@ -64,6 +64,8 @@ is behavioral inspiration only — do not copy GPL code.
   destination remains.
 - Global Settings toolbar back/forward is retired after plan 097; use local back,
   sheets, or expandable disclosure instead.
+- Capability toggles for Meetings, Assistant, and Integrations live in each tab's
+  Form header via `SettingsCapabilityHeaderToggle`, not window toolbar accessories.
 
 Use native picker anatomy for ordinary Settings values:
 

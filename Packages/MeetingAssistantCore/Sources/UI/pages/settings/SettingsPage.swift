@@ -36,7 +36,6 @@ public struct SettingsView: View {
     @State private var systemRoute: SystemSettingsRoute = .root
     @State private var columnVisibility: NavigationSplitViewVisibility
     @State private var navigationService = NavigationService.shared
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @MainActor
     public init() {
@@ -68,11 +67,6 @@ public struct SettingsView: View {
         .navigationSplitViewStyle(.balanced)
         .navigationTitle(settingsNavigationTitle)
         .toolbarTitleDisplayMode(.inline)
-        .toolbar {
-            if usesToolbarChrome {
-                settingsToolbarContent
-            }
-        }
         .modifier(SettingsToolbarBackgroundModifier(usesToolbarChrome: usesToolbarChrome))
         .background(SettingsWindowConfigurator())
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
@@ -143,43 +137,15 @@ private extension SettingsView {
         usesToolbarChrome ? selectedSection.title : ""
     }
 
-    @ToolbarContentBuilder
-    private var settingsToolbarContent: some ToolbarContent {
-        if #available(macOS 26.0, *) {
-            ToolbarItem(placement: .navigation) {
-                toolbarNavigationControlGroup
-            }
-
-            if showsCapabilityToolbarAccessory {
-                ToolbarItem(placement: .automatic) {
-                    capabilityToolbarAccessory
-                }
-            }
-        }
-    }
-
     @ViewBuilder
     private var detailNavigationBar: some View {
-        if #available(macOS 26.0, *), showsEmbeddedTahoeChrome {
-            tahoeDetailNavigationBar
-        } else if shouldShowLegacyChrome {
+        if shouldShowLegacyChrome {
             legacyDetailNavigationBar
         }
     }
 
     private var showsEmbeddedTahoeChrome: Bool {
-        guard #available(macOS 26.0, *) else {
-            return false
-        }
-
-        switch chromeMode {
-        case .embedded:
-            return true
-        case .automatic:
-            return !usesToolbarChrome
-        case .toolbar, .none:
-            return false
-        }
+        false
     }
 
     private var shouldShowLegacyChrome: Bool {
@@ -191,60 +157,10 @@ private extension SettingsView {
         }
     }
 
-    @available(macOS 26.0, *)
-    private var tahoeDetailNavigationBar: some View {
-        HStack {
-            toolbarNavigationControlGroup
-            if showsCapabilityToolbarAccessory {
-                Spacer()
-                capabilityToolbarAccessory
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.top, 6)
-        .padding(.bottom, 6)
-    }
-
-    @available(macOS 26.0, *)
-    private var toolbarNavigationControlGroup: some View {
-        ControlGroup {
-            Button(action: navigateBack) {
-                Label("transcription.qa.navigation.back".localized, systemImage: "chevron.left")
-            }
-            .help("transcription.qa.navigation.back".localized)
-            .accessibilityLabel("transcription.qa.navigation.back".localized)
-            .disabled(!canNavigateBack)
-
-            Button(action: navigateForward) {
-                Label("transcription.qa.navigation.forward".localized, systemImage: "chevron.right")
-            }
-            .help("transcription.qa.navigation.forward".localized)
-            .accessibilityLabel("transcription.qa.navigation.forward".localized)
-            .disabled(!canNavigateForward)
-        }
-        .controlGroupStyle(.navigation)
-    }
-
     private var legacyDetailNavigationBar: some View {
         HStack(spacing: 12) {
             if !navigationService.isSettingsSidebarVisible {
                 legacySidebarToggleButton
-            }
-
-            HStack(spacing: 6) {
-                legacyNavigationHistoryButton(
-                    systemImage: "chevron.left",
-                    helpKey: "transcription.qa.navigation.back",
-                    isEnabled: canNavigateBack,
-                    action: navigateBack,
-                )
-
-                legacyNavigationHistoryButton(
-                    systemImage: "chevron.right",
-                    helpKey: "transcription.qa.navigation.forward",
-                    isEnabled: canNavigateForward,
-                    action: navigateForward,
-                )
             }
 
             Text(selectedSection.title)
@@ -252,10 +168,6 @@ private extension SettingsView {
                 .lineLimit(1)
 
             Spacer(minLength: 0)
-
-            if showsCapabilityToolbarAccessory {
-                capabilityToolbarAccessory
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -265,51 +177,6 @@ private extension SettingsView {
         .overlay(alignment: .bottom) {
             Divider()
         }
-    }
-
-    private var showsCapabilityToolbarAccessory: Bool {
-        selectedSection == .meetings || selectedSection == .assistant || selectedSection == .integrations
-    }
-
-    @ViewBuilder
-    private var capabilityToolbarAccessory: some View {
-        switch selectedSection {
-        case .meetings:
-            makeCapabilityToolbarToggle(
-                title: "settings.capabilities.meeting_transcription".localized,
-                isOn: Binding(
-                    get: { settingsStore.isMeetingTranscriptionEnabled },
-                    set: { settingsStore.isMeetingTranscriptionEnabled = $0 },
-                ),
-            )
-        case .assistant:
-            makeCapabilityToolbarToggle(
-                title: "settings.capabilities.assistant".localized,
-                isOn: Binding(
-                    get: { settingsStore.isAssistantEnabled },
-                    set: { settingsStore.isAssistantEnabled = $0 },
-                ),
-            )
-        case .integrations:
-            makeCapabilityToolbarToggle(
-                title: "settings.capabilities.assistant_integrations".localized,
-                isOn: Binding(
-                    get: { settingsStore.isAssistantIntegrationsEnabled },
-                    set: { settingsStore.isAssistantIntegrationsEnabled = $0 },
-                ),
-            )
-        default:
-            EmptyView()
-        }
-    }
-
-    private func makeCapabilityToolbarToggle(title: String, isOn: Binding<Bool>) -> some View {
-        Toggle(title, isOn: isOn.animated(using: SettingsMotion.sectionAnimation))
-            .labelsHidden()
-            .toggleStyle(.switch)
-            .controlSize(.small)
-            .accessibilityLabel(title)
-            .animation(SettingsMotion.sectionAnimation(reduceMotion: reduceMotion), value: isOn.wrappedValue)
     }
 
     private var legacySidebarToggleButton: some View {
@@ -323,47 +190,6 @@ private extension SettingsView {
         .controlSize(.small)
         .help(sidebarToggleHelpText)
         .accessibilityLabel(sidebarToggleHelpText)
-    }
-
-    private func legacyNavigationHistoryButton(
-        systemImage: String,
-        helpKey: String,
-        isEnabled: Bool,
-        action: @escaping () -> Void,
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 13, weight: .semibold))
-                .frame(width: 26, height: 24)
-                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .foregroundStyle(isEnabled ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.secondary.opacity(0.75)))
-        .opacity(isEnabled ? 1 : 0.65)
-        .help(helpKey.localized)
-        .accessibilityLabel(helpKey.localized)
-        .disabled(!isEnabled)
-    }
-
-    private func navigateBack() {
-        switch selectedSection {
-        case .activity:
-            activityNavigationState.goBack()
-        case .system where systemRoute != .root:
-            systemRoute = .root
-        default:
-            break
-        }
-    }
-
-    private func navigateForward() {
-        switch selectedSection {
-        case .activity:
-            activityNavigationState.goForward()
-        default:
-            break
-        }
     }
 
     private func selectDestination(_ destination: SettingsDestination) {
@@ -404,26 +230,6 @@ private extension SettingsView {
             ? "commands.view.hide_sidebar"
             : "commands.view.show_sidebar"
         return key.localized
-    }
-
-    private var canNavigateBack: Bool {
-        switch selectedSection {
-        case .activity:
-            activityNavigationState.canGoBack
-        case .system:
-            systemRoute != .root
-        default:
-            false
-        }
-    }
-
-    private var canNavigateForward: Bool {
-        switch selectedSection {
-        case .activity:
-            activityNavigationState.canGoForward
-        default:
-            false
-        }
     }
 
     @MainActor
@@ -491,34 +297,14 @@ private struct SettingsToolbarBackgroundModifier: ViewModifier {
 private struct SettingsToolbarChromePreview: View {
     var body: some View {
         HStack(spacing: 8) {
-            previewNavigationControls
-            previewSectionTitle
+            Text("settings.section.activity".localized)
+                .font(.system(size: 13, weight: .semibold))
+                .lineLimit(1)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(width: 900, alignment: .leading)
-    }
-
-    private var previewNavigationControls: some View {
-        HStack(spacing: 2) {
-            previewNavButton("chevron.left")
-            previewNavButton("chevron.right")
-        }
-    }
-
-    private func previewNavButton(_ systemName: String) -> some View {
-        Image(systemName: systemName)
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.secondary)
-            .frame(width: 28, height: 28)
-    }
-
-    private var previewSectionTitle: some View {
-        Label("settings.section.metrics".localized, systemImage: "chart.pie.fill")
-            .font(.system(size: 13, weight: .semibold))
-            .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: false)
     }
 }
 

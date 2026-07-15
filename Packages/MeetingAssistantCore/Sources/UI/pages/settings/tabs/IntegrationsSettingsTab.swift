@@ -22,11 +22,15 @@ public struct IntegrationsSettingsTab: View {
 
     public var body: some View {
         SettingsFormPage {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 SettingsFormSectionHeader(title: "settings.section.integrations".localized, icon: "puzzlepiece.extension")
                 Text("settings.integrations.header_desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                SettingsCapabilityHeaderToggle(
+                    titleKey: "settings.capabilities.assistant_integrations",
+                    isOn: $settings.isAssistantIntegrationsEnabled,
+                )
             }
         } content: {
             integrationsSection
