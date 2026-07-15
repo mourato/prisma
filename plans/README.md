@@ -2,7 +2,7 @@
 
 This is the active plan ledger. Historical audits, completed plan rows, review
 notes, and rejected options remain in the [2026-07-12 ledger archive](archive/2026-07-12-plan-ledger-history.md).
-Plan files are never renumbered; the next available plan number is 087.
+Plan files are never renumbered; the next available plan number is 088.
 
 ## Execution rules
 
@@ -59,6 +59,7 @@ reason) | `REJECTED` (with a one-line rationale).
 | [084](084-slim-always-on-agent-guidance-and-validation-loop.md) | Slim always-on guidance, collapse skill routing, and unify the agent validation loop | P1 | M | - | DONE |
 | [085](085-finish-progressive-disclosure-and-prune-skill-bulk.md) | Finish progressive disclosure and prune hot-path skill reference bulk | P1 | L | 084 | DONE |
 | [086](086-auto-install-hooks-and-promote-implementer-fast.md) | Auto-install Git hooks via setup and promote allowlisted implementer-fast | P1 | M | 084 | DONE |
+| [087](087-fix-pre-push-reliability-and-agent-ops-followups.md) | Fix pre-push reliability (Rust staging + reuse) and finish agent-ops follow-ups | P1 | L | 084, 085, 086 | DONE |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
@@ -138,6 +139,13 @@ options verbatim for searchability.
   Scripts change ⇒ Full lane.
 - 084 → 085 → (086 can proceed after 084 in parallel with 085 only if two writers
   are forbidden by policy; default serial order is 084, then 085, then 086).
+- 087 follows 084–086 review + the failed pre-push of `3a1dfa3b..9e006e07`.
+  It must fix Rust dylib discovery under ambient `CARGO_TARGET_DIR`, stop false
+  `externalInputsMismatch` from gitignored `Package.resolved`, restore PASS
+  reuse on push, finish pruning linked generic macos refs, and extend hooks
+  fixtures. Full lane; do not normalize `MA_RUST_AUDIO_KERNELS_BUILD=off`.
+  Plan 086's `MA_RUST_AUDIO_KERNELS_BUILD=off` push workaround is superseded by
+  crate-local Cargo target pinning in 087.
 
 ## Findings considered and rejected
 
@@ -155,3 +163,7 @@ options verbatim for searchability.
   smoke coverage from plan 060 exists; 086 only allowlists `implementer-fast`.
 - Deleting archived macos reference dumps without a dated archive copy is
   rejected; 085 must move unused generics under `.agents/docs/archive/`.
+- Making `SKIP_TESTS=1` or default `MA_RUST_AUDIO_KERNELS_BUILD=off` the normal
+  pre-push path is rejected; 087 must fix staging/reuse instead.
+- Weakening Full escalation for real `scripts/*` / Makefile changes to speed
+  pushes is rejected; reuse and false-mismatch fixes are the lever.
