@@ -387,9 +387,15 @@ else
     RESULT_LINE="Tests failed"
 fi
 
-COMPILER_ERROR_COUNT="$(ma_agent_error_count "${LOG_PATH}")"
-TEST_FAILURE_COUNT="$(grep -Eic "Test Case .* failed|Test Suite .* failed" "${LOG_PATH}" || true)"
-ERROR_COUNT=$((COMPILER_ERROR_COUNT + TEST_FAILURE_COUNT))
+ERROR_COUNT=0
+if [ "${EXIT_CODE}" -ne 0 ]; then
+    COMPILER_ERROR_COUNT="$(ma_agent_error_count "${LOG_PATH}")"
+    TEST_FAILURE_COUNT="$(grep -Eic "Test Case .* failed|Test Suite .* failed" "${LOG_PATH}" || true)"
+    ERROR_COUNT=$((COMPILER_ERROR_COUNT + TEST_FAILURE_COUNT))
+    if [ "${ERROR_COUNT}" -eq 0 ]; then
+        ERROR_COUNT=1
+    fi
+fi
 
 if [ "${AGENT_MODE}" -eq 1 ]; then
     STATUS="FAIL"

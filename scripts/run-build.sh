@@ -144,7 +144,13 @@ if [ "${AGENT_MODE}" -eq 1 ]; then
 fi
 DURATION=$((END_TIME - START_TIME))
 
-ERROR_COUNT="$(ma_agent_error_count "${LOG_PATH}")"
+ERROR_COUNT=0
+if [ "${EXIT_CODE}" -ne 0 ]; then
+    ERROR_COUNT="$(ma_agent_error_count "${LOG_PATH}")"
+    if [ "${ERROR_COUNT}" -eq 0 ]; then
+        ERROR_COUNT=1
+    fi
+fi
 SUMMARY="Build ${CONFIGURATION} failed"
 if [ "${EXIT_CODE}" -eq 0 ]; then
     SUMMARY="Build ${CONFIGURATION} succeeded"

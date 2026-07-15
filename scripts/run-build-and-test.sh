@@ -129,3 +129,11 @@ run_step "Build" "0" "MA_AGENT_MODE=1 ./scripts/run-build.sh --configuration Deb
 run_step "Test" "50" "${TEST_CMD}" "${TEST_OUT}" "${TEST_PROGRESS_LOG}" "${TEST_PROGRESS_INTERVAL_SEC}" || exit $?
 
 print_step "100" "Build + Test completed"
+
+# Propagate child evidence so validate-agent can aggregate this wrapper.
+for step_output in "${BUILD_OUT}" "${TEST_OUT}"; do
+    sed -n 's/^AGENT_RESULT_JSON=//p' "${step_output}" | while IFS= read -r result_path; do
+        [ -f "${result_path}" ] || continue
+        printf 'AGENT_RESULT_JSON=%s\n' "${result_path}"
+    done
+done
