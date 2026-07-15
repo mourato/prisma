@@ -12,6 +12,17 @@ enum SettingsMotion {
     static func sectionAnimation(reduceMotion: Bool) -> Animation? {
         AppleMotion.animation(reduceMotion: reduceMotion, kind: .default)
     }
+
+    static func sidePanelAnimation(reduceMotion: Bool) -> Animation {
+        reduceMotion ? .easeOut(duration: 0.12) : .smooth(duration: 0.32)
+    }
+
+    static func sidePanelTransition(reduceMotion: Bool) -> AnyTransition {
+        if reduceMotion {
+            return .opacity
+        }
+        return .move(edge: .trailing).combined(with: .opacity)
+    }
 }
 
 extension Binding {

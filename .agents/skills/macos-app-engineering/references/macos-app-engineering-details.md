@@ -106,10 +106,20 @@ Use drill-down rows consistently:
 
 Use native picker anatomy for ordinary Settings values:
 
-- Prefer `DSMenuPicker` or direct `Picker` with `.pickerStyle(.menu)`.
+- Inside a SwiftUI `Form`, prefer a direct native `Picker` with a visible label.
+  Keep the picker in the `Form` row so macOS owns the label/value alignment,
+  menu affordance, keyboard behavior, VoiceOver semantics, and Dynamic Type
+  adaptation.
+- Apply `.pickerStyle(.menu)` when the intended control is a menu and the
+  surrounding `Form` does not already establish that style.
+- Do not use `.labelsHidden()` for ordinary `Form` settings rows; hidden labels
+  remove the row's semantic title and produce a compact control instead.
+- `DSMenuPicker` remains valid outside `Form` for compact filters, dashboards,
+  fixed-width action rows, and other surfaces where a full native settings row
+  does not fit. It must not be introduced as a substitute for a native
+  `Form` picker.
 - Do not tint neutral menu controls with `.secondary`; it reads as disabled.
 - Keep accent color scoped to primary actions, selection, status, and intentional highlights.
-- Keep custom field-like menu controls local to dense dashboard/filter surfaces when native pickers do not fit.
 
 Use boolean controls according to save semantics:
 

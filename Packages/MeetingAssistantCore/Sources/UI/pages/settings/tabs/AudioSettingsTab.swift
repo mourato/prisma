@@ -64,24 +64,17 @@ public struct AudioSettingsTab: View {
                 )
             }
 
-            SettingsListGroup("settings.general.audio_format".localized, icon: "waveform.path") {
-                HStack {
-                    Text("settings.general.audio_format".localized)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-
-                    DSMenuPicker(selection: $viewModel.audioFormat) {
-                        ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
-                            Text(format.displayName).tag(format)
-                        }
+            SettingsFormGroup("settings.general.audio_format".localized, icon: "waveform.path") {
+                Picker("settings.general.audio_format".localized, selection: $viewModel.audioFormat) {
+                    ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
+                        Text(format.displayName).tag(format)
                     }
                 }
+                .pickerStyle(.menu)
             }
 
             // Audio Devices
-            DSGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
+            SettingsFormGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
                 VStack(alignment: .leading, spacing: 16) {
                     audioInputModePicker
 
@@ -95,21 +88,15 @@ public struct AudioSettingsTab: View {
 
                     Divider()
 
-                    HStack {
-                        SettingsTitleWithPopover(
-                            title: "settings.general.recording_media_handling".localized,
-                            helperMessage: "settings.general.recording_media_handling_desc".localized,
-                        )
-
-                        Spacer()
-
-                        DSMenuPicker(selection: $viewModel.recordingMediaHandlingMode, width: AppDesignSystem.Layout.smallPickerWidth) {
-                            ForEach(AppSettingsStore.RecordingMediaHandlingMode.allCases, id: \.self) { mode in
-                                Text(mode.displayNameKey.localized)
-                                    .tag(mode)
-                            }
+                    Picker(
+                        "settings.general.recording_media_handling".localized,
+                        selection: $viewModel.recordingMediaHandlingMode,
+                    ) {
+                        ForEach(AppSettingsStore.RecordingMediaHandlingMode.allCases, id: \.self) { mode in
+                            Text(mode.displayNameKey.localized).tag(mode)
                         }
                     }
+                    .pickerStyle(.menu)
 
                     if viewModel.usesDuckingControls {
                         VStack(alignment: .leading, spacing: 8) {
@@ -178,7 +165,7 @@ public struct AudioSettingsTab: View {
             }
 
             // Sound Feedback
-            SettingsListGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
+            SettingsFormGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
                 DSToggleRow(
                     "settings.general.sound_feedback.enabled".localized,
                     description: "settings.general.sound_feedback.enabled_desc".localized,
@@ -208,11 +195,12 @@ public struct AudioSettingsTab: View {
 
             Spacer()
 
-            DSMenuPicker(selection: selection, width: AppDesignSystem.Layout.smallPickerWidth) {
+            Picker(title, selection: selection) {
                 ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
                     Text(sound.displayName).tag(sound)
                 }
             }
+            .pickerStyle(.menu)
 
             Button {
                 previewSound(selection.wrappedValue)
