@@ -343,13 +343,16 @@ PY
 }
 
 select_lane() {
-    if [ "${LANE}" = "auto" ]; then
-        load_auto_decision
-    else
-        SELECTED_LANE="${LANE}"
-        DECISION_STRATEGY="requested"
-        printf 'requested lane: %s\n' "${LANE}" > "${REASONS_FILE}"
-    fi
+    case "${LANE}" in
+        auto|fast)
+            load_auto_decision
+            ;;
+        full)
+            SELECTED_LANE="full"
+            DECISION_STRATEGY="requested"
+            printf 'requested lane: %s\n' "${LANE}" > "${REASONS_FILE}"
+            ;;
+    esac
 }
 
 result_is_valid() {

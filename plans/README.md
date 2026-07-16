@@ -75,7 +75,7 @@ reason) | `REJECTED` (with a one-line rationale).
 | [100](100-pre-commit-format-option-c-pre-push.md) | Pre-commit staged format, agent lint/test ladder, Option-C pre-push | P1 | L | 087, 089 | DONE |
 | [101](101-remediate-daily-review-findings.md) | Remediate daily review findings across hooks and Modes drawer | P1 | M | 098, 099, 100 | DONE |
 | [102](102-close-fast-validation-gate.md) | Make Fast and guidance pushes pass a real technical gate | P0 | M | - | DONE |
-| [103](103-align-auto-lane-with-risk-policy.md) | Make auto lane conservative for product Swift changes | P0 | M | 102 | TODO |
+| [103](103-align-auto-lane-with-risk-policy.md) | Make auto lane conservative for product Swift changes | P0 | M | 102 | DONE |
 | [104](104-centralize-agent-routing-ownership.md) | Make `agent-ops` the single owner of delegation and profile selection | P1 | S | 103 | TODO |
 | [105](105-prune-agent-operational-context.md) | Prune dead agent context and make guidance drift fail closed | P1 | L | 104 | TODO |
 

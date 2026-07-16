@@ -77,6 +77,7 @@ make guidance-check
 - Scripts emit deterministic `AGENT_*` summary lines; `*.result.json` uses schema version 2 with metadata only — no prompts, transcripts, or secrets.
 - `make workflow-test` runs deterministic fixtures without Xcode.
 - `make validate-agent` is the canonical final lane runner with content-addressed PASS fingerprints; fresh aggregates and cached reuse both fail closed on invalid schema-v2 children or fingerprint mismatch. Use `--no-reuse` after flaky behavior.
+- Requested Fast consumes the same scope decision as auto and reports the strongest selected lane; it cannot under-report a child Full gate.
 
 ### Agent delivery sequence
 

@@ -24,6 +24,12 @@ once before push when behavior changed. Treat `validate-agent` as the remembered
 technical gate; it proves checks, not merge approval. Required review remains
 separate. `scope-check` is an internal engine — do not run both for safety.
 
+Automatic classification treats Swift below `App/` and
+`Packages/MeetingAssistantCore/Sources/` as Full. Swift below
+`Packages/MeetingAssistantCore/Tests/` is test-only and may remain Fast when it
+has a trustworthy mapping. This path rule intentionally does not infer whether
+a production diff is semantic or a non-functional refactor.
+
 ## Primary Build/Test Commands
 
 ### Quick start

@@ -52,7 +52,7 @@ new_fixture() {
         'MeetingAssistant.xcworkspace/xcshareddata/swiftpm/Package.resolved' > "${fixture}/.gitignore"
     printf '%s\n' \
         'scope-check-agent:' \
-        $'\t@if [ "$${WORKFLOW_FAIL_IF_PATH_PRESENT:-0}" = "1" ] && [ -e HEAD_ONLY_FAIL.swift ]; then echo "HEAD_REF marker present" >&2; exit 77; fi' \
+        $'\t@if [ "$${WORKFLOW_FAIL_IF_PATH_PRESENT:-0}" = "1" ] && [ -e Packages/MeetingAssistantCore/Tests/MeetingAssistantCoreTests/HeadOnlyTests.swift ]; then echo "HEAD_REF marker present" >&2; exit 77; fi' \
         $'\t@if [ "$${WORKFLOW_USE_REAL_SCOPE_CHECK:-0}" = "1" ]; then MA_AGENT_MODE=1 ./scripts/scope-check.sh --agent $(ARGS); else ./scripts/tests/workflow-fixture-step.sh scope-check; fi' \
         'validate-agent:' \
         $'\t@./scripts/validate-agent.sh $(ARGS)' \
@@ -110,11 +110,11 @@ test_committed_tree_isolated_and_invalid_flags() {
 
     fixture="$(new_fixture)"
     base="$(git -C "${fixture}" rev-parse HEAD)"
-    printf '%s\n' 'must exist in committed head' > "${fixture}/HEAD_ONLY_FAIL.swift"
-    git -C "${fixture}" add HEAD_ONLY_FAIL.swift
+    printf '%s\n' 'must exist in committed head' > "${fixture}/Packages/MeetingAssistantCore/Tests/MeetingAssistantCoreTests/HeadOnlyTests.swift"
+    git -C "${fixture}" add Packages/MeetingAssistantCore/Tests/MeetingAssistantCoreTests/HeadOnlyTests.swift
     git -C "${fixture}" commit -qm "head-only marker"
     head="$(git -C "${fixture}" rev-parse HEAD)"
-    rm -f "${fixture}/HEAD_ONLY_FAIL.swift"
+    rm -f "${fixture}/Packages/MeetingAssistantCore/Tests/MeetingAssistantCoreTests/HeadOnlyTests.swift"
 
     set +e
     output="$(cd "${fixture}" && WORKFLOW_FAIL_IF_PATH_PRESENT=1 MA_AGENT_LOG_DIR="${TMP_ROOT}/head-isolation" ./scripts/validate-agent.sh --lane fast --committed --base "${base}" --head "${head}" --no-reuse --agent 2>&1)"
@@ -718,14 +718,16 @@ test_source_file_churn() {
 
     fixture="$(new_fixture)"
     base="$(git -C "${fixture}" rev-parse HEAD)"
+    mkdir -p "${fixture}/App/Churn"
     for index in $(seq 1 9); do
-        printf '%s\n' "source-${index}" > "${fixture}/Source${index}.swift"
+        printf '%s\n' "source-${index}" > "${fixture}/App/Churn/Source${index}.swift"
     done
     git -C "${fixture}" add .
     git -C "${fixture}" commit -qm "source churn"
     output="$(scope_output "${fixture}" "${TMP_ROOT}/source-churn" --base "${base}")"
-    assert_contains "${output}" "Source files changed: 9"
-    assert_contains "${output}" "High source-file churn detected (9 files > 8)"
+    assert_contains "${output}" "Swift files changed: 9"
+    assert_contains "${output}" "Product source files changed: 9"
+    assert_contains "${output}" "High product source-file churn detected (9 files > 8)"
 }
 
 test_worktree_layers_are_unique() {
@@ -743,7 +745,8 @@ test_worktree_layers_are_unique() {
     printf '%s\n' 'untracked change' > "${fixture}/untracked.swift"
     output="$(scope_output "${fixture}" "${TMP_ROOT}/layers")"
     assert_contains "${output}" "Changed files: 3"
-    assert_contains "${output}" "Source files changed: 3"
+    assert_contains "${output}" "Swift files changed: 3"
+    assert_contains "${output}" "Product source files changed: 0"
 }
 
 test_repeated_file_targets_and_invalid_base() {
@@ -939,6 +942,7 @@ test_pre_commit_staged_format
 test_pre_push_fast_failure_and_guidance_gate
 test_pre_push_rejects_invalid_fresh_results
 test_pre_push_protocol
+source "${SCRIPT_ROOT}/scripts/tests/scope-classification-test.sh"
 "${SCRIPT_ROOT}/scripts/tests/hooks-setup-test.sh"
 "${SCRIPT_ROOT}/scripts/tests/rust-audio-staging-test.sh"
 "${SCRIPT_ROOT}/scripts/tests/preview-check-test.sh"

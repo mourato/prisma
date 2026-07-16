@@ -29,6 +29,8 @@ delivery, review gates, or evidence reporting.
 | Medium | One-subsystem feature/bugfix, one-package API, UI state logic | Full |
 | High | Audio, concurrency, persistence, security, infrastructure, broad or large delta | Full |
 
+Automatic committed-range classification is conservative: production Swift is Full because scripts cannot prove a semantic Low/non-functional change.
+
 When uncertain, choose the higher lane. During iteration use targeted tests,
 `make build-agent`, and the smallest changed-path check. Final technical
 evidence is owned by `make validate-agent` (usually via the pre-push hook):
@@ -59,7 +61,7 @@ evidence proves checks only; required review remains separate.
 Vocabulary:
 
 - **Targeted tests** = per-file/`--test` during the slice
-- **Affected-module / auto Fast** = `validate-agent --lane auto` Fast path (scope-check)
+- **Auto Fast** = scoped test-only, guidance, localization, or non-code validation
 - **Full suite** = Full lane `build-test` (Xcode), not merely `make test-full`
 
 Default for Low/Fast (including guidance-only and allowlisted `implementer-fast`):

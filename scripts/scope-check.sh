@@ -336,6 +336,18 @@ should_treat_as_high_risk_path() {
     esac
 }
 
+is_product_swift_path() {
+    local file_path="$1"
+    case "${file_path}" in
+        App/*.swift|Packages/MeetingAssistantCore/Sources/*.swift)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 map_tokens_from_changed_file() {
     local file_path="$1"
     local token_file="$2"
@@ -459,7 +471,8 @@ main() {
     local full_reasons_file
     local targeted_tests_file
     local modules_file
-    local source_files_changed=0
+    local swift_files_changed=0
+    local product_source_files_changed=0
     local added_lines=0
     local module_count=0
     local targeted_count=0
@@ -508,9 +521,14 @@ main() {
 
         case "${file_path}" in
             *.swift)
-                source_files_changed=$((source_files_changed + 1))
+                swift_files_changed=$((swift_files_changed + 1))
                 ;;
         esac
+
+        if is_product_swift_path "${file_path}"; then
+            product_source_files_changed=$((product_source_files_changed + 1))
+            append_line_once "Production Swift changed; auto lane is conservative because semantic Low risk cannot be proven" "${full_reasons_file}"
+        fi
 
         if should_treat_as_infra_trigger "${file_path}"; then
             append_line_once "Build/release/test infrastructure changed (${file_path})" "${full_reasons_file}"
@@ -538,8 +556,8 @@ main() {
         append_line_once "Large delta detected (${added_lines} added lines > 300)" "${full_reasons_file}"
     fi
 
-    if [ "${source_files_changed}" -gt 8 ]; then
-        append_line_once "High source-file churn detected (${source_files_changed} files > 8)" "${full_reasons_file}"
+    if [ "${product_source_files_changed}" -gt 8 ]; then
+        append_line_once "High product source-file churn detected (${product_source_files_changed} files > 8)" "${full_reasons_file}"
     fi
 
     if [ "${guidance_relevant}" -eq 1 ]; then
@@ -548,24 +566,30 @@ main() {
         echo "  Guidance passed."
     fi
 
-    if [ "${code_relevant}" -eq 0 ]; then
-        echo "Only non-code files changed. Skipping scoped build/tests."
-        return 0
-    fi
-
-    build_targeted_test_candidates "${changed_file_list}" "${targeted_tests_file}" "${full_reasons_file}"
-    targeted_count="$(sed '/^$/d' "${targeted_tests_file}" | wc -l | tr -d ' ')"
-
-    if [ "${targeted_count}" -gt "${MAX_TARGETED}" ]; then
-        should_run_intermediate=1
-    fi
-
     if [ "${FORCE_FULL}" -eq 1 ]; then
         append_line_once "Forced full gate by flag (--force-full)" "${full_reasons_file}"
     fi
 
     if [ -s "${full_reasons_file}" ]; then
         should_run_full=1
+    fi
+
+    if [ "${code_relevant}" -eq 0 ] && [ "${should_run_full}" -eq 0 ]; then
+        echo "Only non-code files changed. Skipping scoped build/tests."
+        return 0
+    fi
+
+    if [ "${should_run_full}" -eq 0 ]; then
+        build_targeted_test_candidates "${changed_file_list}" "${targeted_tests_file}" "${full_reasons_file}"
+        targeted_count="$(sed '/^$/d' "${targeted_tests_file}" | wc -l | tr -d ' ')"
+
+        if [ "${targeted_count}" -gt "${MAX_TARGETED}" ]; then
+            should_run_intermediate=1
+        fi
+
+        if [ -s "${full_reasons_file}" ]; then
+            should_run_full=1
+        fi
     fi
 
     FULL_RISK_REASONS=()
@@ -588,7 +612,8 @@ main() {
 
     echo "Scoped validation plan:"
     echo "- Changed files: $(wc -l < "${changed_file_list}" | tr -d ' ')"
-    echo "- Source files changed: ${source_files_changed}"
+    echo "- Swift files changed: ${swift_files_changed}"
+    echo "- Product source files changed: ${product_source_files_changed}"
     echo "- Added lines (${DIFF_RANGE_LABEL}): ${added_lines}"
     echo "- Candidate targeted tests: ${targeted_count}"
 
