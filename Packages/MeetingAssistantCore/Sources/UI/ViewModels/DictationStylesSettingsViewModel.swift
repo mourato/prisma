@@ -94,6 +94,8 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
                 isDefault: style.isDefault,
             )
         } else {
+            let defaultStyle = settings.dictationStyles.first(where: \.isDefault)
+                ?? settings.currentDefaultDictationStyle()
             editorDraft = DictationStyleEditorDraft(
                 name: "",
                 iconSymbol: "textformat",
@@ -103,10 +105,10 @@ public final class DictationStylesSettingsViewModel: ObservableObject {
                 replaceBasePrompt: false,
                 outputLanguage: .original,
                 targets: [],
-                contextSourcePolicy: settings.currentDefaultDictationStyle().contextSourcePolicy,
-                enhancementsSelection: settings.enhancementsDictationAISelection,
-                textHandlingPolicy: settings.currentDefaultDictationStyle().textHandlingPolicy,
-                transcriptionConfiguration: settings.currentDefaultDictationStyle().transcriptionConfiguration,
+                contextSourcePolicy: defaultStyle.contextSourcePolicy,
+                enhancementsSelection: defaultStyle.enhancementsSelection,
+                textHandlingPolicy: defaultStyle.textHandlingPolicy,
+                transcriptionConfiguration: defaultStyle.transcriptionConfiguration,
                 isDefault: false,
             )
         }

@@ -49,6 +49,74 @@ final class DictationStylesSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.editorDraft?.targets, persistedStyle.targets)
     }
 
+    func testPrepareEditorForCreateInheritsPersistedDefaultModeConfiguration() throws {
+        let textPolicy = DictationTextHandlingPolicy(
+            autoCopyToClipboard: false,
+            autoPasteToActiveApp: true,
+            smartSpacingAndCapitalization: false,
+            smartParagraphs: false,
+        )
+        let transcription = DictationTranscriptionConfiguration(
+            selection: TranscriptionProviderSelection(provider: .groq, selectedModel: "whisper-large-v3"),
+            inputLanguageCode: "pt-BR",
+        )
+        let enhancements = EnhancementsAISelection(provider: .openai, selectedModel: "gpt-4o-mini")
+        var styles = settings.dictationStyles
+        let defaultIndex = try XCTUnwrap(styles.firstIndex(where: \.isDefault))
+        styles[defaultIndex] = DictationStyle(
+            id: styles[defaultIndex].id,
+            name: styles[defaultIndex].name,
+            iconSymbol: styles[defaultIndex].iconSymbol,
+            promptInstructions: styles[defaultIndex].promptInstructions,
+            postProcessingEnabled: styles[defaultIndex].postProcessingEnabled,
+            forceMarkdownOutput: styles[defaultIndex].forceMarkdownOutput,
+            replaceBasePrompt: styles[defaultIndex].replaceBasePrompt,
+            outputLanguage: styles[defaultIndex].outputLanguage,
+            targets: [],
+            contextSourcePolicy: styles[defaultIndex].contextSourcePolicy,
+            enhancementsSelection: enhancements,
+            isDefault: true,
+            textHandlingPolicy: textPolicy,
+            transcriptionConfiguration: transcription,
+        )
+        settings.dictationStyles = styles
+        settings.autoCopyTranscriptionToClipboard = true
+        settings.autoPasteTranscriptionToActiveApp = false
+        settings.enhancementsDictationAISelection = EnhancementsAISelection(provider: .anthropic, selectedModel: "claude-sonnet")
+
+        let viewModel = DictationStylesSettingsViewModel(settings: settings)
+        viewModel.prepareEditor(for: nil)
+
+        let draft = try XCTUnwrap(viewModel.editorDraft)
+        XCTAssertEqual(draft.textHandlingPolicy, textPolicy)
+        XCTAssertEqual(draft.transcriptionConfiguration, transcription)
+        XCTAssertEqual(draft.enhancementsSelection, enhancements)
+    }
+
+    func testSaveStylePersistsTextHandlingAndTranscriptionConfiguration() throws {
+        let viewModel = DictationStylesSettingsViewModel(settings: settings)
+        viewModel.prepareEditor(for: nil)
+        var draft = try XCTUnwrap(viewModel.editorDraft)
+        draft.name = "Configured Mode"
+        draft.targets = [.app(bundleIdentifier: "com.apple.Notes")]
+        draft.textHandlingPolicy = DictationTextHandlingPolicy(
+            autoCopyToClipboard: false,
+            autoPasteToActiveApp: true,
+            smartSpacingAndCapitalization: false,
+            smartParagraphs: true,
+        )
+        draft.transcriptionConfiguration = DictationTranscriptionConfiguration(
+            selection: TranscriptionProviderSelection(provider: .elevenLabs, selectedModel: "scribe_v1"),
+            inputLanguageCode: "en",
+        )
+
+        let createdID = viewModel.saveStyle(draft)
+        let saved = try XCTUnwrap(settings.dictationStyles.first(where: { $0.id == createdID }))
+
+        XCTAssertEqual(saved.textHandlingPolicy, draft.textHandlingPolicy)
+        XCTAssertEqual(saved.transcriptionConfiguration, draft.transcriptionConfiguration)
+    }
+
     func testClearEditorDiscardsDraftWithoutPersistingChanges() {
         let viewModel = DictationStylesSettingsViewModel(settings: settings)
         viewModel.prepareEditor(for: nil)
