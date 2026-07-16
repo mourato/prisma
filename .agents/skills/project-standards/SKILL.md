@@ -36,7 +36,7 @@ Guidelines for maintaining consistent project documentation and visibility into 
 
 - **Living Guidance**: Ensure `AGENTS.md` reflects the current state of tools, scripts, and skills.
 - **Skill Template Standard**: Prefer a consistent section order in `SKILL.md`: `Role`, `Scope Boundary`, `When to Use`, domain-specific workflow/guidance, `Verification` when relevant, `Related Skills`, and `References`.
-- **Workflow Ownership Split**: Keep workflow ownership explicit and non-overlapping: `delivery-workflow` owns risk lanes, lifecycle sequencing, validation command mapping, Git mechanics, and delivery evidence; `thermo-nuclear-code-quality-review` owns review findings, severity framing, semaforo output, and strict structural maintainability.
+- **Workflow Ownership Split**: `agent-ops` owns orchestration/profile selection; `delivery-workflow` owns Prisma risk, lanes, commands, and evidence; domain skills own implementation rules; `thermo-nuclear-code-quality-review` owns review findings, severity framing, semaforo output, and strict structural maintainability.
 - **Router Boundaries**: Router skills should route quickly and delegate; they should not duplicate deep implementation rules, merge-gate policy, or review format already owned elsewhere.
 - **Global Skill Overlays**: Global `improve` and `thermo-nuclear-code-quality-review` skills may load project-specific overlays declared by `AGENTS.md`; keep Prisma-only rules in the overlay and keep generic workflow in the global skill.
 - **Reusable Blocks Policy**: Keep the `reuse -> extend -> create` rule synchronized between `AGENTS.md` and affected implementation skills.
@@ -71,7 +71,7 @@ Rules:
 ## 4. Consistency
 
 - **Commit Messages**: Enforce Conventional Commits consistently to ensure a readable history.
-- **Branch Workflow**: Use the single-checkout feature-branch workflow defined in `AGENTS.md`.
+- **Branch Workflow**: Use at most one writer in an explicitly isolated worktree and preserve unrelated worktree changes.
 - **UI Quality Gate**: Run `make preview-check` when UI views are added/changed.
 
 ## 5. Evolution and Ownership

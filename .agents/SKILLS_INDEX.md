@@ -7,6 +7,7 @@ Catalog of agent skills for Prisma. For problem-specific routing, see [Skill Rou
 | Skill | Location | Triggers / When to Use |
 |-------|----------|------------------------|
 | `accessibility-audit` | `.agents/skills/accessibility-audit/` | VoiceOver, keyboard, focus, reduced motion, overlay accessibility |
+| `agent-ops` | `global: ~/.codex/skills/agent-ops/` | Workflow, routing, delegation, planning, effort, validation strategy |
 | `apple-design` | `.agents/skills/apple-design/` | Apple-style motion, springs, materials, typography, reduced motion |
 | `benchmarking` | `.agents/skills/benchmarking/` | VoiceInk, FluidVoice, TypeWhisper references; clone policy |
 | `architecture` | `.agents/skills/architecture/` | Module boundaries, Clean Architecture, dependency injection |

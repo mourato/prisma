@@ -6,11 +6,12 @@ When working on Prisma, multiple skills may be relevant to a task. This guide pr
 
 When uncertain which skill to use, apply this priority order:
 
-1. **`macos-app-engineering`** — canonical macOS UI/app implementation guidance (includes SwiftUI review appendix)
-2. **`delivery-workflow`** — source of truth for risk lane, validation, Git, and delivery evidence
-3. **`apple-design` / `accessibility-audit` / `localization` / `menubar`** — specialist UI escalation when their scope is primary
-4. **`swift-concurrency-expert`** — Swift 6.2 concurrency remediation
-5. **`debugging-diagnostics`** — cross-cutting investigation and diagnostic signal design when the failing subsystem is not yet proven
+1. **Global `agent-ops`** — orchestration and custom-agent profile selection
+2. **`delivery-workflow`** — Prisma risk lane, validation, Git, and delivery evidence
+3. **`macos-app-engineering`** — canonical macOS UI/app implementation guidance (includes SwiftUI review appendix)
+4. **`apple-design` / `accessibility-audit` / `localization` / `menubar`** — specialist UI escalation when their scope is primary
+5. **`swift-concurrency-expert`** — Swift 6.2 concurrency remediation
+6. **`debugging-diagnostics`** — cross-cutting investigation and diagnostic signal design when the failing subsystem is not yet proven
 
 ## External Project Code Lookup Priority
 
@@ -21,27 +22,21 @@ When inspecting code outside this repository, use this source order:
 3. `deepwiki`
 4. Web search
 
-## Workflow Routing
+## Workflow Ownership
 
-| Task shape | Default execution |
-|---|---|
-| Simple search, explanation, or serial edit | Root session only |
-| Bounded diff review | Root session, or one reviewer when an independent review is useful |
-| Broad diagnosis or planning | Root session plus one explorer; add a second only for a distinct independent question |
-| Implementation | Root plan plus one implementer in an isolated worktree; review according to risk |
-| Deterministic Low/Fast change | Allowlisted Low/Fast deterministic work → `implementer-fast` in an isolated worktree; otherwise normal implementer |
-| Medium/High implementation | Normal implementer, specialist skill, and Full lane gates |
-
-Delegation is not a default optimization: it must reduce uncertainty through
-independent workstreams. Do not encode model identifiers here; global Codex
-configuration and custom agent files own model and reasoning-effort choices.
+- Global `agent-ops` owns orchestration and custom-agent selection.
+- `delivery-workflow` owns Prisma risk/lanes, validation commands, Git, and
+  delivery evidence.
+- This guide maps problem domains to project skills, which own implementation
+  rules inside their boundaries.
+- Prisma requires at most one writer in an explicitly isolated worktree.
 
 ## Planning and Review Skills
 
 - Use global `improve` for read-only codebase surveys, prioritized findings,
   roadmap analysis, and self-contained implementation plans.
 - Every plan must declare an `Execution profile`; reclassify it against the
-  live scope before implementation.
+  live scope through `agent-ops` before implementation.
 - Use global `thermo-nuclear-code-quality-review` for strict review findings,
   semaforo severity, and approval framing.
 - Load [`prisma-review-profile.md`](./prisma-review-profile.md) with the global

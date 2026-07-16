@@ -92,15 +92,22 @@ Use a heavier local gate only when needed:
 - `SKIP_LINT=1` / `SKIP_TESTS=1` / `MA_RUST_AUDIO_KERNELS_BUILD=off` are emergency
   bypasses only.
 
-## Delegation and effort policy
+## Agent execution constraints
 
-- Keep simple, serial, and bounded work in the root session. Delegate only broad work with independently verifiable tracks.
-- Start with one read-only explorer when delegation is justified; add children only for distinct questions, and keep at most one writing child in an isolated worktree.
-- **Default to `implementer-fast`** when all hold: Low risk / Fast lane, deterministic fully specified work, isolated git worktree, and scope matches the allowlist below. Otherwise use the normal implementer.
-- **Fast allowlist** (plan 060 measured candidate): docs/comments-only edits; localization key add/remove/symmetry with no behavior change; guidance-only `.agents` / `AGENTS.md` edits; constrained single-module non-functional refactor with an explicit file list.
-- **Refuse / escalate to normal implementer** for Medium/High risk, ambiguous acceptance criteria, public API or behavior changes, exploratory design, multi-skill invention, or plans/users marked Full.
-- **Lean-code remains opt-in and is not a default** (plan 060).
-- Model identifiers and global effort defaults belong to Codex config or custom agent files, not this skill.
+- **Low/Fast eligibility** requires deterministic, fully specified scope.
+- **Fast eligibility allowlist**: docs/comments-only edits; localization key
+  add/remove/symmetry with no behavior change; guidance-only `.agents` /
+  `AGENTS.md` edits; constrained single-module non-functional refactors with an
+  explicit file list.
+- Medium/High risk, ambiguity, public API or behavior changes, exploratory
+  design, multi-skill invention, and plans/users marked Full are not
+  Fast-eligible.
+- Every writer must use an explicitly isolated worktree, with at most one
+  writer active.
+- Global `agent-ops` consumes these facts and owns root-vs-child delegation and
+  custom-agent profile selection.
+- Model identifiers, reasoning effort, sandbox, and MCP configuration belong
+  to custom agent files or global config, not project skills.
 
 ## Evidence contract
 
