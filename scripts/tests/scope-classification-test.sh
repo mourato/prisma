@@ -66,6 +66,39 @@ test_core_ui_product_swift_is_full() {
     assert_contains "${output}" "Candidate targeted tests: 0"
 }
 
+test_xpc_product_swift_direct_and_nested_are_full() {
+    local fixture
+    local base
+    local head
+    local output
+
+    fixture="$(new_fixture)"
+    base="$(git -C "${fixture}" rev-parse HEAD)"
+    mkdir -p "${fixture}/MeetingAssistantAI/Sources"
+    printf '%s\n' 'struct XPCFeature {}' > "${fixture}/MeetingAssistantAI/Sources/XPCFeature.swift"
+    git -C "${fixture}" add MeetingAssistantAI/Sources/XPCFeature.swift
+    git -C "${fixture}" commit -qm "direct xpc product swift"
+    head="$(git -C "${fixture}" rev-parse HEAD)"
+
+    output="$(scope_output "${fixture}" "${TMP_ROOT}/scope-xpc-product" --committed --base "${base}" --head "${head}")"
+    assert_scope_decision "${output}" full full-gate "${CONSERVATIVE_SWIFT_REASON}"
+    assert_contains "${output}" "Product source files changed: 1"
+    assert_contains "${output}" "Candidate targeted tests: 0"
+
+    fixture="$(new_fixture)"
+    base="$(git -C "${fixture}" rev-parse HEAD)"
+    mkdir -p "${fixture}/MeetingAssistantAI/Sources/Services"
+    printf '%s\n' 'struct NestedXPCFeature {}' > "${fixture}/MeetingAssistantAI/Sources/Services/NestedXPCFeature.swift"
+    git -C "${fixture}" add MeetingAssistantAI/Sources/Services/NestedXPCFeature.swift
+    git -C "${fixture}" commit -qm "nested xpc product swift"
+    head="$(git -C "${fixture}" rev-parse HEAD)"
+
+    output="$(scope_output "${fixture}" "${TMP_ROOT}/scope-nested-xpc-product" --committed --base "${base}" --head "${head}")"
+    assert_scope_decision "${output}" full full-gate "${CONSERVATIVE_SWIFT_REASON}"
+    assert_contains "${output}" "Product source files changed: 1"
+    assert_contains "${output}" "Candidate targeted tests: 0"
+}
+
 test_domain_product_swift_is_full_without_semantic_parsing() {
     local fixture
     local base
@@ -219,8 +252,10 @@ test_requested_fast_reports_strongest_executed_lane() {
     local fixture
     local base
     local head
+    local first_fingerprint
     local output
     local result_path
+    local second_fingerprint
     local step_log="${TMP_ROOT}/requested-fast-strongest-steps.log"
 
     fixture="$(new_fixture)"
@@ -233,6 +268,9 @@ test_requested_fast_reports_strongest_executed_lane() {
 
     output="$(cd "${fixture}" && WORKFLOW_STEP_LOG="${step_log}" MA_AGENT_LOG_DIR="${TMP_ROOT}/requested-fast-strongest" ./scripts/validate-agent.sh --lane fast --committed --base "${base}" --head "${head}" --no-reuse --agent)"
     assert_contains "${output}" "AGENT_STATUS=PASS"
+    assert_contains "${output}" "AGENT_REUSED=0"
+    first_fingerprint="$(printf '%s\n' "${output}" | sed -n 's/^AGENT_VALIDATION_FINGERPRINT=//p' | tail -n 1)"
+    test -n "${first_fingerprint}" || fail "requested Fast fingerprint is missing"
     result_path="$(printf '%s\n' "${output}" | sed -n 's/^AGENT_RESULT_JSON=//p' | tail -n 1)"
     python3 - "${result_path}" <<'PY'
 import json
@@ -244,12 +282,20 @@ assert result["decision"]["selectedLane"] == "full"
 assert result["decision"]["strategy"] == "full-gate"
 assert [command["name"] for command in result["commands"]] == ["lint-strict", "build-test"]
 PY
+
+    output="$(cd "${fixture}" && WORKFLOW_STEP_LOG="${step_log}" MA_AGENT_LOG_DIR="${TMP_ROOT}/requested-fast-strongest" ./scripts/validate-agent.sh --lane fast --committed --base "${base}" --head "${head}" --agent)"
+    assert_contains "${output}" "AGENT_STATUS=PASS"
+    assert_contains "${output}" "Reusing PASS evidence"
+    assert_contains "${output}" "AGENT_REUSED=1"
+    second_fingerprint="$(printf '%s\n' "${output}" | sed -n 's/^AGENT_VALIDATION_FINGERPRINT=//p' | tail -n 1)"
+    test "${second_fingerprint}" = "${first_fingerprint}" || fail "requested Fast fingerprint changed before cache reuse"
     test "$(grep -Fxc 'lint' "${step_log}")" -eq 1
     test "$(grep -Fxc 'build-test' "${step_log}")" -eq 1
 }
 
 test_app_product_swift_is_full
 test_core_ui_product_swift_is_full
+test_xpc_product_swift_direct_and_nested_are_full
 test_domain_product_swift_is_full_without_semantic_parsing
 test_test_only_swift_stays_fast_when_mapped
 test_nine_test_files_do_not_trigger_product_churn

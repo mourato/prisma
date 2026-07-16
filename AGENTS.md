@@ -56,7 +56,7 @@ If a task would violate a hard constraint or needs an exceptional workflow: stop
 |---|---|---|
 | Low | Docs/comments, localization, or non-functional refactor in one module | Fast |
 | Medium | One-subsystem feature/bugfix, one-package public API, or UI state logic without High triggers | Full |
-| High | Audio, concurrency, persistence, security, cross-module architecture, build/release infrastructure, 300+ added lines, or more than 8 source files | Full |
+| High | Audio, concurrency, persistence, security, cross-module architecture, build/release infrastructure, 300+ added lines, or more than 8 production source files | Full |
 
 Automatic committed-range classification is conservative: production Swift is Full because scripts cannot prove a semantic Low/non-functional change.
 

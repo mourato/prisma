@@ -27,7 +27,7 @@ delivery, review gates, or evidence reporting.
 |---|---|---|
 | Low | Docs/comments, localization, constrained non-functional refactor | Fast |
 | Medium | One-subsystem feature/bugfix, one-package API, UI state logic | Full |
-| High | Audio, concurrency, persistence, security, infrastructure, broad or large delta | Full |
+| High | Audio, concurrency, persistence, security, cross-module architecture, build/release infrastructure, 300+ added lines, or more than 8 production source files | Full |
 
 Automatic committed-range classification is conservative: production Swift is Full because scripts cannot prove a semantic Low/non-functional change.
 
