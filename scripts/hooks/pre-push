@@ -60,6 +60,63 @@ resolve_commit() {
     git rev-parse --verify "$1^{commit}"
 }
 
+resolve_auto_lane() {
+    local base_ref="$1"
+    local head_ref="$2"
+    local empty_base="$3"
+    local scope_log
+    local scope_args
+    local result_path
+    local selected_lane
+
+    scope_log="$(mktemp "${TMPDIR:-/tmp}/prisma-pre-push-scope.XXXXXX")"
+    if [ "${empty_base}" -eq 1 ]; then
+        scope_args="--committed --empty-base --head ${head_ref}"
+    else
+        scope_args="--committed --base ${base_ref} --head ${head_ref}"
+    fi
+
+    set +e
+    ./scripts/scope-check.sh --dry-run --agent ${scope_args} > "${scope_log}" 2>&1
+    local scope_status=$?
+    set -e
+
+    if [ "${scope_status}" -ne 0 ]; then
+        echo "Error: could not resolve auto lane for push range." >&2
+        cat "${scope_log}" >&2
+        rm -f "${scope_log}"
+        return 1
+    fi
+
+    result_path="$(sed -n 's/^AGENT_RESULT_JSON=//p' "${scope_log}" | tail -n 1)"
+    if [ -z "${result_path}" ] || [ ! -f "${result_path}" ]; then
+        echo "Error: scope-check did not produce a machine-readable lane decision." >&2
+        cat "${scope_log}" >&2
+        rm -f "${scope_log}"
+        return 1
+    fi
+
+    selected_lane="$(python3 - "${result_path}" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    decision = json.load(handle).get("decision", {})
+lane = decision.get("selectedLane")
+if lane not in {"fast", "full"}:
+    raise SystemExit(1)
+print(lane)
+PY
+    )" || {
+        echo "Error: invalid lane decision in ${result_path}." >&2
+        rm -f "${scope_log}"
+        return 1
+    }
+
+    rm -f "${scope_log}"
+    printf '%s' "${selected_lane}"
+}
+
 validate_push_range() {
     local local_ref="$1"
     local local_sha="$2"
@@ -138,14 +195,25 @@ if [ "${remote_sha}" = "0000000000000000000000000000000000000000" ]; then
     else
         echo "   remote: ${REMOTE_NAME}"
     fi
-    echo "   gate: auto lane over committed range only"
+    local selected_lane
+    selected_lane="$(resolve_auto_lane "${base_ref:-}" "${head_ref}" "${empty_base}")" || return 1
+    echo "   gate: Option C (auto=${selected_lane} over committed range)"
+
+    if [ "${selected_lane}" = "fast" ]; then
+        echo "ℹ️  Fast push: relying on end-of-task validate-agent --lane auto evidence."
+        echo "   Pre-push does not re-run scoped tests, test-full, or build-test."
+        echo "✅ Push validation passed (light)."
+        return 0
+    fi
+
+    echo "   Full push: running mandatory validate-agent --lane full"
 
     output_file="$(mktemp "${TMPDIR:-/tmp}/prisma-pre-push.XXXXXX")"
     trap 'rm -f -- "${output_file:-}"; exit 130' INT TERM HUP
     if [ "${empty_base}" -eq 1 ]; then
-        args="--lane auto --committed --empty-base --head ${head_ref}"
+        args="--lane full --committed --empty-base --head ${head_ref}"
     else
-        args="--lane auto --committed --base ${base_ref} --head ${head_ref}"
+        args="--lane full --committed --base ${base_ref} --head ${head_ref}"
     fi
     if [ "${PUSH_CHECK_VERBOSE:-0}" != "1" ]; then
         args="${args} --agent"
