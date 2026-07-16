@@ -20,14 +20,19 @@ public struct ModesSettingsTab: View {
         listColumn
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .settingsSidePanel(
-                isPresented: navigationState.currentRoute != nil,
+                isPresented: isEditorPresented,
                 onDismiss: dismissEditor,
             ) {
                 if let route = navigationState.currentRoute {
                     routeContent(for: route)
                         .id(route)
+                        .focusSection()
                 }
             }
+    }
+
+    private var isEditorPresented: Bool {
+        navigationState.currentRoute != nil
     }
 
     private var listColumn: some View {
@@ -36,6 +41,7 @@ public struct ModesSettingsTab: View {
             aiSettingsViewModel: aiSettingsViewModel,
             focusedStyle: $focusedStyle,
             accessibilityFocusedStyle: $accessibilityFocusedStyle,
+            isListFocusEnabled: !isEditorPresented,
             onOpenEditor: { styleID in
                 viewModel.prepareEditor(for: styleID)
                 focusedStyle = nil

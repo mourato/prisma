@@ -7,6 +7,7 @@ public struct StylesSettingsTab: View {
     @ObservedObject private var aiSettingsViewModel: AISettingsViewModel
     private let focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding?
     private let accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding?
+    private let isListFocusEnabled: Bool
     @State private var selectedStyleID: UUID?
     private let onOpenEditor: ((UUID?) -> Void)?
 
@@ -15,12 +16,14 @@ public struct StylesSettingsTab: View {
         aiSettingsViewModel: AISettingsViewModel,
         focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding? = nil,
         accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding? = nil,
+        isListFocusEnabled: Bool = true,
         onOpenEditor: ((UUID?) -> Void)? = nil,
     ) {
         _viewModel = ObservedObject(wrappedValue: viewModel)
         _aiSettingsViewModel = ObservedObject(wrappedValue: aiSettingsViewModel)
         self.focusedStyle = focusedStyle
         self.accessibilityFocusedStyle = accessibilityFocusedStyle
+        self.isListFocusEnabled = isListFocusEnabled
         self.onOpenEditor = onOpenEditor
     }
 
@@ -51,6 +54,7 @@ public struct StylesSettingsTab: View {
                         .stylesAddFocus(
                             focusedStyle: focusedStyle,
                             accessibilityFocusedStyle: accessibilityFocusedStyle,
+                            isFocusEnabled: isListFocusEnabled,
                         )
                     }
                 }
@@ -120,6 +124,7 @@ public struct StylesSettingsTab: View {
             focusedStyle: focusedStyle,
             accessibilityFocusedStyle: accessibilityFocusedStyle,
             styleID: style.id,
+            isFocusEnabled: isListFocusEnabled,
         )
     }
 
@@ -329,11 +334,16 @@ private extension View {
         focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding?,
         accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding?,
         styleID: UUID,
+        isFocusEnabled: Bool,
     ) -> some View {
-        let focusableView = focusable()
+        // While the editor drawer owns keyboard focus, keep list rows out of the
+        // focus cycle so clearing FocusState does not land on the first mode.
+        let focusableView = focusable(isFocusEnabled)
         let target = DictationStyleFocusTarget.style(styleID)
 
-        if let focusedStyle, let accessibilityFocusedStyle {
+        if !isFocusEnabled {
+            focusableView
+        } else if let focusedStyle, let accessibilityFocusedStyle {
             focusableView
                 .accessibilityFocused(accessibilityFocusedStyle, equals: target)
                 .focused(focusedStyle, equals: target)
@@ -352,11 +362,14 @@ private extension View {
     func stylesAddFocus(
         focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding?,
         accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding?,
+        isFocusEnabled: Bool,
     ) -> some View {
-        let focusableView = focusable()
+        let focusableView = focusable(isFocusEnabled)
         let target = DictationStyleFocusTarget.addButton
 
-        if let focusedStyle, let accessibilityFocusedStyle {
+        if !isFocusEnabled {
+            focusableView
+        } else if let focusedStyle, let accessibilityFocusedStyle {
             focusableView
                 .accessibilityFocused(accessibilityFocusedStyle, equals: target)
                 .focused(focusedStyle, equals: target)

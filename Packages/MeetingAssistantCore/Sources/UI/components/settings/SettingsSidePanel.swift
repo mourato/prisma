@@ -26,32 +26,37 @@ private struct SettingsSidePanelModifier<PanelContent: View>: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .trailing) {
-                content
+        ZStack(alignment: .trailing) {
+            content
 
-                if isPresented {
-                    Button("") {
-                        onDismiss()
+            if isPresented {
+                GeometryReader { geometry in
+                    ZStack(alignment: .trailing) {
+                        Button("") {
+                            onDismiss()
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                        .accessibilityHidden(true)
+                        .keyboardShortcut(.escape)
+
+                        panelContent()
+                            .frame(width: SettingsSidePanelLayout.resolvedWidth(
+                                requested: width,
+                                available: geometry.size.width,
+                            ))
+                            .frame(maxHeight: .infinity, alignment: .top)
+                            .background(surface)
+                            .overlay(separator, alignment: .leading)
+                            .overlay(separator, alignment: .trailing)
                     }
-                    .buttonStyle(.plain)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                    .accessibilityHidden(true)
-                    .keyboardShortcut(.escape)
-
-                    panelContent()
-                        .frame(width: SettingsSidePanelLayout.resolvedWidth(
-                            requested: width,
-                            available: geometry.size.width,
-                        ))
-                        .frame(maxHeight: .infinity, alignment: .top)
-                        .background(surface)
-                        .overlay(separator, alignment: .leading)
-                        .overlay(separator, alignment: .trailing)
-                        .transition(SettingsMotion.sidePanelTransition(reduceMotion: reduceMotion))
-                        .zIndex(1)
                 }
+                // Expand under the transparent titlebar so the drawer is flush
+                // with the window top (VoiceInk SidePanel contract / Scenario A).
+                .ignoresSafeArea()
+                .transition(SettingsMotion.sidePanelTransition(reduceMotion: reduceMotion))
+                .zIndex(1)
             }
         }
         .animation(SettingsMotion.sidePanelAnimation(reduceMotion: reduceMotion), value: isPresented)
