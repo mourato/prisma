@@ -53,8 +53,6 @@ public struct GeneralSettingsTab: View {
                 }
             }
         } content: {
-            systemDrilldownsSection
-
             ShortcutSettingsSection(
                 groupTitle: "settings.shortcuts.dictation".localized,
                 descriptionText: "settings.shortcuts.dictation_desc".localized,
@@ -73,6 +71,8 @@ public struct GeneralSettingsTab: View {
                     }
                 },
             )
+
+            systemDrilldownsSection
 
             Section {
                 Toggle("settings.general.launch_at_login".localized, isOn: $viewModel.launchAtLogin)
