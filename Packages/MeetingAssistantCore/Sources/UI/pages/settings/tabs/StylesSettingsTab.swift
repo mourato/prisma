@@ -47,23 +47,7 @@ public struct StylesSettingsTab: View {
             }
         } content: {
             Section {
-                VStack(alignment: .leading, spacing: 12) {
-                    stylesList
-
-                    HStack {
-                        Spacer()
-                        Button("settings.styles.add".localized, systemImage: "plus") {
-                            onOpenEditor?(nil)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .stylesAddFocus(
-                            focusedStyle: focusedStyle,
-                            accessibilityFocusedStyle: accessibilityFocusedStyle,
-                            isFocusEnabled: isListFocusEnabled,
-                        )
-                    }
-                }
+                stylesList
             }
 
             if onOpenAssistant != nil || onOpenIntegrations != nil {
@@ -87,6 +71,22 @@ public struct StylesSettingsTab: View {
                     SettingsFormSectionHeader(
                         title: "settings.section.ai".localized,
                         icon: "sparkles",
+                    )
+                }
+            }
+
+            Section {
+                HStack {
+                    Spacer()
+                    Button("settings.styles.add".localized, systemImage: "plus") {
+                        onOpenEditor?(nil)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .stylesAddFocus(
+                        focusedStyle: focusedStyle,
+                        accessibilityFocusedStyle: accessibilityFocusedStyle,
+                        isFocusEnabled: isListFocusEnabled,
                     )
                 }
             }
