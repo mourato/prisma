@@ -352,10 +352,10 @@ select_lane() {
     fi
 }
 
-cache_is_valid() {
-    local cache_path="$1"
-    [ -f "${cache_path}" ] || return 1
-    python3 - "${cache_path}" "${FINGERPRINT}" <<'PY'
+result_is_valid() {
+    local result_path="$1"
+    [ -f "${result_path}" ] || return 1
+    python3 - "${result_path}" "${FINGERPRINT}" <<'PY'
 import json
 import os
 import re
@@ -363,8 +363,11 @@ import sys
 
 path, fingerprint = sys.argv[1:]
 def require_logs(value):
-    for log_path in re.split(r"[,;]", value or ""):
-        if log_path and not os.path.isfile(log_path):
+    log_paths = [item for item in re.split(r"[,;]", value or "") if item]
+    if not log_paths:
+        raise ValueError("missing log")
+    for log_path in log_paths:
+        if not os.path.isfile(log_path):
             raise ValueError("missing log")
 
 try:
@@ -372,28 +375,44 @@ try:
         result = json.load(handle)
     if result.get("schemaVersion") != 2:
         raise ValueError("schema")
+    if result.get("step") != "validate-agent":
+        raise ValueError("step")
     if result.get("status") != "PASS" or result.get("dryRun") is not False:
         raise ValueError("status")
     if result.get("validationFingerprint") != fingerprint:
         raise ValueError("fingerprint")
     if not os.path.isdir(result.get("runDir", "")):
         raise ValueError("run directory")
-    for command in result.get("commands", []):
+    commands = result.get("commands")
+    if not commands:
+        raise ValueError("commands")
+    command_results = []
+    for command in commands:
+        if command.get("status") != "PASS":
+            raise ValueError("command status")
         require_logs(command.get("log"))
+        result_paths = command.get("resultPaths")
+        if not result_paths:
+            raise ValueError("command results")
+        command_results.extend(result_paths)
     child_results = result.get("childResults")
-    if not child_results:
+    if not child_results or child_results != command_results:
         raise ValueError("children")
     for child_path in child_results:
         if not os.path.isfile(child_path):
             raise ValueError("missing child")
         with open(child_path, encoding="utf-8") as child_handle:
             child = json.load(child_handle)
+        if child.get("schemaVersion") != 2 or not child.get("step"):
+            raise ValueError("child schema")
         if child.get("validationFingerprint") != fingerprint:
             raise ValueError("child fingerprint")
         if child.get("status") != "PASS":
             raise ValueError("child status")
         require_logs(child.get("log"))
         for command in child.get("commands", []):
+            if command.get("status") != "PASS":
+                raise ValueError("child command status")
             require_logs(command.get("log"))
 except (OSError, ValueError, json.JSONDecodeError):
     raise SystemExit(1)
@@ -625,7 +644,7 @@ main() {
         return 0
     fi
 
-    if [ "${NO_REUSE}" -eq 0 ] && [ "${EXTERNAL_INPUTS_MISMATCH}" -eq 0 ] && cache_is_valid "${CACHE_RESULT}"; then
+    if [ "${NO_REUSE}" -eq 0 ] && [ "${EXTERNAL_INPUTS_MISMATCH}" -eq 0 ] && result_is_valid "${CACHE_RESULT}"; then
         echo "Reusing PASS evidence: ${CACHE_RESULT}"
         emit_agent_result "PASS" "${CACHE_RESULT}"
         return 0
@@ -652,6 +671,11 @@ main() {
     fi
 
     result_path="$(write_aggregate)"
+    if [ "${OVERALL_STATUS}" = "PASS" ] && ! result_is_valid "${result_path}"; then
+        echo "Error: Fresh validation result failed schema-v2 verification."
+        OVERALL_STATUS="FAIL"
+        result_path="$(write_aggregate)"
+    fi
     if [ "${OVERALL_STATUS}" = "PASS" ] && [ "${EXTERNAL_INPUTS_MISMATCH}" -eq 0 ]; then
         mkdir -p "${cache_root}"
         cache_tmp="${CACHE_RESULT}.tmp.$$"

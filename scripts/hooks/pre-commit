@@ -176,5 +176,5 @@ fi
 echo ""
 echo "🎉 All pre-commit checks passed!"
 echo ""
-echo "💡 Tip: Run end-of-task module validation before push; pre-push is light unless auto=Full"
+echo "💡 Tip: pre-push validates or reuses the exact committed range; required review remains separate"
 echo ""

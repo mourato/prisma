@@ -76,7 +76,7 @@ make guidance-check
 - Each agent invocation creates an immutable run directory below `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`.
 - Scripts emit deterministic `AGENT_*` summary lines; `*.result.json` uses schema version 2 with metadata only — no prompts, transcripts, or secrets.
 - `make workflow-test` runs deterministic fixtures without Xcode.
-- `make validate-agent` is the canonical final lane runner with content-addressed PASS fingerprints; reuse fails closed on mismatch. Use `--no-reuse` after flaky behavior.
+- `make validate-agent` is the canonical final lane runner with content-addressed PASS fingerprints; fresh aggregates and cached reuse both fail closed on invalid schema-v2 children or fingerprint mismatch. Use `--no-reuse` after flaky behavior.
 
 ### Agent delivery sequence
 

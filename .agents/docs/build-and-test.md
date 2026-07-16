@@ -319,6 +319,8 @@ not participate in external-input comparison. Staged and committed modes
 exclude unrelated unstaged/untracked state. Only exact `PASS` evidence with
 existing child results and matching fingerprints can be reused. Use
 `--no-reuse` after flaky or inconclusive behavior; dry-run output is never proof.
+Fresh aggregates pass the same schema-v2 child, status, fingerprint, and log
+verification before they can be cached or emitted as technical PASS evidence.
 A technical PASS does not replace required review or grant merge approval.
 
 On failure, scripts print compact excerpts to terminal while keeping full logs on disk.

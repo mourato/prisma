@@ -357,6 +357,8 @@ EOF
     assert_contains "${output}" "Applying SwiftFormat"
     assert_contains "${output}" "Re-staging formatted Swift files"
     assert_contains "${output}" "pre-commit checks passed"
+    assert_contains "${output}" "pre-push validates or reuses the exact committed range"
+    assert_not_contains "${output}" "pre-push is light unless auto=Full"
 
     staged_blob="$(git -C "${fixture}" show :Staged.swift)"
     spaced_staged_blob="$(git -C "${fixture}" show ':Path With Space.swift')"
@@ -478,6 +480,35 @@ test_pre_push_fast_failure_and_guidance_gate() {
     assert_contains "${output}" "Push validation failed"
     test "$(grep -Fxc 'guidance' "${broken_guidance_step_log}")" -eq 1
     assert_not_contains "$(cat "${broken_guidance_step_log}")" "build-test"
+}
+
+test_pre_push_rejects_invalid_fresh_results() {
+    local fixture
+    local base
+    local head
+    local kind
+    local output
+    local status
+
+    for kind in malformed fail schema fingerprint; do
+        fixture="$(new_fixture)"
+        base="$(git -C "${fixture}" rev-parse HEAD)"
+        printf '%s\n' "invalid fresh ${kind}" > "${fixture}/Alpha.swift"
+        git -C "${fixture}" add Alpha.swift
+        git -C "${fixture}" commit -qm "invalid fresh ${kind} fixture"
+        head="$(git -C "${fixture}" rev-parse HEAD)"
+
+        set +e
+        output="$(cd "${fixture}" && printf 'refs/heads/main %s refs/heads/main %s\n' "${head}" "${base}" | WORKFLOW_INVALID_RESULT_STEP=scope-check WORKFLOW_INVALID_RESULT_KIND="${kind}" MA_AGENT_LOG_DIR="${TMP_ROOT}/pre-push-invalid-${kind}" ./scripts/hooks-pre-push 2>&1)"
+        status=$?
+        set -e
+
+        test "${status}" -ne 0
+        assert_contains "${output}" "Fresh validation result failed schema-v2 verification."
+        assert_contains "${output}" "Push validation failed"
+        assert_not_contains "${output}" "Push validation passed"
+        test -z "$(find "${TMP_ROOT}/pre-push-invalid-${kind}/validate-agent-index" -name '*.result.json' -print 2>/dev/null)"
+    done
 }
 
 test_pre_push_protocol() {
@@ -906,6 +937,7 @@ test_archive_paths_excluded_from_large_delta
 test_pre_push_full_scripts_change
 test_pre_commit_staged_format
 test_pre_push_fast_failure_and_guidance_gate
+test_pre_push_rejects_invalid_fresh_results
 test_pre_push_protocol
 "${SCRIPT_ROOT}/scripts/tests/hooks-setup-test.sh"
 "${SCRIPT_ROOT}/scripts/tests/rust-audio-staging-test.sh"
