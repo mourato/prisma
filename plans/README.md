@@ -2,7 +2,7 @@
 
 This is the active plan ledger. Historical audits, completed plan rows, review
 notes, and rejected options remain in the [2026-07-12 ledger archive](archive/2026-07-12-plan-ledger-history.md).
-Plan files are never renumbered; the next available plan number is 098.
+Plan files are never renumbered; the next available plan number is 100.
 
 ## Execution rules
 
@@ -70,6 +70,8 @@ reason) | `REJECTED` (with a one-line rationale).
 | [095](095-flatten-system-settings-onto-general.md) | Flatten System settings hierarchy onto General | P1 | L | 093 | DONE |
 | [096](096-flatten-activity-drilldowns-to-sheets.md) | Flatten Activity drill-downs to sheets; localize History chrome | P1 | L | 093 | DONE |
 | [097](097-retire-settings-toolbar-navigation-chrome.md) | Retire Settings toolbar back/forward navigation chrome | P1 | M | 094, 095, 096 | DONE |
+| [098](098-migrate-modes-list-to-settings-form-page.md) | Migrate Modes list into SettingsFormPage | P1 | M | 079, 082 | DONE |
+| [099](099-polish-settings-expandable-disclosure-motion.md) | Polish Form expandable disclosure motion and document the contract | P1 | M | 093 (DONE) | DONE |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
@@ -133,6 +135,9 @@ options verbatim for searchability.
 - 082 runs after both migrations to delete `SettingsFormGroup`, audit every
   remaining group primitive, and preserve intentional collection/status/data
   surfaces without mechanically forcing them into Form.
+- 098 supersedes 082’s Modes-list scroll exception only: the Modes **list** moves
+  onto `SettingsFormPage` while the trailing editor drawer stays specialized.
+  Do not fold Activity/History/Metrics scroll pages into this migration.
 - 083 runs last because it validates the combined route matrix and changes
   preview tooling under `scripts/`, which requires the Full lane.
 - 084 is the agent-ops guidance diet: slim always-on `AGENTS.md`, archive live
@@ -184,6 +189,12 @@ options verbatim for searchability.
   still open.
 - 093 owns the IA contract + `SettingsExpandableSection` primitive and skill
   guidance; no product section migration.
+- **099** polishes Form expandable *motion/nesting* after 093–097: dedicated
+  `AppleMotion.disclosureAnimation` (short easeInOut, not `defaultSpring`),
+  single `withAnimation` driver, indented content without chrome `Divider`,
+  and MAE + apple-design docs so agents do not rewire Form disclosures to
+  springs or confuse VoiceInk Form rows with card spring+scale expands.
+  Independent of 098; Medium/Full.
 - 094 folds Meetings `.export` / `.meetingPrompts` / `.monitoringTargets` into
   the root Form (expandable + existing sheets) and deletes
   `MeetingSettingsNavigationState`.
@@ -225,6 +236,9 @@ options verbatim for searchability.
   pre-push path is rejected; 087 must fix staging/reuse instead.
 - Weakening Full escalation for real `scripts/*` / Makefile changes to speed
   pushes is rejected; reuse and false-mismatch fixes are the lever.
+- Porting VoiceInk **card** expand (spring + scale, e.g. Enhancement
+  Shortcuts) into `SettingsExpandableSection` is rejected for plan 099: Form
+  disclosure uses short easeInOut; card expands are a separate pattern.
 - Merging `apple-design` into `macos-app-engineering` in the same pass as
   retiring `swiftui-pro` (plan 088 Option C) is rejected by default: it would
   re-inflate MAE after plan 085 pruned hot-path bulk. Keep motion/feel as a
