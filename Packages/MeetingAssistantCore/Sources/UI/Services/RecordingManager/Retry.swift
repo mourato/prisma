@@ -50,7 +50,9 @@ extension RecordingManager {
         selectionOverride: TranscriptionProviderSelection? = nil,
     ) async {
         let capturePurpose = transcription.meeting.capturePurpose
-        let configuredSelection = configuredRetrySelection(for: capturePurpose)
+        let retryConfiguration = configuredRetryTranscriptionConfiguration(for: transcription)
+        let configuredSelection = retryConfiguration?.selection
+            ?? configuredRetrySelection(for: capturePurpose, meeting: transcription.meeting)
         let effectiveSelection = RetryTranscriptionSelectionMatrix.effectiveSelection(
             requestedOverride: selectionOverride,
             capturePurpose: capturePurpose,
@@ -65,6 +67,10 @@ extension RecordingManager {
             transcriptionAPIKeyExists: transcriptionAPIKeyExists,
             isLocalModelReady: isLocalRetryModelReady,
         )
+        let retryInputLanguageCode = retryConfiguration?.inputLanguageCode
+            ?? AppSettingsStore.shared.resolvedTranscriptionInputLanguageCode(
+                for: capturePurpose == .dictation ? .dictation : .meeting,
+            )
         let shouldRemoveSilence = shouldRemoveSilenceBeforeRetryTranscription(
             effectiveSelection: effectiveSelection,
         )
@@ -90,8 +96,9 @@ extension RecordingManager {
                 audioURL: preparedAudio.transcriptionURL,
                 transcription: transcription,
                 audioDuration: audioDuration,
-                selectionOverride: effectiveSelectionOverride,
+                selectionOverride: effectiveSelectionOverride ?? effectiveSelection,
                 effectiveSelection: effectiveSelection,
+                inputLanguageCode: retryInputLanguageCode,
             )
             try await storage.saveTranscription(updated)
             await persistRetryPerformanceAttempts(
@@ -129,6 +136,7 @@ extension RecordingManager {
         audioDuration: Double?,
         selectionOverride: TranscriptionProviderSelection? = nil,
         effectiveSelection: TranscriptionProviderSelection,
+        inputLanguageCode: String? = nil,
     ) async throws -> Transcription {
         try await performHealthCheck(
             capturePurpose: transcription.meeting.capturePurpose,
@@ -141,7 +149,8 @@ extension RecordingManager {
             audioURL: audioURL,
             diarizationEnabledOverride: diarizationEnabledOverride,
             capturePurpose: transcription.meeting.capturePurpose,
-            selectionOverride: selectionOverride,
+            selectionOverride: selectionOverride ?? effectiveSelection,
+            inputLanguageCode: inputLanguageCode,
         )
         let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
         let settings = AppSettingsStore.shared
@@ -318,9 +327,28 @@ extension RecordingManager {
         try? await storage.saveModelPerformanceAttempt(attempt)
     }
 
-    private func configuredRetrySelection(for capturePurpose: CapturePurpose) -> TranscriptionProviderSelection {
-        let executionMode: TranscriptionExecutionMode = capturePurpose == .dictation ? .dictation : .meeting
-        return AppSettingsStore.shared.resolvedTranscriptionSelection(for: executionMode)
+    private func configuredRetrySelection(
+        for capturePurpose: CapturePurpose,
+        meeting: Meeting,
+    ) -> TranscriptionProviderSelection {
+        if capturePurpose == .dictation {
+            return AppSettingsStore.shared.effectiveDictationStyle(
+                bundleIdentifier: meeting.appBundleIdentifier,
+                activeURL: nil,
+            ).transcriptionConfiguration.selection
+        }
+
+        return AppSettingsStore.shared.resolvedTranscriptionSelection(for: .meeting)
+    }
+
+    private func configuredRetryTranscriptionConfiguration(
+        for transcription: Transcription,
+    ) -> DictationTranscriptionConfiguration? {
+        guard transcription.meeting.capturePurpose == .dictation else { return nil }
+        return AppSettingsStore.shared.effectiveDictationStyle(
+            bundleIdentifier: transcription.meeting.appBundleIdentifier,
+            activeURL: nil,
+        ).transcriptionConfiguration
     }
 
     // MARK: - Post Processing Input

@@ -599,6 +599,87 @@ extension RecordingManagerTests {
         XCTAssertEqual(mockMic.stopRecordingCalledCount, 1)
     }
 
+    func testModeConfigurationIsStableDuringSession() async throws {
+        let manager = try XCTUnwrap(manager)
+        let settings = AppSettingsStore.shared
+        let originalStyles = settings.dictationStyles
+        let originalAutoCopy = settings.autoCopyTranscriptionToClipboard
+        defer {
+            settings.dictationStyles = originalStyles
+            settings.autoCopyTranscriptionToClipboard = originalAutoCopy
+        }
+
+        let snapshottedPolicy = DictationTextHandlingPolicy(
+            autoCopyToClipboard: true,
+            autoPasteToActiveApp: false,
+            smartSpacingAndCapitalization: true,
+            smartParagraphs: false,
+        )
+        let snapshottedTranscription = DictationTranscriptionConfiguration(
+            selection: TranscriptionProviderSelection(provider: .groq, selectedModel: "whisper-large-v3"),
+            inputLanguageCode: "pt-BR",
+        )
+        var styles = settings.dictationStyles
+        let defaultIndex = try XCTUnwrap(styles.firstIndex(where: \.isDefault))
+        styles[defaultIndex] = DictationStyle(
+            id: styles[defaultIndex].id,
+            name: styles[defaultIndex].name,
+            iconSymbol: styles[defaultIndex].iconSymbol,
+            promptInstructions: styles[defaultIndex].promptInstructions,
+            postProcessingEnabled: styles[defaultIndex].postProcessingEnabled,
+            forceMarkdownOutput: styles[defaultIndex].forceMarkdownOutput,
+            replaceBasePrompt: styles[defaultIndex].replaceBasePrompt,
+            outputLanguage: styles[defaultIndex].outputLanguage,
+            targets: [],
+            contextSourcePolicy: styles[defaultIndex].contextSourcePolicy,
+            enhancementsSelection: styles[defaultIndex].enhancementsSelection,
+            isDefault: true,
+            textHandlingPolicy: snapshottedPolicy,
+            transcriptionConfiguration: snapshottedTranscription,
+        )
+        settings.dictationStyles = styles
+
+        await manager.startRecording(source: .microphone)
+        XCTAssertTrue(manager.isRecording)
+
+        var mutatedStyles = settings.dictationStyles
+        let mutatedIndex = try XCTUnwrap(mutatedStyles.firstIndex(where: \.isDefault))
+        mutatedStyles[mutatedIndex] = DictationStyle(
+            id: mutatedStyles[mutatedIndex].id,
+            name: mutatedStyles[mutatedIndex].name,
+            iconSymbol: mutatedStyles[mutatedIndex].iconSymbol,
+            promptInstructions: mutatedStyles[mutatedIndex].promptInstructions,
+            postProcessingEnabled: mutatedStyles[mutatedIndex].postProcessingEnabled,
+            forceMarkdownOutput: mutatedStyles[mutatedIndex].forceMarkdownOutput,
+            replaceBasePrompt: mutatedStyles[mutatedIndex].replaceBasePrompt,
+            outputLanguage: mutatedStyles[mutatedIndex].outputLanguage,
+            targets: [],
+            contextSourcePolicy: mutatedStyles[mutatedIndex].contextSourcePolicy,
+            enhancementsSelection: mutatedStyles[mutatedIndex].enhancementsSelection,
+            isDefault: true,
+            textHandlingPolicy: DictationTextHandlingPolicy(
+                autoCopyToClipboard: false,
+                autoPasteToActiveApp: true,
+                smartSpacingAndCapitalization: false,
+                smartParagraphs: true,
+            ),
+            transcriptionConfiguration: DictationTranscriptionConfiguration(
+                selection: .default,
+                inputLanguageCode: "en",
+            ),
+        )
+        settings.dictationStyles = mutatedStyles
+        settings.autoCopyTranscriptionToClipboard = false
+
+        let meeting = try XCTUnwrap(manager.currentMeeting)
+        let session = manager.makeTranscriptionSessionSnapshot(meeting)
+
+        XCTAssertEqual(session.dictationTextHandlingPolicy, snapshottedPolicy)
+        XCTAssertEqual(session.dictationTranscriptionConfiguration, snapshottedTranscription)
+
+        await manager.cancelRecording()
+    }
+
     private func writeTestAudioFile(at url: URL) throws {
         let format = AppSettingsStore.AudioFormat(rawValue: url.pathExtension.lowercased()) ?? .wav
         let sampleRate = 16_000.0

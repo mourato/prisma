@@ -38,6 +38,7 @@ extension RecordingManager {
         capturePurpose: CapturePurpose = .meeting,
         sessionID: UUID? = nil,
         selectionOverride: TranscriptionProviderSelection? = nil,
+        inputLanguageCode: String? = nil,
     ) async throws -> TranscriptionResponse {
         updateVisibleTranscriptionProgress(
             phase: .processing,
@@ -54,18 +55,18 @@ extension RecordingManager {
             }
         }
 
+        let executionMode: TranscriptionExecutionMode = capturePurpose == .dictation ? .dictation : .meeting
         if let selectionOverride,
            let configuredClient = transcriptionClient as? any TranscriptionServiceConfigurationAware
         {
             return try await configuredClient.transcribe(
                 audioURL: audioURL,
                 onProgress: onProgress,
-                executionMode: capturePurpose == .dictation ? .dictation : .meeting,
+                executionMode: executionMode,
                 diarizationEnabledOverride: diarizationEnabledOverride,
                 selection: selectionOverride,
-                inputLanguageCode: AppSettingsStore.shared.resolvedTranscriptionInputLanguageCode(
-                    for: capturePurpose == .dictation ? .dictation : .meeting,
-                ),
+                inputLanguageCode: inputLanguageCode
+                    ?? AppSettingsStore.shared.resolvedTranscriptionInputLanguageCode(for: executionMode),
             )
         }
 
