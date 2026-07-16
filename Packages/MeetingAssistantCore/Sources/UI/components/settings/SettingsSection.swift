@@ -38,6 +38,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     case general
     case models
     case vocabulary
+    case dictionary
     case enhancements
     case audio
     case permissions
@@ -53,6 +54,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         .activity,
         .modes,
         .meetings,
+        .dictionary,
     ]
 
     public static let settingsSections: [SettingsSection] = [
@@ -64,15 +66,16 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
             .activity,
             .modes,
             .meetings,
+            .dictionary,
             .system,
         ]
     }
 
     public var isLegacyRedirect: Bool {
         switch self {
-        case .metrics, .transcriptions, .models, .enhancements, .vocabulary, .permissions, .general, .intelligence, .audio, .dictation, .assistant, .integrations:
+        case .metrics, .transcriptions, .models, .enhancements, .vocabulary, .permissions, .general, .intelligence, .audio, .assistant, .integrations:
             true
-        case .activity, .modes, .meetings, .system:
+        case .activity, .dictation, .modes, .meetings, .dictionary, .system:
             false
         }
     }
@@ -93,8 +96,8 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
             SettingsDestination(section: .activity, activityRoute: .history)
         case .models:
             SettingsDestination(section: .system, systemRoute: .models)
-        case .vocabulary:
-            SettingsDestination(section: .system, systemRoute: .dictionary)
+        case .vocabulary, .dictionary:
+            SettingsDestination(section: .dictionary)
         case .enhancements:
             SettingsDestination(section: .modes)
         case .permissions:
@@ -137,6 +140,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .transcriptions: "settings.section.history".localized
         case .models: "settings.section.models".localized
         case .vocabulary: "settings.section.vocabulary".localized
+        case .dictionary: "settings.section.dictionary".localized
         case .enhancements: "settings.section.ai".localized
         case .permissions: "settings.section.permissions".localized
         case .activity: "settings.section.activity".localized
@@ -158,6 +162,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .transcriptions: "clock"
         case .models: "cpu"
         case .vocabulary: "character.book.closed"
+        case .dictionary: "character.book.closed"
         case .enhancements: "sparkles"
         case .permissions: "checkmark.shield"
         case .activity: "chart.pie.fill"

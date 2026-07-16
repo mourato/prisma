@@ -5,7 +5,7 @@ final class SettingsSectionTests: XCTestCase {
     func testPrimarySections_OrderStartsWithCaptureWorkflows() {
         XCTAssertEqual(
             SettingsSection.primarySections,
-            [.activity, .modes, .meetings],
+            [.activity, .modes, .meetings, .dictionary],
         )
     }
 
@@ -19,7 +19,7 @@ final class SettingsSectionTests: XCTestCase {
     func testVisibleSections_OrderMatchesProductConcepts() {
         XCTAssertEqual(
             SettingsSection.visibleSections,
-            [.activity, .modes, .meetings, .system],
+            [.activity, .modes, .meetings, .dictionary, .system],
         )
     }
 
@@ -33,7 +33,7 @@ final class SettingsSectionTests: XCTestCase {
     func testLegacyRedirect_ModelsEnhancementsVocabularyMapToNewHomes() {
         XCTAssertEqual(SettingsSection.models.visibleSection, .system)
         XCTAssertEqual(SettingsSection.enhancements.visibleSection, .modes)
-        XCTAssertEqual(SettingsSection.vocabulary.visibleSection, .system)
+        XCTAssertEqual(SettingsSection.vocabulary.visibleSection, .dictionary)
         XCTAssertTrue(SettingsSection.models.isLegacyRedirect)
         XCTAssertTrue(SettingsSection.enhancements.isLegacyRedirect)
         XCTAssertTrue(SettingsSection.vocabulary.isLegacyRedirect)
@@ -59,7 +59,7 @@ final class SettingsSectionTests: XCTestCase {
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "transcriptions"), .activity)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "models"), .system)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "enhancements"), .modes)
-        XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "vocabulary"), .system)
+        XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "vocabulary"), .dictionary)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "audio"), .system)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "permissions"), .system)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "general"), .system)
@@ -99,7 +99,11 @@ final class SettingsSectionTests: XCTestCase {
         )
         XCTAssertEqual(
             SettingsSection.resolvedDestination(for: "vocabulary"),
-            SettingsDestination(section: .system, systemRoute: .dictionary),
+            SettingsDestination(section: .dictionary),
+        )
+        XCTAssertEqual(
+            SettingsSection.resolvedDestination(for: "dictionary"),
+            SettingsDestination(section: .dictionary),
         )
         XCTAssertEqual(
             SettingsSection.resolvedDestination(for: "enhancements"),

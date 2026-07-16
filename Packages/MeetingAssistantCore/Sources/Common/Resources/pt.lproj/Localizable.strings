@@ -1471,3 +1471,33 @@
 "common.expanded" = "Expandido";
 "common.collapsed" = "Recolhido";
 "settings.styles.editor.validation.icon_invalid" = "Digite um único emoji.";
+
+/* Dictionary settings section */
+"settings.section.dictionary" = "Dicionário";
+"settings.dictionary.description" = "Gerencie regras de substituição e termos de vocabulário para transcrição.";
+"settings.dictionary.workflow.substitutions" = "Substituições";
+"settings.dictionary.workflow.vocabulary" = "Vocabulário";
+"settings.dictionary.vocabulary.description" = "Adicione termos que a transcrição deve reconhecer. Separe múltiplos termos com vírgulas.";
+"settings.dictionary.vocabulary.add_placeholder" = "ex.: SwiftUI, Metal, CoreML";
+"settings.dictionary.vocabulary.empty" = "Nenhum termo de vocabulário adicionado ainda.";
+"settings.dictionary.vocabulary.added_count" = "%d termo(s) adicionado(s).";
+"settings.dictionary.vocabulary.validation.empty" = "Digite pelo menos um termo.";
+"settings.dictionary.vocabulary.validation.duplicated" = "\"%@\" já existe no vocabulário.";
+"settings.dictionary.vocabulary.delete_confirm_title" = "Excluir termo do vocabulário?";
+"settings.dictionary.vocabulary.delete_confirm_message" = "Tem certeza de que deseja excluir \"%@\"?";
+"settings.dictionary.vocabulary.delete_term" = "Excluir termo %@";
+
+/* Dictionary import/export */
+"settings.dictionary.import_export" = "Backup e Transferência";
+"settings.dictionary.import_export.title" = "Dicionário";
+"settings.dictionary.export" = "Exportar…";
+"settings.dictionary.import" = "Importar…";
+"settings.dictionary.export.success" = "Dicionário exportado com sucesso.";
+"settings.dictionary.export.error_encode" = "Falha ao codificar dados do dicionário.";
+"settings.dictionary.export.error_write" = "Falha ao escrever arquivo de exportação: %@";
+"settings.dictionary.import.error_invalid" = "Arquivo de dicionário inválido: %@";
+"settings.dictionary.import.error_read" = "Falha ao ler arquivo de importação: %@";
+"settings.dictionary.import.result.terms" = "%d termo(s) de vocabulário importado(s).";
+"settings.dictionary.import.result.rules" = "%d regra(s) de substituição importada(s).";
+"settings.dictionary.import.result.skipped" = "%d duplicata(s) ignorada(s).";
+"settings.dictionary.import.result.nothing" = "Nada novo para importar.";

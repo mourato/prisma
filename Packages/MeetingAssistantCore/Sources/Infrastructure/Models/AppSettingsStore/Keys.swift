@@ -108,6 +108,7 @@ extension AppSettingsStore {
         static let dictationAppRules = "dictationAppRules"
         static let dictationStyles = "dictationStyles"
         static let vocabularyReplacementRules = "vocabularyReplacementRules"
+        static let vocabularyTerms = "vocabularyTerms"
         static let markdownWebTargets = "markdownWebTargets"
         static let webTargetBrowserBundleIdentifiers = "webTargetBrowserBundleIdentifiers"
         static let monitoredMeetingBundleIdentifiers = "monitoredMeetingBundleIdentifiers"

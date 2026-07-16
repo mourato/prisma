@@ -171,16 +171,17 @@ final class SettingsSearchIndexTests: XCTestCase {
     }
 
     func testQueryDictionaryRoutesToSettingsSection() {
-        assertLocalizedQuery("settings.section.vocabulary", routesTo: .system)
+        assertLocalizedQuery("settings.section.vocabulary", routesTo: .dictionary)
+        assertLocalizedQuery("settings.section.dictionary", routesTo: .dictionary)
     }
 
     func testReplacementRulesKeyRoutesToSettingsSection() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.vocabulary.replacement_rules")
-        XCTAssertEqual(section, .system)
+        XCTAssertEqual(section, .dictionary)
     }
 
     func testQueryReplacementRulesRoutesToSettingsSection() {
-        assertLocalizedQuery("settings.vocabulary.replacement_rules", routesTo: .system)
+        assertLocalizedQuery("settings.vocabulary.replacement_rules", routesTo: .dictionary)
     }
 
     func testSectionForKeyModelsLabelRoutesToSettings() {
@@ -195,7 +196,7 @@ final class SettingsSearchIndexTests: XCTestCase {
 
     func testSectionForKeyVocabularyLabelRoutesToSettings() {
         let section = SettingsSearchIndex.section(forLocalizationKey: "settings.section.vocabulary")
-        XCTAssertEqual(section, .system)
+        XCTAssertEqual(section, .dictionary)
     }
 
     func testRecordingIndicatorSectionRoutesToSystem() {

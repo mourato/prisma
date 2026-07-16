@@ -93,6 +93,7 @@ public extension AppSettingsStore {
         dictationAppRules = Self.defaultDictationAppRules
         dictationStyles = [defaultDictationStyle()]
         vocabularyReplacementRules = []
+        vocabularyTerms = []
         markdownWebTargets = Self.defaultMarkdownWebTargets
         webTargetBrowserBundleIdentifiers = Self.defaultWebTargetBrowserBundleIdentifiers
         monitoredMeetingBundleIdentifiers = Self.defaultMonitoredMeetingBundleIdentifiers

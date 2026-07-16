@@ -2,7 +2,7 @@
 
 This is the active plan ledger. Historical audits, completed plan rows, review
 notes, and rejected options remain in the [2026-07-12 ledger archive](archive/2026-07-12-plan-ledger-history.md).
-Plan files are never renumbered; the next available plan number is 106.
+Plan files are never renumbered; the next available plan number is 112.
 
 ## Execution rules
 
@@ -78,6 +78,11 @@ reason) | `REJECTED` (with a one-line rationale).
 | [103](103-align-auto-lane-with-risk-policy.md) | Make auto lane conservative for product Swift changes | P0 | M | 102 | DONE |
 | [104](104-centralize-agent-routing-ownership.md) | Make `agent-ops` the single owner of delegation and profile selection | P1 | S | 103 | DONE |
 | [105](105-prune-agent-operational-context.md) | Prune dead agent context and make guidance drift fail closed | P1 | L | 104 | TODO |
+
+| [106](106-snapshot-mode-dictation-configuration.md) | Snapshot dictation configuration per mode | P1 | L | - | DONE |
+| [107](107-relocate-dictation-settings-into-mode-drawer.md) | Relocate dictation settings into mode drawer and retire tab | P1 | L | 106 | DONE |
+| [108](108-move-assistant-integrations-into-drawers.md) | Move assistant and integration tools into mode drawer | P1 | M | 107 | DONE |
+| [109](109-promote-dictionary-and-add-vocabulary-workflow.md) | Promote Dictionary and add a separate vocabulary workflow | P1 | L | 108 | DONE |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected

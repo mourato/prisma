@@ -4,7 +4,6 @@ import SwiftUI
 public enum SystemSettingsRoute: Hashable, Sendable {
     case root
     case models
-    case dictionary
     case sound
 }
 
@@ -35,14 +34,11 @@ public struct SystemSettingsTab: View {
                 headerTitleKey: "settings.section.settings",
                 headerDescriptionKey: "settings.system.description",
                 openModels: { route = .models },
-                openDictionary: { route = .dictionary },
                 openSound: { route = .sound },
                 expandProtectedApps: $expandProtectedApps,
             )
         case .models:
             ModelsSettingsTab(onBack: { route = .root })
-        case .dictionary:
-            VocabularySettingsTab(onBack: { route = .root })
         case .sound:
             AudioSettingsTab(onBack: { route = .root })
         }

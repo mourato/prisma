@@ -20,7 +20,6 @@ public struct GeneralSettingsTab: View {
     private let headerTitleKey: String
     private let headerDescriptionKey: String
     private let openModels: (() -> Void)?
-    private let openDictionary: (() -> Void)?
     private let openSound: (() -> Void)?
     @Binding private var expandProtectedApps: Bool
 
@@ -29,7 +28,6 @@ public struct GeneralSettingsTab: View {
         headerTitleKey: String = "settings.general.title",
         headerDescriptionKey: String = "settings.general.language_desc",
         openModels: (() -> Void)? = nil,
-        openDictionary: (() -> Void)? = nil,
         openSound: (() -> Void)? = nil,
         expandProtectedApps: Binding<Bool> = .constant(false),
     ) {
@@ -37,7 +35,6 @@ public struct GeneralSettingsTab: View {
         self.headerTitleKey = headerTitleKey
         self.headerDescriptionKey = headerDescriptionKey
         self.openModels = openModels
-        self.openDictionary = openDictionary
         self.openSound = openSound
         _expandProtectedApps = expandProtectedApps
     }
@@ -238,20 +235,13 @@ public struct GeneralSettingsTab: View {
 
     @ViewBuilder
     private var systemDrilldownsSection: some View {
-        if let openModels, let openDictionary, let openSound {
+        if let openModels, let openSound {
             Section {
                 SettingsListDrillDownButtonRow(
                     title: "settings.section.models".localized,
                     subtitle: "settings.models.description".localized,
                     accessibilityHint: "settings.section.models".localized,
                     action: openModels,
-                )
-
-                SettingsListDrillDownButtonRow(
-                    title: "settings.section.vocabulary".localized,
-                    subtitle: "settings.vocabulary.description".localized,
-                    accessibilityHint: "settings.section.vocabulary".localized,
-                    action: openDictionary,
                 )
 
                 SettingsListDrillDownButtonRow(

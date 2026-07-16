@@ -1472,3 +1472,33 @@
 
 /* Error */
 "metrics.error.load" = "Could not load dashboard data.";
+
+/* Dictionary settings section */
+"settings.section.dictionary" = "Dictionary";
+"settings.dictionary.description" = "Manage replacement rules and vocabulary terms for transcription.";
+"settings.dictionary.workflow.substitutions" = "Substitutions";
+"settings.dictionary.workflow.vocabulary" = "Vocabulary";
+"settings.dictionary.vocabulary.description" = "Add terms that the transcription should recognize. Separate multiple terms with commas.";
+"settings.dictionary.vocabulary.add_placeholder" = "e.g. SwiftUI, Metal, CoreML";
+"settings.dictionary.vocabulary.empty" = "No vocabulary terms added yet.";
+"settings.dictionary.vocabulary.added_count" = "%d term(s) added.";
+"settings.dictionary.vocabulary.validation.empty" = "Enter at least one term.";
+"settings.dictionary.vocabulary.validation.duplicated" = "\"%@\" already exists in vocabulary.";
+"settings.dictionary.vocabulary.delete_confirm_title" = "Delete vocabulary term?";
+"settings.dictionary.vocabulary.delete_confirm_message" = "Are you sure you want to delete \"%@\"?";
+"settings.dictionary.vocabulary.delete_term" = "Delete term %@";
+
+/* Dictionary import/export */
+"settings.dictionary.import_export" = "Backup & Transfer";
+"settings.dictionary.import_export.title" = "Dictionary";
+"settings.dictionary.export" = "Export…";
+"settings.dictionary.import" = "Import…";
+"settings.dictionary.export.success" = "Dictionary exported successfully.";
+"settings.dictionary.export.error_encode" = "Failed to encode dictionary data.";
+"settings.dictionary.export.error_write" = "Failed to write export file: %@";
+"settings.dictionary.import.error_invalid" = "Invalid dictionary file: %@";
+"settings.dictionary.import.error_read" = "Failed to read import file: %@";
+"settings.dictionary.import.result.terms" = "%d vocabulary term(s) imported.";
+"settings.dictionary.import.result.rules" = "%d substitution rule(s) imported.";
+"settings.dictionary.import.result.skipped" = "%d duplicate(s) skipped.";
+"settings.dictionary.import.result.nothing" = "Nothing new to import.";

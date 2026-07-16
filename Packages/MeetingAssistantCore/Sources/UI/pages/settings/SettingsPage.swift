@@ -200,6 +200,9 @@ private extension SettingsView {
         if destination.section == .system {
             systemRoute = destination.systemRoute ?? .root
         }
+        if destination.section == .dictionary {
+            systemRoute = .root
+        }
         if destination.section == .modes || destination.section == .assistant || destination.section == .integrations {
             requestedModesSubroute = destination.modesSubroute
         }
@@ -244,8 +247,8 @@ private extension SettingsView {
             GeneralSettingsTab()
         case .models:
             ModelsSettingsTab()
-        case .vocabulary:
-            VocabularySettingsTab()
+        case .vocabulary, .dictionary:
+            DictionarySettingsTab()
         case .dictation, .modes:
             ModesSettingsTab(initialRoute: $requestedModesSubroute)
         case .meetings:

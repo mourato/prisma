@@ -642,6 +642,11 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Vocabulary terms providing recognition/spelling hints for transcription.
+    @Published public var vocabularyTerms: [VocabularyTerm] {
+        didSet { save(vocabularyTerms, forKey: Keys.vocabularyTerms) }
+    }
+
     /// Website targets that should force Markdown formatting for dictation.
     @Published public var markdownWebTargets: [WebContextTarget] {
         didSet { save(markdownWebTargets, forKey: Keys.markdownWebTargets) }
@@ -854,6 +859,7 @@ public class AppSettingsStore: ObservableObject {
         dictationAppRules = dict.dictationAppRules
         dictationStyles = dict.dictationStyles
         vocabularyReplacementRules = dict.vocabularyReplacementRules
+        vocabularyTerms = dict.vocabularyTerms
         markdownWebTargets = dict.markdownWebTargets
         webTargetBrowserBundleIdentifiers = dict.webTargetBrowserBundleIdentifiers
         monitoredMeetingBundleIdentifiers = dict.monitoredMeetingBundleIdentifiers
