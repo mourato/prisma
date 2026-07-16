@@ -1,6 +1,6 @@
 #!/bin/bash
 # MARK: - Pre-commit Hook for MeetingAssistant (Optimized)
-# Fast checks on STAGED files only - blocking lint/format
+# Applies staged Swift format/lint fixes, then fails closed on residual issues.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -75,8 +75,36 @@ FILE_COUNT=$(echo "$STAGED_FILES" | wc -l | xargs)
 echo "   Found $FILE_COUNT staged Swift file(s)"
 echo ""
 
-# 1. SwiftFormat check (only staged files)
-echo "1️⃣  Checking code formatting..."
+# 1. Apply SwiftFormat (write mode on staged files only)
+echo "1️⃣  Applying SwiftFormat to staged files..."
+for file in $STAGED_FILES; do
+    if [ -f "$file" ]; then
+        "${SWIFTFORMAT}" --config .swiftformat "$file"
+    fi
+done
+echo "   ✅ SwiftFormat applied"
+
+# 2. Apply SwiftLint autofix (staged files only)
+echo "2️⃣  Applying SwiftLint autofix to staged files..."
+for file in $STAGED_FILES; do
+    if [ -f "$file" ]; then
+        "${SWIFTLINT}" lint --config .swiftlint.yml --fix --quiet "$file" 2>/dev/null || true
+    fi
+done
+echo "   ✅ SwiftLint autofix applied"
+
+# 3. Re-stage formatted paths so fixes are included in the commit
+echo "3️⃣  Re-staging formatted Swift files..."
+for file in $STAGED_FILES; do
+    if [ -f "$file" ]; then
+        git add -- "$file"
+    fi
+done
+echo "   ✅ Staged index updated"
+echo ""
+
+# 4. Fail closed on residual non-autofixable issues
+echo "4️⃣  Verifying formatting..."
 FORMAT_FAILED=0
 for file in $STAGED_FILES; do
     if [ -f "$file" ]; then
@@ -87,14 +115,13 @@ for file in $STAGED_FILES; do
 done
 
 if [ $FORMAT_FAILED -eq 1 ]; then
-    echo "❌ Code formatting issues found. Run 'make lint-fix' to fix before committing."
+    echo "❌ Code formatting issues remain after autofix. Fix manually before committing."
     exit 1
 else
     echo "   ✅ Formatting OK"
 fi
 
-# 2. SwiftLint check (only staged files)
-echo "2️⃣  Running SwiftLint..."
+echo "5️⃣  Verifying SwiftLint..."
 LINT_FAILED=0
 for file in $STAGED_FILES; do
     if [ -f "$file" ]; then
@@ -105,7 +132,7 @@ for file in $STAGED_FILES; do
 done
 
 if [ $LINT_FAILED -eq 1 ]; then
-    echo "❌ SwiftLint violations found. Run 'make lint-fix' or 'make lint' to remediate."
+    echo "❌ SwiftLint violations remain after autofix. Fix manually before committing."
     exit 1
 else
     echo "   ✅ SwiftLint OK"
@@ -114,5 +141,5 @@ fi
 echo ""
 echo "🎉 All pre-commit checks passed!"
 echo ""
-echo "💡 Tip: Scoped validation runs on 'git push' (pre-push hook)"
+echo "💡 Tip: Run end-of-task module validation before push; pre-push is light unless auto=Full"
 echo ""
