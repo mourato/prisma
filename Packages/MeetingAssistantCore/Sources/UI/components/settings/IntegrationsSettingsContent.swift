@@ -109,3 +109,8 @@ public struct IntegrationsSettingsContent: View {
         settings.isAssistantEnabled && settings.isAssistantIntegrationsEnabled
     }
 }
+
+#Preview("Integrations Drawer") {
+    IntegrationsSettingsContent(onClose: {})
+        .frame(width: 400, height: 640)
+}

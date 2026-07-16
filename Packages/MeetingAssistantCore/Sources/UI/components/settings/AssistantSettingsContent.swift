@@ -11,7 +11,7 @@ import SwiftUI
 
 /// Content view for Assistant settings, designed for use inside a footerless ModeEditorDrawer.
 /// Preserves capability toggle, shortcut editor, visual feedback section,
-/// and preview lifecycle management from AssistantSettingsTab.
+/// and preview lifecycle management from the former Assistant settings page.
 public struct AssistantSettingsContent: View {
     private enum Constants {
         static let previewDurationNanoseconds: UInt64 = 2_000_000_000
@@ -229,4 +229,9 @@ public struct AssistantSettingsContent: View {
         previewController = nil
         isPreviewRunning = false
     }
+}
+
+#Preview("Assistant Drawer") {
+    AssistantSettingsContent(onClose: {})
+        .frame(width: 400, height: 640)
 }
