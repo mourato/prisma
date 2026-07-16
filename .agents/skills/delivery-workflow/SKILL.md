@@ -40,19 +40,38 @@ make validate-agent ARGS="--lane full --no-reuse --agent"
 ```
 
 Auto selects the lane before expensive work. Full executes strict lint then
-build-test once. `make preflight` and `make deliverable-gate` remain explicit
-release/high-confidence flows, not duplicate mandatory merge gates.
+build-test once. Pre-push Option C runs Full only when auto=Full; Fast pushes are
+light and rely on end-of-task module validation. `make preflight` and
+`make deliverable-gate` remain explicit release/high-confidence flows, not
+duplicate mandatory merge gates.
 
 ## Agent validation loop
+
+| Phase | Required when | Action |
+|---|---|---|
+| During task | Behavior/Swift changed | Targeted unit tests for the slice |
+| End of task/plan | Any `.swift` touched | Fail-closed lint on the delta (`make lint-strict-agent` or equivalent scoped strict check) |
+| End of task/plan | Behavior changed | `make validate-agent ARGS="--lane auto --base main --agent"` on a clean tree (or `--committed` after commit) — Fast scoped path, not optional |
+| Escalate to Full | Auto/Full triggers | `make validate-agent ARGS="--lane full ..."` or let Option-C pre-push run Full |
+| Guidance-only | No Swift / no scripts | `make guidance-check`; no product test ladder |
+
+Vocabulary:
+
+- **Targeted tests** = per-file/`--test` during the slice
+- **Affected-module / auto Fast** = `validate-agent --lane auto` Fast path (scope-check)
+- **Full suite** = Full lane `build-test` (Xcode), not merely `make test-full`
 
 Default for Low/Fast (including guidance-only and allowlisted `implementer-fast`):
 
 1. During iteration, run only the smallest changed-path check (`make guidance-check`,
    focused tests, `make build-agent`, `make preview-check`, etc.). Do **not** run
    Full `build-test`, dry-run, or staged validate on every slice.
-2. Commit. Rely on the staged pre-commit SwiftFormat/SwiftLint hook for Swift.
-3. Push. The pre-push hook runs `validate-agent --committed` once and reuses a
-   compatible PASS fingerprint when one exists.
+2. End of task: run strict lint when Swift changed; run affected-module
+   `validate-agent --lane auto` when behavior changed.
+3. Commit. Pre-commit applies staged SwiftFormat/SwiftLint autofix and re-stages.
+4. Push. Option-C pre-push is **light** when auto=Fast (no scoped tests on push).
+   When auto=Full (scripts/audio/infra/large delta), pre-push runs mandatory Full
+   `validate-agent --committed`.
 
 Use a heavier local gate only when needed:
 
@@ -63,8 +82,8 @@ Use a heavier local gate only when needed:
   tree (or `--committed --base <base> --head HEAD`), then push — do not also run
   staged + working-tree Full + pre-push Full.
 - **Guidance-only** (`.agents` / `AGENTS.md` / docs, no `scripts/` or product
-  Swift): `make guidance-check` is enough before commit; let pre-push/auto choose
-  Fast. Do not run Full/`--no-reuse` unless scripts or Makefile changed.
+  Swift): `make guidance-check` is enough before commit; pre-push stays light
+  unless scripts or Makefile changed.
 - `make scope-check` is an internal engine — do not run it “for safety” alongside
   `validate-agent`.
 - `SKIP_LINT=1` / `SKIP_TESTS=1` / `MA_RUST_AUDIO_KERNELS_BUILD=off` are emergency

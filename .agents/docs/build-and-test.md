@@ -11,15 +11,17 @@ Choose commands by lane:
 - Optional comprehensive validation: `make preflight`
 
 Agent default loop (Low/Fast): run only the smallest changed-path check during
-iteration, commit (pre-commit owns staged Swift lint/format), and push — pre-push
-runs `validate-agent --committed` once and reuses compatible PASS evidence. Do
-**not** stack dry-run + staged validate + Full/`--no-reuse` on every slice.
-Guidance-only changes: prefer `make guidance-check`, then commit/push. Use
+iteration; end of task run strict lint when Swift changed and affected-module
+`validate-agent --lane auto` when behavior changed; commit (pre-commit applies
+staged SwiftFormat/SwiftLint autofix); push — Option C is light when auto=Fast
+and mandatory Full when auto=Full. Do **not** stack dry-run + staged validate +
+Full/`--no-reuse` on every slice. Guidance-only changes: prefer
+`make guidance-check`, then commit/push. Use
 `make validate-agent ARGS="--lane auto --dry-run --base main"` at most once when
 the lane is unclear; for reusable Full evidence on a clean tree prefer
 `make validate-agent ARGS="--lane auto --base main --agent"` (or `--committed`)
-once, then push. Treat `validate-agent` as the remembered gate; `scope-check` is
-an internal engine — do not run both for safety.
+once before push when behavior changed. Treat `validate-agent` as the remembered
+gate; `scope-check` is an internal engine — do not run both for safety.
 
 ## Primary Build/Test Commands
 
@@ -337,8 +339,8 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 | Goal | Command |
 |------|---------|
 | Local development loop | `make build && make run` |
-| Before committing | Staged SwiftFormat/SwiftLint pre-commit hook; run `make lint-fix` when it fails |
-| Before push/release (recommended) | pre-push exact committed range; `make deliverable-gate` for high confidence |
+| Before committing | Pre-commit applies staged SwiftFormat/SwiftLint autofix; fix residual lint manually |
+| Before push/release (recommended) | End-of-task `validate-agent --lane auto` for behavior changes; pre-push Option C (light Fast, mandatory Full) |
 | Pre-merge validation | `make preflight` |
 | Fast local feedback | `make preflight-fast` |
 | Smart scoped iteration | `make scope-check` |

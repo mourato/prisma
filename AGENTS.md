@@ -68,10 +68,11 @@ Every implementation plan must include an `Execution profile`; reclassify agains
 
 ## Agent Validation Loop
 
-`make validate-agent` is the remembered merge gate. Low/Fast default: smallest
-changed-path check → commit → trust pre-commit/pre-push (do not stack dry-run,
-staged validate, and Full/`--no-reuse` on every slice). Details and Full/infra
-exceptions live in `delivery-workflow`.
+`make validate-agent` is the remembered merge gate. End-of-task: strict lint on
+any Swift delta, then affected-module `validate-agent --lane auto` when behavior
+changes. Commit (pre-commit applies staged format/lint-fix); push is light unless
+auto=Full (Option C). Do not stack dry-run, staged validate, and Full/`--no-reuse`
+on every slice. Details live in `delivery-workflow`.
 
 ## Commands and Routing
 

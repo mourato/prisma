@@ -2,7 +2,7 @@
 
 This is the active plan ledger. Historical audits, completed plan rows, review
 notes, and rejected options remain in the [2026-07-12 ledger archive](archive/2026-07-12-plan-ledger-history.md).
-Plan files are never renumbered; the next available plan number is 100.
+Plan files are never renumbered; the next available plan number is 101.
 
 ## Execution rules
 
@@ -72,6 +72,7 @@ reason) | `REJECTED` (with a one-line rationale).
 | [097](097-retire-settings-toolbar-navigation-chrome.md) | Retire Settings toolbar back/forward navigation chrome | P1 | M | 094, 095, 096 | DONE |
 | [098](098-migrate-modes-list-to-settings-form-page.md) | Migrate Modes list into SettingsFormPage | P1 | M | 079, 082 | DONE |
 | [099](099-polish-settings-expandable-disclosure-motion.md) | Polish Form expandable disclosure motion and document the contract | P1 | M | 093 (DONE) | DONE |
+| [100](100-pre-commit-format-option-c-pre-push.md) | Pre-commit staged format, agent lint/test ladder, Option-C pre-push | P1 | L | 087, 089 | DONE |
 
 Plans 001–061 are completed or archived in the historical ledger. The archive preserves the original audit scope,
 findings, dependency history, status table, committee notes, and rejected
@@ -171,6 +172,10 @@ options verbatim for searchability.
   `workingState` from fingerprints on clean trees so working-tree PASS reuses
   into `--committed`/pre-push, and rewrite guidance so Low/Fast defaults to
   check → commit → push without stacked dry-run/staged/Full.
+- 100 depends on 087/089 and switches delivery hooks to: staged SwiftFormat on
+  pre-commit; agent end-of-task lint + test ladder; Option-C pre-push (light when
+  auto=Fast, mandatory Full when auto=Full). Do not restore Fast scoped tests on
+  every push without a new plan.
 - 090 restores save-semantics boolean controls after the Form migration
   incorrectly applied checkboxes to immediate Settings pages; it also elevates
   the rule in `macos-app-engineering`. Independent of 091/092.
@@ -234,6 +239,9 @@ options verbatim for searchability.
   no longer depends on those recovery copies.
 - Making `SKIP_TESTS=1` or default `MA_RUST_AUDIO_KERNELS_BUILD=off` the normal
   pre-push path is rejected; 087 must fix staging/reuse instead.
+- Removing **all** pre-push validation (including Full for scripts/audio/infra)
+  is rejected; plan 100 Option C keeps Full mandatory when auto would be Full
+  and only lightens the Fast path.
 - Weakening Full escalation for real `scripts/*` / Makefile changes to speed
   pushes is rejected; reuse and false-mismatch fixes are the lever.
 - Porting VoiceInk **card** expand (spring + scale, e.g. Enhancement

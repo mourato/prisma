@@ -6,16 +6,19 @@ Git mechanics, scoped validation, hooks, and release flows. Role, lanes, and the
 
 ### Fast lane (Low risk)
 
-- Run staged lint/format when Swift is touched (pre-commit does this).
-- Guidance-only: `make guidance-check` is enough before commit.
-- Before push/merge: trust pre-push `validate-agent --lane auto --committed`, or run that command once locally if you want evidence before push.
+- During iteration: targeted tests and smallest changed-path checks.
+- End of task when Swift touched: fail-closed lint on the delta (`make lint-strict-agent` or equivalent).
+- End of task when behavior changed: one `make validate-agent ARGS="--lane auto --base main --agent"` (or `--committed`) on a clean tree.
+- Commit: pre-commit applies staged SwiftFormat/SwiftLint autofix and re-stages.
+- Push: Option C light path when auto=Fast — no scoped tests on push; end-of-task module validation is mandatory.
 
 ### Full lane (Medium/High risk)
 
 - During development, run the smallest changed-path checks — not Full on every slice.
-- Prefer one clean-tree `make validate-agent ARGS="--lane auto --base main --agent"` (or `--committed`) when you need local Full evidence; let pre-push reuse it.
+- End of task: strict lint + affected-module or Full validation as lane requires.
+- Prefer one clean-tree `make validate-agent ARGS="--lane auto --base main --agent"` (or `--committed`) when you need local Full evidence.
 - Reserve direct `make build-test` / `--no-reuse` for milestones or after flaky reuse.
-- Before push/merge: pre-push or `make validate-agent ARGS="--lane full"` once — not both plus staged.
+- Push: when auto=Full, pre-push runs mandatory `validate-agent --lane full --committed`; do not stack duplicate Full runs.
 
 `make preflight` is optional and does not replace lane merge gates.
 
@@ -78,15 +81,19 @@ make guidance-check
 ### Agent delivery sequence
 
 1. Iteration: smallest changed-path check only (no Full/`build-test` per slice).
-2. Commit: staged pre-commit owns SwiftFormat/SwiftLint; `SKIP_LINT=1` is emergency only.
-3. Optional local evidence (Full/infra or unclear lane): one
+2. End of task: strict lint when Swift changed; affected-module
+   `validate-agent --lane auto` when behavior changed.
+3. Commit: pre-commit applies staged SwiftFormat/SwiftLint autofix and re-stages;
+   `SKIP_LINT=1` is emergency only.
+4. Optional local evidence (Full/infra or unclear lane): one
    `make validate-agent ARGS="--lane auto --base main --agent"` on a clean tree,
    or `--committed --base <base> --head HEAD`. Skip dry-run/staged stacking.
-4. Push: pre-push runs `validate-agent --committed` and reuses compatible PASS
-   fingerprints (clean working-tree PASS with the same base/head trees counts).
-5. Guidance-only: `make guidance-check` then commit/push unless `scripts/` or
-   Makefile changed.
-6. `make preflight-agent` / `make deliverable-gate` for release or high-confidence only.
+5. Push: Option C — light when auto=Fast (relies on end-of-task module validation);
+   mandatory Full `validate-agent --committed` when auto=Full. A clean working-tree
+   PASS with the same base/head trees can still be reused on the Full path.
+6. Guidance-only: `make guidance-check` then commit/push unless `scripts/` or
+   Makefile changed (then auto=Full on push).
+7. `make preflight-agent` / `make deliverable-gate` for release or high-confidence only.
 
 Tests are not run before every commit by default. `scope-check` is not a second
 merge gate — do not run it alongside `validate-agent` “for safety”.
@@ -113,11 +120,8 @@ PR descriptions: summary, scope/risk, validation results, review findings, basel
 ## Hook and troubleshooting
 
 - Install hooks: `git config core.hooksPath scripts/hooks` or `make setup`.
-- `pre-commit`: blocking staged Swift lint/format; no tests.
-- `pre-push`: runs `validate-agent --lane auto --committed` over the exact push
-  range and reuses compatible PASS fingerprints when external inputs are
-  comparable. A clean `HEAD` matching the push head may validate in-place
-  instead of materializing a detached worktree.
+- `pre-commit`: applies staged SwiftFormat write + SwiftLint `--fix`, re-stages, then fails closed on residual lint; no tests.
+- `pre-push`: Option C — resolves auto lane via `scope-check --dry-run`; **Fast** pushes are light (no scoped tests/build-test); **Full** pushes run mandatory `validate-agent --lane full --committed` and reuse compatible PASS fingerprints when valid.
 - Rust audio staging is required in `auto`/`on` modes. Do not treat
   `MA_RUST_AUDIO_KERNELS_BUILD=off` as a routine push workaround; use it only
   as an emergency bypass when Rust tooling is unavailable.

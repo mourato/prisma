@@ -50,10 +50,11 @@ For compact, auditable iteration:
 ```bash
 make scope-check-agent ARGS="--dry-run --base main"  # preview when the gate is unclear
 make build-agent                                      # or the smallest relevant check
-make lint-fix                                         # when the staged pre-commit gate reports issues
+make lint-strict-agent                                # end of task when Swift changed
+make validate-agent ARGS="--lane auto --base main --agent"  # end of task when behavior changed
 ```
 
-The pre-commit hook runs SwiftFormat and SwiftLint on staged Swift files and does not run tests. The pre-push hook runs compact scoped validation; use `PUSH_CHECK_VERBOSE=1` for verbose output. `SKIP_LINT=1` and `SKIP_TESTS=1` are explicit emergency bypasses. Full-lane changes still require `make lint` and `make build-test`; strict lint is not a merge gate until the repository baseline is green.
+The pre-commit hook applies SwiftFormat and SwiftLint autofix to staged Swift files (re-staging fixes) and does not run tests. The pre-push hook uses Option C: light when auto=Fast (relies on end-of-task module validation), mandatory Full `validate-agent` when auto=Full. Use `PUSH_CHECK_VERBOSE=1` for verbose Full-path output. `SKIP_LINT=1` and `SKIP_TESTS=1` are explicit emergency bypasses. Full-lane changes still require end-of-task strict lint and affected-module or Full validation before push.
 
 ### Make targets
 
