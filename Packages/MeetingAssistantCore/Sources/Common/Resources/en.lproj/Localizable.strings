@@ -3,7 +3,7 @@
 "settings.section.metrics" = "Dashboard";
 "settings.section.general" = "General";
 "settings.section.dictation" = "Dictation";
-"settings.section.modes" = "Modes";
+"settings.section.modes" = "Dictation Modes";
 "settings.section.meetings" = "Meetings";
 "settings.section.audio" = "Sound";
 "settings.section.transcriptions" = "Transcriptions";
