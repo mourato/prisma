@@ -73,7 +73,8 @@ When inspecting code outside this repository, use this source order:
 **Then (if needed):** `apple-design`, `accessibility-audit`, `localization`, `menubar`, `debugging-diagnostics`, `swift-conventions`, or `swift-concurrency-expert`
 
 For a SwiftUI modern-API / maintainability **review** pass, stay on
-`macos-app-engineering` and open `references/swiftui-review.md`.
+`macos-app-engineering` and open
+[`swiftui-review.md`](../skills/macos-app-engineering/references/swiftui-review.md).
 
 **Example:** "Design the meeting recording UI" → `macos-app-engineering`
 
@@ -260,25 +261,4 @@ Use `thermo-nuclear-code-quality-review` for review output, semaforo severity, a
 
 ---
 
-## Skill Files and Direct Access
-
-| Skill | File | When to use |
-|-------|------|-------------|
-| `accessibility-audit` | `.agents/skills/accessibility-audit/SKILL.md` | VoiceOver, focus order, keyboard navigation, reduced motion |
-| `apple-design` | `.agents/skills/apple-design/SKILL.md` | Apple-style interaction design, fluid motion, springs, materials, typography |
-| `benchmarking` | `.agents/skills/benchmarking/SKILL.md` | Reference project registry, clone policy, inspiration comparisons |
-| `architecture` | `.agents/skills/architecture/SKILL.md` | Module boundaries, Clean Architecture, DI |
-| `audio-realtime` | `.agents/skills/audio-realtime/SKILL.md` | AVAudioSourceNode, ProcessTap, underruns |
-| `code-quality` | `.agents/skills/code-quality/SKILL.md` | Readability, refactoring |
-| `data-persistence` | `.agents/skills/data-persistence/SKILL.md` | Storage design, migrations |
-| `debugging-diagnostics` | `.agents/skills/debugging-diagnostics/SKILL.md` | Crash/flaky investigation, logs, telemetry, redaction, diagnostic signatures |
-| `delivery-workflow` | `.agents/skills/delivery-workflow/SKILL.md` | Risk lanes, validation gates, Git workflow, PR/merge mechanics |
-| `documentation` | `.agents/skills/documentation/SKILL.md` | DocC and API docs |
-| `intelligence-kernel` | `.agents/skills/intelligence-kernel/SKILL.md` | Kernel modes and summary benchmark gates |
-| `macos-app-engineering` | `.agents/skills/macos-app-engineering/SKILL.md` | macOS UI/app implementation, SwiftUI, AppKit bridging, Settings UI, previews, SwiftUI review appendix |
-| `menubar` | `.agents/skills/menubar/SKILL.md` | Menu bar, popover, and floating-panel behavior |
-| `project-standards` | `.agents/skills/project-standards/SKILL.md` | AGENTS.md, project policy, repository standards |
-| `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/SKILL.md` | Swift 6.2 actor isolation and Sendable fixes |
-| `swift-conventions` | `.agents/skills/swift-conventions/SKILL.md` | Swift style, type safety, API naming, module organization |
-| `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest code structure, mocks, async tests |
-| `thermo-nuclear-code-quality-review` | Global skill + `.agents/docs/prisma-review-profile.md` | Default code review, PR audits, semaforo output, and strict Prisma maintainability analysis |
+The canonical skill catalog is [`.agents/SKILLS_INDEX.md`](../SKILLS_INDEX.md).

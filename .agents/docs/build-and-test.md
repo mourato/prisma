@@ -172,31 +172,25 @@ make test-ci-strict      # Strict xcodebuild parity mode
 ./scripts/run-tests.sh --agent
 ```
 
-### Scoped iteration workflow (faster feedback)
+### Scoped iteration and validation alternatives
 
-Use this sequence while implementing, then keep lane technical gates at the end:
+Choose the command for the current purpose; do not run every mode as a
+sequence:
+
+- **Iteration:** use targeted tests, `make build-agent`, or one relevant scope
+  check such as `make scope-check`, `make preview-check`, or `make arch-check`.
+- **Final local evidence:** run one clean-tree
+  `make validate-agent ARGS="--lane auto"`.
+- **Exact committed evidence:** when specifically needed before push, run one
+  `make validate-agent ARGS="--lane auto --committed --base <base> --head <head> --agent"`.
+- **Pre-push:** let the hook execute or reuse evidence for the exact pushed
+  range; do not replay working, staged, and committed modes manually.
+
+Additional diagnostic alternatives, not sequential gates:
 
 ```bash
-# Canonical smart command for iteration (auto-maps tests, escalates when needed)
-make scope-check
-make validate-agent ARGS="--lane auto"  # Canonical working-tree evidence
-make validate-agent ARGS="--lane auto --staged --base main --agent"  # Final staged evidence
-make validate-agent ARGS="--lane auto --committed --base <base> --head <head> --agent"  # Exact push range
-make validate-agent ARGS="--lane auto --committed --empty-base --head <head> --agent"  # Exact first-push tree range
-
-# Fastest confidence pass
-make test-smoke
-
-# 1) Targeted tests for changed behavior
-./scripts/run-tests.sh --suite dev --file <TestFile>
-./scripts/run-tests.sh --suite dev --test <testName>
-
-# 2) Narrow compile confidence
-make build-agent
-
-# 3) Scope-specific checks (only when relevant)
-make preview-check
-make arch-check
+make validate-agent ARGS="--lane auto --staged --base main --agent"
+make validate-agent ARGS="--lane auto --committed --empty-base --head <head> --agent"
 ```
 
 For agent planning, preview the decision without running checks:

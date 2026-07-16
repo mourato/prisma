@@ -22,7 +22,7 @@ Not owned here:
 - Accessibility *audit* pass/fail (VoiceOver, keyboard/focus, Reduce Motion
   compliance) → `accessibility-audit`
 - SwiftUI modern-API review checklist → `macos-app-engineering`
-  (`references/swiftui-review.md`)
+  (`../macos-app-engineering/references/swiftui-review.md`)
 
 ## When to Use
 

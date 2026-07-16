@@ -943,6 +943,7 @@ test_pre_push_fast_failure_and_guidance_gate
 test_pre_push_rejects_invalid_fresh_results
 test_pre_push_protocol
 source "${SCRIPT_ROOT}/scripts/tests/scope-classification-test.sh"
+"${SCRIPT_ROOT}/scripts/tests/guidance-validation-test.sh"
 "${SCRIPT_ROOT}/scripts/tests/hooks-setup-test.sh"
 "${SCRIPT_ROOT}/scripts/tests/rust-audio-staging-test.sh"
 "${SCRIPT_ROOT}/scripts/tests/preview-check-test.sh"

@@ -8,11 +8,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MARKDOWN_FILES = [
-    ROOT / "AGENTS.md",
-    *sorted((ROOT / ".agents" / "docs").glob("*.md")),
-    *sorted((ROOT / ".agents" / "skills").glob("*/SKILL.md")),
-]
 SKILLS_ROOT = ROOT / ".agents" / "skills"
 SKILLS_INDEX = ROOT / ".agents" / "SKILLS_INDEX.md"
 SKILL_ROUTING = ROOT / ".agents" / "docs" / "skill-routing.md"
@@ -20,7 +15,7 @@ SKILL_ROUTING = ROOT / ".agents" / "docs" / "skill-routing.md"
 MAKE_TARGET_RE = re.compile(r"^([A-Za-z0-9_.-]+):", re.MULTILINE)
 MARKDOWN_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 INLINE_PATH_RE = re.compile(
-    r"`((?:\.\.?/|\.agents/|scripts/|App/|Packages/|Config/|\.github/|AGENTS\.md|README\.md|Makefile)[^`\s]*)`"
+    r"`((?:\.\.?/|references/|assets/|\.agents/|scripts/|App/|Packages/|Config/|\.github/|AGENTS\.md|README\.md|Makefile)[^`\s]*)`"
 )
 INLINE_MAKE_RE = re.compile(r"`make\s+([A-Za-z0-9_.-]+)`")
 FENCED_CODE_BLOCK_RE = re.compile(r"```[^\n]*\n(.*?)```", re.DOTALL)
@@ -45,6 +40,14 @@ PLACEHOLDER_PATTERNS = {
     "console.log": "web-specific logging guidance",
     "VS Code": "editor-specific generic guidance",
 }
+
+
+def markdown_files() -> list[Path]:
+    return [
+        ROOT / "AGENTS.md",
+        *sorted((ROOT / ".agents" / "docs").rglob("*.md")),
+        *sorted(SKILLS_ROOT.rglob("*.md")),
+    ]
 
 
 def parse_make_targets(makefile_path: Path) -> set[str]:
@@ -213,6 +216,15 @@ def validate_skill_directory(skill_dir: Path) -> list[str]:
     return errors
 
 
+def has_non_hidden_content(skill_dir: Path) -> bool:
+    for descendant in skill_dir.rglob("*"):
+        relative = descendant.relative_to(skill_dir)
+        if any(part.startswith(".") for part in relative.parts):
+            continue
+        return True
+    return False
+
+
 def validate_placeholders(markdown_file: Path, text: str) -> list[str]:
     errors: list[str] = []
     rel = markdown_file.relative_to(ROOT)
@@ -227,17 +239,21 @@ def main() -> int:
     errors: list[str] = []
     errors.extend(validate_skill_catalog())
 
-    for markdown_file in MARKDOWN_FILES:
+    for markdown_file in markdown_files():
         text = markdown_file.read_text(encoding="utf-8")
         errors.extend(validate_make_references(markdown_file, text, known_targets))
         errors.extend(validate_path_references(markdown_file, text))
-        if markdown_file.parent.parent == SKILLS_ROOT:
+        if markdown_file.name == "SKILL.md" and markdown_file.parent.parent == SKILLS_ROOT:
             errors.extend(validate_skill_structure(markdown_file, text))
             errors.extend(validate_placeholders(markdown_file, text))
 
     for skill_dir in sorted(path for path in SKILLS_ROOT.iterdir() if path.is_dir()):
         if (skill_dir / "SKILL.md").exists():
             errors.extend(validate_skill_directory(skill_dir))
+        elif has_non_hidden_content(skill_dir):
+            errors.append(
+                f"Skill directory '{skill_dir.name}' contains content but has no SKILL.md"
+            )
 
     if errors:
         for error in sorted(set(errors)):
