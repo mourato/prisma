@@ -539,6 +539,7 @@ extension AppSettingsStore {
         let dictationAppRules: [DictationAppRule]
         let dictationStyles: [DictationStyle]
         let vocabularyReplacementRules: [VocabularyReplacementRule]
+        let vocabularyTerms: [VocabularyTerm]
         let markdownWebTargets: [WebContextTarget]
         let webTargetBrowserBundleIdentifiers: [String]
         let monitoredMeetingBundleIdentifiers: [String]
@@ -589,6 +590,7 @@ extension AppSettingsStore {
                 defaultStyle: defaultDictationStyle,
             ),
             vocabularyReplacementRules: normalizedVocabularyReplacementRules(loadDecoded([VocabularyReplacementRule].self, forKey: Keys.vocabularyReplacementRules) ?? []),
+            vocabularyTerms: loadDecoded([VocabularyTerm].self, forKey: Keys.vocabularyTerms) ?? [],
             markdownWebTargets: loadDecoded([WebContextTarget].self, forKey: Keys.markdownWebTargets) ?? defaultMarkdownWebTargets,
             webTargetBrowserBundleIdentifiers: loadDecoded([String].self, forKey: Keys.webTargetBrowserBundleIdentifiers) ?? defaultWebTargetBrowserBundleIdentifiers,
             monitoredMeetingBundleIdentifiers: loadDecoded([String].self, forKey: Keys.monitoredMeetingBundleIdentifiers) ?? defaultMonitoredMeetingBundleIdentifiers,
