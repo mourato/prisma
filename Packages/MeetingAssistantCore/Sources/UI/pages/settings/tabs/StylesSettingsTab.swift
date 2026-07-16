@@ -25,35 +25,38 @@ public struct StylesSettingsTab: View {
     }
 
     public var body: some View {
-        SettingsScrollableContent {
-            pageContent
+        SettingsFormPage {
+            VStack(alignment: .leading, spacing: 4) {
+                SettingsFormSectionHeader(
+                    title: "settings.section.modes".localized,
+                    icon: "paintpalette",
+                )
+
+                Text("settings.styles.description".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } content: {
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    stylesList
+
+                    HStack {
+                        Spacer()
+                        Button("settings.styles.add".localized, systemImage: "plus") {
+                            onOpenEditor?(nil)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                        .stylesAddFocus(
+                            focusedStyle: focusedStyle,
+                            accessibilityFocusedStyle: accessibilityFocusedStyle,
+                        )
+                    }
+                }
+            }
         }
         .onDeleteCommand(perform: deleteSelectedStyle)
-    }
-
-    @ViewBuilder
-    private var pageContent: some View {
-        SettingsSectionHeader(
-            title: "settings.section.rules_per_app".localized,
-            description: "settings.styles.description".localized,
-        )
-
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Label("settings.styles.title".localized, systemImage: "paintpalette")
-                    .font(.headline)
-                Spacer()
-                Button("settings.styles.add".localized, systemImage: "plus") {
-                    onOpenEditor?(nil)
-                }
-                .buttonStyle(.bordered)
-                .stylesAddFocus(
-                    focusedStyle: focusedStyle,
-                    accessibilityFocusedStyle: accessibilityFocusedStyle,
-                )
-            }
-            stylesList
-        }
     }
 
     @ViewBuilder
