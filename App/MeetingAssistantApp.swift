@@ -183,12 +183,13 @@ struct MeetingAssistantCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
-        // `let _ =` keeps this side effect out of CommandsBuilder.buildExpression;
-        // a bare `_ =` fails Release/WMO with "type '()' cannot conform to 'Commands'".
-        _ = configureSettingsSceneOpener()
+        // Named binding (not `let _ =` / `_ =`): SwiftFormat's redundantLet rewrites
+        // `let _ =` to `_ =`, which Release/WMO rejects inside CommandsBuilder.
+        let isSettingsOpenerRegistered = registerSettingsSceneOpener()
 
         CommandGroup(replacing: .appSettings) {
             Button("menubar.settings".localized) {
+                guard isSettingsOpenerRegistered else { return }
                 commandRouter.openSettings()
             }
             .keyboardShortcut(",", modifiers: .command)
@@ -272,10 +273,11 @@ struct MeetingAssistantCommands: Commands {
     }
 
     @MainActor
-    private func configureSettingsSceneOpener() {
+    private func registerSettingsSceneOpener() -> Bool {
         NavigationService.shared.registerOpenSettingsHandler {
             openWindow(id: MeetingAssistantApp.WindowID.settings)
         }
+        return true
     }
 }
 
