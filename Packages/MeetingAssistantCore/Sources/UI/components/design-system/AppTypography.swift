@@ -3,7 +3,7 @@ import SwiftUI
 
 public enum AppTypography {
     public static var sidebarIcon: Font {
-        .system(size: 18, weight: .medium)
+        .system(size: 14, weight: .medium)
     }
 
     public static var sidebarLabel: Font {
