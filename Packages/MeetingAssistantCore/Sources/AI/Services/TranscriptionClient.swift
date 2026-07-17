@@ -23,6 +23,12 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
     /// Automatically cleared after being consumed.
     public var selectionOverride: TranscriptionProviderSelection?
 
+    /// Transient override for the vocabulary hint sent to supported providers.
+    /// When set, the next `transcribe` call includes this string as the provider
+    /// `prompt`/`custom_prompt` parameter. Automatically cleared after consumption.
+    /// Never logged in diagnostics.
+    public var vocabularyHintOverride: String?
+
     public enum CachedReadinessState: String, Sendable {
         case unknown
         case healthy
@@ -295,6 +301,8 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         inputLanguageCode: String?,
     ) async throws -> TranscriptionResponse {
         selectionOverride = nil
+        let vocabularyHint = vocabularyHintOverride
+        vocabularyHintOverride = nil
         let backend = resolvedBackend(for: selection)
         let implementationLabel = switch backend {
         case .xpc:
@@ -342,6 +350,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 modelID: modelID,
                 onProgress: onProgress,
                 inputLanguageCode: inputLanguageCode,
+                vocabularyHint: vocabularyHint,
             )
         case let .elevenLabs(modelID):
             return try await transcribeViaElevenLabs(
@@ -349,6 +358,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 modelID: modelID,
                 onProgress: onProgress,
                 inputLanguageCode: inputLanguageCode,
+                vocabularyHint: vocabularyHint,
             )
         }
     }
@@ -487,6 +497,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         modelID: String,
         onProgress: (@Sendable (Double) -> Void)?,
         inputLanguageCode: String?,
+        vocabularyHint: String? = nil,
     ) async throws -> TranscriptionResponse {
         do {
             let response = try await groqTranscriptionClient.transcribe(
@@ -494,6 +505,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 modelID: modelID,
                 inputLanguageCode: inputLanguageCode,
                 onProgress: onProgress,
+                vocabularyHint: vocabularyHint,
             )
             updateCachedReadiness(.healthy)
             AppLogger.info(
@@ -519,6 +531,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         modelID: String,
         onProgress: (@Sendable (Double) -> Void)?,
         inputLanguageCode: String?,
+        vocabularyHint: String? = nil,
     ) async throws -> TranscriptionResponse {
         do {
             let response = try await elevenLabsTranscriptionClient.transcribe(
@@ -526,6 +539,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 modelID: modelID,
                 inputLanguageCode: inputLanguageCode,
                 onProgress: onProgress,
+                vocabularyHint: vocabularyHint,
             )
             updateCachedReadiness(.healthy)
             AppLogger.info(

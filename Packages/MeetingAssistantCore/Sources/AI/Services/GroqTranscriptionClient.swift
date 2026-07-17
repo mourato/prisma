@@ -16,6 +16,7 @@ public final class GroqTranscriptionClient {
         modelID: String,
         inputLanguageCode: String? = nil,
         onProgress: (@Sendable (Double) -> Void)? = nil,
+        vocabularyHint: String? = nil,
     ) async throws -> TranscriptionResponse {
         let apiKey = try resolveAPIKey()
         let normalizedModel = normalizedGroqModelID(modelID)
@@ -24,6 +25,7 @@ public final class GroqTranscriptionClient {
             modelID: normalizedModel,
             inputLanguageCode: inputLanguageCode,
             apiKey: apiKey,
+            vocabularyHint: vocabularyHint,
         )
 
         onProgress?(0.1)
@@ -50,6 +52,7 @@ public final class GroqTranscriptionClient {
         modelID: String,
         inputLanguageCode: String?,
         apiKey: String,
+        vocabularyHint: String? = nil,
     ) throws -> URLRequest {
         guard FileManager.default.fileExists(atPath: audioURL.path) else {
             throw TranscriptionError.transcriptionFailed("Audio file not found")
@@ -74,6 +77,7 @@ public final class GroqTranscriptionClient {
             fileName: audioURL.lastPathComponent,
             modelID: modelID,
             inputLanguageCode: inputLanguageCode,
+            vocabularyHint: vocabularyHint,
         )
 
         return request
@@ -93,6 +97,7 @@ public final class GroqTranscriptionClient {
         fileName: String,
         modelID: String,
         inputLanguageCode: String?,
+        vocabularyHint: String? = nil,
     ) -> Data {
         var body = Data()
 
@@ -100,6 +105,9 @@ public final class GroqTranscriptionClient {
         appendField("response_format", value: "verbose_json", boundary: boundary, to: &body)
         if let inputLanguageCode = normalizedLanguageCode(inputLanguageCode) {
             appendField("language", value: inputLanguageCode, boundary: boundary, to: &body)
+        }
+        if let vocabularyHint, !vocabularyHint.isEmpty {
+            appendField("prompt", value: vocabularyHint, boundary: boundary, to: &body)
         }
 
         appendString("--\(boundary)\r\n", to: &body)

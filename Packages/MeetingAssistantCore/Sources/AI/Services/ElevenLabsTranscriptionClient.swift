@@ -16,6 +16,7 @@ public final class ElevenLabsTranscriptionClient {
         modelID: String,
         inputLanguageCode: String? = nil,
         onProgress: (@Sendable (Double) -> Void)? = nil,
+        vocabularyHint: String? = nil,
     ) async throws -> TranscriptionResponse {
         let apiKey = try resolveAPIKey()
         let normalizedModelID = normalizedElevenLabsModelID(modelID)
@@ -24,6 +25,7 @@ public final class ElevenLabsTranscriptionClient {
             modelID: normalizedModelID,
             inputLanguageCode: inputLanguageCode,
             apiKey: apiKey,
+            vocabularyHint: vocabularyHint,
         )
 
         onProgress?(0.1)
@@ -50,6 +52,7 @@ public final class ElevenLabsTranscriptionClient {
         modelID: String,
         inputLanguageCode: String?,
         apiKey: String,
+        vocabularyHint: String? = nil,
     ) throws -> URLRequest {
         guard FileManager.default.fileExists(atPath: audioURL.path) else {
             throw TranscriptionError.transcriptionFailed("Audio file not found")
@@ -74,6 +77,7 @@ public final class ElevenLabsTranscriptionClient {
             fileName: audioURL.lastPathComponent,
             modelID: modelID,
             inputLanguageCode: inputLanguageCode,
+            vocabularyHint: vocabularyHint,
         )
 
         return request
@@ -93,6 +97,7 @@ public final class ElevenLabsTranscriptionClient {
         fileName: String,
         modelID: String,
         inputLanguageCode: String?,
+        vocabularyHint: String? = nil,
     ) -> Data {
         var body = Data()
 
@@ -109,6 +114,9 @@ public final class ElevenLabsTranscriptionClient {
 
         if let inputLanguageCode = normalizedLanguageCode(inputLanguageCode) {
             appendField("language_code", value: inputLanguageCode, boundary: boundary, to: &body)
+        }
+        if let vocabularyHint, !vocabularyHint.isEmpty {
+            appendField("custom_prompt", value: vocabularyHint, boundary: boundary, to: &body)
         }
 
         appendString("--\(boundary)--\r\n", to: &body)

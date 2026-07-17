@@ -143,6 +143,12 @@ extension RecordingManager {
             effectiveSelection: effectiveSelection,
         )
 
+        // Snapshot current vocabulary state for this retry session.
+        let vocabularySnapshot = VocabularySnapshot.current(from: .shared)
+
+        // Set transient vocabulary hint override for supported provider backends.
+        TranscriptionClient.shared.vocabularyHintOverride = vocabularySnapshot.providerHint
+
         let transcriptionStart = Date()
         let diarizationEnabledOverride = shouldEnableDiarization(for: transcription.meeting)
         let response = try await performTranscription(
@@ -153,9 +159,8 @@ extension RecordingManager {
             inputLanguageCode: inputLanguageCode,
         )
         let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
-        let settings = AppSettingsStore.shared
         let replacedText = VocabularyReplacementRule.apply(
-            rules: settings.vocabularyReplacementRules,
+            rules: vocabularySnapshot.replacementRules,
             to: response.text,
         )
         guard !replacedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -175,7 +180,7 @@ extension RecordingManager {
             ],
         )
         let replacedSegments = VocabularyReplacementRule.apply(
-            rules: settings.vocabularyReplacementRules,
+            rules: vocabularySnapshot.replacementRules,
             to: response.segments,
         )
         let qualityProfile = transcriptPreprocessor.preprocess(
@@ -195,7 +200,8 @@ extension RecordingManager {
             for: transcription.meeting,
             capturePurposeOverride: transcription.meeting.capturePurpose,
         )
-        let resolvedPostProcessingContext = PostProcessingSystemContextMetadata.augment(postProcessingContext)
+        let contextWithVocabulary = vocabularySnapshot.prependToContext(postProcessingContext)
+        let resolvedPostProcessingContext = PostProcessingSystemContextMetadata.augment(contextWithVocabulary)
         let postProcessingInput = PostProcessingInputComposer.compose(
             transcriptionText: qualityProfile.normalizedTextForIntelligence,
             qualityProfile: qualityProfile,
