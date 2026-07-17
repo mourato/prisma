@@ -72,6 +72,12 @@ public struct StylesSettingsTab: View {
                             subtitle: "settings.assistant.header_desc".localized,
                             action: onOpenAssistant,
                         )
+                        .stylesTargetFocus(
+                            focusedStyle: focusedStyle,
+                            accessibilityFocusedStyle: accessibilityFocusedStyle,
+                            target: .assistant,
+                            isFocusEnabled: isListFocusEnabled,
+                        )
                     }
 
                     if let onOpenIntegrations {
@@ -79,6 +85,12 @@ public struct StylesSettingsTab: View {
                             title: "settings.section.integrations".localized,
                             subtitle: "settings.integrations.header_desc".localized,
                             action: onOpenIntegrations,
+                        )
+                        .stylesTargetFocus(
+                            focusedStyle: focusedStyle,
+                            accessibilityFocusedStyle: accessibilityFocusedStyle,
+                            target: .integrations,
+                            isFocusEnabled: isListFocusEnabled,
                         )
                     }
                 } header: {
@@ -362,16 +374,15 @@ private struct StylesSettingsPreview: View {
 
 private extension View {
     @ViewBuilder
-    func stylesFocus(
+    func stylesTargetFocus(
         focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding?,
         accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding?,
-        styleID: UUID,
+        target: DictationStyleFocusTarget,
         isFocusEnabled: Bool,
     ) -> some View {
         // While the editor drawer owns keyboard focus, keep list rows out of the
         // focus cycle so clearing FocusState does not land on the first mode.
         let focusableView = focusable(isFocusEnabled)
-        let target = DictationStyleFocusTarget.style(styleID)
 
         if !isFocusEnabled {
             focusableView
@@ -390,27 +401,30 @@ private extension View {
         }
     }
 
-    @ViewBuilder
+    func stylesFocus(
+        focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding?,
+        accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding?,
+        styleID: UUID,
+        isFocusEnabled: Bool,
+    ) -> some View {
+        stylesTargetFocus(
+            focusedStyle: focusedStyle,
+            accessibilityFocusedStyle: accessibilityFocusedStyle,
+            target: .style(styleID),
+            isFocusEnabled: isFocusEnabled,
+        )
+    }
+
     func stylesAddFocus(
         focusedStyle: FocusState<DictationStyleFocusTarget?>.Binding?,
         accessibilityFocusedStyle: AccessibilityFocusState<DictationStyleFocusTarget?>.Binding?,
         isFocusEnabled: Bool,
     ) -> some View {
-        let focusableView = focusable(isFocusEnabled)
-        let target = DictationStyleFocusTarget.addButton
-
-        if !isFocusEnabled {
-            focusableView
-        } else if let focusedStyle, let accessibilityFocusedStyle {
-            focusableView
-                .accessibilityFocused(accessibilityFocusedStyle, equals: target)
-                .focused(focusedStyle, equals: target)
-        } else if let focusedStyle {
-            focusableView.focused(focusedStyle, equals: target)
-        } else if let accessibilityFocusedStyle {
-            focusableView.accessibilityFocused(accessibilityFocusedStyle, equals: target)
-        } else {
-            focusableView
-        }
+        stylesTargetFocus(
+            focusedStyle: focusedStyle,
+            accessibilityFocusedStyle: accessibilityFocusedStyle,
+            target: .addButton,
+            isFocusEnabled: isFocusEnabled,
+        )
     }
 }

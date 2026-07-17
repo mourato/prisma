@@ -15,6 +15,7 @@ private struct SettingsSidePanelModifier<PanelContent: View>: ViewModifier {
     let isPresented: Bool
     let width: CGFloat
     let onDismiss: () -> Void
+    let onEscape: (() -> Void)?
     @ViewBuilder let panelContent: () -> PanelContent
 
     private var reduceMotion: Bool {
@@ -23,6 +24,10 @@ private struct SettingsSidePanelModifier<PanelContent: View>: ViewModifier {
 
     private var reduceTransparency: Bool {
         accessibilityReduceTransparency || reduceTransparencyPreview
+    }
+
+    private var escapeAction: () -> Void {
+        onEscape ?? onDismiss
     }
 
     func body(content: Content) -> some View {
@@ -34,14 +39,22 @@ private struct SettingsSidePanelModifier<PanelContent: View>: ViewModifier {
                     if isPresented {
                         // Clear outside layer. Prefer Color.clear + contentShape over an
                         // empty-title Button, which can lose hit testing on macOS.
-                        // Escape stays on ModeEditorDrawer close/back so nested prompt
-                        // routes can return to the editor before dismissing the panel.
                         Color.clear
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .onTapGesture(perform: onDismiss)
                             .accessibilityHidden(true)
                             .transition(.identity)
+
+                        // Single Escape owner for the panel host. Call sites can supply
+                        // nested-route behavior (e.g. prompt → editor) via onEscape.
+                        Button(action: escapeAction) {
+                            Color.clear.frame(width: 1, height: 1)
+                        }
+                        .keyboardShortcut(.escape)
+                        .opacity(0)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
                     }
 
                     if isPresented {
@@ -92,12 +105,14 @@ public extension View {
         isPresented: Bool,
         width: CGFloat = AppDesignSystem.Layout.modeEditorPanelWidth,
         onDismiss: @escaping () -> Void,
+        onEscape: (() -> Void)? = nil,
         @ViewBuilder content: @escaping () -> some View,
     ) -> some View {
         modifier(SettingsSidePanelModifier(
             isPresented: isPresented,
             width: width,
             onDismiss: onDismiss,
+            onEscape: onEscape,
             panelContent: content,
         ))
     }

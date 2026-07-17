@@ -36,4 +36,14 @@ final class AppSettingsStoreAudioInputSelectionTests: XCTestCase {
         XCTAssertEqual(settings.microphoneWhenChargingUID, "already-selected")
         XCTAssertNil(settings.microphoneOnBatteryUID)
     }
+
+    func testRemoveRetiredDictionaryQuickAddShortcutClearsOrphanedUserDefaultsKey() {
+        let key = "dictionaryQuickAddShortcutDefinition"
+        UserDefaults.standard.set(Data([0x01, 0x02]), forKey: key)
+        XCTAssertNotNil(UserDefaults.standard.object(forKey: key))
+
+        settings.removeRetiredDictionaryQuickAddShortcutIfNeeded()
+
+        XCTAssertNil(UserDefaults.standard.object(forKey: key))
+    }
 }

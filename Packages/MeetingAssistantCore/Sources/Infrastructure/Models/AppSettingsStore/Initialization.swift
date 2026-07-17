@@ -809,9 +809,15 @@ extension AppSettingsStore {
         migrateLegacyAudioDevicePriorityToPowerSelectionIfNeeded()
         migrateLegacyMarkdownTargetsToDictationAppRulesIfNeeded()
         migrateLegacyWebTargetBrowsersToDictationAppRulesIfNeeded()
+        removeRetiredDictionaryQuickAddShortcutIfNeeded()
         backfillEnhancementsSelectionModelsIfNeeded()
         migrateEnhancementsProviderRegistrationAPIKeysIfNeeded()
         applyLanguage(selectedLanguage)
+    }
+
+    /// Drops the retired Dictionary quick-add shortcut key left behind after feature removal.
+    public func removeRetiredDictionaryQuickAddShortcutIfNeeded() {
+        UserDefaults.standard.removeObject(forKey: Keys.retiredDictionaryQuickAddShortcutDefinition)
     }
 
     public func migrateLegacyAudioDevicePriorityToPowerSelectionIfNeeded() {

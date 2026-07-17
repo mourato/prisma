@@ -129,14 +129,12 @@ public struct ModeEditorDrawer<Content: View>: View {
         Button("settings.styles.editor.close".localized, systemImage: "xmark", action: action)
             .labelStyle(.iconOnly)
             .buttonStyle(.plain)
-            .keyboardShortcut(.escape)
             .accessibilityLabel("settings.styles.editor.close".localized)
     }
 
     private func backButton(_ action: @escaping () -> Void) -> some View {
         Button("common.back".localized, systemImage: "chevron.left", action: action)
             .buttonStyle(.plain)
-            .keyboardShortcut(.escape)
     }
 
     private var footer: some View {
@@ -161,8 +159,14 @@ public struct ModeEditorDrawer<Content: View>: View {
 }
 
 #Preview("Drawer") {
-    ModeEditorDrawer(headerStyle: .close, title: "Daily Notes", iconSymbol: "note.text", onClose: {}) {
-        Form { Text("Grouped form content") }.formStyle(.grouped)
-    }
+    ModeEditorDrawer(
+        headerStyle: .close,
+        title: "Daily Notes",
+        iconSymbol: "note.text",
+        onClose: {},
+        content: {
+            Form { Text("Grouped form content") }.formStyle(.grouped)
+        },
+    )
     .frame(width: 400, height: 500)
 }

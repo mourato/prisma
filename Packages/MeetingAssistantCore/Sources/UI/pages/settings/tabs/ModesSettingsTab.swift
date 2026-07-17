@@ -24,6 +24,7 @@ public struct ModesSettingsTab: View {
             .settingsSidePanel(
                 isPresented: isEditorPresented,
                 onDismiss: dismissPresentedRoute,
+                onEscape: handleEscapeShortcut,
             ) {
                 if let route = navigationState.currentRoute {
                     routeContent(for: route)
@@ -140,19 +141,24 @@ public struct ModesSettingsTab: View {
     }
 
     private func dismissPresentedRoute() {
-        let focusTarget: DictationStyleFocusTarget
-        switch navigationState.currentRoute {
-        case let .editor(styleID), let .promptEditor(styleID):
+        guard let route = navigationState.currentRoute else { return }
+        switch route {
+        case .editor, .promptEditor:
             viewModel.clearEditor()
-            focusTarget = .forStyleID(styleID)
-        case .assistant:
-            focusTarget = .assistant
-        case .integrations:
-            focusTarget = .integrations
-        case nil:
-            return
+        case .assistant, .integrations:
+            break
         }
-        closePanel(focusTarget: focusTarget)
+        closePanel(focusTarget: route.dismissFocusTarget)
+    }
+
+    private func handleEscapeShortcut() {
+        guard let route = navigationState.currentRoute else { return }
+        switch route.escapeBehavior {
+        case let .returnToEditor(styleID):
+            openRoute(.editor(styleID: styleID))
+        case .dismissPanel:
+            dismissPresentedRoute()
+        }
     }
 
     private func closePanel(focusTarget: DictationStyleFocusTarget) {

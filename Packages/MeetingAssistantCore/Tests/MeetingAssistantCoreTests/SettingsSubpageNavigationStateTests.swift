@@ -108,6 +108,44 @@ final class SettingsSubpageNavigationStateTests: XCTestCase {
         XCTAssertEqual(DictationStyleFocusTarget.forStyleID(styleID), .style(styleID))
     }
 
+    func testAssistantAndIntegrationsRoutesDismissToRoot() {
+        var state = SettingsSubpageNavigationState<DictationStyleRoute>()
+
+        state.open(.assistant)
+        XCTAssertEqual(state.currentRoute, .assistant)
+        _ = state.goBack()
+        XCTAssertNil(state.currentRoute)
+        XCTAssertEqual(state.forwardRoute, .assistant)
+
+        state.open(.integrations)
+        XCTAssertEqual(state.currentRoute, .integrations)
+        _ = state.goBack()
+        XCTAssertNil(state.currentRoute)
+        XCTAssertEqual(state.forwardRoute, .integrations)
+    }
+
+    func testDictationStyleRouteDismissFocusTargetsMatchDrawerOrigins() {
+        let styleID = UUID()
+
+        XCTAssertEqual(DictationStyleRoute.editor(styleID: styleID).dismissFocusTarget, .style(styleID))
+        XCTAssertEqual(DictationStyleRoute.editor(styleID: nil).dismissFocusTarget, .addButton)
+        XCTAssertEqual(DictationStyleRoute.promptEditor(styleID: styleID).dismissFocusTarget, .style(styleID))
+        XCTAssertEqual(DictationStyleRoute.assistant.dismissFocusTarget, .assistant)
+        XCTAssertEqual(DictationStyleRoute.integrations.dismissFocusTarget, .integrations)
+    }
+
+    func testDictationStyleRouteEscapeReturnsToEditorFromPromptThenDismissesLeaves() {
+        let styleID = UUID()
+
+        XCTAssertEqual(
+            DictationStyleRoute.promptEditor(styleID: styleID).escapeBehavior,
+            .returnToEditor(styleID: styleID),
+        )
+        XCTAssertEqual(DictationStyleRoute.editor(styleID: styleID).escapeBehavior, .dismissPanel)
+        XCTAssertEqual(DictationStyleRoute.assistant.escapeBehavior, .dismissPanel)
+        XCTAssertEqual(DictationStyleRoute.integrations.escapeBehavior, .dismissPanel)
+    }
+
     func testSettingsChromeUsesLegacyHeaderOnlyWithoutToolbarChrome() {
         XCTAssertTrue(SettingsChromeLayoutPolicy.usesLegacyHeader(usesToolbarChrome: false))
         XCTAssertFalse(SettingsChromeLayoutPolicy.usesLegacyHeader(usesToolbarChrome: true))
