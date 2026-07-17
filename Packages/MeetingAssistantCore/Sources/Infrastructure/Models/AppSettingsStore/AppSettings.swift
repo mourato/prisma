@@ -377,11 +377,6 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(cancelRecordingShortcutDefinition, forKey: Keys.cancelRecordingShortcutDefinition) }
     }
 
-    /// Global shortcut that opens the Dictionary quick-add panel.
-    @Published public var dictionaryQuickAddShortcutDefinition: ShortcutDefinition? {
-        didSet { save(dictionaryQuickAddShortcutDefinition, forKey: Keys.dictionaryQuickAddShortcutDefinition) }
-    }
-
     /// Modifier-only shortcut gesture for Dictation.
     @Published public var dictationModifierShortcutGesture: ModifierShortcutGesture? {
         didSet { save(dictationModifierShortcutGesture, forKey: Keys.dictationModifierShortcutGesture) }
@@ -825,7 +820,6 @@ public class AppSettingsStore: ObservableObject {
             shortcuts.meetingSelectedPresetKey,
         )
         cancelRecordingShortcutDefinition = shortcuts.cancelRecordingShortcutDefinition
-        dictionaryQuickAddShortcutDefinition = shortcuts.dictionaryQuickAddShortcutDefinition
 
         let gestures = values.gestures
         (dictationModifierShortcutGesture, assistantModifierShortcutGesture, meetingModifierShortcutGesture) = (

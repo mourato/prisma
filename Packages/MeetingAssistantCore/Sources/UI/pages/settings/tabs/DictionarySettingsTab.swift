@@ -31,7 +31,6 @@ public enum DictionaryWorkflow: String, CaseIterable, Identifiable, Sendable {
 public struct DictionarySettingsTab: View {
     @StateObject private var substitutionViewModel: VocabularySettingsViewModel
     @StateObject private var vocabularyViewModel: VocabularyTermsSettingsViewModel
-    @StateObject private var quickAddShortcutViewModel = DictionaryQuickAddShortcutSettingsViewModel()
     @State private var selectedWorkflow: DictionaryWorkflow = .substitutions
     @State private var ruleFindInput = ""
     @State private var ruleReplaceInput = ""
@@ -73,19 +72,6 @@ public struct DictionarySettingsTab: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .padding(.vertical, 4)
-
-                HStack {
-                    Label("settings.dictionary.quick_add.shortcut".localized, systemImage: "plus.circle")
-                        .font(.subheadline)
-                    Spacer()
-                    DSModifierShortcutEditor(
-                        shortcut: $quickAddShortcutViewModel.dictionaryQuickAddShortcutDefinition,
-                        conflictMessage: quickAddShortcutViewModel.dictionaryQuickAddShortcutConflictMessage,
-                        showsTitle: false,
-                        maxInputWidth: AppDesignSystem.Layout.maxCompactTextFieldWidth,
-                    )
-                }
                 .padding(.vertical, 4)
             }
         } content: {

@@ -5,7 +5,6 @@ public enum ModifierShortcutActionID: Hashable, Sendable {
     case dictation
     case assistant
     case meeting
-    case dictionaryQuickAdd
     case cancelActiveRecording
     case systemReserved
     case assistantIntegration(UUID)
@@ -18,8 +17,6 @@ public enum ModifierShortcutActionID: Hashable, Sendable {
             "assistant"
         case .meeting:
             "meeting"
-        case .dictionaryQuickAdd:
-            "dictionaryQuickAdd"
         case .cancelActiveRecording:
             "cancelActiveRecording"
         case .systemReserved:
@@ -256,7 +253,7 @@ public enum ModifierShortcutConflictService {
         switch actionID {
         case .assistant, .assistantIntegration:
             true
-        case .dictation, .meeting, .dictionaryQuickAdd, .cancelActiveRecording, .systemReserved:
+        case .dictation, .meeting, .cancelActiveRecording, .systemReserved:
             false
         }
     }

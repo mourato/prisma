@@ -53,7 +53,6 @@ extension AppSettingsStore {
         static let assistantShortcutDefinition = "assistantShortcutDefinition"
         static let meetingShortcutDefinition = "meetingShortcutDefinition"
         static let cancelRecordingShortcutDefinition = "cancelRecordingShortcutDefinition"
-        static let dictionaryQuickAddShortcutDefinition = "dictionaryQuickAddShortcutDefinition"
         static let dictationModifierShortcutGesture = "dictationModifierShortcutGesture"
         static let assistantModifierShortcutGesture = "assistantModifierShortcutGesture"
         static let meetingModifierShortcutGesture = "meetingModifierShortcutGesture"

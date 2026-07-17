@@ -383,7 +383,6 @@ extension AppSettingsStore {
         let dictationSelectedPresetKey: PresetShortcutKey
         let meetingSelectedPresetKey: PresetShortcutKey
         let cancelRecordingShortcutDefinition: ShortcutDefinition?
-        let dictionaryQuickAddShortcutDefinition: ShortcutDefinition?
     }
 
     /// Loads shortcut activation settings.
@@ -417,10 +416,6 @@ extension AppSettingsStore {
             cancelRecordingShortcutDefinition: loadDecoded(
                 ShortcutDefinition.self,
                 forKey: Keys.cancelRecordingShortcutDefinition,
-            ),
-            dictionaryQuickAddShortcutDefinition: loadDecoded(
-                ShortcutDefinition.self,
-                forKey: Keys.dictionaryQuickAddShortcutDefinition,
             ),
         )
     }
