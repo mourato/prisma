@@ -103,13 +103,19 @@ extension RecordingManager {
 
     func notifySuccess(for transcription: Transcription) {
         let body: String
-        if let failureReason = transcription.postProcessingFailureReason {
-            RecordingIndicatorProcessingStateStore.shared.update(
-                snapshot: RecordingIndicatorProcessingSnapshot(
-                    step: .postProcessingFailed,
-                    progressPercent: nil,
-                ),
-            )
+        if let failureReason = transcription.transcriptionFailureReason
+            ?? transcription.postProcessingFailureReason
+        {
+            let usesPostProcessingFailure = transcription.transcriptionFailureReason == nil
+                && transcription.postProcessingFailureReason != nil
+            if usesPostProcessingFailure {
+                RecordingIndicatorProcessingStateStore.shared.update(
+                    snapshot: RecordingIndicatorProcessingSnapshot(
+                        step: .postProcessingFailed,
+                        progressPercent: nil,
+                    ),
+                )
+            }
             body = "notification.transcription_body_with_post_processing_failure".localized(
                 with: transcription.meeting.appName,
                 transcription.wordCount,

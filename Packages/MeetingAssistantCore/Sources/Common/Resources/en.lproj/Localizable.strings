@@ -1188,6 +1188,11 @@
 "transcription.qa.error.generic" = "Failed to answer the question. Please try again.";
 "transcription.qa.error.no_retry_context" = "There is no previous question to retry.";
 "transcription.qa.summary_title" = "Meeting summary";
+"transcription.summary.fallback_badge" = "Degraded fallback";
+"summary.section.key_points" = "Key Points";
+"summary.section.decisions" = "Decisions";
+"summary.section.action_items" = "Action Items";
+"summary.section.open_questions" = "Open Questions";
 "transcription.qa.navigation.back" = "Back";
 "transcription.qa.navigation.forward" = "Forward";
 "transcription.qa.dictation.start" = "Start dictation";

@@ -17,6 +17,7 @@ extension RecordingManager {
         let requestSystemPrompt: String?
         let requestUserPrompt: String?
         let failureReason: String?
+        let outputState: DomainPostProcessingOutputState?
 
         static var empty: PostProcessingResult {
             PostProcessingResult(
@@ -29,6 +30,7 @@ extension RecordingManager {
                 requestSystemPrompt: nil,
                 requestUserPrompt: nil,
                 failureReason: nil,
+                outputState: nil,
             )
         }
 
@@ -42,6 +44,7 @@ extension RecordingManager {
             requestSystemPrompt: String? = nil,
             requestUserPrompt: String? = nil,
             failureReason: String? = nil,
+            outputState: DomainPostProcessingOutputState? = nil,
         ) {
             self.processedContent = processedContent
             self.canonicalSummary = canonicalSummary
@@ -52,6 +55,7 @@ extension RecordingManager {
             self.requestSystemPrompt = requestSystemPrompt
             self.requestUserPrompt = requestUserPrompt
             self.failureReason = failureReason
+            self.outputState = outputState
         }
     }
 
@@ -158,6 +162,7 @@ extension RecordingManager {
             let pipeline = useStructuredPipeline ? "structured" : "fast"
             let processedContent: String
             let canonicalSummary: CanonicalSummary?
+            let outputState: DomainPostProcessingOutputState?
 
             if useStructuredPipeline {
                 let structuredResult = if let selectionOverride {
@@ -178,6 +183,7 @@ extension RecordingManager {
                 canonicalSummary = qualityProfile.map { profile in
                     recalibrateCanonicalSummary(structuredResult.canonicalSummary, with: profile)
                 } ?? structuredResult.canonicalSummary
+                outputState = structuredResult.outputState
                 AppLogger.info(
                     "Post-processing complete",
                     category: .recordingManager,
@@ -206,6 +212,7 @@ extension RecordingManager {
                     )
                 }
                 canonicalSummary = nil
+                outputState = nil
                 AppLogger.info(
                     "Post-processing complete",
                     category: .recordingManager,
@@ -231,6 +238,7 @@ extension RecordingManager {
                 model: model,
                 requestSystemPrompt: requestSystemPrompt,
                 requestUserPrompt: requestUserPrompt,
+                outputState: outputState,
             )
         } catch {
             AppLogger.error("Post-processing failed, using raw transcription", category: .recordingManager, error: error)

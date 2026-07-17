@@ -55,6 +55,12 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     /// Reason why post-processing was skipped or failed (nil if successful or not attempted).
     public var postProcessingFailureReason: String?
 
+    /// How structured post-processing produced the canonical summary (nil when not structured).
+    public var postProcessingOutputState: DomainPostProcessingOutputState?
+
+    /// Reason why ASR / transcription itself failed (nil when transcription succeeded).
+    public var transcriptionFailureReason: String?
+
     /// Full initializer with post-processing support.
     public init(
         id: UUID = UUID(),
@@ -81,6 +87,8 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         lifecycleState: TranscriptionLifecycleState = .completed,
         meetingConversationState: MeetingConversationState? = nil,
         postProcessingFailureReason: String? = nil,
+        postProcessingOutputState: DomainPostProcessingOutputState? = nil,
+        transcriptionFailureReason: String? = nil,
     ) {
         self.id = id
         self.meeting = meeting
@@ -107,6 +115,8 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         self.lifecycleState = lifecycleState
         self.meetingConversationState = meetingConversationState
         self.postProcessingFailureReason = postProcessingFailureReason
+        self.postProcessingOutputState = postProcessingOutputState
+        self.transcriptionFailureReason = transcriptionFailureReason
     }
 
     /// Convenience initializer for backward compatibility (no post-processing).

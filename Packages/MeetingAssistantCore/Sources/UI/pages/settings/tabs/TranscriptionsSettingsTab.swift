@@ -281,6 +281,9 @@ public struct TranscriptionsSettingsTab: View {
                             TranscriptionCardView(
                                 transcription: transcription,
                                 transcriptionDetail: viewModel.selectedId == transcription.id ? viewModel.selectedTranscription : nil,
+                                meetingNotesPlainText: viewModel.selectedId == transcription.id
+                                    ? viewModel.meetingNotesContent(for: viewModel.selectedTranscription).plainText
+                                    : nil,
                                 isExpanded: viewModel.selectedId == transcription.id,
                                 audioURL: transcription.audioFilePath != nil ? URL(fileURLWithPath: transcription.audioFilePath!) : nil,
                                 availablePrompts: viewModel.availablePrompts(for: transcription),
@@ -397,10 +400,8 @@ public struct TranscriptionsSettingsTab: View {
                 await viewModel.updateCapturePurpose(for: metadata, to: capturePurpose)
             }
         case let .reprocess(prompt):
-            if let transcription = viewModel.selectedTranscription, transcription.id == metadata.id {
-                Task {
-                    await viewModel.applyPostProcessing(prompt: prompt, to: transcription)
-                }
+            Task {
+                await viewModel.applyPostProcessing(prompt: prompt, transcriptionID: metadata.id)
             }
         case .info:
             break

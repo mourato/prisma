@@ -226,46 +226,7 @@ public struct MeetingConversationView: View {
         }
     }
 
-    private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("transcription.qa.summary_title".localized)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-
-            Text(summaryText)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-        }
-        .padding(12)
-        .background(
-            AppDesignSystem.Colors.settingsCardBackground,
-            in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius),
-        )
-    }
-
-    private var summaryText: String {
-        guard let transcription else {
-            return "transcription.empty_fallback".localized
-        }
-
-        if let summary = transcription.canonicalSummary?.summary.trimmingCharacters(in: .whitespacesAndNewlines),
-           !summary.isEmpty
-        {
-            return summary
-        }
-
-        if let processed = transcription.processedContent?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !processed.isEmpty
-        {
-            return processed
-        }
-
-        let text = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty ? "transcription.empty_fallback".localized : text
-    }
-
-    private func turnView(_ turn: TranscriptionSettingsViewModel.QATurn) -> some View {
+    func turnView(_ turn: TranscriptionSettingsViewModel.QATurn) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "person.fill")
@@ -447,37 +408,6 @@ public struct MeetingConversationView: View {
             || isAnswering
             || isLoadingTranscription
             || dictationState == .processing
-    }
-
-    // MARK: - Chat Tab
-
-    private var chatContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                summaryCard
-
-                if turns.isEmpty {
-                    Text("transcription.qa.placeholder".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(turns) { turn in
-                        turnView(turn)
-                    }
-                }
-
-                if isAnswering {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .controlSize(.small)
-                        Text("transcription.qa.loading".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .padding(16)
-        }
     }
 
     // MARK: - Segmented Tab

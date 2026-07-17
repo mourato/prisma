@@ -14,6 +14,7 @@ public struct TranscriptionCardView: View {
 
     let transcription: TranscriptionMetadata
     let transcriptionDetail: Transcription?
+    let meetingNotesPlainText: String?
     let isExpanded: Bool
     let audioURL: URL?
     let availablePrompts: [PostProcessingPrompt]
@@ -26,6 +27,7 @@ public struct TranscriptionCardView: View {
     public init(
         transcription: TranscriptionMetadata,
         transcriptionDetail: Transcription? = nil,
+        meetingNotesPlainText: String? = nil,
         isExpanded: Bool,
         audioURL: URL?,
         availablePrompts: [PostProcessingPrompt] = [],
@@ -37,6 +39,7 @@ public struct TranscriptionCardView: View {
     ) {
         self.transcription = transcription
         self.transcriptionDetail = transcriptionDetail
+        self.meetingNotesPlainText = meetingNotesPlainText
         self.isExpanded = isExpanded
         self.audioURL = audioURL
         self.availablePrompts = availablePrompts
@@ -396,15 +399,25 @@ public struct TranscriptionCardView: View {
     private var currentText: String {
         switch selectedTab {
         case .aiProcessed:
-            transcriptionDetail?.processedContent ?? transcriptionDetail?.text ?? transcription.previewText
+            if let detail = transcriptionDetail {
+                return TranscriptionDisplayText.preferredSummary(
+                    processedContent: detail.processedContent,
+                    canonicalSummary: detail.canonicalSummary,
+                    text: detail.text,
+                    emptyFallback: transcription.previewText,
+                )
+            }
+            return transcription.previewText
         case .original:
-            transcriptionDetail?.rawText ?? transcription.previewText
+            return transcriptionDetail?.rawText ?? transcription.previewText
         case .segmented:
-            sortedSegments(transcriptionDetail?.segments ?? [])
+            return sortedSegments(transcriptionDetail?.segments ?? [])
                 .map { "\($0.speaker): \($0.text)" }
                 .joined(separator: "\n\n")
         case .notes:
-            transcriptionDetail?.contextItems.first(where: { $0.source == .meetingNotes })?.text ?? ""
+            return meetingNotesPlainText
+                ?? transcriptionDetail?.contextItems.first(where: { $0.source == .meetingNotes })?.text
+                ?? ""
         }
     }
 

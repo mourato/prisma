@@ -174,7 +174,8 @@ actor IncrementalTranscriptionCoordinatorCore {
                 "error": error.localizedDescription,
             ],
         )
-        try? await persistCheckpoint(lifecycleState: .failed)
+        // Keep the checkpoint non-visible while full-file fallback runs.
+        try? await persistCheckpoint(lifecycleState: .finalizing)
     }
 
     private func transcribe(window: RealtimeVoiceActivityWindowAssembler.Window) async throws {

@@ -208,6 +208,8 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
         config.lifecycleState = transcription.lifecycleState
         config.meetingConversationState = transcription.meetingConversationState
         config.postProcessingFailureReason = transcription.postProcessingFailureReason
+        config.postProcessingOutputState = transcription.postProcessingOutputState
+        config.transcriptionFailureReason = transcription.transcriptionFailureReason
         return TranscriptionEntity(meeting: sanitizedMeeting, config: config)
     }
 

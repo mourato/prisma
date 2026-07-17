@@ -52,6 +52,8 @@ extension FileSystemStorageService {
         config.postProcessingDuration = transcription.postProcessingDuration
         config.postProcessingModel = transcription.postProcessingModel
         config.postProcessingFailureReason = transcription.postProcessingFailureReason
+        config.postProcessingOutputState = transcription.postProcessingOutputState
+        config.transcriptionFailureReason = transcription.transcriptionFailureReason
         config.meetingType = transcription.meetingType
         config.lifecycleState = transcription.lifecycleState
         config.meetingConversationState = transcription.meetingConversationState
@@ -75,7 +77,12 @@ extension FileSystemStorageService {
             appBundleIdentifier: mo.meeting.appBundleIdentifier,
             startTime: mo.meeting.startTime,
             createdAt: mo.createdAt,
-            previewText: String(mo.text.prefix(100)),
+            previewText: String(
+                TranscriptionDisplayText.preferredPreviewSource(
+                    processedContent: mo.processedContent,
+                    text: mo.text,
+                ).prefix(100),
+            ),
             wordCount: wordCount,
             language: mo.language,
             isPostProcessed: mo.processedContent != nil,
@@ -143,6 +150,8 @@ extension FileSystemStorageService {
             lifecycleState: entity.lifecycleState,
             meetingConversationState: entity.meetingConversationState,
             postProcessingFailureReason: entity.postProcessingFailureReason,
+            postProcessingOutputState: entity.postProcessingOutputState,
+            transcriptionFailureReason: entity.transcriptionFailureReason,
         )
     }
 }

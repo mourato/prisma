@@ -211,15 +211,16 @@ public extension FileSystemStorageService {
     }
 
     func cleanupStaleDictationCheckpoints() async throws {
+        try await cleanupStaleTranscriptionCheckpoints()
+    }
+
+    func cleanupStaleTranscriptionCheckpoints() async throws {
         try await coreDataStack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest()
-            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSPredicate(
-                    format: "lifecycleStateRawValue IN %@",
-                    [TranscriptionLifecycleState.partial.rawValue, TranscriptionLifecycleState.finalizing.rawValue],
-                ),
-                NSPredicate(format: "meeting.capturePurposeRawValue == %@", CapturePurpose.dictation.rawValue),
-            ])
+            request.predicate = NSPredicate(
+                format: "lifecycleStateRawValue IN %@",
+                [TranscriptionLifecycleState.partial.rawValue, TranscriptionLifecycleState.finalizing.rawValue],
+            )
 
             let results = try context.fetch(request)
             guard !results.isEmpty else { return }
