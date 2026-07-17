@@ -89,13 +89,17 @@ public final class TranscribeAudioUseCase: Sendable {
             let transcriptionStartTime = Date()
             let response: DomainTranscriptionResponse
             do {
-                if let transcriptionConfiguration,
+                let effectiveConfiguration = Self.configurationWithVocabularyHints(
+                    transcriptionConfiguration,
+                    vocabularyTerms: vocabularyTerms,
+                )
+                if let effectiveConfiguration,
                    let configurationAwareRepository = transcriptionRepository as? any TranscriptionRepositoryConfigurationAware
                 {
                     response = try await configurationAwareRepository.transcribe(
                         audioURL: audioURL,
                         onProgress: onTranscriptionProgress,
-                        configuration: transcriptionConfiguration,
+                        configuration: effectiveConfiguration,
                         diarizationEnabledOverride: diarizationEnabledOverride,
                         capturePurpose: meeting.capturePurpose,
                     )
@@ -494,6 +498,26 @@ public final class TranscribeAudioUseCase: Sendable {
         var updatedMeeting = meeting
         updatedMeeting.title = summaryTitle
         return updatedMeeting
+    }
+
+    /// Ensures configuration-aware ASR calls carry vocabulary projections when terms are present.
+    private static func configurationWithVocabularyHints(
+        _ configuration: DomainTranscriptionRequestConfiguration?,
+        vocabularyTerms: [VocabularyTerm],
+    ) -> DomainTranscriptionRequestConfiguration? {
+        guard let configuration else { return nil }
+        if configuration.vocabularyHints != nil {
+            return configuration
+        }
+        guard !vocabularyTerms.isEmpty else { return configuration }
+        let hints = VocabularySnapshot(terms: vocabularyTerms, replacementRules: []).providerHints
+        guard !hints.isEmpty else { return configuration }
+        return DomainTranscriptionRequestConfiguration(
+            providerID: configuration.providerID,
+            modelID: configuration.modelID,
+            inputLanguageCode: configuration.inputLanguageCode,
+            vocabularyHints: hints,
+        )
     }
 }
 

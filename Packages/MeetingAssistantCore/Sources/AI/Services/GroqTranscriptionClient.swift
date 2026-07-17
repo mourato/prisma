@@ -71,7 +71,7 @@ public final class GroqTranscriptionClient {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 120
-        request.httpBody = multipartBody(
+        request.httpBody = Self.multipartBody(
             boundary: boundary,
             fileData: fileData,
             fileName: audioURL.lastPathComponent,
@@ -91,7 +91,8 @@ public final class GroqTranscriptionClient {
         return trimmed
     }
 
-    private func multipartBody(
+    /// Builds the multipart transcription body. Internal for `@testable` request-shape assertions.
+    nonisolated static func multipartBody(
         boundary: String,
         fileData: Data,
         fileName: String,
@@ -106,7 +107,9 @@ public final class GroqTranscriptionClient {
         if let inputLanguageCode = normalizedLanguageCode(inputLanguageCode) {
             appendField("language", value: inputLanguageCode, boundary: boundary, to: &body)
         }
-        if let vocabularyHint, !vocabularyHint.isEmpty {
+        if let vocabularyHint = VocabularyProviderHints.capGroqPrompt(vocabularyHint),
+           !vocabularyHint.isEmpty
+        {
             appendField("prompt", value: vocabularyHint, boundary: boundary, to: &body)
         }
 
@@ -120,7 +123,7 @@ public final class GroqTranscriptionClient {
         return body
     }
 
-    private func appendField(
+    private nonisolated static func appendField(
         _ name: String,
         value: String,
         boundary: String,
@@ -131,17 +134,17 @@ public final class GroqTranscriptionClient {
         appendString("\(value)\r\n", to: &body)
     }
 
-    private func appendString(_ value: String, to body: inout Data) {
+    private nonisolated static func appendString(_ value: String, to body: inout Data) {
         body.append(contentsOf: value.utf8)
     }
 
-    private func normalizedLanguageCode(_ value: String?) -> String? {
+    private nonisolated static func normalizedLanguageCode(_ value: String?) -> String? {
         let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let trimmed, !trimmed.isEmpty else { return nil }
         return trimmed
     }
 
-    private func mimeType(for fileName: String) -> String {
+    private nonisolated static func mimeType(for fileName: String) -> String {
         switch fileName.split(separator: ".").last?.lowercased() {
         case "wav":
             "audio/wav"

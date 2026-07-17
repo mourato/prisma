@@ -329,6 +329,11 @@ extension SettingsSearchIndex {
         "settings.vocabulary.find_placeholder",
         "settings.vocabulary.replace_label",
         "settings.vocabulary.replace_placeholder",
+        "settings.dictionary.vocabulary.description",
+        "settings.dictionary.vocabulary.external_disclosure",
+        "settings.dictionary.vocabulary.add_placeholder",
+        "settings.dictionary.vocabulary.empty",
+        "settings.dictionary.workflow.vocabulary",
         "transcription.qa.title",
     ]
 }

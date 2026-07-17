@@ -11,6 +11,9 @@ protocol AssistantCommandTranscribing: AnyObject {
         onProgress: (@Sendable (Double) -> Void)?,
         executionMode: TranscriptionExecutionMode,
         diarizationEnabledOverride: Bool?,
+        selection: TranscriptionProviderSelection,
+        inputLanguageCode: String?,
+        vocabularyHints: VocabularyProviderHints?,
     ) async throws -> TranscriptionResponse
 }
 
@@ -27,9 +30,13 @@ public struct AssistantTranscriptionPhase: @unchecked Sendable {
         self.transcriptionClient = transcriptionClient
     }
 
+    @MainActor
     public func performTranscription(
         recordingURL: URL,
         vocabularyReplacementRules: [VocabularyReplacementRule],
+        vocabularyHints: VocabularyProviderHints? = nil,
+        selection: TranscriptionProviderSelection,
+        inputLanguageCode: String?,
         executionFlow: AssistantExecutionFlow,
         isAssistantIntegrationsEnabled: Bool,
         assistantSelectedIntegration: AssistantIntegrationConfig?,
@@ -43,6 +50,9 @@ public struct AssistantTranscriptionPhase: @unchecked Sendable {
             onProgress: nil,
             executionMode: .assistant,
             diarizationEnabledOverride: false,
+            selection: selection,
+            inputLanguageCode: inputLanguageCode,
+            vocabularyHints: vocabularyHints,
         )
         let command = normalizedAssistantTranscription(
             transcription.text,
@@ -53,6 +63,7 @@ public struct AssistantTranscriptionPhase: @unchecked Sendable {
             "rawLength": transcription.text.count,
             "trimmedLength": command.count,
             "preview": AssistantPayloadLogging.payloadPreview(command),
+            "hasVocabularyHints": vocabularyHints.map { !$0.isEmpty } ?? false,
         ])
 
         guard !command.isEmpty else {

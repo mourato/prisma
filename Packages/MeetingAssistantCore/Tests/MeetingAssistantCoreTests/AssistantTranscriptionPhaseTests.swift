@@ -106,6 +106,8 @@ final class AssistantTranscriptionPhaseTests: XCTestCase {
                 VocabularyReplacementRule(find: "open ay eye", replace: "OpenAI"),
                 VocabularyReplacementRule(find: "reycast, recast", replace: "Raycast"),
             ],
+            selection: .default,
+            inputLanguageCode: nil,
             executionFlow: .integrationDispatch,
             isAssistantIntegrationsEnabled: true,
             assistantSelectedIntegration: integration,
@@ -116,6 +118,33 @@ final class AssistantTranscriptionPhaseTests: XCTestCase {
         XCTAssertEqual(result.selectedIntegration?.name, "Raycast")
         XCTAssertEqual(transcriber.lastExecutionMode, .assistant)
         XCTAssertEqual(transcriber.lastDiarizationOverride, false)
+        XCTAssertNil(transcriber.lastVocabularyHints)
+    }
+
+    func testPerformTranscription_PassesVocabularyHintsWithoutOverride() async throws {
+        let transcriber = MockAssistantCommandTranscriber()
+        transcriber.response = TranscriptionResponse(
+            text: "hello world",
+            language: "en",
+            durationSeconds: 1,
+            model: "mock-model",
+            processedAt: Date().ISO8601Format(),
+        )
+        let phase = makePhase(transcriber: transcriber)
+        let hints = VocabularyProviderHints(groqPrompt: "SwiftUI, Metal", elevenLabsKeyterms: ["SwiftUI", "Metal"])
+
+        _ = try await phase.performTranscription(
+            recordingURL: URL(fileURLWithPath: "/tmp/assistant-hints.m4a"),
+            vocabularyReplacementRules: [],
+            vocabularyHints: hints,
+            selection: .default,
+            inputLanguageCode: "en",
+            executionFlow: .assistantMode,
+            isAssistantIntegrationsEnabled: false,
+            assistantSelectedIntegration: nil,
+        )
+
+        XCTAssertEqual(transcriber.lastVocabularyHints, hints)
     }
 
     func testPerformTranscription_ThrowsEmptyCommandAfterNormalization() async {
@@ -133,6 +162,8 @@ final class AssistantTranscriptionPhaseTests: XCTestCase {
             _ = try await phase.performTranscription(
                 recordingURL: URL(fileURLWithPath: "/tmp/assistant-test.m4a"),
                 vocabularyReplacementRules: [],
+                selection: .default,
+                inputLanguageCode: nil,
                 executionFlow: .assistantMode,
                 isAssistantIntegrationsEnabled: true,
                 assistantSelectedIntegration: nil,
@@ -157,6 +188,8 @@ final class AssistantTranscriptionPhaseTests: XCTestCase {
         let result = try await phase.performTranscription(
             recordingURL: URL(fileURLWithPath: "/tmp/assistant-test.m4a"),
             vocabularyReplacementRules: [],
+            selection: .default,
+            inputLanguageCode: nil,
             executionFlow: .integrationDispatch,
             isAssistantIntegrationsEnabled: false,
             assistantSelectedIntegration: makeIntegrationConfig(name: "Disabled"),
@@ -205,15 +238,20 @@ private final class MockAssistantCommandTranscriber: AssistantCommandTranscribin
     )
     var lastExecutionMode: TranscriptionExecutionMode?
     var lastDiarizationOverride: Bool?
+    var lastVocabularyHints: VocabularyProviderHints?
 
     func transcribe(
         audioURL _: URL,
         onProgress _: (@Sendable (Double) -> Void)?,
         executionMode: TranscriptionExecutionMode,
         diarizationEnabledOverride: Bool?,
+        selection _: TranscriptionProviderSelection,
+        inputLanguageCode _: String?,
+        vocabularyHints: VocabularyProviderHints?,
     ) async throws -> TranscriptionResponse {
         lastExecutionMode = executionMode
         lastDiarizationOverride = diarizationEnabledOverride
+        lastVocabularyHints = vocabularyHints
         return response
     }
 }

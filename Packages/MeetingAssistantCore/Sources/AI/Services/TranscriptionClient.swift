@@ -23,12 +23,6 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
     /// Automatically cleared after being consumed.
     public var selectionOverride: TranscriptionProviderSelection?
 
-    /// Transient override for the vocabulary hint sent to supported providers.
-    /// When set, the next `transcribe` call includes this string as the provider
-    /// `prompt`/`custom_prompt` parameter. Automatically cleared after consumption.
-    /// Never logged in diagnostics.
-    public var vocabularyHintOverride: String?
-
     public enum CachedReadinessState: String, Sendable {
         case unknown
         case healthy
@@ -233,6 +227,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         diarizationEnabledOverride: Bool?,
         selection: TranscriptionProviderSelection,
         inputLanguageCode: String?,
+        vocabularyHints: VocabularyProviderHints?,
     ) async throws -> TranscriptionResponse {
         try await transcribeConfigured(
             audioURL: audioURL,
@@ -241,6 +236,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             diarizationEnabledOverride: diarizationEnabledOverride,
             selection: selection,
             inputLanguageCode: inputLanguageCode,
+            vocabularyHints: vocabularyHints,
         )
     }
 
@@ -248,7 +244,9 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         samples: [Float],
         selection: TranscriptionProviderSelection,
         inputLanguageCode: String?,
+        vocabularyHints _: VocabularyProviderHints?,
     ) async throws -> TranscriptionResponse {
+        // Incremental/sample ASR is local-only; provider vocabulary hints are unsupported.
         try await transcribe(samples: samples, inputLanguageCode: inputLanguageCode, selection: selection)
     }
 
@@ -289,6 +287,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             diarizationEnabledOverride: diarizationEnabledOverride,
             selection: selectionOverride ?? settingsStore.resolvedTranscriptionSelection(for: executionMode),
             inputLanguageCode: settingsStore.resolvedTranscriptionInputLanguageCode(for: executionMode),
+            vocabularyHints: nil,
         )
     }
 
@@ -299,10 +298,9 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         diarizationEnabledOverride: Bool?,
         selection: TranscriptionProviderSelection,
         inputLanguageCode: String?,
+        vocabularyHints: VocabularyProviderHints?,
     ) async throws -> TranscriptionResponse {
         selectionOverride = nil
-        let vocabularyHint = vocabularyHintOverride
-        vocabularyHintOverride = nil
         let backend = resolvedBackend(for: selection)
         let implementationLabel = switch backend {
         case .xpc:
@@ -315,6 +313,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             "elevenlabs"
         }
 
+        // Never log raw vocabulary terms — only whether hints were attached.
         AppLogger.info(
             "Transcribing file",
             category: .transcriptionEngine,
@@ -322,6 +321,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 "filename": audioURL.lastPathComponent,
                 "implementation": implementationLabel,
                 "mode": executionMode.rawValue,
+                "hasVocabularyHints": vocabularyHints.map { !$0.isEmpty } ?? false,
             ],
         )
 
@@ -350,7 +350,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 modelID: modelID,
                 onProgress: onProgress,
                 inputLanguageCode: inputLanguageCode,
-                vocabularyHint: vocabularyHint,
+                vocabularyHint: vocabularyHints?.groqPrompt,
             )
         case let .elevenLabs(modelID):
             return try await transcribeViaElevenLabs(
@@ -358,7 +358,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 modelID: modelID,
                 onProgress: onProgress,
                 inputLanguageCode: inputLanguageCode,
-                vocabularyHint: vocabularyHint,
+                vocabularyKeyterms: vocabularyHints?.elevenLabsKeyterms ?? [],
             )
         }
     }
@@ -511,7 +511,11 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             AppLogger.info(
                 "Transcription completed via Groq",
                 category: .transcriptionEngine,
-                extra: ["words": response.text.split(separator: " ").count, "model": response.model],
+                extra: [
+                    "words": response.text.split(separator: " ").count,
+                    "model": response.model,
+                    "hasVocabularyPrompt": vocabularyHint.map { !$0.isEmpty } ?? false,
+                ],
             )
             return response
         } catch {
@@ -531,7 +535,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         modelID: String,
         onProgress: (@Sendable (Double) -> Void)?,
         inputLanguageCode: String?,
-        vocabularyHint: String? = nil,
+        vocabularyKeyterms: [String] = [],
     ) async throws -> TranscriptionResponse {
         do {
             let response = try await elevenLabsTranscriptionClient.transcribe(
@@ -539,13 +543,17 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 modelID: modelID,
                 inputLanguageCode: inputLanguageCode,
                 onProgress: onProgress,
-                vocabularyHint: vocabularyHint,
+                vocabularyKeyterms: vocabularyKeyterms,
             )
             updateCachedReadiness(.healthy)
             AppLogger.info(
                 "Transcription completed via ElevenLabs",
                 category: .transcriptionEngine,
-                extra: ["words": response.text.split(separator: " ").count, "model": response.model],
+                extra: [
+                    "words": response.text.split(separator: " ").count,
+                    "model": response.model,
+                    "hasVocabularyKeyterms": !vocabularyKeyterms.isEmpty,
+                ],
             )
             return response
         } catch {

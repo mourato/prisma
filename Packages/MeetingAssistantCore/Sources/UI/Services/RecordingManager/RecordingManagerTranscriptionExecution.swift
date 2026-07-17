@@ -39,6 +39,7 @@ extension RecordingManager {
         sessionID: UUID? = nil,
         selectionOverride: TranscriptionProviderSelection? = nil,
         inputLanguageCode: String? = nil,
+        vocabularyHints: VocabularyProviderHints? = nil,
     ) async throws -> TranscriptionResponse {
         updateVisibleTranscriptionProgress(
             phase: .processing,
@@ -56,6 +57,9 @@ extension RecordingManager {
         }
 
         let executionMode: TranscriptionExecutionMode = capturePurpose == .dictation ? .dictation : .meeting
+        let resolvedInputLanguage = inputLanguageCode
+            ?? AppSettingsStore.shared.resolvedTranscriptionInputLanguageCode(for: executionMode)
+
         if let selectionOverride,
            let configuredClient = transcriptionClient as? any TranscriptionServiceConfigurationAware
         {
@@ -65,8 +69,24 @@ extension RecordingManager {
                 executionMode: executionMode,
                 diarizationEnabledOverride: diarizationEnabledOverride,
                 selection: selectionOverride,
-                inputLanguageCode: inputLanguageCode
-                    ?? AppSettingsStore.shared.resolvedTranscriptionInputLanguageCode(for: executionMode),
+                inputLanguageCode: resolvedInputLanguage,
+                vocabularyHints: vocabularyHints,
+            )
+        }
+
+        // Prefer configuration-aware path when vocabulary hints must reach remote backends.
+        if let vocabularyHints, !vocabularyHints.isEmpty,
+           let configuredClient = transcriptionClient as? any TranscriptionServiceConfigurationAware
+        {
+            let selection = AppSettingsStore.shared.resolvedTranscriptionSelection(for: executionMode)
+            return try await configuredClient.transcribe(
+                audioURL: audioURL,
+                onProgress: onProgress,
+                executionMode: executionMode,
+                diarizationEnabledOverride: diarizationEnabledOverride,
+                selection: selection,
+                inputLanguageCode: resolvedInputLanguage,
+                vocabularyHints: vocabularyHints,
             )
         }
 
@@ -123,5 +143,34 @@ extension RecordingManager {
         }
 
         return meeting.supportsMeetingConversation
+    }
+
+    /// Builds a domain transcription configuration that always carries session vocabulary hints.
+    func makeDomainTranscriptionConfiguration(
+        from dictationConfiguration: DictationTranscriptionConfiguration?,
+        vocabularyHints: VocabularyProviderHints,
+        capturePurpose: CapturePurpose,
+    ) -> DomainTranscriptionRequestConfiguration? {
+        let executionMode: TranscriptionExecutionMode = capturePurpose == .dictation ? .dictation : .meeting
+        let hints: VocabularyProviderHints? = vocabularyHints.isEmpty ? nil : vocabularyHints
+
+        if let dictationConfiguration {
+            return DomainTranscriptionRequestConfiguration(
+                providerID: dictationConfiguration.selection.provider.rawValue,
+                modelID: dictationConfiguration.selection.selectedModel,
+                inputLanguageCode: dictationConfiguration.inputLanguageCode,
+                vocabularyHints: hints,
+            )
+        }
+
+        // Synthesize from resolved settings when hints must reach a remote provider.
+        guard let hints, !hints.isEmpty else { return nil }
+        let selection = AppSettingsStore.shared.resolvedTranscriptionSelection(for: executionMode)
+        return DomainTranscriptionRequestConfiguration(
+            providerID: selection.provider.rawValue,
+            modelID: selection.selectedModel,
+            inputLanguageCode: AppSettingsStore.shared.resolvedTranscriptionInputLanguageCode(for: executionMode),
+            vocabularyHints: hints,
+        )
     }
 }

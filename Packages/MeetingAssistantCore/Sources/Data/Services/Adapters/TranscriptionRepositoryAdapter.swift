@@ -127,6 +127,7 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository, Tran
             diarizationEnabledOverride: diarizationEnabledOverride,
             selection: TranscriptionProviderSelection(provider: provider, selectedModel: configuration.modelID),
             inputLanguageCode: configuration.inputLanguageCode,
+            vocabularyHints: configuration.vocabularyHints,
         )
         return mapToDomainResponse(response)
     }
@@ -142,6 +143,7 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository, Tran
             samples: samples,
             selection: TranscriptionProviderSelection(provider: provider, selectedModel: configuration.modelID),
             inputLanguageCode: configuration.inputLanguageCode,
+            vocabularyHints: configuration.vocabularyHints,
         )
         return mapToDomainResponse(response)
     }

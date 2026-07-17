@@ -42,6 +42,7 @@ extension RecordingManager {
                     samples: samples,
                     selection: configuration.selection,
                     inputLanguageCode: configuration.inputLanguageCode,
+                    vocabularyHints: nil,
                 )
             }
             return try await value.transcribe(samples: samples)
@@ -275,7 +276,8 @@ extension RecordingManager {
             transcriptionIdentity: transcriptionIdentity,
             inputSource: resolveInputSourceLabel(for: session.meeting, recordingSource: session.recordingSource),
             contextItems: config.postProcessingContextItems,
-            vocabularyReplacementRules: settings.vocabularyReplacementRules,
+            vocabularyReplacementRules: session.vocabularySnapshot.replacementRules,
+            vocabularyTerms: session.vocabularySnapshot.terms,
             applyPostProcessing: config.applyPostProcessing,
             postProcessingPrompt: config.postProcessingPrompt,
             defaultPostProcessingPrompt: config.defaultPostProcessingPrompt,
