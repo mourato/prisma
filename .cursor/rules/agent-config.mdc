@@ -1,0 +1,19 @@
+---
+description: Shared agent configuration and safety rules
+alwaysApply: true
+---
+
+# Global agent instructions
+
+Be concise. Classify each request before acting. Use the narrowest relevant
+skill and the lowest safe reasoning effort. Keep one objective per task.
+
+Analysis and review agents are read-only. Only an explicitly isolated
+implementation workspace may be modified. Preserve unrelated changes, inspect
+the concrete artifact first, and validate the smallest surface that proves the
+result.
+
+Never persist prompts, transcripts, secrets, credentials, or machine state in
+this repository. Keep provider-specific behavior in adapters.
+
+<!-- Generated from core/instructions/AGENTS.md; edit the shared source. -->
