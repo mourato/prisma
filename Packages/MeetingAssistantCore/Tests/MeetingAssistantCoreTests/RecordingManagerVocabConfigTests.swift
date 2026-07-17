@@ -4,7 +4,7 @@
 import XCTest
 
 @MainActor
-final class RecordingManagerVocabularyConfigurationTests: XCTestCase {
+final class RecordingManagerVocabConfigTests: XCTestCase {
     func testMakeDomainTranscriptionConfiguration_AttachesNonEmptyHints() throws {
         let manager = RecordingManager.shared
         let hints = VocabularyProviderHints(
