@@ -31,6 +31,7 @@ extension RecordingManager {
             dictationEnhancementsSelection: activeDictationStyleSnapshot?.enhancementsSelection,
             dictationPostProcessingEnabled: activeDictationStyleSnapshot?.postProcessingEnabled,
             dictationStyle: activeDictationStyleSnapshot,
+            vocabularySnapshot: VocabularySnapshot.current(from: .shared),
         )
     }
 }
@@ -49,5 +50,18 @@ public extension RecordingManager {
 
     func setDictationSessionOutputLanguageOverride(_ language: DictationOutputLanguage?) {
         dictationSessionOutputLanguageOverride = language
+    }
+}
+
+// MARK: - VocabularySnapshot Factory
+
+@MainActor
+extension VocabularySnapshot {
+    /// Creates a snapshot from the current `AppSettingsStore` values.
+    static func current(from settings: AppSettingsStore) -> VocabularySnapshot {
+        VocabularySnapshot(
+            terms: settings.vocabularyTerms,
+            replacementRules: settings.vocabularyReplacementRules,
+        )
     }
 }

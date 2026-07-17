@@ -160,6 +160,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let dictationEnhancementsSelection: EnhancementsAISelection?
         let dictationPostProcessingEnabled: Bool?
         let dictationStyle: DictationStyle?
+        let vocabularySnapshot: VocabularySnapshot
 
         init(
             id: UUID,
@@ -178,6 +179,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             dictationEnhancementsSelection: EnhancementsAISelection? = nil,
             dictationPostProcessingEnabled: Bool? = nil,
             dictationStyle: DictationStyle? = nil,
+            vocabularySnapshot: VocabularySnapshot = .empty,
         ) {
             self.id = id
             self.meeting = meeting
@@ -195,6 +197,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             self.dictationEnhancementsSelection = dictationEnhancementsSelection
             self.dictationPostProcessingEnabled = dictationPostProcessingEnabled
             self.dictationStyle = dictationStyle
+            self.vocabularySnapshot = vocabularySnapshot
         }
     }
 

@@ -66,6 +66,7 @@ public final class TranscribeAudioUseCase: Sendable {
         inputSource: String? = nil,
         contextItems: [TranscriptionContextItem] = [],
         vocabularyReplacementRules: [VocabularyReplacementRule] = [],
+        vocabularyTerms: [VocabularyTerm] = [],
         diarizationEnabledOverride: Bool? = nil,
         transcriptionConfiguration: DomainTranscriptionRequestConfiguration? = nil,
         applyPostProcessing: Bool = false,
@@ -137,6 +138,7 @@ public final class TranscribeAudioUseCase: Sendable {
                 inputSource: inputSource,
                 contextItems: contextItems,
                 vocabularyReplacementRules: vocabularyReplacementRules,
+                vocabularyTerms: vocabularyTerms,
                 applyPostProcessing: applyPostProcessing,
                 postProcessingPrompt: postProcessingPrompt,
                 defaultPostProcessingPrompt: defaultPostProcessingPrompt,
@@ -171,6 +173,7 @@ public final class TranscribeAudioUseCase: Sendable {
         inputSource: String? = nil,
         contextItems: [TranscriptionContextItem] = [],
         vocabularyReplacementRules: [VocabularyReplacementRule] = [],
+        vocabularyTerms: [VocabularyTerm] = [],
         applyPostProcessing: Bool = false,
         postProcessingPrompt: DomainPostProcessingPrompt? = nil,
         defaultPostProcessingPrompt: DomainPostProcessingPrompt? = nil,
@@ -198,7 +201,9 @@ public final class TranscribeAudioUseCase: Sendable {
                 durationSeconds: response.durationSeconds,
             )
 
-            let resolvedPostProcessingContext = PostProcessingSystemContextMetadata.augment(postProcessingContext)
+            let vocabularySnapshot = VocabularySnapshot(terms: vocabularyTerms, replacementRules: [])
+            let contextWithVocabulary = vocabularySnapshot.prependToContext(postProcessingContext)
+            let resolvedPostProcessingContext = PostProcessingSystemContextMetadata.augment(contextWithVocabulary)
 
             let postProcessingInput = PostProcessingInputComposer.compose(
                 transcriptionText: qualityProfile.normalizedTextForIntelligence,

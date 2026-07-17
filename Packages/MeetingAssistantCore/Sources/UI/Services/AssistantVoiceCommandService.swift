@@ -161,9 +161,15 @@ public final class AssistantVoiceCommandService: ObservableObject {
             throw AssistantVoiceCommandError.failedToStopRecording
         }
 
+        // Snapshot current vocabulary state for this assistant command.
+        let vocabularySnapshot = VocabularySnapshot.current(from: .shared)
+
+        // Set transient vocabulary hint override for supported provider backends.
+        TranscriptionClient.shared.vocabularyHintOverride = vocabularySnapshot.providerHint
+
         return try await transcriptionPhase.performTranscription(
             recordingURL: recordingURL,
-            vocabularyReplacementRules: settings.vocabularyReplacementRules,
+            vocabularyReplacementRules: vocabularySnapshot.replacementRules,
             executionFlow: currentExecutionFlow,
             isAssistantIntegrationsEnabled: settings.isAssistantIntegrationsEnabled,
             assistantSelectedIntegration: settings.assistantSelectedIntegration,
