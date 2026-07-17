@@ -5,7 +5,7 @@ import MeetingAssistantCore
 import os
 import SwiftUI
 
-/// Main entry point for the Prisma app.
+/// Main entry point for the Vozinha app.
 /// Runs as a menu bar application without a dock icon.
 @main
 struct MeetingAssistantApp: App {

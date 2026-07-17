@@ -2,30 +2,26 @@ import Foundation
 
 /// Centralized runtime identity values used across app and core modules.
 public enum AppIdentity {
-    public static let displayName = "Prisma"
-    public static let bundleIdentifier = "com.mourato.prisma"
-    public static let xpcServiceName = "com.mourato.prisma.ai-service"
-    public static let logSubsystem = "com.mourato.prisma"
+    public static let displayName = AppIdentityValues.displayName
+    public static let bundleIdentifier = AppIdentityValues.bundleIdentifier
+    public static let xpcServiceName = AppIdentityValues.xpcServiceName
+    public static let logSubsystem = AppIdentityValues.logSubsystem
     public static let isRunningTests =
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil ||
         NSClassFromString("XCTestCase") != nil
 
     // Keep these identifiers stable to preserve existing window toolbar/autosave state.
-    public static let settingsToolbarIdentifier = "MeetingAssistantSettingsToolbar"
-    public static let settingsWindowAutosaveName = "MeetingAssistantSettingsWindow"
-
-    public static let appSupportDirectoryName = "Prisma"
-    public static let logDirectoryName = "Prisma"
-    public static let keychainServiceIdentifier = "com.mourato.prisma"
-    public static let hotkeySignatureSeed = "PRH0"
-
-    public static let legacyUserDefaultsDomain = "com.meetingassistant.app"
-    public static let userDefaultsDomainMigrationFlag = "migrations.user_defaults_domain.v1"
-
-    public static let legacyAppSupportDirectoryName = "MeetingAssistant"
-    public static let legacyLogDirectoryName = "MeetingAssistant"
-
-    public static let legacyKeychainServiceIdentifiers = ["com.meeting-assistant"]
+    public static let settingsToolbarIdentifier = AppIdentityValues.settingsToolbarIdentifier
+    public static let settingsWindowAutosaveName = AppIdentityValues.settingsWindowAutosaveName
+    public static let appSupportDirectoryName = AppIdentityValues.appSupportDirectoryName
+    public static let logDirectoryName = AppIdentityValues.logDirectoryName
+    public static let keychainServiceIdentifier = AppIdentityValues.keychainServiceIdentifier
+    public static let hotkeySignatureSeed = AppIdentityValues.hotkeySignatureSeed
+    public static let legacyUserDefaultsDomain = AppIdentityValues.legacyUserDefaultsDomain
+    public static let userDefaultsDomainMigrationFlag = AppIdentityValues.userDefaultsDomainMigrationFlag
+    public static let legacyAppSupportDirectoryName = AppIdentityValues.legacyAppSupportDirectoryName
+    public static let legacyLogDirectoryName = AppIdentityValues.legacyLogDirectoryName
+    public static let legacyKeychainServiceIdentifiers = AppIdentityValues.legacyKeychainServiceIdentifiers
 
     public static func appSupportBaseDirectory(fileManager: FileManager = .default) -> URL {
         let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first

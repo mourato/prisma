@@ -36,10 +36,10 @@ concurrency:
 permissions: {}
 
 env:
-  APP_NAME: Prisma
+  APP_NAME: Vozinha
   SCHEME: MeetingAssistant
   XCODE_PROJECT: MeetingAssistant.xcodeproj
-  ARCHIVE_PATH: build/Prisma.xcarchive
+  ARCHIVE_PATH: build/Vozinha.xcarchive
   XCODE_APP: /Applications/Xcode_16.4.app
   XCODE_VERSION: "16.4"
   DERIVED_DATA_PATH: /tmp/DerivedData

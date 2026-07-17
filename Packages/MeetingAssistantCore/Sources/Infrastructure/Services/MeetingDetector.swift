@@ -93,7 +93,7 @@ public class MeetingDetector: ObservableObject {
     private func setupAppNotifications() {
         let workspace = NSWorkspace.shared
 
-        // Ignore Prisma's own lifecycle notifications to avoid work during teardown.
+        // Ignore Vozinha's own lifecycle notifications to avoid work during teardown.
         let handleWorkspaceAppChange: @MainActor @Sendable (NSRunningApplication, String) -> Void = { [weak self] app, eventName in
             guard let self,
                   app.bundleIdentifier != AppIdentity.bundleIdentifier

@@ -23,11 +23,27 @@ final class DictionaryArchiveTests: XCTestCase {
         let decoded = try JSONDecoder().decode(DictionaryArchive.self, from: data)
 
         XCTAssertEqual(decoded.schemaVersion, DictionaryArchive.currentSchemaVersion)
-        XCTAssertEqual(decoded.sourceApp, "Prisma")
+        XCTAssertEqual(decoded.sourceApp, "Vozinha")
         XCTAssertEqual(decoded.vocabularyTerms.count, 2)
         XCTAssertEqual(decoded.substitutionRules.count, 1)
         XCTAssertEqual(decoded.vocabularyTerms[0].term, "SwiftUI")
         XCTAssertEqual(decoded.substitutionRules[0].find, "macos")
+    }
+
+    func testLegacySourceAppRemainsDecodable() throws {
+        let legacyArchive = DictionaryArchive(
+            sourceApp: "Prisma",
+            vocabularyTerms: [],
+            substitutionRules: [],
+        )
+        let data = try JSONEncoder().encode(legacyArchive)
+
+        let result = DictionaryArchive.validate(data: data)
+
+        guard case let .success(decoded) = result else {
+            return XCTFail("Legacy Prisma archive should remain decodable")
+        }
+        XCTAssertEqual(decoded.sourceApp, "Prisma")
     }
 
     // MARK: - Empty collections

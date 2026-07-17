@@ -1,4 +1,4 @@
-# Prisma for macOS
+# Vozinha for macOS
 
 A native macOS app that detects video-call meetings, captures system audio, and transcribes locally using on-device AI models via the [FluidAudio SDK](https://github.com/FluidInference/FluidAudio).
 
@@ -106,7 +106,7 @@ The pre-commit hook applies SwiftFormat and SwiftLint autofix to staged Swift fi
 |--------|-------------|
 | `make run` | Build Debug and open the app. |
 | `make run-release` | Build Release and open the app. |
-| `make dmg` | Build Release and create `dist/Prisma.dmg`, prompting for automatic, self-signed, or ad-hoc signing. |
+| `make dmg` | Build Release and create `dist/Vozinha.dmg`, prompting for automatic, self-signed, or ad-hoc signing. |
 | `make setup-self-signed-cert` | Create or import the local self-signed signing certificate. |
 | `make new-release` | Create a GitHub release interactively with generated notes. |
 
@@ -246,7 +246,7 @@ make ci-release-parity-self-signed \
 Notes:
 - Keep `CFBundleIdentifier` unchanged between versions.
 - Keep `MA_RELEASE_CODE_SIGN_IDENTITY` stable if you customize the certificate name.
-- `make dmg` builds the Release app, packages it, signs the DMG, and writes `dist/Prisma.dmg`.
+- `make dmg` builds the Release app, packages it, signs the DMG, and writes `dist/Vozinha.dmg`.
 - `make dmg` now prompts for signing mode. The default choice is automatic detection: if the exact configured identity is found in keychain, the DMG is self-signed; otherwise it falls back to unsigned/ad-hoc.
 - Use `MA_RELEASE_SIGNING_MODE=adhoc make dmg` or `MA_RELEASE_SIGNING_MODE=self-signed make dmg` to skip the prompt and force a specific mode.
 - Install by replacing the existing app in `/Applications` to maximize permission persistence.
@@ -260,7 +260,7 @@ On first use, FluidAudio may download and prepare the model(s). This can take a 
 
 ### Audio capture does not work
 
-- Check **Privacy & Security → Screen Recording** and ensure Prisma is enabled.
+- Check **Privacy & Security → Screen Recording** and ensure Vozinha is enabled.
 - If you rebuilt/reinstalled the app, macOS may require re-granting permission.
 
 ## License

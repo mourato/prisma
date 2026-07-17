@@ -239,25 +239,25 @@ extension RecordingManager {
 
     private func shouldRefreshContextCapture(_ context: ActiveAppContext?) -> Bool {
         guard let context else { return true }
-        return isPrismaBundleIdentifier(context.bundleIdentifier)
+        return isOwnBundleIdentifier(context.bundleIdentifier)
     }
 
     private func preferredContextForCapture(
         primary: ActiveAppContext?,
         fallback: ActiveAppContext?,
     ) -> ActiveAppContext? {
-        if let primary, !isPrismaBundleIdentifier(primary.bundleIdentifier) {
+        if let primary, !isOwnBundleIdentifier(primary.bundleIdentifier) {
             return primary
         }
 
-        if let fallback, !isPrismaBundleIdentifier(fallback.bundleIdentifier) {
+        if let fallback, !isOwnBundleIdentifier(fallback.bundleIdentifier) {
             return fallback
         }
 
         return primary ?? fallback
     }
 
-    private func isPrismaBundleIdentifier(_ bundleIdentifier: String) -> Bool {
+    private func isOwnBundleIdentifier(_ bundleIdentifier: String) -> Bool {
         let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
         let appBundleID = WebTargetDetection.normalizeBundleIdentifier(AppIdentity.bundleIdentifier)
         let runtimeBundleID = WebTargetDetection.normalizeBundleIdentifier(Bundle.main.bundleIdentifier ?? "")

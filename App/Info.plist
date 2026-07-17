@@ -32,21 +32,21 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Prisma needs to control supported apps to capture browser context and pause media during recording.</string>
+	<string>Vozinha needs to control supported apps to capture browser context and pause media during recording.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Prisma needs calendar access to show upcoming events and use them as meeting context.</string>
+	<string>Vozinha needs calendar access to show upcoming events and use them as meeting context.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Prisma needs calendar access to show upcoming events and use them as meeting context.</string>
+	<string>Vozinha needs calendar access to show upcoming events and use them as meeting context.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2024. All rights reserved.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Prisma needs microphone access to capture audio when screen recording is not available.</string>
+	<string>Vozinha needs microphone access to capture audio when screen recording is not available.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>Prisma needs to capture system audio to record your video call meetings.</string>
+	<string>Vozinha needs to capture system audio to record your video call meetings.</string>
 	<key>SUFeedURL</key>
 	<string>https://mourato.github.io/prisma/appcast.xml</string>
 	<key>SUPublicEDKey</key>

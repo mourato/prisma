@@ -1,6 +1,6 @@
-// Centralized product identity values for rebranding.
-APP_DISPLAY_NAME = Prisma
-APP_PRODUCT_NAME = Prisma
+// GENERATED FILE — DO NOT EDIT. Source: Config/AppIdentity.plist.
+APP_DISPLAY_NAME = Vozinha
+APP_PRODUCT_NAME = Vozinha
 APP_BUNDLE_ID = com.mourato.prisma
 
 XPC_SERVICE_BUNDLE_ID = com.mourato.prisma.ai-service

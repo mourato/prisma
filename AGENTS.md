@@ -2,7 +2,7 @@
 
 ## Identity and Purpose
 
-Prisma is a local-first macOS meeting capture, transcription, and AI post-processing app. Use this repository's CLI-first workflow and Clean Architecture boundaries to make focused, reproducible changes.
+Vozinha is the display brand for this local-first macOS meeting capture, transcription, and AI post-processing app. Technical identifiers remain Prisma-stable by design. Use this repository's CLI-first workflow and Clean Architecture boundaries to make focused, reproducible changes.
 
 ## Project Context
 

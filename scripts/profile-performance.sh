@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# profile-performance.sh - Performance profiling workflow for Prisma
+# profile-performance.sh - Performance profiling workflow for Vozinha
 # =============================================================================
 # Uses xctrace to profile CPU, Memory, and Animation performance
 # CLI-first approach for CI/CD integration

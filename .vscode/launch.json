@@ -4,8 +4,8 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug Prisma (CLI Build)",
-            "program": "${workspaceFolder}/.xcode-build/Build/Products/Debug/Prisma.app/Contents/MacOS/Prisma",
+            "name": "Debug Vozinha (CLI Build)",
+            "program": "${workspaceFolder}/.xcode-build/Build/Products/Debug/Vozinha.app/Contents/MacOS/Vozinha",
             "args": [],
             "cwd": "${workspaceFolder}",
             "env": {
@@ -19,8 +19,8 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug Prisma (No Build)",
-            "program": "${workspaceFolder}/.xcode-build/Build/Products/Debug/Prisma.app/Contents/MacOS/Prisma",
+            "name": "Debug Vozinha (No Build)",
+            "program": "${workspaceFolder}/.xcode-build/Build/Products/Debug/Vozinha.app/Contents/MacOS/Vozinha",
             "args": [],
             "cwd": "${workspaceFolder}",
             "env": {
@@ -35,7 +35,7 @@
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:my-meeting-assistant}/MeetingAssistant",
-            "name": "Debug Prisma (MeetingAssistant target)",
+            "name": "Debug Vozinha (MeetingAssistant target)",
             "preLaunchTask": "swift: Build Debug MeetingAssistant (MeetingAssistant)",
             "target": "MeetingAssistant",
             "configuration": "debug"
@@ -45,7 +45,7 @@
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:my-meeting-assistant}/MeetingAssistant",
-            "name": "Release Prisma (MeetingAssistant target)",
+            "name": "Release Vozinha (MeetingAssistant target)",
             "preLaunchTask": "swift: Build Release MeetingAssistant (MeetingAssistant)",
             "target": "MeetingAssistant",
             "configuration": "release"

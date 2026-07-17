@@ -368,7 +368,7 @@ public struct DictionarySettingsTab: View {
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType.json]
-        panel.nameFieldStringValue = "prisma-dictionary-export.json"
+        panel.nameFieldStringValue = "\(AppIdentity.displayName.lowercased())-dictionary-export.json"
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
 

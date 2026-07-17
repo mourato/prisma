@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>product</key>
+	<dict>
+		<key>displayName</key><string>Vozinha</string>
+		<key>productName</key><string>Vozinha</string>
+	</dict>
+	<key>technical</key>
+	<dict>
+		<key>bundleIdentifier</key><string>com.mourato.prisma</string>
+		<key>xpcServiceBundleIdentifier</key><string>com.mourato.prisma.ai-service</string>
+		<key>xpcProductName</key><string>PrismaAI</string>
+		<key>logSubsystem</key><string>com.mourato.prisma</string>
+		<key>keychainService</key><string>com.mourato.prisma</string>
+	</dict>
+	<key>persistence</key>
+	<dict>
+		<key>appSupportDirectory</key><string>Prisma</string>
+		<key>logDirectory</key><string>Prisma</string>
+		<key>hotkeySignatureSeed</key><string>PRH0</string>
+		<key>legacyUserDefaultsDomain</key><string>com.meetingassistant.app</string>
+		<key>userDefaultsMigrationFlag</key><string>migrations.user_defaults_domain.v1</string>
+	</dict>
+	<key>migration</key>
+	<dict>
+		<key>legacyAppSupportDirectory</key><string>MeetingAssistant</string>
+		<key>legacyLogDirectory</key><string>MeetingAssistant</string>
+		<key>legacyKeychainServices</key><array><string>com.meeting-assistant</string></array>
+	</dict>
+	<key>internal</key>
+	<dict>
+		<key>appScheme</key><string>MeetingAssistant</string>
+		<key>xcodeprojName</key><string>MeetingAssistant.xcodeproj</string>
+		<key>xpcTargetName</key><string>MeetingAssistantAI</string>
+		<key>settingsToolbarIdentifier</key><string>MeetingAssistantSettingsToolbar</string>
+		<key>settingsWindowAutosaveName</key><string>MeetingAssistantSettingsWindow</string>
+	</dict>
+</dict>
+</plist>

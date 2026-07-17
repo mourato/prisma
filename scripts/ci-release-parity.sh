@@ -38,7 +38,7 @@ Options:
   --phase <build-archive|package-appcast>
                                          Phase to run (default: build-archive)
   --derived-data <path>                  DerivedData path (default: mode-specific)
-  --archive-path <path>                  Archive path (default: build/Prisma.xcarchive)
+  --archive-path <path>                  Archive path (default: build/Vozinha.xcarchive)
   --xcode-version <version>              Pinned Xcode version check (default: 16.4)
   --xcode-app <path>                     Pinned Xcode app path (default: /Applications/Xcode_16.4.app)
   --strict-xcode-version <0|1>           Fail when version mismatches (default: 0 or MA_CI_PARITY_STRICT_XCODE_VERSION)
@@ -54,7 +54,7 @@ Examples:
   scripts/ci-release-parity.sh --mode local --phase build-archive --dry-run 1
   scripts/ci-release-parity.sh --mode ci --phase build-archive --dry-run 0
   scripts/ci-release-parity.sh --mode ci --phase package-appcast --dry-run 0 \
-    --archive-path /tmp/sparkle-build-outputs/build/Prisma.xcarchive \
+    --archive-path /tmp/sparkle-build-outputs/build/Vozinha.xcarchive \
     --sparkle-tools-dir /tmp/sparkle-build-outputs/build/tools/sparkle
 USAGE
 }

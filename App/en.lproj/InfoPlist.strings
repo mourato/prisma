@@ -1,7 +1,7 @@
 /* Privacy Usage Descriptions */
-"NSAppleEventsUsageDescription" = "Prisma needs to control supported apps to capture browser context and pause media during recording.";
-"NSCalendarsFullAccessUsageDescription" = "Prisma needs calendar access to show upcoming events and use them as meeting context.";
-"NSCalendarsUsageDescription" = "Prisma needs calendar access to show upcoming events and use them as meeting context.";
-"NSMicrophoneUsageDescription" = "Prisma needs microphone access to capture audio when screen recording is not available.";
-"NSScreenCaptureUsageDescription" = "Prisma needs to capture system audio to record your video call meetings.";
+"NSAppleEventsUsageDescription" = "Vozinha needs to control supported apps to capture browser context and pause media during recording.";
+"NSCalendarsFullAccessUsageDescription" = "Vozinha needs calendar access to show upcoming events and use them as meeting context.";
+"NSCalendarsUsageDescription" = "Vozinha needs calendar access to show upcoming events and use them as meeting context.";
+"NSMicrophoneUsageDescription" = "Vozinha needs microphone access to capture audio when screen recording is not available.";
+"NSScreenCaptureUsageDescription" = "Vozinha needs to capture system audio to record your video call meetings.";
 "NSHumanReadableCopyright" = "Copyright © 2024. All rights reserved.";

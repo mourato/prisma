@@ -136,7 +136,9 @@ final class RustEnergyMeterKernelTests: XCTestCase {
             versionImpl: { 1 },
             computeRmsPeakImpl: { _, _, outResult in
                 let pointer = outResult!.assumingMemoryBound(to: AKRmsPeakResult.self)
-                pointer.pointee = AKRmsPeakResult(rms_linear: 0.0_001, peak_linear: 0.0_001)
+                // swiftformat:disable numberFormatting
+                pointer.pointee = AKRmsPeakResult(rms_linear: 0.0001, peak_linear: 0.0001)
+                // swiftformat:enable numberFormatting
                 return RustAudioKernelFFI.ResultCode.ok.rawValue
             },
         )
@@ -242,7 +244,7 @@ final class RustEnergyMeterKernelTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .path
-        let directPath = "\(rootPath)/.xcode-build/Build/Products/Debug/Prisma.app/Contents/Frameworks/libaudio_kernels_rust.dylib"
+        let directPath = "\(rootPath)/.xcode-build/Build/Products/Debug/Vozinha.app/Contents/Frameworks/libaudio_kernels_rust.dylib"
         if FileManager.default.fileExists(atPath: directPath) {
             return directPath
         }

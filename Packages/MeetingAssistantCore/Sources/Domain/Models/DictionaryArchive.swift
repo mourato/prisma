@@ -1,4 +1,5 @@
 import Foundation
+import MeetingAssistantCoreCommon
 
 /// Versioned archive format for Dictionary import/export.
 /// Contains both vocabulary terms and substitution rules.
@@ -21,7 +22,7 @@ public struct DictionaryArchive: Codable, Sendable {
     public init(
         schemaVersion: String = Self.currentSchemaVersion,
         exportDate: String = Self.currentTimestamp(),
-        sourceApp: String = "Prisma",
+        sourceApp: String = AppIdentity.displayName,
         vocabularyTerms: [VocabularyTerm],
         substitutionRules: [VocabularyReplacementRule],
     ) {

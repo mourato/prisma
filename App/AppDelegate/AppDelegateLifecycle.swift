@@ -8,7 +8,7 @@ import SwiftUI
 extension AppDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        ProcessInfo.processInfo.disableAutomaticTermination("Prisma menu bar app must remain resident")
+        ProcessInfo.processInfo.disableAutomaticTermination("Vozinha menu bar app must remain resident")
         ProcessInfo.processInfo.disableSuddenTermination()
 
         // Initialize Monitoring Services

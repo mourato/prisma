@@ -228,6 +228,7 @@ preview-check:
 guidance-check:
 	@echo -e "$(BLUE)Validating AGENTS/skills/docs guidance...$(NC)"
 	@python3 ./scripts/validate-agent-guidance.py
+	@./scripts/config/generate_app_identity.swift --check
 
 preflight:
 	@echo -e "$(BLUE)Running preflight checks...$(NC)"
