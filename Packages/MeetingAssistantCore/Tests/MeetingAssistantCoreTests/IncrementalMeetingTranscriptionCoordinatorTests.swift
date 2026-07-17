@@ -107,7 +107,7 @@ final class IncrementalMeetingCoordinatorTests: XCTestCase {
         XCTAssertTrue(requiresLegacyFallback)
         XCTAssertEqual(fallbackReason, .windowTranscriptionFailed)
         XCTAssertNotNil(fallbackError)
-        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
+        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .finalizing)
     }
 
     func testFinish_WhenNoIncrementalTranscriptIsProduced_MarksFallbackAndThrows() async throws {
@@ -149,7 +149,7 @@ final class IncrementalMeetingCoordinatorTests: XCTestCase {
         XCTAssertTrue(requiresLegacyFallback)
         XCTAssertEqual(fallbackReason, .emptyTranscript)
         XCTAssertNotNil(fallbackError)
-        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
+        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .finalizing)
         XCTAssertEqual(transcriptionClient.fileTranscribeCallCount, 0)
         XCTAssertEqual(transcriptionClient.sampleTranscribeCallCount, 0)
     }
@@ -204,7 +204,7 @@ final class IncrementalMeetingCoordinatorTests: XCTestCase {
         XCTAssertTrue(requiresLegacyFallback)
         XCTAssertEqual(fallbackReason, .finalDiarizationFailed)
         XCTAssertNotNil(fallbackError)
-        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
+        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .finalizing)
         XCTAssertEqual(transcriptionClient.sampleTranscribeCallCount, 1)
         XCTAssertEqual(transcriptionClient.diarizeCallCount, 1)
     }

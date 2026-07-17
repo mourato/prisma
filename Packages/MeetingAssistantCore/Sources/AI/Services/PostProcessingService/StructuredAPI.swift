@@ -202,14 +202,10 @@ extension PostProcessingService {
             selectionOverride: context.selectionOverride,
             systemPromptOverride: context.systemPromptOverride,
         )
-        let fallbackSummary = summaryFallbackBuilder.build(
+        // Keep processedText and canonicalSummary on the same fallback contract.
+        return summaryFallbackBuilder.build(
             providerOutput: fastResult,
             transcription: context.transcription,
-        )
-        return DomainPostProcessingResult(
-            processedText: fastResult,
-            canonicalSummary: fallbackSummary.canonicalSummary,
-            outputState: .deterministicFallback,
         )
     }
 
@@ -270,14 +266,9 @@ extension PostProcessingService {
             )
             let baseTranscriptionText = TranscriptionOutputSanitizer.stripPromptMetadata(from: context.transcription)
             let resolvedFallbackText = sanitizedFallback.text ?? (baseTranscriptionText.isEmpty ? context.transcription : baseTranscriptionText)
-            let fallbackSummary = summaryFallbackBuilder.build(
+            return summaryFallbackBuilder.build(
                 providerOutput: resolvedFallbackText,
                 transcription: context.transcription,
-            )
-            return DomainPostProcessingResult(
-                processedText: resolvedFallbackText,
-                canonicalSummary: fallbackSummary.canonicalSummary,
-                outputState: .deterministicFallback,
             )
         } catch {
             let fallbackError = normalizePostProcessingError(error)

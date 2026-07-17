@@ -343,6 +343,16 @@ public enum CoreDataModel {
         postProcessingFailureReasonAttribute.attributeType = .stringAttributeType
         postProcessingFailureReasonAttribute.isOptional = true
 
+        let postProcessingOutputStateAttribute = NSAttributeDescription()
+        postProcessingOutputStateAttribute.name = "postProcessingOutputStateRawValue"
+        postProcessingOutputStateAttribute.attributeType = .stringAttributeType
+        postProcessingOutputStateAttribute.isOptional = true
+
+        let transcriptionFailureReasonAttribute = NSAttributeDescription()
+        transcriptionFailureReasonAttribute.name = "transcriptionFailureReason"
+        transcriptionFailureReasonAttribute.attributeType = .stringAttributeType
+        transcriptionFailureReasonAttribute.isOptional = true
+
         let meetingTypeAttribute = NSAttributeDescription()
         meetingTypeAttribute.name = "meetingType"
         meetingTypeAttribute.attributeType = .stringAttributeType
@@ -437,6 +447,8 @@ public enum CoreDataModel {
             postProcessingDurationAttribute,
             postProcessingModelAttribute,
             postProcessingFailureReasonAttribute,
+            postProcessingOutputStateAttribute,
+            transcriptionFailureReasonAttribute,
             meetingTypeAttribute,
             lifecycleStateAttribute,
             meetingConversationStateDataAttribute,

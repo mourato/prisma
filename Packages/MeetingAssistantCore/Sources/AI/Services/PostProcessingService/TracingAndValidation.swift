@@ -37,7 +37,7 @@ extension PostProcessingService {
                 timeoutSeconds: Constants.dictationRequestTimeoutSeconds,
                 retryCount: 0,
                 useStructuredPipeline: canUseStructured,
-                useRepair: false,
+                useRepair: canUseStructured,
                 pipeline: canUseStructured ? "structured" : "fast",
             )
         }

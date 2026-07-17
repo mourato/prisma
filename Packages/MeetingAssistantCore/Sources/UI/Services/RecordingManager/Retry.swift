@@ -143,19 +143,15 @@ extension RecordingManager {
             effectiveSelection: effectiveSelection,
         )
 
-        // Snapshot current vocabulary state for this retry session.
         let vocabularySnapshot = VocabularySnapshot.current(from: .shared)
-        let vocabularyHints = vocabularySnapshot.providerHints
-
         let transcriptionStart = Date()
-        let diarizationEnabledOverride = shouldEnableDiarization(for: transcription.meeting)
         let response = try await performTranscription(
             audioURL: audioURL,
-            diarizationEnabledOverride: diarizationEnabledOverride,
+            diarizationEnabledOverride: shouldEnableDiarization(for: transcription.meeting),
             capturePurpose: transcription.meeting.capturePurpose,
             selectionOverride: selectionOverride ?? effectiveSelection,
             inputLanguageCode: inputLanguageCode,
-            vocabularyHints: vocabularyHints.isEmpty ? nil : vocabularyHints,
+            vocabularyHints: vocabularySnapshot.providerHints.isEmpty ? nil : vocabularySnapshot.providerHints,
         )
         let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
         let replacedText = VocabularyReplacementRule.apply(
@@ -241,6 +237,8 @@ extension RecordingManager {
             postProcessingModel: postProcessing.model,
             meetingType: transcription.meeting.type.rawValue,
             postProcessingFailureReason: postProcessing.failureReason,
+            postProcessingOutputState: postProcessing.outputState,
+            transcriptionFailureReason: nil,
         )
     }
 

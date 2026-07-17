@@ -74,6 +74,8 @@ extension RecordingManager {
             meetingType: entity.meetingType,
             lifecycleState: entity.lifecycleState,
             postProcessingFailureReason: entity.postProcessingFailureReason,
+            postProcessingOutputState: entity.postProcessingOutputState,
+            transcriptionFailureReason: entity.transcriptionFailureReason,
         )
     }
 
@@ -125,7 +127,9 @@ extension RecordingManager {
             meetingType: session.meeting.type.rawValue,
             lifecycleState: .failed,
             meetingConversationState: nil,
-            postProcessingFailureReason: transcriptionStatusError(from: error).localizedDescription,
+            postProcessingFailureReason: nil,
+            postProcessingOutputState: nil,
+            transcriptionFailureReason: transcriptionStatusError(from: error).localizedDescription,
         )
 
         do {

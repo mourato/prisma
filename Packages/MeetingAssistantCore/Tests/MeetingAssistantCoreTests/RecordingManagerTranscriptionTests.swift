@@ -544,7 +544,8 @@ extension RecordingManagerTests {
         XCTAssertEqual(failed.text, "")
         XCTAssertEqual(failed.rawText, "")
         XCTAssertEqual(failed.meeting.audioFilePath, audioURL.path)
-        XCTAssertTrue(failed.postProcessingFailureReason?.contains("Transcription failed") == true)
+        XCTAssertNil(failed.postProcessingFailureReason)
+        XCTAssertTrue(failed.transcriptionFailureReason?.contains("Transcription failed") == true)
     }
 
     func testMockStorageService_LoadTranscriptions() async throws {

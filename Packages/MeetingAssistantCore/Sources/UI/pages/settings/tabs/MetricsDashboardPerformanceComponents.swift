@@ -670,9 +670,11 @@ struct MetricsDashboardPerformanceRecordingPage: View {
                 }
             }
 
-            if let failureReason = transcription.postProcessingFailureReason?.trimmingCharacters(in: .whitespacesAndNewlines),
-               !failureReason.isEmpty
-            {
+            let rawFailureReason = transcription.transcriptionFailureReason
+                ?? transcription.postProcessingFailureReason
+            let failureReason = rawFailureReason?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !failureReason.isEmpty {
                 Divider()
                 Text(failureReason)
                     .font(.caption)

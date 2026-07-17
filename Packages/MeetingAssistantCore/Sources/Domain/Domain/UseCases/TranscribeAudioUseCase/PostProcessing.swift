@@ -53,6 +53,29 @@ extension TranscribeAudioUseCase {
         let requestSystemPrompt: String?
         let requestUserPrompt: String?
         let failureReason: String?
+        let outputState: DomainPostProcessingOutputState?
+
+        init(
+            processedContent: String? = nil,
+            canonicalSummary: CanonicalSummary? = nil,
+            promptId: UUID? = nil,
+            promptTitle: String? = nil,
+            meetingType: String? = nil,
+            requestSystemPrompt: String? = nil,
+            requestUserPrompt: String? = nil,
+            failureReason: String? = nil,
+            outputState: DomainPostProcessingOutputState? = nil,
+        ) {
+            self.processedContent = processedContent
+            self.canonicalSummary = canonicalSummary
+            self.promptId = promptId
+            self.promptTitle = promptTitle
+            self.meetingType = meetingType
+            self.requestSystemPrompt = requestSystemPrompt
+            self.requestUserPrompt = requestUserPrompt
+            self.failureReason = failureReason
+            self.outputState = outputState
+        }
     }
 
     func performPostProcessing(
@@ -220,6 +243,7 @@ extension TranscribeAudioUseCase {
                 requestSystemPrompt: systemPrompt,
                 requestUserPrompt: userPrompt,
                 failureReason: nil,
+                outputState: structuredResult.outputState,
             )
         }
 
@@ -304,6 +328,7 @@ extension TranscribeAudioUseCase {
                 requestSystemPrompt: nil,
                 requestUserPrompt: nil,
                 failureReason: nil,
+                outputState: structuredResult.outputState,
             )
         }
 

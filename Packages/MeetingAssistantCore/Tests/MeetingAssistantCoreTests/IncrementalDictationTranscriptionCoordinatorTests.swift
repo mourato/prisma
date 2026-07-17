@@ -79,7 +79,7 @@ final class IncrementalDictationCoordinatorTests: XCTestCase {
         XCTAssertTrue(requiresLegacyFallback)
         XCTAssertEqual(fallbackReason, .windowTranscriptionFailed)
         XCTAssertNotNil(fallbackError)
-        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
+        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .finalizing)
     }
 
     func testFinish_WhenNoIncrementalTranscriptIsProduced_ThrowsAndPersistsFailedCheckpoint() async throws {
@@ -113,7 +113,7 @@ final class IncrementalDictationCoordinatorTests: XCTestCase {
         let requiresLegacyFallback = await coordinator.requiresLegacyFallback
         let fallbackReason = await coordinator.fallbackReason
 
-        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
+        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .finalizing)
         XCTAssertTrue(requiresLegacyFallback)
         XCTAssertEqual(fallbackReason, .emptyTranscript)
         XCTAssertEqual(transcriptionClient.transcribeCallCount, 0)

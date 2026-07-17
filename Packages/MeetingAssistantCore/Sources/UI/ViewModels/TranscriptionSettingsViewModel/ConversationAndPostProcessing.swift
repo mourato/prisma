@@ -259,6 +259,25 @@ public extension TranscriptionSettingsViewModel {
         .map(RetryTranscriptionOption.init)
     }
 
+    func applyPostProcessing(prompt: PostProcessingPrompt, transcriptionID: UUID) async {
+        do {
+            if let selected = selectedTranscription, selected.id == transcriptionID {
+                await applyPostProcessing(prompt: prompt, to: selected)
+                return
+            }
+
+            guard let loaded = try await storage.loadTranscription(by: transcriptionID) else {
+                operationErrorMessage = "transcription.post_processing.error".localized
+                return
+            }
+            selectedTranscription = loaded
+            selectedId = transcriptionID
+            await applyPostProcessing(prompt: prompt, to: loaded)
+        } catch {
+            operationErrorMessage = error.localizedDescription
+        }
+    }
+
     func applyPostProcessing(prompt: PostProcessingPrompt, to transcription: Transcription) async {
         guard !isProcessingAI else { return }
 
@@ -271,103 +290,157 @@ public extension TranscriptionSettingsViewModel {
         defer { markPostProcessingFinished(for: transcriptionID) }
 
         do {
-            let processedText = try await PostProcessingService.shared.processTranscription(
-                postProcessingInput,
-                with: prompt,
+            let result = try await runPostProcessing(
+                prompt: prompt,
+                mode: mode,
+                postProcessingInput: postProcessingInput,
             )
-
             let duration = Date().timeIntervalSince(startTime)
-            let config = AppSettingsStore.shared.resolvedEnhancementsAIConfiguration
-            let modelUsed = config.selectedModel
-
+            let modelUsed = AppSettingsStore.shared.resolvedEnhancementsAIConfiguration.selectedModel
             let updatedTranscription = makePostProcessedTranscription(
                 from: transcription,
                 prompt: prompt,
-                processedText: processedText,
+                processedText: result.processedText,
+                canonicalSummary: result.canonicalSummary,
+                outputState: result.outputState,
                 duration: duration,
                 modelUsed: modelUsed,
             )
 
             try await storage.saveTranscription(updatedTranscription)
-            let completedAt = Date()
-            let attempt = ModelPerformanceAttempt(
-                transcriptionID: transcription.id,
-                stage: .postProcessing,
-                attemptKind: .reprocess,
-                capturePurpose: transcription.capturePurpose,
-                modelIdentity: postProcessingIdentity,
-                status: .succeeded,
-                startedAt: startTime,
-                completedAt: completedAt,
-                wallClockSeconds: duration,
-                audioSeconds: 0,
-                inputUTF8Bytes: postProcessingInput.lengthOfBytes(using: .utf8),
-                inputCharacterCount: postProcessingInput.count,
-                outputCharacterCount: processedText.count,
-                failureReason: nil,
+            try? await storage.saveModelPerformanceAttempt(
+                makeReprocessAttempt(
+                    transcription: transcription,
+                    identity: postProcessingIdentity,
+                    status: .succeeded,
+                    startedAt: startTime,
+                    completedAt: Date(),
+                    input: postProcessingInput,
+                    outputCharacterCount: result.processedText.count,
+                    failureReason: nil,
+                ),
             )
-            try? await storage.saveModelPerformanceAttempt(attempt)
 
-            // Update local state
             selectedTranscription = updatedTranscription
             clearPostProcessingError(for: transcriptionID)
-
-            // Refresh metadata to show the "sparkles" icon in the list if needed
             await loadTranscriptions()
-
-        } catch let error as PostProcessingError {
-            logger.error("Failed to apply post-processing: \(error.localizedDescription)")
-            let completedAt = Date()
-            let attempt = ModelPerformanceAttempt(
-                transcriptionID: transcription.id,
-                stage: .postProcessing,
-                attemptKind: .reprocess,
-                capturePurpose: transcription.capturePurpose,
-                modelIdentity: postProcessingIdentity,
-                status: .failed,
-                startedAt: startTime,
-                completedAt: completedAt,
-                wallClockSeconds: max(0, completedAt.timeIntervalSince(startTime)),
-                audioSeconds: 0,
-                inputUTF8Bytes: postProcessingInput.lengthOfBytes(using: .utf8),
-                inputCharacterCount: postProcessingInput.count,
-                outputCharacterCount: 0,
-                failureReason: error.localizedDescription,
-            )
-            try? await storage.saveModelPerformanceAttempt(attempt)
-            let message = error.localizedDescription
-            postProcessingErrorByTranscriptionID[transcriptionID] = message
-            operationErrorMessage = message
         } catch {
-            logger.error("Failed to apply post-processing: \(error.localizedDescription)")
-            let completedAt = Date()
-            let attempt = ModelPerformanceAttempt(
-                transcriptionID: transcription.id,
-                stage: .postProcessing,
-                attemptKind: .reprocess,
-                capturePurpose: transcription.capturePurpose,
-                modelIdentity: postProcessingIdentity,
-                status: .failed,
+            await handlePostProcessingFailure(
+                error: error,
+                transcription: transcription,
+                transcriptionID: transcriptionID,
+                identity: postProcessingIdentity,
                 startedAt: startTime,
-                completedAt: completedAt,
-                wallClockSeconds: max(0, completedAt.timeIntervalSince(startTime)),
-                audioSeconds: 0,
-                inputUTF8Bytes: postProcessingInput.lengthOfBytes(using: .utf8),
-                inputCharacterCount: postProcessingInput.count,
-                outputCharacterCount: 0,
-                failureReason: error.localizedDescription,
+                input: postProcessingInput,
             )
-            try? await storage.saveModelPerformanceAttempt(attempt)
-            let message = "transcription.post_processing.error".localized
-            postProcessingErrorByTranscriptionID[transcriptionID] = message
-            operationErrorMessage = message
         }
+    }
+
+    private struct ReprocessPipelineResult {
+        let processedText: String
+        let canonicalSummary: CanonicalSummary?
+        let outputState: DomainPostProcessingOutputState?
+    }
+
+    private func runPostProcessing(
+        prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
+        postProcessingInput: String,
+    ) async throws -> ReprocessPipelineResult {
+        let useStructuredPipeline = mode == .meeting
+            || AppSettingsStore.shared.dictationStructuredPostProcessingEnabled
+
+        if useStructuredPipeline {
+            let structuredResult = try await PostProcessingService.shared.processTranscriptionStructured(
+                postProcessingInput,
+                with: prompt,
+                mode: mode,
+            )
+            return ReprocessPipelineResult(
+                processedText: structuredResult.processedText,
+                canonicalSummary: structuredResult.canonicalSummary,
+                outputState: structuredResult.outputState,
+            )
+        }
+
+        let processedText = try await PostProcessingService.shared.processTranscription(
+            postProcessingInput,
+            with: prompt,
+        )
+        return ReprocessPipelineResult(
+            processedText: processedText,
+            canonicalSummary: nil,
+            outputState: nil,
+        )
+    }
+
+    private func makeReprocessAttempt(
+        transcription: Transcription,
+        identity: ModelPerformanceModelIdentity,
+        status: ModelPerformanceAttemptStatus,
+        startedAt: Date,
+        completedAt: Date,
+        input: String,
+        outputCharacterCount: Int,
+        failureReason: String?,
+    ) -> ModelPerformanceAttempt {
+        ModelPerformanceAttempt(
+            transcriptionID: transcription.id,
+            stage: .postProcessing,
+            attemptKind: .reprocess,
+            capturePurpose: transcription.capturePurpose,
+            modelIdentity: identity,
+            status: status,
+            startedAt: startedAt,
+            completedAt: completedAt,
+            wallClockSeconds: max(0, completedAt.timeIntervalSince(startedAt)),
+            audioSeconds: 0,
+            inputUTF8Bytes: input.lengthOfBytes(using: .utf8),
+            inputCharacterCount: input.count,
+            outputCharacterCount: outputCharacterCount,
+            failureReason: failureReason,
+        )
+    }
+
+    private func handlePostProcessingFailure(
+        error: Error,
+        transcription: Transcription,
+        transcriptionID: UUID,
+        identity: ModelPerformanceModelIdentity,
+        startedAt: Date,
+        input: String,
+    ) async {
+        let message: String
+        if let processingError = error as? PostProcessingError {
+            logger.error("Failed to apply post-processing: \(processingError.localizedDescription)")
+            message = processingError.localizedDescription
+        } else {
+            logger.error("Failed to apply post-processing: \(error.localizedDescription)")
+            message = "transcription.post_processing.error".localized
+        }
+
+        try? await storage.saveModelPerformanceAttempt(
+            makeReprocessAttempt(
+                transcription: transcription,
+                identity: identity,
+                status: .failed,
+                startedAt: startedAt,
+                completedAt: Date(),
+                input: input,
+                outputCharacterCount: 0,
+                failureReason: message,
+            ),
+        )
+        postProcessingErrorByTranscriptionID[transcriptionID] = message
+        operationErrorMessage = message
     }
 
     private func makePostProcessedTranscription(
         from transcription: Transcription,
         prompt: PostProcessingPrompt,
         processedText: String,
+        canonicalSummary: CanonicalSummary?,
+        outputState: DomainPostProcessingOutputState?,
         duration: TimeInterval,
         modelUsed: String,
     ) -> Transcription {
@@ -376,10 +449,10 @@ public extension TranscriptionSettingsViewModel {
             meeting: transcription.meeting,
             contextItems: transcription.contextItems,
             segments: sortedSegments(transcription.segments),
-            text: transcription.text,
+            text: processedText,
             rawText: transcription.rawText,
             processedContent: processedText,
-            canonicalSummary: transcription.canonicalSummary,
+            canonicalSummary: canonicalSummary,
             qualityProfile: transcription.qualityProfile,
             postProcessingPromptId: prompt.id,
             postProcessingPromptTitle: prompt.title,
@@ -392,6 +465,9 @@ public extension TranscriptionSettingsViewModel {
             postProcessingModel: modelUsed,
             meetingType: transcription.meetingType,
             meetingConversationState: transcription.meetingConversationState,
+            postProcessingFailureReason: nil,
+            postProcessingOutputState: outputState,
+            transcriptionFailureReason: transcription.transcriptionFailureReason,
         )
     }
 
@@ -634,7 +710,12 @@ public extension TranscriptionSettingsViewModel {
     ) -> String {
         switch kind {
         case .summary:
-            transcription.processedContent ?? transcription.text
+            TranscriptionDisplayText.preferredSummary(
+                processedContent: transcription.processedContent,
+                canonicalSummary: transcription.canonicalSummary,
+                text: transcription.text,
+                emptyFallback: "",
+            )
         case .original:
             transcription.rawText
         }

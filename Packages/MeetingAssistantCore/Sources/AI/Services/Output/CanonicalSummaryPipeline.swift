@@ -1,4 +1,5 @@
 import Foundation
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 
 enum CanonicalSummaryParsingError: Error {
@@ -18,11 +19,12 @@ struct CanonicalSummaryPromptComposer {
         - If unsure, keep list fields empty instead of guessing.
         - Set `trustFlags.containsSpeculation` to true whenever uncertainty exists.
         - Keep `trustFlags.confidenceScore` in [0, 1].
+        - `generatedAt` MUST be ISO-8601 with timezone (example: 2026-07-14T15:01:00Z).
 
         REQUIRED JSON SCHEMA:
         {
-          "schemaVersion": 1,
-          "generatedAt": "ISO-8601 datetime",
+          "schemaVersion": \(CanonicalSummary.currentSchemaVersion),
+          "generatedAt": "2026-07-14T15:01:00Z",
           "title": "string",
           "summary": "string",
           "keyPoints": ["string"],
@@ -51,6 +53,8 @@ struct CanonicalSummaryRepairComposer {
         Output ONLY valid JSON following the required schema exactly.
         Do not include explanations, markdown, or extra keys.
         Do not invent facts not present in the transcript.
+        `generatedAt` MUST include a timezone offset or Z.
+        `schemaVersion` MUST be \(CanonicalSummary.currentSchemaVersion).
         """
     }
 
@@ -80,13 +84,7 @@ struct CanonicalSummaryRepairComposer {
 }
 
 struct CanonicalSummaryResponseParser {
-    private let decoder: JSONDecoder
-
-    init() {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        self.decoder = decoder
-    }
+    private let decoder = JSONDecoder()
 
     func parse(from output: String) throws -> CanonicalSummary {
         let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -185,20 +183,34 @@ struct DeterministicSummaryFallbackBuilder {
     private enum Constants {
         static let fallbackConfidenceScore = 0.2
         static let maxSummaryCharacters = 1_200
+        static let unavailableSummary = "Summary unavailable due to malformed model output."
     }
 
     private let renderer = CanonicalSummaryRenderer()
 
     func build(providerOutput: String, transcription: String) -> DomainPostProcessingResult {
-        let sourceText = normalize(providerOutput).isEmpty ? normalize(transcription) : normalize(providerOutput)
-        let summaryText = clampSummary(sourceText.isEmpty ? "Summary unavailable due to malformed model output." : sourceText)
+        let providerText = normalize(providerOutput)
+        let transcriptText = normalize(TranscriptionOutputSanitizer.stripPromptMetadata(from: transcription))
+
+        // Never persist canonical-summary JSON (or empty provider output) as user-visible prose.
+        let proseCandidate: String = if !providerText.isEmpty,
+                                        !TranscriptionDisplayText.looksLikeCanonicalSummaryJSON(providerText)
+        {
+            providerText
+        } else if !transcriptText.isEmpty {
+            transcriptText
+        } else {
+            Constants.unavailableSummary
+        }
+
+        let summaryText = clampSummary(proseCandidate)
         let fallbackTitle = clampTitle(summaryText)
 
         let fallbackSummary = CanonicalSummary(
             title: fallbackTitle,
             summary: summaryText,
             trustFlags: .init(
-                isGroundedInTranscript: false,
+                isGroundedInTranscript: !transcriptText.isEmpty && proseCandidate == transcriptText,
                 containsSpeculation: true,
                 isHumanReviewed: false,
                 confidenceScore: Constants.fallbackConfidenceScore,
@@ -209,8 +221,8 @@ struct DeterministicSummaryFallbackBuilder {
             fallbackSummary
         } else {
             CanonicalSummary(
-                title: fallbackTitle,
-                summary: "Summary unavailable due to malformed model output.",
+                title: clampTitle(Constants.unavailableSummary),
+                summary: Constants.unavailableSummary,
                 trustFlags: .init(
                     isGroundedInTranscript: false,
                     containsSpeculation: true,
@@ -260,10 +272,10 @@ struct CanonicalSummaryRenderer {
         var sections = [summary.summary.trimmingCharacters(in: .whitespacesAndNewlines)]
 
         if !summary.keyPoints.isEmpty {
-            sections.append(renderList(title: "Key Points", values: summary.keyPoints))
+            sections.append(renderList(title: "summary.section.key_points".localized, values: summary.keyPoints))
         }
         if !summary.decisions.isEmpty {
-            sections.append(renderList(title: "Decisions", values: summary.decisions))
+            sections.append(renderList(title: "summary.section.decisions".localized, values: summary.decisions))
         }
         if !summary.actionItems.isEmpty {
             let values = summary.actionItems.map { item in
@@ -273,10 +285,10 @@ struct CanonicalSummaryRenderer {
                 }
                 return line
             }
-            sections.append(renderList(title: "Action Items", values: values))
+            sections.append(renderList(title: "summary.section.action_items".localized, values: values))
         }
         if !summary.openQuestions.isEmpty {
-            sections.append(renderList(title: "Open Questions", values: summary.openQuestions))
+            sections.append(renderList(title: "summary.section.open_questions".localized, values: summary.openQuestions))
         }
 
         return sections
@@ -292,7 +304,7 @@ struct CanonicalSummaryRenderer {
 
 private struct CanonicalSummaryPayload: Decodable {
     let schemaVersion: Int?
-    let generatedAt: Date?
+    let generatedAt: String?
     let title: String?
     let summary: String?
     let keyPoints: [String]?
@@ -304,7 +316,7 @@ private struct CanonicalSummaryPayload: Decodable {
     func toCanonicalSummary() -> CanonicalSummary {
         CanonicalSummary(
             schemaVersion: schemaVersion ?? CanonicalSummary.currentSchemaVersion,
-            generatedAt: generatedAt ?? Date(),
+            generatedAt: parseFlexibleCanonicalDate(generatedAt) ?? Date(),
             title: title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             summary: summary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             keyPoints: cleanedEntries(keyPoints),
@@ -322,6 +334,45 @@ private struct CanonicalSummaryPayload: Decodable {
     }
 }
 
+private func parseFlexibleCanonicalDate(_ rawValue: String?) -> Date? {
+    guard let rawValue = rawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+          !rawValue.isEmpty
+    else {
+        return nil
+    }
+
+    let isoWithFractional = ISO8601DateFormatter()
+    isoWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let date = isoWithFractional.date(from: rawValue) {
+        return date
+    }
+
+    let iso = ISO8601DateFormatter()
+    iso.formatOptions = [.withInternetDateTime]
+    if let date = iso.date(from: rawValue) {
+        return date
+    }
+
+    let localDateTime = DateFormatter()
+    localDateTime.locale = Locale(identifier: "en_US_POSIX")
+    localDateTime.timeZone = TimeZone(secondsFromGMT: 0)
+    localDateTime.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+    if let date = localDateTime.date(from: rawValue) {
+        return date
+    }
+
+    localDateTime.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    if let date = localDateTime.date(from: rawValue) {
+        return date
+    }
+
+    let shortFormatter = DateFormatter()
+    shortFormatter.locale = Locale(identifier: "en_US_POSIX")
+    shortFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+    shortFormatter.dateFormat = "yyyy-MM-dd"
+    return shortFormatter.date(from: rawValue)
+}
+
 private struct CanonicalSummaryActionItemPayload: Decodable {
     let title: String?
     let owner: String?
@@ -331,26 +382,8 @@ private struct CanonicalSummaryActionItemPayload: Decodable {
         CanonicalSummary.ActionItem(
             title: title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             owner: owner?.trimmingCharacters(in: .whitespacesAndNewlines),
-            dueDate: parseDate(dueDate),
+            dueDate: parseFlexibleCanonicalDate(dueDate),
         )
-    }
-
-    private func parseDate(_ rawValue: String?) -> Date? {
-        guard let rawValue = rawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !rawValue.isEmpty
-        else {
-            return nil
-        }
-
-        let isoFormatter = ISO8601DateFormatter()
-        if let date = isoFormatter.date(from: rawValue) {
-            return date
-        }
-
-        let shortFormatter = DateFormatter()
-        shortFormatter.locale = Locale(identifier: "en_US_POSIX")
-        shortFormatter.dateFormat = "yyyy-MM-dd"
-        return shortFormatter.date(from: rawValue)
     }
 }
 
