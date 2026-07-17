@@ -3,13 +3,13 @@ import SwiftUI
 enum SettingsContentSurface {
     static let horizontalGutter: CGFloat = 20
     static let bottomInset: CGFloat = 20
-    /// Local title-strip height used by scroll-surface previews (aligned with material chrome).
+    /// Legacy preview metric retained for surface-contract fixtures (not live shell chrome).
     static let titleStripBoundaryHeight: CGFloat = AppDesignSystem.Layout.settingsTitleBarMaterialHeight
 }
 
-/// Settings shell always uses an in-content title strip (no SwiftUI toolbar chrome).
+/// Settings shell uses a transparent AppKit titlebar without an opaque in-content title strip.
 enum SettingsChromeLayoutPolicy {
-    static let usesLocalTitleStrip = true
+    static let usesLocalTitleStrip = false
 }
 
 /// Owns the single vertical scroll surface for collection, status, analytics,
@@ -63,49 +63,36 @@ private struct SettingsContentSurfacePreview: View {
         ZStack(alignment: .topLeading) {
             SettingsWindowBackground()
 
-            VStack(spacing: 0) {
-                HStack(spacing: 8) {
-                    Image(systemName: "chevron.left")
-                    Text("Settings title strip boundary")
-                        .font(.headline)
-                    Spacer()
-                }
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 20)
-                .frame(height: SettingsContentSurface.titleStripBoundaryHeight)
-                .background(SettingsTitleBarMaterialBackground())
+            SettingsScrollableContent {
+                DSGroup("settings.section.general".localized, icon: "gearshape.fill") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Surface contract demonstration")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
 
-                SettingsScrollableContent {
-                    DSGroup("settings.section.general".localized, icon: "gearshape.fill") {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Surface contract demonstration")
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-
-                            Text("20pt horizontal gutter on both sides, content below the chrome boundary, bottom breathing room, and scrollable content.")
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
+                        Text("20pt horizontal gutter on both sides, content under the transparent titlebar, bottom breathing room, and scrollable content.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                }
 
-                    DSGroup {
-                        VStack(alignment: .leading, spacing: 8) {
-                            SettingsRowClickSurface(onSingleClick: {}, content: {
-                                HStack {
-                                    Text("Row item")
-                                        .foregroundStyle(.primary)
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                            })
-                        }
+                DSGroup {
+                    VStack(alignment: .leading, spacing: 8) {
+                        SettingsRowClickSurface(onSingleClick: {}, content: {
+                            HStack {
+                                Text("Row item")
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                        })
                     }
                 }
             }

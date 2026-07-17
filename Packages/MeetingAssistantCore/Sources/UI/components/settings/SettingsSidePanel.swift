@@ -62,8 +62,8 @@ private struct SettingsSidePanelModifier<PanelContent: View>: ViewModifier {
                     }
                 }
             }
-            // Stay within the detail content column (below the local title strip) so
-            // close controls remain hittable and do not enter the window titlebar.
+            // Stay within the detail content column so close controls remain
+            // hittable and do not enter the transparent window titlebar.
             .allowsHitTesting(isPresented)
             .zIndex(1)
         }

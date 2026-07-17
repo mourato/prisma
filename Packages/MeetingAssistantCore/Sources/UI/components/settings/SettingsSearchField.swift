@@ -26,10 +26,8 @@ struct SettingsSearchField: View {
 
     private var nativeStyle: NativeSearchField.Style {
         switch style {
-        case .standard:
+        case .standard, .sidebar:
             .standard
-        case .sidebar:
-            .liquidGlass
         }
     }
 

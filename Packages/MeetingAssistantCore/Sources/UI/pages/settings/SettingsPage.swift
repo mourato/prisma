@@ -119,7 +119,9 @@ public struct SettingsView: View {
             SettingsWindowBackground()
 
             VStack(spacing: 0) {
-                detailTitleStrip
+                if !isSidebarVisible {
+                    collapsedSidebarChrome
+                }
 
                 detailView
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -128,27 +130,15 @@ public struct SettingsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private var detailTitleStrip: some View {
+    /// Transparent inset for the sidebar toggle when chrome is collapsed — no opaque title strip.
+    private var collapsedSidebarChrome: some View {
         HStack(spacing: 12) {
-            if !isSidebarVisible {
-                sidebarToggleButton
-            }
-
-            Text(selectedSection.title)
-                .font(.headline.weight(.semibold))
-                .lineLimit(1)
-
+            sidebarToggleButton
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
         .padding(.top, LayoutConstants.titlebarClearance)
         .padding(.bottom, 10)
-        .background {
-            SettingsTitleBarMaterialBackground(usesBottomFade: false)
-        }
-        .overlay(alignment: .bottom) {
-            Divider()
-        }
     }
 
     private var sidebarToggleButton: some View {
