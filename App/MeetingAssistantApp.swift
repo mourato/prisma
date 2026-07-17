@@ -27,7 +27,6 @@ struct MeetingAssistantApp: App {
         .windowResizability(.contentSize)
         .defaultSize(width: 900, height: 640)
         .windowStyle(.hiddenTitleBar)
-        .windowToolbarStyle(.unified)
         .commands {
             MeetingAssistantCommands()
         }
@@ -184,7 +183,7 @@ struct MeetingAssistantCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
-        let _ = configureSettingsSceneOpener()
+        _ = configureSettingsSceneOpener()
 
         CommandGroup(replacing: .appSettings) {
             Button("menubar.settings".localized) {

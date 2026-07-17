@@ -11,35 +11,45 @@ struct SettingsSidebarView: View {
     @ScaledMetric(relativeTo: .caption) private var searchResultIconSize: CGFloat = 18
 
     var body: some View {
-        Group {
-            if hasActiveSearch {
-                searchResultsList
-            } else {
-                sectionsList
+        VStack(spacing: 0) {
+            searchField
+                .padding(.horizontal, 10)
+                .padding(.bottom, 8)
+
+            Group {
+                if hasActiveSearch {
+                    searchResultsList
+                } else {
+                    sectionsList
+                }
             }
         }
-        .padding(.top, 8)
-        .padding(.horizontal, 8)
+        .padding(.top, 10)
+        .padding(.horizontal, 0)
+    }
+
+    private var searchField: some View {
+        SettingsSearchField(
+            text: $searchText,
+            placeholder: "settings.search.placeholder".localized,
+            style: .sidebar,
+        )
+        .accessibilityLabel("settings.search.placeholder".localized)
     }
 
     private var sectionsList: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 0) {
+            VStack(spacing: 3) {
                 ForEach(SettingsSection.primarySections) { section in
                     sidebarNavigationButton(for: section)
                 }
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 16)
 
             sidebarNavigationButton(for: .system)
-                .padding(.bottom, 8)
+                .padding(.bottom, 14)
         }
-        .searchable(
-            text: $searchText,
-            placement: .sidebar,
-            prompt: "settings.search.placeholder".localized,
-        )
     }
 
     private func sidebarNavigationButton(for section: SettingsSection) -> some View {
@@ -48,14 +58,15 @@ struct SettingsSidebarView: View {
         } label: {
             sidebarLabel(for: section)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
+                .padding(.leading, 8)
+                .padding(.trailing, 10)
+                .frame(height: 38)
                 .contentShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         }
         .buttonStyle(.plain)
         .background(sidebarButtonBackground(for: section))
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 10)
         .accessibilityAddTraits(selectedSection == section ? .isSelected : [])
     }
 
@@ -102,16 +113,12 @@ struct SettingsSidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
         .settingsScrollEdgeEffect()
-        .searchable(
-            text: $searchText,
-            placement: .sidebar,
-            prompt: "settings.search.placeholder".localized,
-        )
     }
 
     private func sidebarLabel(for section: SettingsSection) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 9) {
             Image(systemName: section.icon)
                 .symbolRenderingMode(.monochrome)
                 .font(AppTypography.sidebarIcon)
@@ -122,7 +129,6 @@ struct SettingsSidebarView: View {
                 .font(AppTypography.sidebarLabel)
                 .lineLimit(1)
         }
-        .padding(.vertical, 2)
     }
 
     private func resultRow(for result: SettingsSearchResult) -> some View {
@@ -154,5 +160,4 @@ struct SettingsSidebarView: View {
         }
         .padding(.vertical, 3)
     }
-
 }

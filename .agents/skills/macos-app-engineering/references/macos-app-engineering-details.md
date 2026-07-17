@@ -86,6 +86,9 @@ accessory — so the control does not clip under Dynamic Type / narrow widths.
   destination remains.
 - Global Settings toolbar back/forward is retired after plan 097; use local back,
   sheets, or expandable disclosure instead.
+- Settings window shell is a custom `HStack` (sidebar + detail) with AppKit
+  transparent titlebar via `SettingsWindowConfigurator` — not `NavigationSplitView`
+  and not SwiftUI toolbar/title-only chrome. Sidebar search is an inline field.
 - Capability toggles for Meetings, Assistant, and Integrations live in each tab's
   Form header via `SettingsCapabilityHeaderToggle`, not window toolbar accessories.
 

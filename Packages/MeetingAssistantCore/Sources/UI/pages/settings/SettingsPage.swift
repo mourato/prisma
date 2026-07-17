@@ -6,77 +6,52 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-// MARK: - Settings View
-
 // MARK: - Layout Constants
 
 private enum LayoutConstants {
     static let windowWidth: CGFloat = 900
     static let windowHeight: CGFloat = 640
-    static let sidebarMinWidth: CGFloat = 220
-    static let sidebarIdealWidth: CGFloat = 240
-    static let sidebarMaxWidth: CGFloat = 260
+    static let sidebarWidth: CGFloat = 220
+    /// Clears traffic lights under the transparent titlebar (VoiceInk AppScreenHeader pattern).
+    static let titlebarClearance: CGFloat = 20
 }
 
 // MARK: - Settings View
 
 /// Settings view for app configuration.
-/// Uses sidebar navigation pattern similar to macOS System Settings.
+/// Custom HStack sidebar + detail shell (no NavigationSplitView / SwiftUI toolbar).
 public struct SettingsView: View {
-    fileprivate enum ChromeMode {
-        case automatic
-        case toolbar
-        case embedded
-        case none
-    }
-
-    private let chromeMode: ChromeMode
     private let settingsStore = AppSettingsStore.shared
     @State private var selectedSection: SettingsSection = .activity
     @State private var settingsSearchText = ""
     @State private var activityNavigationState = ActivitySettingsNavigationState()
     @State private var systemRoute: SystemSettingsRoute = .root
     @State private var expandProtectedApps = false
-    @State private var columnVisibility: NavigationSplitViewVisibility
+    @State private var isSidebarVisible: Bool
     @State private var navigationService = NavigationService.shared
     @State private var requestedModesSubroute: DictationStyleRoute?
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+    @Environment(\.accessibilityReduceTransparency) private var accessibilityReduceTransparency
+    @Environment(\.settingsReduceTransparencyPreview) private var reduceTransparencyPreview
 
     @MainActor
     public init() {
-        chromeMode = .automatic
-        _columnVisibility = State(initialValue: AppSettingsStore.shared.isSettingsSidebarVisible ? .all : .detailOnly)
-    }
-
-    @MainActor
-    fileprivate init(chromeMode: ChromeMode) {
-        self.chromeMode = chromeMode
-        _columnVisibility = State(initialValue: AppSettingsStore.shared.isSettingsSidebarVisible ? .all : .detailOnly)
+        _isSidebarVisible = State(initialValue: AppSettingsStore.shared.isSettingsSidebarVisible)
     }
 
     public var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            sidebar
-        } detail: {
-            ZStack(alignment: .topLeading) {
-                SettingsWindowBackground()
-
-                detailView
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        HStack(spacing: 0) {
+            if isSidebarVisible {
+                sidebarColumn
             }
-            .modifier(SettingsDetailChromeModifier(
-                legacyHeader: detailNavigationBar,
-                usesToolbarChrome: usesToolbarChrome,
-            ))
+
+            detailColumn
         }
-        .navigationSplitViewStyle(.balanced)
-        .navigationTitle(settingsNavigationTitle)
-        .toolbarTitleDisplayMode(.inline)
-        .modifier(SettingsToolbarBackgroundModifier(usesToolbarChrome: usesToolbarChrome))
         .background(SettingsWindowConfigurator())
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
-            persistSidebarVisibility(columnVisibility)
+            syncSidebarVisibilityFromStore()
             if let sectionId = navigationService.requestedSettingsSection,
                let destination = SettingsSection.resolvedDestination(for: sectionId)
             {
@@ -84,9 +59,6 @@ public struct SettingsView: View {
                 navigationService.requestedSettingsSection = nil
             }
             consumePendingActivityRoute()
-        }
-        .onChange(of: columnVisibility) { _, newValue in
-            persistSidebarVisibility(newValue)
         }
         .onChange(of: navigationService.requestedSettingsSection) { _, sectionId in
             guard let sectionId else { return }
@@ -101,66 +73,65 @@ public struct SettingsView: View {
         }
     }
 
-    // MARK: - Sidebar
-
-    private var sidebar: some View {
-        SettingsSidebarView(
-            selectedSection: $selectedSection,
-            searchText: $settingsSearchText,
-            onSelectDestination: selectDestination,
-        )
-        .frame(maxHeight: .infinity, alignment: .top)
-        .navigationSplitViewColumnWidth(
-            min: LayoutConstants.sidebarMinWidth,
-            ideal: LayoutConstants.sidebarIdealWidth,
-            max: LayoutConstants.sidebarMaxWidth,
-        )
+    private var sidebarColumn: some View {
+        ZStack(alignment: .trailing) {
+            sidebarBackground
+            sidebarDivider
+            SettingsSidebarView(
+                selectedSection: $selectedSection,
+                searchText: $settingsSearchText,
+                onSelectDestination: selectDestination,
+            )
+            .padding(.top, LayoutConstants.titlebarClearance)
+        }
+        .frame(width: LayoutConstants.sidebarWidth)
+        .frame(maxHeight: .infinity)
     }
 
-}
+    private var effectiveReduceTransparency: Bool {
+        accessibilityReduceTransparency
+            || reduceTransparencyPreview
+            || AppDesignSystem.Accessibility.reduceTransparency
+    }
 
-private extension SettingsView {
-
-    // MARK: - Detail View
-
-    var usesToolbarChrome: Bool {
-        switch chromeMode {
-        case .toolbar:
-            return true
-        case .embedded, .none:
-            return false
-        case .automatic:
-            guard #available(macOS 26.0, *) else {
-                return false
+    private var sidebarBackground: some View {
+        Group {
+            if effectiveReduceTransparency {
+                AppDesignSystem.Colors.settingsCanvasBackground
+            } else {
+                VisualEffectView(material: .sidebar, blendingMode: .behindWindow)
             }
-            return true
         }
+        .ignoresSafeArea(.container, edges: .top)
+        .accessibilityHidden(true)
     }
 
-    var settingsNavigationTitle: String {
-        usesToolbarChrome ? selectedSection.title : ""
+    private var sidebarDivider: some View {
+        Rectangle()
+            .fill(AppDesignSystem.Colors.separator.opacity(colorSchemeContrast == .increased ? 0.78 : 0.42))
+            .frame(width: 1)
+            .ignoresSafeArea(.container, edges: .top)
+            .accessibilityHidden(true)
     }
 
-    @ViewBuilder
-    private var detailNavigationBar: some View {
-        if shouldShowLegacyChrome {
-            legacyDetailNavigationBar
+    private var detailColumn: some View {
+        ZStack(alignment: .topLeading) {
+            SettingsWindowBackground()
+
+            VStack(spacing: 0) {
+                detailTitleStrip
+
+                detailView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private var shouldShowLegacyChrome: Bool {
-        switch chromeMode {
-        case .none, .toolbar:
-            false
-        case .embedded, .automatic:
-            true
-        }
-    }
-
-    private var legacyDetailNavigationBar: some View {
+    private var detailTitleStrip: some View {
         HStack(spacing: 12) {
-            if !navigationService.isSettingsSidebarVisible {
-                legacySidebarToggleButton
+            if !isSidebarVisible {
+                sidebarToggleButton
             }
 
             Text(selectedSection.title)
@@ -170,7 +141,8 @@ private extension SettingsView {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.top, LayoutConstants.titlebarClearance)
+        .padding(.bottom, 10)
         .background {
             SettingsTitleBarMaterialBackground(usesBottomFade: false)
         }
@@ -179,7 +151,7 @@ private extension SettingsView {
         }
     }
 
-    private var legacySidebarToggleButton: some View {
+    private var sidebarToggleButton: some View {
         Button(action: toggleSidebar) {
             Image(systemName: "sidebar.left")
                 .font(.system(size: 13, weight: .semibold))
@@ -191,6 +163,9 @@ private extension SettingsView {
         .help(sidebarToggleHelpText)
         .accessibilityLabel(sidebarToggleHelpText)
     }
+}
+
+private extension SettingsView {
 
     private func selectDestination(_ destination: SettingsDestination) {
         selectedSection = destination.section
@@ -221,17 +196,24 @@ private extension SettingsView {
     }
 
     private func toggleSidebar() {
-        columnVisibility = navigationService.isSettingsSidebarVisible ? .detailOnly : .all
+        let next = !isSidebarVisible
+        isSidebarVisible = next
+        persistSidebarVisibility(next)
     }
 
-    private func persistSidebarVisibility(_ visibility: NavigationSplitViewVisibility) {
-        let isVisible = visibility != .detailOnly
+    private func syncSidebarVisibilityFromStore() {
+        let visible = settingsStore.isSettingsSidebarVisible
+        isSidebarVisible = visible
+        navigationService.setSettingsSidebarVisible(visible)
+    }
+
+    private func persistSidebarVisibility(_ isVisible: Bool) {
         settingsStore.isSettingsSidebarVisible = isVisible
         navigationService.setSettingsSidebarVisible(isVisible)
     }
 
     private var sidebarToggleHelpText: String {
-        let key = navigationService.isSettingsSidebarVisible
+        let key = isSidebarVisible
             ? "commands.view.hide_sidebar"
             : "commands.view.show_sidebar"
         return key.localized
@@ -273,53 +255,6 @@ private extension SettingsView {
 
 }
 
-private struct SettingsDetailChromeModifier<LegacyHeader: View>: ViewModifier {
-    let legacyHeader: LegacyHeader
-    let usesToolbarChrome: Bool
-
-    func body(content: Content) -> some View {
-        if !SettingsChromeLayoutPolicy.usesLegacyHeader(usesToolbarChrome: usesToolbarChrome) {
-            // The native SwiftUI toolbar already reserves its own safe-area.
-            // Adding the legacy 44pt boundary here creates a second vertical gap.
-            content
-        } else {
-            content.safeAreaInset(edge: .top, spacing: 0) {
-                legacyHeader
-            }
-        }
-    }
-}
-
-private struct SettingsToolbarBackgroundModifier: ViewModifier {
-    let usesToolbarChrome: Bool
-
-    func body(content: Content) -> some View {
-        content
-    }
-}
-
-private struct SettingsToolbarChromePreview: View {
-    var body: some View {
-        HStack(spacing: 8) {
-            Text("settings.section.activity".localized)
-                .font(.system(size: 13, weight: .semibold))
-                .lineLimit(1)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .frame(width: 900, alignment: .leading)
-    }
-}
-
-#Preview("Toolbar", traits: .sizeThatFitsLayout) {
-    SettingsToolbarChromePreview()
-}
-
 #Preview("Settings Content") {
-    SettingsView(chromeMode: .none)
-}
-
-#Preview("Settings Content (Toolbar)") {
-    SettingsView(chromeMode: .toolbar)
+    SettingsView()
 }

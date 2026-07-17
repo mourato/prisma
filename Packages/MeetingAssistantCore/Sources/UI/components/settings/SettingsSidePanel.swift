@@ -45,16 +45,6 @@ private struct SettingsSidePanelModifier<PanelContent: View>: ViewModifier {
                             .onTapGesture(perform: onDismiss)
                             .accessibilityHidden(true)
                             .transition(.identity)
-
-                        // Single Escape owner for the panel host. Call sites can supply
-                        // nested-route behavior (e.g. prompt → editor) via onEscape.
-                        Button(action: escapeAction) {
-                            Color.clear.frame(width: 1, height: 1)
-                        }
-                        .keyboardShortcut(.escape)
-                        .opacity(0)
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
                     }
 
                     if isPresented {
@@ -72,11 +62,16 @@ private struct SettingsSidePanelModifier<PanelContent: View>: ViewModifier {
                     }
                 }
             }
-            // Keep the overlay host stable and extend only through the transparent
-            // titlebar. The dismiss layer stays fixed while the drawer transitions.
-            .ignoresSafeArea(edges: .top)
+            // Stay within the detail content column (below the local title strip) so
+            // close controls remain hittable and do not enter the window titlebar.
             .allowsHitTesting(isPresented)
             .zIndex(1)
+        }
+        // Own Escape for the whole host (list + panel), not only the panel subtree,
+        // so focus on the underlying Modes list still dismisses / unwinds correctly.
+        .onExitCommand {
+            guard isPresented else { return }
+            escapeAction()
         }
         .animation(SettingsMotion.sidePanelAnimation(reduceMotion: reduceMotion), value: isPresented)
     }

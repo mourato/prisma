@@ -34,7 +34,7 @@ public enum SettingsWindowLayoutStateEvaluator {
         userDefaults: UserDefaults = .standard,
         visibleScreenFrames: [CGRect],
         defaultContentSize: CGSize = CGSize(width: 900, height: 640),
-        sidebarWidthRange: ClosedRange<CGFloat> = 220...260,
+        sidebarWidthRange: ClosedRange<CGFloat> = 220...220,
     ) -> SettingsWindowLayoutStateEvaluation {
         evaluate(
             autosaveWindowFrameString: userDefaults.string(forKey: autosaveWindowFrameDefaultsKey),

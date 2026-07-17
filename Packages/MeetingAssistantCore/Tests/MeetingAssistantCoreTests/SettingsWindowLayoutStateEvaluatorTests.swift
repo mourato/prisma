@@ -5,16 +5,13 @@ import XCTest
 final class SettingsWindowLayoutStateEvaluatorTests: XCTestCase {
     private let visibleScreenFrames = [CGRect(x: 0, y: 0, width: 1_512, height: 948)]
     private let defaultContentSize = CGSize(width: 900, height: 640)
-    private let sidebarWidthRange: ClosedRange<CGFloat> = 220...260
+    private let sidebarWidthRange: ClosedRange<CGFloat> = 220...220
 
     func testValidSavedWindowFramePreservesPersistedState() {
         let evaluation = SettingsWindowLayoutStateEvaluator.evaluate(
             autosaveWindowFrameString: "263 132 900 692 0 0 1512 948 ",
             legacyWindowFrameString: nil,
-            splitViewFrameStrings: [
-                "0.000000, 0.000000, 208.000000, 450.000000, NO, NO",
-                "0.000000, 0.000000, 900.000000, 450.000000, NO, NO",
-            ],
+            splitViewFrameStrings: [],
             visibleScreenFrames: visibleScreenFrames,
             defaultContentSize: defaultContentSize,
             sidebarWidthRange: sidebarWidthRange,

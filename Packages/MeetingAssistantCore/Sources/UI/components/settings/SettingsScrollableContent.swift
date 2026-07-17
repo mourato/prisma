@@ -3,13 +3,13 @@ import SwiftUI
 enum SettingsContentSurface {
     static let horizontalGutter: CGFloat = 20
     static let bottomInset: CGFloat = 20
-    static let toolbarBoundaryHeight: CGFloat = 44
+    /// Local title-strip height used by scroll-surface previews (aligned with material chrome).
+    static let titleStripBoundaryHeight: CGFloat = AppDesignSystem.Layout.settingsTitleBarMaterialHeight
 }
 
+/// Settings shell always uses an in-content title strip (no SwiftUI toolbar chrome).
 enum SettingsChromeLayoutPolicy {
-    static func usesLegacyHeader(usesToolbarChrome: Bool) -> Bool {
-        !usesToolbarChrome
-    }
+    static let usesLocalTitleStrip = true
 }
 
 /// Owns the single vertical scroll surface for collection, status, analytics,
@@ -66,13 +66,13 @@ private struct SettingsContentSurfacePreview: View {
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
                     Image(systemName: "chevron.left")
-                    Text("Settings toolbar boundary")
+                    Text("Settings title strip boundary")
                         .font(.headline)
                     Spacer()
                 }
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 20)
-                .frame(height: SettingsContentSurface.toolbarBoundaryHeight)
+                .frame(height: SettingsContentSurface.titleStripBoundaryHeight)
                 .background(SettingsTitleBarMaterialBackground())
 
                 SettingsScrollableContent {

@@ -3,6 +3,10 @@ import MeetingAssistantCoreCommon
 import SwiftUI
 
 struct SettingsWindowConfigurator: NSViewRepresentable {
+    private enum Layout {
+        static let minimumSize = NSSize(width: 900, height: 640)
+    }
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
         DispatchQueue.main.async {
@@ -20,11 +24,20 @@ struct SettingsWindowConfigurator: NSViewRepresentable {
     private func configure(window: NSWindow?) {
         guard let window else { return }
 
-        window.styleMask.insert(.fullSizeContentView)
+        let requiredStyleMask: NSWindow.StyleMask = [
+            .titled,
+            .closable,
+            .miniaturizable,
+            .resizable,
+            .fullSizeContentView,
+        ]
+        window.styleMask.formUnion(requiredStyleMask)
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.backgroundColor = .clear
         window.isOpaque = false
+        window.isMovableByWindowBackground = false
+        window.minSize = Layout.minimumSize
         window.setFrameAutosaveName(AppIdentity.settingsWindowAutosaveName)
     }
 }

@@ -129,12 +129,14 @@ public struct ModeEditorDrawer<Content: View>: View {
         Button("settings.styles.editor.close".localized, systemImage: "xmark", action: action)
             .labelStyle(.iconOnly)
             .buttonStyle(.plain)
+            .keyboardShortcut(.escape)
             .accessibilityLabel("settings.styles.editor.close".localized)
     }
 
     private func backButton(_ action: @escaping () -> Void) -> some View {
         Button("common.back".localized, systemImage: "chevron.left", action: action)
             .buttonStyle(.plain)
+            .keyboardShortcut(.escape)
     }
 
     private var footer: some View {

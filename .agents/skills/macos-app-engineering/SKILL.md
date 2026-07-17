@@ -34,8 +34,10 @@ macOS behavior, or a SwiftUI modern-API / maintainability review pass.
 
 ## Non-negotiable rules
 
-- Preserve native `NavigationSplitView`/`List(.sidebar)` semantics and existing
-  settings taxonomy unless the request explicitly changes them.
+- Prefer custom Settings `HStack` sidebar + detail shell (VoiceInk-style) over
+  `NavigationSplitView` / SwiftUI toolbar chrome unless an intentional return to
+  system split-view is verified. Preserve existing settings taxonomy unless the
+  request explicitly changes it.
 - Reuse existing design-system tokens, settings containers, navigation state,
   localization, and search contracts before creating new abstractions.
 - Keep AppKit bridging at lifecycle/panel/capability boundaries and preserve

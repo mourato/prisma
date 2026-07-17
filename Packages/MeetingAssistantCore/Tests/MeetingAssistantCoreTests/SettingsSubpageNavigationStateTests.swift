@@ -146,9 +146,12 @@ final class SettingsSubpageNavigationStateTests: XCTestCase {
         XCTAssertEqual(DictationStyleRoute.integrations.escapeBehavior, .dismissPanel)
     }
 
-    func testSettingsChromeUsesLegacyHeaderOnlyWithoutToolbarChrome() {
-        XCTAssertTrue(SettingsChromeLayoutPolicy.usesLegacyHeader(usesToolbarChrome: false))
-        XCTAssertFalse(SettingsChromeLayoutPolicy.usesLegacyHeader(usesToolbarChrome: true))
+    func testSettingsChromeUsesLocalTitleStrip() {
+        XCTAssertTrue(SettingsChromeLayoutPolicy.usesLocalTitleStrip)
+        XCTAssertEqual(
+            SettingsContentSurface.titleStripBoundaryHeight,
+            AppDesignSystem.Layout.settingsTitleBarMaterialHeight,
+        )
     }
 
     func testSettingsSidePanelWidthNeverExceedsAvailableSpace() {
