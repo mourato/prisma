@@ -145,9 +145,7 @@ extension RecordingManager {
 
         // Snapshot current vocabulary state for this retry session.
         let vocabularySnapshot = VocabularySnapshot.current(from: .shared)
-
-        // Set transient vocabulary hint override for supported provider backends.
-        TranscriptionClient.shared.vocabularyHintOverride = vocabularySnapshot.providerHint
+        let vocabularyHints = vocabularySnapshot.providerHints
 
         let transcriptionStart = Date()
         let diarizationEnabledOverride = shouldEnableDiarization(for: transcription.meeting)
@@ -157,6 +155,7 @@ extension RecordingManager {
             capturePurpose: transcription.meeting.capturePurpose,
             selectionOverride: selectionOverride ?? effectiveSelection,
             inputLanguageCode: inputLanguageCode,
+            vocabularyHints: vocabularyHints.isEmpty ? nil : vocabularyHints,
         )
         let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
         let replacedText = VocabularyReplacementRule.apply(

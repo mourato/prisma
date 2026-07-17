@@ -107,11 +107,19 @@ public struct DomainTranscriptionRequestConfiguration: Codable, Hashable, Sendab
     public let providerID: String
     public let modelID: String
     public let inputLanguageCode: String?
+    /// Explicit provider vocabulary projections. Never read from AppSettingsStore in adapters.
+    public let vocabularyHints: VocabularyProviderHints?
 
-    public init(providerID: String, modelID: String, inputLanguageCode: String?) {
+    public init(
+        providerID: String,
+        modelID: String,
+        inputLanguageCode: String?,
+        vocabularyHints: VocabularyProviderHints? = nil,
+    ) {
         self.providerID = providerID
         self.modelID = modelID
         self.inputLanguageCode = inputLanguageCode
+        self.vocabularyHints = vocabularyHints
     }
 }
 

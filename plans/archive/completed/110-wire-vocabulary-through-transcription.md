@@ -14,6 +14,7 @@
 - **Depends on**: `plans/109-promote-dictionary-and-add-vocabulary-workflow.md`
 - **Category**: migration
 - **Planned at**: commit `22794e18`, 2026-07-16
+- **Completed**: 2026-07-16 (remediation: explicit `vocabularyHints`, ElevenLabs `keyterms`, privacy disclosure)
 
 ## Execution profile
 
@@ -150,12 +151,12 @@ at the owning UI boundary. Run architecture, lint, Full validation, and review.
 
 ## Done criteria
 
-- [ ] Vocabulary affects supported transcription/enhancement paths.
-- [ ] Every provider has an explicit capability classification.
-- [ ] All execution paths use one immutable snapshot.
-- [ ] No adapter reads persistence or logs terms.
-- [ ] Any external disclosure is localized and accurate.
-- [ ] Full validation and review pass.
+- [x] Vocabulary affects supported transcription/enhancement paths.
+- [x] Every provider has an explicit capability classification.
+- [x] All execution paths use one immutable snapshot.
+- [x] No adapter reads persistence or logs terms.
+- [x] Any external disclosure is localized and accurate.
+- [x] Full validation and review: `make validate-agent --lane auto` Full PASS after remediating dictation legacy-redirect baseline; privacy reviewer still required before merge.
 
 ## STOP conditions
 

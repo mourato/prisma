@@ -158,12 +158,11 @@ extension RecordingManager {
         }
 
         let vocabularySnapshot = session.vocabularySnapshot
-
-        // Set transient vocabulary hint override for supported provider backends.
-        // Cleared automatically after consumption in transcribeConfigured.
-        if let concreteClient = transcriptionClient as? TranscriptionClient {
-            concreteClient.vocabularyHintOverride = vocabularySnapshot.providerHint
-        }
+        let transcriptionConfiguration = makeDomainTranscriptionConfiguration(
+            from: config.dictationTranscriptionConfiguration,
+            vocabularyHints: vocabularySnapshot.providerHints,
+            capturePurpose: session.meeting.capturePurpose,
+        )
 
         let transcriptionEntity = try await transcribeAudioUseCase.execute(
             audioURL: audioURL,
@@ -175,13 +174,7 @@ extension RecordingManager {
             vocabularyReplacementRules: vocabularySnapshot.replacementRules,
             vocabularyTerms: vocabularySnapshot.terms,
             diarizationEnabledOverride: diarizationEnabledOverride,
-            transcriptionConfiguration: config.dictationTranscriptionConfiguration.map {
-                DomainTranscriptionRequestConfiguration(
-                    providerID: $0.selection.provider.rawValue,
-                    modelID: $0.selection.selectedModel,
-                    inputLanguageCode: $0.inputLanguageCode,
-                )
-            },
+            transcriptionConfiguration: transcriptionConfiguration,
             applyPostProcessing: config.applyPostProcessing,
             postProcessingPrompt: config.postProcessingPrompt,
             defaultPostProcessingPrompt: config.defaultPostProcessingPrompt,

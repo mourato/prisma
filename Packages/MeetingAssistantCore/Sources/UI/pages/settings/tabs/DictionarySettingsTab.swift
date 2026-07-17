@@ -273,6 +273,10 @@ public struct DictionarySettingsTab: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
 
+                Text("settings.dictionary.vocabulary.external_disclosure".localized)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+
                 // Bulk add area
                 HStack(spacing: 8) {
                     TextField("settings.dictionary.vocabulary.add_placeholder".localized, text: $vocabularyViewModel.bulkInputText)

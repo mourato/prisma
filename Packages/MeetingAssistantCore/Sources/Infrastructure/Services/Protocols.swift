@@ -98,12 +98,14 @@ public protocol TranscriptionServiceConfigurationAware: ObservableObject {
         diarizationEnabledOverride: Bool?,
         selection: TranscriptionProviderSelection,
         inputLanguageCode: String?,
+        vocabularyHints: VocabularyProviderHints?,
     ) async throws -> TranscriptionResponse
 
     func transcribe(
         samples: [Float],
         selection: TranscriptionProviderSelection,
         inputLanguageCode: String?,
+        vocabularyHints: VocabularyProviderHints?,
     ) async throws -> TranscriptionResponse
 }
 

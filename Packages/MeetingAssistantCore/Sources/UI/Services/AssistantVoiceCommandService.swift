@@ -163,13 +163,16 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
         // Snapshot current vocabulary state for this assistant command.
         let vocabularySnapshot = VocabularySnapshot.current(from: .shared)
-
-        // Set transient vocabulary hint override for supported provider backends.
-        TranscriptionClient.shared.vocabularyHintOverride = vocabularySnapshot.providerHint
+        let vocabularyHints = vocabularySnapshot.providerHints
+        let selection = AppSettingsStore.shared.resolvedTranscriptionSelection(for: .assistant)
+        let inputLanguageCode = AppSettingsStore.shared.resolvedTranscriptionInputLanguageCode(for: .assistant)
 
         return try await transcriptionPhase.performTranscription(
             recordingURL: recordingURL,
             vocabularyReplacementRules: vocabularySnapshot.replacementRules,
+            vocabularyHints: vocabularyHints.isEmpty ? nil : vocabularyHints,
+            selection: selection,
+            inputLanguageCode: inputLanguageCode,
             executionFlow: currentExecutionFlow,
             isAssistantIntegrationsEnabled: settings.isAssistantIntegrationsEnabled,
             assistantSelectedIntegration: settings.assistantSelectedIntegration,

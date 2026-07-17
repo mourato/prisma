@@ -16,7 +16,7 @@ public final class ElevenLabsTranscriptionClient {
         modelID: String,
         inputLanguageCode: String? = nil,
         onProgress: (@Sendable (Double) -> Void)? = nil,
-        vocabularyHint: String? = nil,
+        vocabularyKeyterms: [String] = [],
     ) async throws -> TranscriptionResponse {
         let apiKey = try resolveAPIKey()
         let normalizedModelID = normalizedElevenLabsModelID(modelID)
@@ -25,7 +25,7 @@ public final class ElevenLabsTranscriptionClient {
             modelID: normalizedModelID,
             inputLanguageCode: inputLanguageCode,
             apiKey: apiKey,
-            vocabularyHint: vocabularyHint,
+            vocabularyKeyterms: vocabularyKeyterms,
         )
 
         onProgress?(0.1)
@@ -52,7 +52,7 @@ public final class ElevenLabsTranscriptionClient {
         modelID: String,
         inputLanguageCode: String?,
         apiKey: String,
-        vocabularyHint: String? = nil,
+        vocabularyKeyterms: [String] = [],
     ) throws -> URLRequest {
         guard FileManager.default.fileExists(atPath: audioURL.path) else {
             throw TranscriptionError.transcriptionFailed("Audio file not found")
@@ -71,13 +71,13 @@ public final class ElevenLabsTranscriptionClient {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 120
-        request.httpBody = multipartBody(
+        request.httpBody = Self.multipartBody(
             boundary: boundary,
             fileData: fileData,
             fileName: audioURL.lastPathComponent,
             modelID: modelID,
             inputLanguageCode: inputLanguageCode,
-            vocabularyHint: vocabularyHint,
+            vocabularyKeyterms: vocabularyKeyterms,
         )
 
         return request
@@ -91,13 +91,15 @@ public final class ElevenLabsTranscriptionClient {
         return trimmed
     }
 
-    private func multipartBody(
+    /// Builds the multipart STT body. Internal for `@testable` request-shape assertions.
+    /// Official docs (2026-07-16): repeated `keyterms` form fields, max 1000 × 50 chars.
+    nonisolated static func multipartBody(
         boundary: String,
         fileData: Data,
         fileName: String,
         modelID: String,
         inputLanguageCode: String?,
-        vocabularyHint: String? = nil,
+        vocabularyKeyterms: [String] = [],
     ) -> Data {
         var body = Data()
 
@@ -115,15 +117,15 @@ public final class ElevenLabsTranscriptionClient {
         if let inputLanguageCode = normalizedLanguageCode(inputLanguageCode) {
             appendField("language_code", value: inputLanguageCode, boundary: boundary, to: &body)
         }
-        if let vocabularyHint, !vocabularyHint.isEmpty {
-            appendField("custom_prompt", value: vocabularyHint, boundary: boundary, to: &body)
+        for keyterm in vocabularyKeyterms where !keyterm.isEmpty {
+            appendField("keyterms", value: keyterm, boundary: boundary, to: &body)
         }
 
         appendString("--\(boundary)--\r\n", to: &body)
         return body
     }
 
-    private func appendField(
+    private nonisolated static func appendField(
         _ name: String,
         value: String,
         boundary: String,
@@ -134,7 +136,7 @@ public final class ElevenLabsTranscriptionClient {
         appendString("\(value)\r\n", to: &body)
     }
 
-    private func appendFile(
+    private nonisolated static func appendFile(
         fieldName: String,
         fileName: String,
         fileData: Data,
@@ -151,17 +153,17 @@ public final class ElevenLabsTranscriptionClient {
         appendString("\r\n", to: &body)
     }
 
-    private func appendString(_ value: String, to body: inout Data) {
+    private nonisolated static func appendString(_ value: String, to body: inout Data) {
         body.append(contentsOf: value.utf8)
     }
 
-    private func normalizedLanguageCode(_ value: String?) -> String? {
+    private nonisolated static func normalizedLanguageCode(_ value: String?) -> String? {
         let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let trimmed, !trimmed.isEmpty else { return nil }
         return trimmed
     }
 
-    private func mimeType(for fileName: String) -> String {
+    private nonisolated static func mimeType(for fileName: String) -> String {
         switch fileName.split(separator: ".").last?.lowercased() {
         case "wav":
             "audio/wav"

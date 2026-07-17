@@ -1478,6 +1478,7 @@
 "settings.dictionary.workflow.substitutions" = "Substituições";
 "settings.dictionary.workflow.vocabulary" = "Vocabulário";
 "settings.dictionary.vocabulary.description" = "Adicione termos que a transcrição deve reconhecer. Separe múltiplos termos com vírgulas.";
+"settings.dictionary.vocabulary.external_disclosure" = "Quando Groq ou ElevenLabs estiver selecionado, os termos do vocabulário podem ser enviados a esse provedor como dicas de reconhecimento (prompt / keyterms). A transcrição local mantém os termos neste dispositivo.";
 "settings.dictionary.vocabulary.add_placeholder" = "ex.: SwiftUI, Metal, CoreML";
 "settings.dictionary.vocabulary.empty" = "Nenhum termo de vocabulário adicionado ainda.";
 "settings.dictionary.vocabulary.added_count" = "%d termo(s) adicionado(s).";
