@@ -173,6 +173,8 @@ final class SettingsSearchIndexTests: XCTestCase {
     func testQueryDictionaryRoutesToSettingsSection() {
         assertLocalizedQuery("settings.section.vocabulary", routesTo: .dictionary)
         assertLocalizedQuery("settings.section.dictionary", routesTo: .dictionary)
+        assertLocalizedQuery("settings.dictionary.workflow.vocabulary", routesTo: .dictionary)
+        assertLocalizedQuery("settings.dictionary.workflow.substitutions", routesTo: .dictionary)
     }
 
     func testReplacementRulesKeyRoutesToSettingsSection() {

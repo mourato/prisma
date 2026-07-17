@@ -26,7 +26,7 @@ Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` | `REJECTED`.
 | [106](106-snapshot-mode-dictation-configuration.md) | Persist and snapshot dictation configuration per mode | P0 | L | - | DONE |
 | [107](107-relocate-dictation-settings-into-mode-drawer.md) | Relocate Dictation settings into the mode drawer and retire the tab | P0 | L | 106 | DONE |
 | [108](108-move-assistant-integrations-into-drawers.md) | Move Assistant and Integrations into Dictation Modes drawers | P0 | L | 107 | DONE |
-| [109](109-promote-dictionary-and-add-vocabulary-workflow.md) | Promote Dictionary and add a separate vocabulary workflow | P1 | L | 108 | TODO |
+| [109](archive/completed/109-promote-dictionary-and-add-vocabulary-workflow.md) | Promote Dictionary and add a separate vocabulary workflow | P1 | L | 108 | DONE |
 | [110](archive/completed/110-wire-vocabulary-through-transcription.md) | Wire vocabulary snapshots through transcription and enhancement | P1 | L | 109 | DONE |
 | [111](111-add-dictionary-quick-add-panel.md) | Add the VoiceInk-style Dictionary quick-add panel | P1 | L | 109 | TODO |
 

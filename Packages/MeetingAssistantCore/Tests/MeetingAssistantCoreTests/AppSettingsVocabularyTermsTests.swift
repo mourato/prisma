@@ -27,7 +27,7 @@ final class AppSettingsVocabularyTermsTests: XCTestCase {
 
         settings.vocabularyTerms = terms
         XCTAssertEqual(settings.vocabularyTerms.count, 2)
-        XCTAssertEqual(settings.vocabularyTerms[0].term, "OpenAI")
+        XCTAssertEqual(settings.vocabularyTerms.map(\.term), ["OpenAI", "SwiftUI"])
         XCTAssertEqual(settings.vocabularyTerms[0].definition, "Artificial intelligence research company")
     }
 
@@ -62,14 +62,16 @@ final class AppSettingsVocabularyTermsTests: XCTestCase {
         XCTAssertEqual(settings.vocabularyTerms[0].definition, "")
     }
 
-    func testMultipleTermsWithSameTermAreDistinct() {
-        let term1 = VocabularyTerm(term: "test", definition: "first")
-        let term2 = VocabularyTerm(term: "test", definition: "second")
+    func testStoreNormalizesDuplicatesAndEmptyTerms() {
+        settings.vocabularyTerms = [
+            VocabularyTerm(term: "  test  ", definition: " first "),
+            VocabularyTerm(term: "TEST", definition: "second"),
+            VocabularyTerm(term: "   ", definition: "empty"),
+            VocabularyTerm(term: "Other", definition: ""),
+        ]
 
-        settings.vocabularyTerms = [term1, term2]
-
-        // The store accepts both since IDs differ
-        XCTAssertEqual(settings.vocabularyTerms.count, 2)
+        XCTAssertEqual(settings.vocabularyTerms.map(\.term), ["Other", "test"])
+        XCTAssertEqual(settings.vocabularyTerms.first(where: { $0.term == "test" })?.definition, "first")
     }
 
     func testTermsAreCodable() {
@@ -95,7 +97,7 @@ final class AppSettingsVocabularyTermsTests: XCTestCase {
             VocabularyTerm(term: "Bravo", definition: ""),
         ]
 
-        let sorted = terms.sorted()
+        let sorted = VocabularyTerm.normalized(terms)
         XCTAssertEqual(sorted.map(\.term), ["Alpha", "Bravo", "Zebra"])
     }
 

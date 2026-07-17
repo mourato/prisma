@@ -45,7 +45,7 @@ final class DictionaryArchiveTests: XCTestCase {
         XCTAssertTrue(decoded.substitutionRules.isEmpty)
     }
 
-    // MARK: - Validation: valid archive
+    // MARK: - Validation
 
     func testValidateValidArchive() throws {
         let archive = DictionaryArchive(
@@ -58,13 +58,11 @@ final class DictionaryArchiveTests: XCTestCase {
 
         switch result {
         case .success:
-            break // expected
+            break
         case let .failure(error):
             XCTFail("Expected success, got error: \(error)")
         }
     }
-
-    // MARK: - Validation: unsupported schema version
 
     func testValidateUnsupportedSchemaVersion() throws {
         let archive = DictionaryArchive(
@@ -87,8 +85,6 @@ final class DictionaryArchiveTests: XCTestCase {
         }
     }
 
-    // MARK: - Validation: corrupt data
-
     func testValidateCorruptData() {
         let corruptData = Data("not-json-at-all".utf8)
         let result = DictionaryArchive.validate(data: corruptData)
@@ -97,13 +93,13 @@ final class DictionaryArchiveTests: XCTestCase {
         case .success:
             XCTFail("Expected failure for corrupt data")
         case .failure:
-            break // expected
+            break
         }
     }
 
-    // MARK: - Merge: no duplicates
+    // MARK: - Merge outcomes
 
-    func testMergeWithEmptyExisting() {
+    func testMergeWithEmptyExistingAppliesCollections() {
         let terms = [VocabularyTerm(term: "Swift", definition: "Language")]
         let rules = [VocabularyReplacementRule(find: "app le", replace: "Apple")]
 
@@ -112,20 +108,17 @@ final class DictionaryArchiveTests: XCTestCase {
             substitutionRules: rules,
         )
 
-        let result = archive.merge(
-            into: [],
-            existingRules: [],
-        )
+        let outcome = archive.merge(into: [], existingRules: [])
 
-        XCTAssertEqual(result.termsImported, 1)
-        XCTAssertEqual(result.rulesImported, 1)
-        XCTAssertEqual(result.duplicateTermCount, 0)
-        XCTAssertEqual(result.duplicateRuleCount, 0)
+        XCTAssertEqual(outcome.result.termsImported, 1)
+        XCTAssertEqual(outcome.result.rulesImported, 1)
+        XCTAssertEqual(outcome.result.duplicateTermCount, 0)
+        XCTAssertEqual(outcome.result.duplicateRuleCount, 0)
+        XCTAssertEqual(outcome.terms.map(\.term), ["Swift"])
+        XCTAssertEqual(outcome.rules.map(\.find), ["app le"])
     }
 
-    // MARK: - Merge: filtered duplicates
-
-    func testMergeSkipsDuplicateTerms() {
+    func testMergeSkipsDuplicateTermsAndPreservesExisting() {
         let existingTerms = [VocabularyTerm(term: "Swift", definition: "Existing")]
         let existingRules = [VocabularyReplacementRule(find: "macos", replace: "macOS")]
 
@@ -134,22 +127,21 @@ final class DictionaryArchiveTests: XCTestCase {
             substitutionRules: [VocabularyReplacementRule(find: "macos", replace: "macOS")],
         )
 
-        let result = archive.merge(
+        let outcome = archive.merge(
             into: existingTerms,
             existingRules: existingRules,
         )
 
-        // Term "Swift" already exists (case-insensitive check)
-        // "macos" already exists in variants
-        XCTAssertEqual(result.termsImported, 0)
-        XCTAssertEqual(result.rulesImported, 0)
-        XCTAssertEqual(result.duplicateTermCount, 1)
-        XCTAssertEqual(result.duplicateRuleCount, 1)
+        XCTAssertEqual(outcome.result.termsImported, 0)
+        XCTAssertEqual(outcome.result.rulesImported, 0)
+        XCTAssertEqual(outcome.result.duplicateTermCount, 1)
+        XCTAssertEqual(outcome.result.duplicateRuleCount, 1)
+        XCTAssertEqual(outcome.terms.map(\.term), ["Swift"])
+        XCTAssertEqual(outcome.terms.first?.definition, "Existing")
+        XCTAssertEqual(outcome.rules.count, 1)
     }
 
-    // MARK: - Merge: partial duplicates
-
-    func testMergeWithPartialDuplicates() {
+    func testMergeWithPartialDuplicatesReturnsMergedArrays() {
         let existingTerms = [VocabularyTerm(term: "Swift", definition: "")]
         let existingRules: [VocabularyReplacementRule] = []
 
@@ -163,18 +155,61 @@ final class DictionaryArchiveTests: XCTestCase {
             ],
         )
 
-        let result = archive.merge(
+        let outcome = archive.merge(
             into: existingTerms,
             existingRules: existingRules,
         )
 
-        XCTAssertEqual(result.termsImported, 1)
-        XCTAssertEqual(result.duplicateTermCount, 1)
-        XCTAssertEqual(result.rulesImported, 1)
-        XCTAssertEqual(result.duplicateRuleCount, 0)
+        XCTAssertEqual(outcome.result.termsImported, 1)
+        XCTAssertEqual(outcome.result.duplicateTermCount, 1)
+        XCTAssertEqual(outcome.result.rulesImported, 1)
+        XCTAssertEqual(outcome.result.duplicateRuleCount, 0)
+        XCTAssertEqual(Set(outcome.terms.map(\.term)), Set(["Swift", "Kotlin"]))
+        XCTAssertEqual(outcome.rules.map(\.find), ["kotlin"])
     }
 
-    // MARK: - Merge: all duplicates
+    func testMergeDeduplicatesWithinArchive() {
+        let archive = DictionaryArchive(
+            vocabularyTerms: [
+                VocabularyTerm(term: "Swift", definition: "first"),
+                VocabularyTerm(term: "swift", definition: "second"),
+                VocabularyTerm(term: "  ", definition: "empty"),
+            ],
+            substitutionRules: [
+                VocabularyReplacementRule(find: "macos", replace: "macOS"),
+                VocabularyReplacementRule(find: "MacOS", replace: "macOS"),
+            ],
+        )
+
+        let outcome = archive.merge(into: [], existingRules: [])
+
+        // Term duplicates are collapsed by VocabularyTerm.normalized before merge counting.
+        XCTAssertEqual(outcome.terms.map(\.term), ["Swift"])
+        XCTAssertEqual(outcome.terms.first?.definition, "first")
+        XCTAssertEqual(outcome.result.termsImported, 1)
+        XCTAssertEqual(outcome.result.duplicateTermCount, 0)
+        XCTAssertEqual(outcome.rules.count, 1)
+        XCTAssertEqual(outcome.result.rulesImported, 1)
+        XCTAssertEqual(outcome.result.duplicateRuleCount, 1)
+    }
+
+    func testMergeCountsIncomingDuplicatesAgainstExisting() {
+        let existing = [VocabularyTerm(term: "Swift", definition: "kept")]
+        let archive = DictionaryArchive(
+            vocabularyTerms: [
+                VocabularyTerm(term: "swift", definition: "dup"),
+                VocabularyTerm(term: "Kotlin", definition: ""),
+            ],
+            substitutionRules: [],
+        )
+
+        let outcome = archive.merge(into: existing, existingRules: [])
+
+        XCTAssertEqual(Set(outcome.terms.map(\.term)), Set(["Swift", "Kotlin"]))
+        XCTAssertEqual(outcome.terms.first(where: { $0.term == "Swift" })?.definition, "kept")
+        XCTAssertEqual(outcome.result.termsImported, 1)
+        XCTAssertEqual(outcome.result.duplicateTermCount, 1)
+    }
 
     func testMergeAllDuplicates() {
         let existingTerms = [VocabularyTerm(term: "Apple", definition: "")]
@@ -185,18 +220,18 @@ final class DictionaryArchiveTests: XCTestCase {
             substitutionRules: [VocabularyReplacementRule(find: "aple", replace: "Apple")],
         )
 
-        let result = archive.merge(
+        let outcome = archive.merge(
             into: existingTerms,
             existingRules: existingRules,
         )
 
-        XCTAssertEqual(result.termsImported, 0)
-        XCTAssertEqual(result.rulesImported, 0)
-        XCTAssertEqual(result.duplicateTermCount, 1)
-        XCTAssertEqual(result.duplicateRuleCount, 1)
+        XCTAssertEqual(outcome.result.termsImported, 0)
+        XCTAssertEqual(outcome.result.rulesImported, 0)
+        XCTAssertEqual(outcome.result.duplicateTermCount, 1)
+        XCTAssertEqual(outcome.result.duplicateRuleCount, 1)
+        XCTAssertEqual(outcome.terms, VocabularyTerm.normalized(existingTerms))
+        XCTAssertEqual(outcome.rules.count, 1)
     }
-
-    // MARK: - Timestamp format
 
     func testCurrentTimestampISO8601() {
         let timestamp = DictionaryArchive.currentTimestamp()

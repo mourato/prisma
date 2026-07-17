@@ -66,6 +66,23 @@ public struct DictionaryArchive: Codable, Sendable {
         }
     }
 
+    /// Applied merge outcome including the collections to persist.
+    public struct MergeOutcome: Sendable {
+        public let terms: [VocabularyTerm]
+        public let rules: [VocabularyReplacementRule]
+        public let result: ImportResult
+
+        public init(
+            terms: [VocabularyTerm],
+            rules: [VocabularyReplacementRule],
+            result: ImportResult,
+        ) {
+            self.terms = terms
+            self.rules = rules
+            self.result = result
+        }
+    }
+
     /// Validates that the archive can be decoded.
     /// Returns `.success` if the schema version is known, `.failure` otherwise.
     public static func validate(data: Data) -> Result<DictionaryArchive, Error> {
@@ -80,22 +97,26 @@ public struct DictionaryArchive: Codable, Sendable {
         }
     }
 
-    /// Merges archive contents into existing collections, deduplicating by ID and term/find.
-    /// Returns the import result with counts.
+    /// Merges archive contents into existing collections, deduplicating by term/find.
+    /// Incoming terms are normalized first. Within-archive duplicates are counted once.
     public func merge(
         into existingTerms: [VocabularyTerm],
         existingRules: [VocabularyReplacementRule],
-    ) -> ImportResult {
+    ) -> MergeOutcome {
+        let normalizedExistingTerms = VocabularyTerm.normalized(existingTerms)
+        let normalizedIncomingTerms = VocabularyTerm.normalized(vocabularyTerms)
+
         var termsImported = 0
         var duplicateTermCount = 0
+        var mergedTerms = normalizedExistingTerms
+        var seenTermKeys = Set(normalizedExistingTerms.map { $0.term.lowercased() })
 
-        var mergedTerms = existingTerms
-        let existingTermLower = Set(existingTerms.map { $0.term.lowercased() })
-
-        for term in vocabularyTerms {
-            if existingTermLower.contains(term.term.lowercased()) {
+        for term in normalizedIncomingTerms {
+            let key = term.term.lowercased()
+            if seenTermKeys.contains(key) {
                 duplicateTermCount += 1
             } else {
+                seenTermKeys.insert(key)
                 mergedTerms.append(term)
                 termsImported += 1
             }
@@ -104,27 +125,36 @@ public struct DictionaryArchive: Codable, Sendable {
         var rulesImported = 0
         var duplicateRuleCount = 0
         var mergedRules = existingRules
+        var seenRuleVariants = Set(
+            existingRules.flatMap { $0.normalizedFindVariants.map { $0.lowercased() } },
+        )
 
         for rule in substitutionRules {
-            let existingFindLower = Set(rule.normalizedFindVariants.map { $0.lowercased() })
-            let isDuplicate = mergedRules.contains { existingRule in
-                let existingVariants = Set(existingRule.normalizedFindVariants.map { $0.lowercased() })
-                return existingFindLower.isDisjoint(with: existingVariants) == false
+            let ruleVariants = Set(rule.normalizedFindVariants.map { $0.lowercased() })
+            guard !ruleVariants.isEmpty else {
+                duplicateRuleCount += 1
+                continue
             }
 
-            if isDuplicate {
+            if !ruleVariants.isDisjoint(with: seenRuleVariants) {
                 duplicateRuleCount += 1
-            } else {
-                mergedRules.append(rule)
-                rulesImported += 1
+                continue
             }
+
+            seenRuleVariants.formUnion(ruleVariants)
+            mergedRules.append(rule)
+            rulesImported += 1
         }
 
-        return ImportResult(
-            termsImported: termsImported,
-            rulesImported: rulesImported,
-            duplicateTermCount: duplicateTermCount,
-            duplicateRuleCount: duplicateRuleCount,
+        return MergeOutcome(
+            terms: VocabularyTerm.normalized(mergedTerms),
+            rules: mergedRules,
+            result: ImportResult(
+                termsImported: termsImported,
+                rulesImported: rulesImported,
+                duplicateTermCount: duplicateTermCount,
+                duplicateRuleCount: duplicateRuleCount,
+            ),
         )
     }
 }

@@ -35,6 +35,7 @@ public struct DictionarySettingsTab: View {
     @State private var ruleFindInput = ""
     @State private var ruleReplaceInput = ""
     @State private var selectedRuleID: UUID?
+    @State private var selectedTermID: UUID?
     @State private var importExportMessage: String?
     @State private var showImportExportAlert = false
     private let showsHeader: Bool
@@ -126,7 +127,7 @@ public struct DictionarySettingsTab: View {
         .onDeleteCommand(perform: handleDeleteKey)
     }
 
-    // MARK: - Substitutions Content
+    // MARK: - Substitutions
 
     private var substitutionsContent: some View {
         Section {
@@ -140,7 +141,21 @@ public struct DictionarySettingsTab: View {
                     emptyText: "settings.vocabulary.empty".localized,
                     containerStyle: .plain,
                 ) { rule in
-                    substitutionRow(for: rule)
+                    DictionarySubstitutionRuleRowView(
+                        rule: rule,
+                        isSelected: selectedRuleID == rule.id,
+                        onSelect: { selectedRuleID = rule.id },
+                        onEdit: {
+                            selectedRuleID = rule.id
+                            ruleFindInput = rule.find
+                            ruleReplaceInput = rule.replace
+                            substitutionViewModel.startEditingRule(rule)
+                        },
+                        onDelete: {
+                            selectedRuleID = rule.id
+                            substitutionViewModel.confirmDelete(rule)
+                        },
+                    )
                 }
 
                 HStack {
@@ -162,16 +177,6 @@ public struct DictionarySettingsTab: View {
                 icon: "arrow.2.squarepath",
             )
         }
-    }
-
-    private func substitutionRow(for rule: VocabularyReplacementRule) -> some View {
-        VocabularyRuleRowView(
-            rule: rule,
-            isSelected: selectedRuleID == rule.id,
-            onSelect: { selectSubstitutionRule(rule) },
-            onEdit: { editSubstitutionRule(rule) },
-            onDelete: { confirmDeleteSubstitutionRule(rule) },
-        )
     }
 
     private var substitutionEditorSheet: some View {
@@ -224,10 +229,9 @@ public struct DictionarySettingsTab: View {
     }
 
     private var substitutionEditorTitle: String {
-        if substitutionViewModel.editingRule == nil {
-            return "settings.vocabulary.add_rule".localized
-        }
-        return "settings.vocabulary.edit_rule".localized
+        substitutionViewModel.editingRule == nil
+            ? "settings.vocabulary.add_rule".localized
+            : "settings.vocabulary.edit_rule".localized
     }
 
     private var substitutionEditorErrorKey: String? {
@@ -248,23 +252,7 @@ public struct DictionarySettingsTab: View {
         }
     }
 
-    private func selectSubstitutionRule(_ rule: VocabularyReplacementRule) {
-        selectedRuleID = rule.id
-    }
-
-    private func editSubstitutionRule(_ rule: VocabularyReplacementRule) {
-        selectSubstitutionRule(rule)
-        ruleFindInput = rule.find
-        ruleReplaceInput = rule.replace
-        substitutionViewModel.startEditingRule(rule)
-    }
-
-    private func confirmDeleteSubstitutionRule(_ rule: VocabularyReplacementRule) {
-        selectSubstitutionRule(rule)
-        substitutionViewModel.confirmDelete(rule)
-    }
-
-    // MARK: - Vocabulary Content
+    // MARK: - Vocabulary
 
     private var vocabularyContent: some View {
         Section {
@@ -277,11 +265,13 @@ public struct DictionarySettingsTab: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
 
-                // Bulk add area
                 HStack(spacing: 8) {
-                    TextField("settings.dictionary.vocabulary.add_placeholder".localized, text: $vocabularyViewModel.bulkInputText)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit { vocabularyViewModel.addTermsFromBulkInput() }
+                    TextField(
+                        "settings.dictionary.vocabulary.add_placeholder".localized,
+                        text: $vocabularyViewModel.bulkInputText,
+                    )
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { vocabularyViewModel.addTermsFromBulkInput() }
 
                     Button("common.add".localized) {
                         vocabularyViewModel.addTermsFromBulkInput()
@@ -302,7 +292,6 @@ public struct DictionarySettingsTab: View {
                         .foregroundStyle(.secondary)
                 }
 
-                // Existing terms list
                 if vocabularyViewModel.terms.isEmpty {
                     Text("settings.dictionary.vocabulary.empty".localized)
                         .font(.subheadline)
@@ -312,7 +301,10 @@ public struct DictionarySettingsTab: View {
                     ForEach(vocabularyViewModel.terms) { term in
                         VocabularyTermRowView(
                             term: term,
-                            onDelete: { vocabularyViewModel.confirmDelete(term) },
+                            onDelete: {
+                                selectedTermID = term.id
+                                vocabularyViewModel.confirmDelete(term)
+                            },
                         )
                     }
                 }
@@ -401,29 +393,17 @@ public struct DictionarySettingsTab: View {
 
         do {
             let data = try Data(contentsOf: url)
-            let result = DictionaryArchive.validate(data: data)
-
-            switch result {
+            switch DictionaryArchive.validate(data: data) {
             case let .success(archive):
                 let settings = AppSettingsStore.shared
-                let mergeResult = archive.merge(
+                let outcome = archive.merge(
                     into: settings.vocabularyTerms,
                     existingRules: settings.vocabularyReplacementRules,
                 )
-
-                if mergeResult.totalImported > 0 {
-                    settings.vocabularyTerms = mergeResult.totalDuplicates > 0
-                        ? settings.vocabularyTerms
-                        : archive.vocabularyTerms + settings.vocabularyTerms
-                    settings.vocabularyReplacementRules = mergeResult.totalDuplicates > 0
-                        ? settings.vocabularyReplacementRules
-                        : settings.vocabularyReplacementRules + archive.substitutionRules
-
-                    // Re-apply with merge logic
-                    reapplyImport(archive: archive, mergeResult: mergeResult)
-                }
-
-                importExportMessage = importResultMessage(mergeResult)
+                settings.vocabularyTerms = outcome.terms
+                settings.vocabularyReplacementRules = outcome.rules
+                vocabularyViewModel.reloadFromStore()
+                importExportMessage = importResultMessage(outcome.result)
                 showImportExportAlert = true
 
             case let .failure(error):
@@ -434,38 +414,6 @@ public struct DictionarySettingsTab: View {
             importExportMessage = "settings.dictionary.import.error_read".localized(with: error.localizedDescription)
             showImportExportAlert = true
         }
-    }
-
-    private func reapplyImport(archive: DictionaryArchive, mergeResult: DictionaryArchive.ImportResult) {
-        guard mergeResult.totalImported > 0 else { return }
-
-        let settings = AppSettingsStore.shared
-
-        // Merge terms (skip duplicates)
-        var mergedTerms = settings.vocabularyTerms
-        let existingTermLower = Set(mergedTerms.map { $0.term.lowercased() })
-        for term in archive.vocabularyTerms {
-            if !existingTermLower.contains(term.term.lowercased()) {
-                mergedTerms.append(term)
-            }
-        }
-
-        // Merge rules (skip duplicates)
-        var mergedRules = settings.vocabularyReplacementRules
-        for rule in archive.substitutionRules {
-            let ruleVariants = Set(rule.normalizedFindVariants.map { $0.lowercased() })
-            let isDuplicate = mergedRules.contains { existingRule in
-                let existingVariants = Set(existingRule.normalizedFindVariants.map { $0.lowercased() })
-                return !ruleVariants.isDisjoint(with: existingVariants)
-            }
-            if !isDuplicate {
-                mergedRules.append(rule)
-            }
-        }
-
-        settings.vocabularyTerms = mergedTerms
-        settings.vocabularyReplacementRules = mergedRules
-        vocabularyViewModel.reloadFromStore()
     }
 
     private func importResultMessage(_ result: DictionaryArchive.ImportResult) -> String {
@@ -488,135 +436,17 @@ public struct DictionarySettingsTab: View {
     // MARK: - Keyboard
 
     private func handleDeleteKey() {
-        if selectedWorkflow == .substitutions, let selectedRuleID,
-           let rule = substitutionViewModel.rules.first(where: { $0.id == selectedRuleID })
-        {
+        switch selectedWorkflow {
+        case .substitutions:
+            guard let selectedRuleID,
+                  let rule = substitutionViewModel.rules.first(where: { $0.id == selectedRuleID })
+            else { return }
             substitutionViewModel.confirmDelete(rule)
-        }
-    }
-}
-
-// MARK: - Vocabulary Term Row
-
-private struct VocabularyTermRowView: View {
-    let term: VocabularyTerm
-    let onDelete: () -> Void
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(term.term)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-
-                if !term.definition.isEmpty {
-                    Text(term.definition)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-
-            Button(role: .destructive, action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.caption)
-            }
-            .buttonStyle(.plain)
-            .help("common.delete".localized)
-            .accessibilityLabel("settings.dictionary.vocabulary.delete_term".localized(with: term.term))
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                .fill(Color.clear),
-        )
-        .contextMenu {
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Label("common.delete".localized, systemImage: "trash")
-            }
-        }
-    }
-}
-
-// MARK: - Substitution Rule Row (reused from VocabularySettingsTab)
-
-extension DictionarySettingsTab {
-    struct VocabularyRuleRowView: View {
-        let rule: VocabularyReplacementRule
-        let isSelected: Bool
-        let onSelect: () -> Void
-        let onEdit: () -> Void
-        let onDelete: () -> Void
-
-        var body: some View {
-            HStack(spacing: 12) {
-                SettingsRowClickSurface(
-                    onSingleClick: onSelect,
-                    onDoubleClick: onEdit,
-                    content: {
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(rule.find)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(AppDesignSystem.Colors.primaryTextStyle(isSelected: isSelected))
-                                Text(rule.replace.isEmpty ? "settings.vocabulary.empty_replace".localized : rule.replace)
-                                    .font(.caption)
-                                    .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
-                            }
-
-                            Spacer()
-
-                            Image(systemName: "arrow.right")
-                                .font(.caption)
-                                .foregroundStyle(AppDesignSystem.Colors.secondaryTextStyle(isSelected: isSelected))
-                        }
-                    },
-                )
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(rowBackground)
-            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
-            .contextMenu {
-                Button {
-                    onEdit()
-                } label: {
-                    Label("settings.vocabulary.edit_rule".localized, systemImage: "pencil")
-                }
-
-                Button(role: .destructive) {
-                    onDelete()
-                } label: {
-                    Label("settings.vocabulary.delete_rule".localized, systemImage: "trash")
-                }
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(accessibilityLabel)
-            .accessibilityHint("settings.vocabulary.actions".localized)
-        }
-
-        @ViewBuilder
-        private var rowBackground: some View {
-            if isSelected {
-                RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                    .fill(AppDesignSystem.Colors.selectionFill)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                            .stroke(AppDesignSystem.Colors.selectionStroke, lineWidth: 1),
-                    )
-            } else {
-                Color.clear
-            }
-        }
-
-        private var accessibilityLabel: String {
-            [rule.find, rule.replace.isEmpty ? "settings.vocabulary.empty_replace".localized : rule.replace]
-                .joined(separator: ", ")
+        case .vocabulary:
+            guard let selectedTermID,
+                  let term = vocabularyViewModel.terms.first(where: { $0.id == selectedTermID })
+            else { return }
+            vocabularyViewModel.confirmDelete(term)
         }
     }
 }

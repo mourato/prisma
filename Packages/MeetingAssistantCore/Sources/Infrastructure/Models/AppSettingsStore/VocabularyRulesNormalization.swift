@@ -32,4 +32,8 @@ extension AppSettingsStore {
 
         return ordered
     }
+
+    static func normalizedVocabularyTerms(_ terms: [VocabularyTerm]) -> [VocabularyTerm] {
+        VocabularyTerm.normalized(terms)
+    }
 }

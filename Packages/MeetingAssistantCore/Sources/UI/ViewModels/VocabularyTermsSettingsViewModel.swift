@@ -25,8 +25,9 @@ public final class VocabularyTermsSettingsViewModel: ObservableObject {
         terms = settings.vocabularyTerms
 
         settings.objectWillChange
+            .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                self?.objectWillChange.send()
+                self?.reloadFromStore()
             }
             .store(in: &cancellables)
     }
@@ -56,13 +57,13 @@ public final class VocabularyTermsSettingsViewModel: ObservableObject {
 
         var addedCount = 0
         var updatedTerms = settings.vocabularyTerms
+        var lastDuplicate: String?
 
         for rawTerm in rawTerms {
-            // Check for duplicates against existing terms (case-insensitive)
             let lowerRaw = rawTerm.lowercased()
             let isDuplicate = updatedTerms.contains { $0.term.lowercased() == lowerRaw }
             guard !isDuplicate else {
-                validationError = .duplicatedTerm(rawTerm)
+                lastDuplicate = rawTerm
                 continue
             }
 
@@ -71,13 +72,16 @@ public final class VocabularyTermsSettingsViewModel: ObservableObject {
         }
 
         guard addedCount > 0 else {
+            if let lastDuplicate {
+                validationError = .duplicatedTerm(lastDuplicate)
+            }
             return 0
         }
 
         settings.vocabularyTerms = updatedTerms
-        terms = updatedTerms
+        terms = settings.vocabularyTerms
         bulkInputText = ""
-        validationError = nil
+        validationError = lastDuplicate.map { .duplicatedTerm($0) }
         addedTermsCount = addedCount
         return addedCount
     }
@@ -93,11 +97,7 @@ public final class VocabularyTermsSettingsViewModel: ObservableObject {
             return
         }
 
-        var updatedTerms = settings.vocabularyTerms
-        updatedTerms.removeAll { $0.id == term.id }
-        settings.vocabularyTerms = updatedTerms
-        terms = updatedTerms
-
+        removeTerm(term)
         termToDelete = nil
         showDeleteConfirmation = false
     }
@@ -106,6 +106,6 @@ public final class VocabularyTermsSettingsViewModel: ObservableObject {
         var updatedTerms = settings.vocabularyTerms
         updatedTerms.removeAll { $0.id == term.id }
         settings.vocabularyTerms = updatedTerms
-        terms = updatedTerms
+        terms = settings.vocabularyTerms
     }
 }

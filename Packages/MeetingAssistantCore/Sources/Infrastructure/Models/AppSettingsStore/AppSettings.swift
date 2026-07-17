@@ -644,7 +644,15 @@ public class AppSettingsStore: ObservableObject {
 
     /// Vocabulary terms providing recognition/spelling hints for transcription.
     @Published public var vocabularyTerms: [VocabularyTerm] {
-        didSet { save(vocabularyTerms, forKey: Keys.vocabularyTerms) }
+        didSet {
+            let normalizedTerms = Self.normalizedVocabularyTerms(vocabularyTerms)
+            if normalizedTerms != vocabularyTerms {
+                vocabularyTerms = normalizedTerms
+                return
+            }
+
+            save(vocabularyTerms, forKey: Keys.vocabularyTerms)
+        }
     }
 
     /// Website targets that should force Markdown formatting for dictation.
