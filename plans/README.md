@@ -1,6 +1,6 @@
 # Implementation Plans
 
-This is the active plan ledger. The next available plan number is 112.
+This is the active plan ledger. The next available plan number is 113.
 
 ## Execution rules
 
@@ -29,6 +29,7 @@ Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` | `REJECTED`.
 | [109](archive/completed/109-promote-dictionary-and-add-vocabulary-workflow.md) | Promote Dictionary and add a separate vocabulary workflow | P1 | L | 108 | DONE |
 | [110](archive/completed/110-wire-vocabulary-through-transcription.md) | Wire vocabulary snapshots through transcription and enhancement | P1 | L | 109 | DONE |
 | [111](archive/completed/111-add-dictionary-quick-add-panel.md) | Add the VoiceInk-style Dictionary quick-add panel | P1 | L | 109 | DONE |
+| [112](112-rebrand-visible-app-name-to-vozinha.md) | Rebrand the visible app name to Vozinha | P1 | L | - | IN PROGRESS |
 
 ## Dependency order
 
@@ -37,6 +38,12 @@ runtime vocabulary integration in 110. Plan 111 also depends on 109 and can run
 in parallel with 110 only in a separate isolated worktree after confirming that
 the shared Dictionary service API is stable. The remediation batch is
 `102 -> 103 -> 104 -> 105`. Plan 083 is independent.
+
+Plan 112 is independent of the Settings reorganization batch, but must remain a
+single coordinated workstream because it changes shared build, runtime, and
+release identity values. It intentionally preserves `com.mourato.prisma`, the
+XPC identifier, storage directories, Keychain service, UserDefaults domains,
+and `MeetingAssistant*` internal names.
 
 ## Archives
 
