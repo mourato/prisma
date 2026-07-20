@@ -54,6 +54,21 @@ final class SettingsSectionTests: XCTestCase {
         }
     }
 
+    func testVisibleSections_UseFilledSidebarIconsWhenSelected() {
+        XCTAssertEqual(SettingsSection.activity.icon, "chart.pie")
+        XCTAssertEqual(SettingsSection.activity.selectedSidebarIcon, "chart.pie.fill")
+        XCTAssertEqual(SettingsSection.modes.icon, "mic")
+        XCTAssertEqual(SettingsSection.modes.selectedSidebarIcon, "mic.fill")
+        XCTAssertEqual(SettingsSection.meetings.icon, "bubble.left.and.bubble.right")
+        XCTAssertEqual(SettingsSection.meetings.selectedSidebarIcon, "bubble.left.and.bubble.right.fill")
+        XCTAssertEqual(SettingsSection.history.icon, "clock")
+        XCTAssertEqual(SettingsSection.history.selectedSidebarIcon, "clock.fill")
+        XCTAssertEqual(SettingsSection.dictionary.icon, "character.book.closed")
+        XCTAssertEqual(SettingsSection.dictionary.selectedSidebarIcon, "character.book.closed.fill")
+        XCTAssertEqual(SettingsSection.system.icon, "gearshape.2")
+        XCTAssertEqual(SettingsSection.system.selectedSidebarIcon, "gearshape.2.fill")
+    }
+
     func testResolvedVisibleSection_ParsesOldRawValues() {
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "metrics"), .activity)
         XCTAssertEqual(SettingsSection.resolvedVisibleSection(for: "transcriptions"), .history)

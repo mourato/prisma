@@ -2,16 +2,8 @@ import AppKit
 import SwiftUI
 
 struct NativeSearchField: NSViewRepresentable {
-    @Environment(\.colorScheme) private var colorScheme
-
-    enum Style {
-        case standard
-        case liquidGlass
-    }
-
     @Binding var text: String
     let placeholder: String
-    var style: Style = .standard
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text)
@@ -45,29 +37,11 @@ struct NativeSearchField: NSViewRepresentable {
     }
 
     private func applyStyle(to searchField: NSSearchField) {
-        switch colorScheme {
-        case .light, .dark:
-            switch style {
-            case .standard:
-                searchField.isBezeled = true
-                searchField.isBordered = true
-                searchField.drawsBackground = true
-                searchField.backgroundColor = .textBackgroundColor
-                searchField.bezelStyle = .roundedBezel
-            case .liquidGlass:
-                // Keep the native rounded search-field geometry so focus and text/icon insets remain correct.
-                searchField.isBezeled = true
-                searchField.isBordered = false
-                searchField.drawsBackground = false
-                searchField.bezelStyle = .roundedBezel
-            }
-        @unknown default:
-            searchField.isBezeled = true
-            searchField.isBordered = true
-            searchField.drawsBackground = true
-            searchField.backgroundColor = .textBackgroundColor
-            searchField.bezelStyle = .roundedBezel
-        }
+        searchField.isBezeled = true
+        searchField.isBordered = true
+        searchField.drawsBackground = true
+        searchField.backgroundColor = .textBackgroundColor
+        searchField.bezelStyle = .roundedBezel
     }
 }
 

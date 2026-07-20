@@ -153,8 +153,8 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .metrics: "chart.pie.fill"
         case .general: "gearshape.2"
         case .dictation: "microphone"
-        case .modes: "mic.fill"
-        case .meetings: "bubble.left.and.text.bubble.right"
+        case .modes: "mic"
+        case .meetings: "bubble.left.and.bubble.right"
         case .audio: "speaker.wave.2"
         case .assistant: "sparkle"
         case .integrations: "puzzlepiece.extension"
@@ -164,9 +164,22 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .dictionary: "character.book.closed"
         case .enhancements: "sparkles"
         case .permissions: "checkmark.shield"
-        case .activity: "chart.pie.fill"
+        case .activity: "chart.pie"
         case .intelligence: "sparkles"
         case .system: "gearshape.2"
+        }
+    }
+
+    /// The filled variant used to communicate selection in the settings sidebar.
+    public var selectedSidebarIcon: String {
+        switch self {
+        case .activity: "chart.pie.fill"
+        case .modes: "mic.fill"
+        case .meetings: "bubble.left.and.bubble.right.fill"
+        case .history: "clock.fill"
+        case .dictionary: "character.book.closed.fill"
+        case .system: "gearshape.2.fill"
+        default: icon
         }
     }
 

@@ -32,7 +32,6 @@ struct SettingsSidebarView: View {
         SettingsSearchField(
             text: $searchText,
             placeholder: "settings.search.placeholder".localized,
-            style: .sidebar,
         )
         .accessibilityLabel("settings.search.placeholder".localized)
     }
@@ -119,7 +118,7 @@ struct SettingsSidebarView: View {
 
     private func sidebarLabel(for section: SettingsSection) -> some View {
         HStack(spacing: 9) {
-            Image(systemName: section.icon)
+            Image(systemName: sidebarIcon(for: section))
                 .symbolRenderingMode(.monochrome)
                 .font(AppTypography.sidebarIcon)
                 .foregroundStyle(AppDesignSystem.Colors.accent)
@@ -129,6 +128,10 @@ struct SettingsSidebarView: View {
                 .font(AppTypography.sidebarLabel)
                 .lineLimit(1)
         }
+    }
+
+    private func sidebarIcon(for section: SettingsSection) -> String {
+        selectedSection == section ? section.selectedSidebarIcon : section.icon
     }
 
     private func resultRow(for result: SettingsSearchResult) -> some View {
