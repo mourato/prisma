@@ -11,7 +11,6 @@
 > ```bash
 > git diff --stat fa93d031..HEAD -- \
 >   AGENTS.md \
->   .agents/SKILLS_INDEX.md \
 >   .agents/docs/skill-routing.md \
 >   .agents/skills/delivery-workflow/SKILL.md \
 >   .agents/skills/project-standards/SKILL.md \
@@ -71,8 +70,9 @@ Do not edit this global skill in this plan. It is the target ownership contract.
 - `.agents/skills/delivery-workflow/SKILL.md:92-100` contains a second delegation
   policy and makes the Fast agent default.
 - `.agents/docs/skill-routing.md:24-37` contains another root/delegation/profile table.
-- `.agents/SKILLS_INDEX.md` lists global `improve` and review skills but does not
-  list `agent-ops`, even though project guidance relies on it.
+- The routing guide and individual skill descriptions list global `improve` and
+  review skills but do not list `agent-ops`, even though project guidance relies
+  on it.
 
 ## Target ownership contract
 
@@ -95,7 +95,7 @@ eligible task is automatically delegated or select a profile by default.
 |---|---|---|
 | Guidance validation | `make guidance-check` | `Guidance validation passed.` |
 | Stale-default search | `rg -n "defaults? to .*implementer-fast|Default to .*implementer-fast|allowlisted .* defaults" AGENTS.md .agents` | no matches |
-| Owner presence | `rg -n "agent-ops" AGENTS.md .agents/SKILLS_INDEX.md .agents/docs/skill-routing.md .agents/skills/{delivery-workflow,project-standards}/SKILL.md` | each named surface has an intentional pointer |
+| Owner presence | `rg -n "agent-ops" AGENTS.md .agents/docs/skill-routing.md .agents/skills/{delivery-workflow,project-standards}/SKILL.md` | each named surface has an intentional pointer |
 | Model leakage | `rg -n "gpt-[0-9]|model_reasoning_effort" AGENTS.md .agents` | no matches |
 | Diff hygiene | `git diff --check` | no output |
 
@@ -110,7 +110,6 @@ eligible task is automatically delegated or select a profile by default.
 **In scope**:
 
 - `AGENTS.md`
-- `.agents/SKILLS_INDEX.md`
 - `.agents/docs/skill-routing.md`
 - `.agents/skills/delivery-workflow/SKILL.md`
 - `.agents/skills/project-standards/SKILL.md`
@@ -193,9 +192,9 @@ a specialist must not name a custom execution profile.
 
 ### Step 4: Register the global owner and document the split
 
-Add `agent-ops` to `.agents/SKILLS_INDEX.md` as a global skill with trigger text
-limited to workflow, routing, delegation, planning, effort, and validation
-strategy. Do not duplicate its workflow.
+Add `agent-ops` to the project routing guidance with trigger text limited to
+workflow, routing, delegation, planning, effort, and validation strategy. Do
+not duplicate its workflow.
 
 In `project-standards`, extend the ownership split with one sentence:
 

@@ -12,7 +12,6 @@
 > git diff --stat fa93d031..HEAD -- \
 >   .agents/skills \
 >   .agents/docs/skill-routing.md \
->   .agents/SKILLS_INDEX.md \
 >   scripts/validate-agent-guidance.py \
 >   scripts/tests \
 >   Makefile \
@@ -105,7 +104,8 @@ The intended file is
 
 ### Duplicate hot-path catalogs and command recipe
 
-- `.agents/SKILLS_INDEX.md` is the skill catalog.
+- Individual `SKILL.md` files own skill descriptions and triggers; the routing
+  guide maps problems to skills.
 - `.agents/docs/skill-routing.md:268-289` repeats a second “Skill Files and
   Direct Access” table with incomplete entries.
 - `.agents/docs/build-and-test.md:13-24` says not to stack gates, while
@@ -180,7 +180,7 @@ the current audit batch.
 - `scripts/tests/workflow-test.sh` only to invoke the new fixture suite
 - `.agents/skills/apple-design/SKILL.md` only to fix the SwiftUI review pointer
 - `.agents/docs/skill-routing.md`
-- `.agents/SKILLS_INDEX.md` only if plan 104's canonical catalog needs a link adjustment
+- `.agents/docs/skill-routing.md` only if plan 104's routing guidance needs an adjustment
 - `.agents/docs/build-and-test.md`
 - `plans/README.md`
 - `plans/archive/2026-07-16-plan-ledger-history.md` (create by moving the old README)
@@ -330,7 +330,7 @@ Expected: both pass; `git ls-files` returns nothing for both deleted trees.
 
 In `.agents/docs/skill-routing.md`, delete the repeated “Skill Files and Direct
 Access” table. Replace it with one sentence linking to
-`../SKILLS_INDEX.md` as the canonical catalog. Keep problem-specific routing.
+the project routing guide as the canonical problem map. Keep problem-specific routing.
 
 In `.agents/docs/build-and-test.md`, replace lines 168-176 with mutually
 exclusive choices:
@@ -466,6 +466,6 @@ Stop and report if:
   files to root merely for search convenience.
 - Any new skill directory must start with `SKILL.md`; references/assets are
   subordinate and recursively checked.
-- `SKILLS_INDEX.md` is the catalog; `skill-routing.md` maps problems, not files.
+- Skill descriptions own triggers; `skill-routing.md` maps problems, not files.
 - Reviewers should treat unexplained growth in root plans or orphan skill
   references as operational context regression.
