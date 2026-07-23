@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent build-test build-test-strict xcodebuild-safe test test-agent test-full test-full-agent test-smoke test-perf test-sensitive test-appkit test-parity test-parity-agent test-swift test-verbose test-strict test-ci-strict scope-check scope-check-agent validate-agent workflow-test benchmark-summary benchmark-summary-agent lint lint-agent lint-strict lint-strict-agent lint-fix arch-check preview-check guidance-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent build-test build-test-strict xcodebuild-safe test test-agent test-full test-full-agent test-smoke test-perf test-sensitive test-appkit test-parity test-parity-agent test-swift test-verbose test-strict test-ci-strict scope-check scope-check-agent validate-agent workflow-test benchmark-summary benchmark-summary-agent lint lint-agent lint-strict lint-strict-agent lint-fix arch-check preview-check localization-check guidance-check preflight preflight-fast preflight-agent preflight-agent-fast agent-artifacts-report agent-artifacts-dry-run agent-artifacts-clean clean run run-release dmg setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -51,6 +51,7 @@ help:
 	@echo "  make lint-fix       - Auto-fix linting issues"
 	@echo "  make arch-check     - Run architecture boundary checks"
 	@echo "  make preview-check  - Verify per-file SwiftUI preview declarations"
+	@echo "  make localization-check - Validate locale symmetry and literal keys"
 	@echo "  make guidance-check - Validate AGENTS/skills/docs links and make target references"
 	@echo "  make preflight      - Run preflight script (build + test + lint + benchmark)"
 	@echo "  make preflight-fast - Run fast preflight (lint + build + test)"
@@ -77,6 +78,9 @@ help:
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean          - Clean build artifacts"
+	@echo "  make agent-artifacts-report - Report generated agent/build artifact usage"
+	@echo "  make agent-artifacts-dry-run - Preview safe artifact cleanup (default: 7 days)"
+	@echo "  make agent-artifacts-clean - Delete eligible artifacts with explicit confirmation"
 	@echo "  make setup          - Verify toolchain, install dependencies, configure Git hooks"
 	@echo ""
 	@echo "CI/CD Commands:"
@@ -101,6 +105,7 @@ XCODEPROJ = $(PROJECT_DIR)/$(XCODEPROJ_NAME)
 DERIVED_DATA = $(PROJECT_DIR)/.xcode-build
 DIST_DIR = $(PROJECT_DIR)/dist
 AGENT_LOG_DIR ?= /tmp/ma-agent
+ARTIFACT_RETENTION_DAYS ?= 7
 
 # Colors for output
 RED = \033[0;31m
@@ -225,10 +230,15 @@ preview-check:
 	@echo -e "$(BLUE)Checking SwiftUI preview coverage...$(NC)"
 	@./scripts/preview-check.sh --settings
 
+localization-check:
+	@echo -e "$(BLUE)Checking localization key integrity...$(NC)"
+	@python3 ./scripts/check-localization.py
+
 guidance-check:
 	@echo -e "$(BLUE)Validating AGENTS/skills/docs guidance...$(NC)"
 	@python3 ./scripts/validate-agent-guidance.py
 	@./scripts/config/generate_app_identity.swift --check
+	@$(MAKE) localization-check
 
 preflight:
 	@echo -e "$(BLUE)Running preflight checks...$(NC)"
@@ -288,6 +298,16 @@ setup-self-signed-cert:
 	@./scripts/setup-self-signed-cert.sh
 
 # Maintenance
+agent-artifacts-report:
+	@python3 ./scripts/agent-artifacts.py
+
+agent-artifacts-dry-run:
+	@python3 ./scripts/agent-artifacts.py --clean --dry-run --older-than-days "$(ARTIFACT_RETENTION_DAYS)"
+
+agent-artifacts-clean:
+	@if [ "$(ARTIFACT_CLEAN_CONFIRM)" != "1" ]; then echo "Refusing cleanup. Re-run with ARTIFACT_CLEAN_CONFIRM=1 after reviewing make agent-artifacts-dry-run." >&2; exit 2; fi
+	@python3 ./scripts/agent-artifacts.py --clean --confirm --older-than-days "$(ARTIFACT_RETENTION_DAYS)"
+
 clean:
 	@echo -e "$(YELLOW)Cleaning build artifacts...$(NC)"
 	@rm -rf "$(DERIVED_DATA)"
