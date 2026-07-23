@@ -86,6 +86,8 @@ gates; required review remains separate. Details live in `delivery-workflow`.
 
 `Makefile` is the command authority. See [Build and Test Reference](./.agents/docs/build-and-test.md) for the command catalog. Route specialists via [Skill Routing Guide](./.agents/docs/skill-routing.md) only. `.swiftlint.yml` is the lint source of truth; keep lint-specific writing rules in `swift-conventions`.
 
+Direct script discovery follows the global `agent-ops` standard: use `make help` first, then the relevant script's `--help`. Every script intended for direct invocation must keep a concise purpose, usage, options, and safety notes in `--help`; update that text whenever the script's flags or behavior changes. Internal sourced helpers may use a clear header comment instead.
+
 For external project code or documentation, prefer `MCP grep`, then `gh`, then DeepWiki, and use web search last. Route new knowledge into `.agents/skills/`, GitHub issues, or delete stale material. Do not create a root-level `docs/` directory. Run `make guidance-check` after changing this file, `.agents/`, or referenced command documentation.
 
 ## Security and Privacy
